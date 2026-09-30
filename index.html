@@ -15455,8 +15455,8 @@ qui	who	A1	question word`;
 
     function v460TransformProgress(){
       if(state.view!=='progress')return;
-      const states=v460AllNoteStates(),old=main.querySelector('.v372-progress-shell'),dialog=main.querySelector('#v372-progress-dialog'),audio=main.querySelector('.v450-progress-panel');
-      if(old)old.remove();
+      const states=v460AllNoteStates(),old=main.querySelector('.v372-progress-shell'),existing=main.querySelector('.v460-progress-shell'),dialog=main.querySelector('#v372-progress-dialog'),audio=main.querySelector('.v450-progress-panel');
+      if(old)old.remove();if(existing)existing.remove();
       const shell=document.createElement('div');shell.innerHTML=v460IntelligenceHtml(states);
       const intelligence=shell.firstElementChild;
       dialog?main.insertBefore(intelligence,dialog):main.prepend(intelligence);
