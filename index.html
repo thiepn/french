@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.6.0';
-    const APP_RELEASE = 'P5 Progress & Vocabulary Intelligence';
+    const APP_VERSION = '4.7.0';
+    const APP_RELEASE = 'P6 Smart Words, Search & Vocabulary Discovery';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -15498,6 +15498,301 @@ qui	who	A1	question word`;
       const result=await v460InitBase(options);
       v420NormalizeSurface();
       if(state.view==='progress')v460TransformProgress();
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.7.0 SMART WORDS, SEARCH & VOCABULARY DISCOVERY
+       Turns the existing catalog browser into an everyday vocabulary
+       workspace. Reuses the P1 catalog, P2 risk model, P5 skill intelligence,
+       existing families, custom lists and smart decks. No scheduler changes.
+       ================================================================ */
+    const V470_VERSION='4.7.0';
+    const V470_RELEASE='P6 Smart Words, Search & Vocabulary Discovery';
+
+    function v470Bool(value){return ['1','true','yes','on'].includes(normalizeTyped(value));}
+    function v470SkillState(card,skill){return v460SkillState(depthNoteFor(card)||card,skill);}
+    function v470NoteState(card){return v460NoteState(depthNoteFor(card)||card);}
+
+    const v470MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value),noteState=()=>v470NoteState(card);
+      if(key==='risk'){
+        const risk=cardStatus(card)==='new'?0:v430WeaknessProfile(card).score;
+        if(normalized==='high'||normalized==='weak')return risk>=28;
+        if(normalized==='medium')return risk>=16&&risk<28;
+        if(normalized==='low')return risk>0&&risk<16;
+        if(normalized==='none')return risk===0;
+        const threshold=Number(normalized);return Number.isFinite(threshold)?risk>=threshold:false;
+      }
+      if(key==='introduced')return v470Bool(value)?noteState().started:!noteState().started;
+      if(key==='secure'){
+        const state=noteState();
+        if(normalized==='recognition'||normalized==='receptive')return state.receptiveSecure;
+        if(normalized==='production'||normalized==='productive')return state.productiveSecure;
+        if(normalized==='balanced'||normalized==='both')return state.balancedSecure;
+        const skill=v470SkillState(card,normalized);return skill.eligible&&skill.secure;
+      }
+      if(key==='skill'){
+        const state=v470SkillState(card,normalized);
+        return state.eligible&&state.started;
+      }
+      if(key==='skill-due'||key==='due-skill'){
+        const state=v470SkillState(card,normalized);
+        return state.eligible&&state.due;
+      }
+      if(key==='gap'){
+        const state=noteState();
+        if(normalized==='production')return state.modes.recognition.started&&!state.productiveSecure&&state.productionGap>=.12;
+        if(normalized==='listening')return state.modes.recognition.secure&&!state.modes.listening.secure;
+        if(normalized==='spelling')return state.modes.production.started&&!state.modes.spelling.secure;
+        if(normalized==='article')return state.modes.article.eligible&&state.modes.production.started&&!state.modes.article.secure;
+        return false;
+      }
+      if(key==='family-size'){
+        const n=Number(normalized);return Number.isFinite(n)?(card.familySize||1)>=n:false;
+      }
+      return v470MatchFilterBase(card,key,value);
+    };
+
+    function v470FreeTokens(query){
+      return v3Tokenize(query).filter(raw=>{
+        const token=raw.startsWith('-')?raw.slice(1):raw;
+        return token.indexOf(':')<1;
+      }).map(raw=>({negate:raw.startsWith('-'),value:normalizeTyped(v3QueryValue(raw.startsWith('-')?raw.slice(1):raw))})).filter(item=>item.value);
+    }
+    function v470FilterTokens(query){
+      return v3Tokenize(query).filter(raw=>{
+        const token=raw.startsWith('-')?raw.slice(1):raw;
+        return token.indexOf(':')>0;
+      });
+    }
+    function v470WordParts(card){
+      const values=[card.fr,card.en,card.lemma,card.familyKey,...(card.aliases||[]),...(card.tags||[])].map(normalizeTyped).filter(Boolean);
+      const words=[...new Set(values.flatMap(value=>value.split(/\s+/)).filter(Boolean))];
+      return {values,words};
+    }
+    function v470FuzzyTerm(card,term){
+      const haystack=v3CardHaystack(card);
+      if(haystack.includes(term))return true;
+      if(term.length<4)return false;
+      const {values,words}=v470WordParts(card),limit=term.length<=5?1:term.length<=9?2:3;
+      return [...values,...words].some(value=>{
+        if(value.startsWith(term)||term.startsWith(value)&&value.length>=4)return true;
+        if(Math.abs(value.length-term.length)>limit)return false;
+        return levenshtein(value,term)<=limit;
+      });
+    }
+    function v470BrowseQueryMatch(card,query){
+      for(const raw of v470FilterTokens(query)){
+        let token=raw,negate=false;if(token.startsWith('-')){negate=true;token=token.slice(1);}
+        const separator=token.indexOf(':'),key=token.slice(0,separator).toLowerCase(),value=v3QueryValue(token.slice(separator+1));
+        const matched=v3MatchFilter(card,key,value);if(negate?matched:!matched)return false;
+      }
+      for(const item of v470FreeTokens(query)){
+        const matched=v470FuzzyTerm(card,item.value);if(item.negate?matched:!matched)return false;
+      }
+      return true;
+    }
+    function v470SearchScore(card,query){
+      const terms=v470FreeTokens(query).filter(item=>!item.negate).map(item=>item.value);
+      if(!terms.length)return 0;
+      const fr=normalizeTyped(card.fr),en=normalizeTyped(card.en),lemma=normalizeTyped(card.lemma),family=normalizeTyped(card.familyKey),aliases=(card.aliases||[]).map(normalizeTyped);
+      let score=0;
+      for(const term of terms){
+        if(fr===term)score+=120;
+        else if(fr.startsWith(term))score+=90;
+        else if(fr.includes(term))score+=70;
+        if(lemma===term||family===term)score+=65;
+        else if(lemma.startsWith(term)||family.startsWith(term))score+=40;
+        if(aliases.some(item=>item===term))score+=55;
+        else if(aliases.some(item=>item.includes(term)))score+=32;
+        if(en===term)score+=52;
+        else if(en.startsWith(term))score+=42;
+        else if(en.includes(term))score+=30;
+        if(!v3CardHaystack(card).includes(term)&&v470FuzzyTerm(card,term))score+=14;
+      }
+      score+=Math.max(0,18-Math.min(18,Math.log10(Math.max(1,card.order||1))*6));
+      return score;
+    }
+    function v470BrowseCards(){
+      const b=state.browse||DEFAULT_BROWSE,query=String(b.query||'').trim();
+      const cards=state.cards.filter(card=>{
+        const progress=getProgress(card.id);
+        const statusMatch=b.status==='ALL'||(b.status==='starred'&&progress.starred)||(b.status==='suspended'&&progress.suspended)||(b.status==='known'&&progress.manualKnown)||(b.status==='leech'&&isLeech(card))||cardStatus(card)===b.status;
+        const posMatch=b.pos==='ALL'||card.posGroup===b.pos,themeMatch=b.theme==='ALL'||card.theme===b.theme,qualityMatch=qualityMatches(card,b.quality),customMatch=b.customDeck==='ALL'||Boolean(state.customDecks[b.customDeck]?.cardIds.includes(card.id));
+        return (b.level==='ALL'||card.level===b.level)&&statusMatch&&posMatch&&themeMatch&&qualityMatch&&customMatch&&v470BrowseQueryMatch(card,query);
+      });
+      if(query&&b.sort==='frequency')cards.sort((a,b)=>v470SearchScore(b,query)-v470SearchScore(a,query)||a.order-b.order);
+      else if(b.sort==='alphabetical')cards.sort((a,b)=>a.fr.localeCompare(b.fr,'fr'));
+      else if(b.sort==='weak')cards.sort((a,b)=>weaknessScore(b)-weaknessScore(a)||a.order-b.order);
+      else if(b.sort==='due')cards.sort((a,b)=>(isDue(b)?1:0)-(isDue(a)?1:0)||dueAge(b)-dueAge(a)||a.order-b.order);
+      else if(b.sort==='quality')cards.sort((a,b)=>a.qualityScore-b.qualityScore||a.order-b.order);
+      else if(b.sort==='family')cards.sort((a,b)=>a.familyKey.localeCompare(b.familyKey,'fr')||a.order-b.order);
+      else cards.sort((a,b)=>a.order-b.order);
+      return cards;
+    }
+
+    function v470SkillChip(card,skill,label){
+      const s=v470SkillState(card,skill);
+      if(!s.eligible)return '';
+      const stateClass=s.secure?'secure':s.due?'due':s.started?'learning':'new';
+      const value=s.started?Math.round(s.retrievability*100)+'%':'—';
+      return '<span class="v470-skill-chip '+stateClass+'" title="'+escapeHtml(label+(s.started?' · '+value+' recall':' · not started'))+'"><b>'+escapeHtml(label[0])+'</b><small>'+value+'</small></span>';
+    }
+    function v470WordRow(card){
+      const progress=getProgress(card.id),state=v470NoteState(card),risk=state.started?Math.round(state.risk):0,pos=POS_LABELS[card.posGroup]||card.posGroup||card.pos||'Word',theme=THEME_LABELS[card.theme]||card.theme||'General';
+      const repair=state.repair?.label||'',familyCount=card.familySize||1;
+      return '<article class="v470-word-row" data-v470-open="'+escapeHtml(card.id)+'" tabindex="0" role="button" aria-label="Open '+escapeHtml(card.fr)+'">'+
+        '<div class="v470-word-main"><div class="v470-word-title"><strong lang="fr">'+escapeHtml(card.fr)+'</strong>'+(card.ipa?'<span class="word-ipa">'+escapeHtml(card.ipa)+'</span>':'')+(progress.starred?'<span class="v470-star" aria-label="Starred">★</span>':'')+'</div><p>'+escapeHtml(card.en)+'</p><div class="v470-meta"><span class="level-chip level-'+card.level.toLowerCase()+'">'+card.level+'</span><span>'+escapeHtml(pos)+'</span><span>'+escapeHtml(theme)+'</span>'+(familyCount>1?'<button type="button" data-v470-family="'+escapeHtml(card.familyKey)+'">'+familyCount+' related</button>':'')+'</div></div>'+
+        '<div class="v470-intelligence"><div class="v470-skills">'+v470SkillChip(card,'recognition','Recognition')+v470SkillChip(card,'production','Production')+v470SkillChip(card,'listening','Listening')+'</div>'+(risk?'<span class="v470-risk '+(risk>=28?'high':risk>=16?'medium':'low')+'" title="'+escapeHtml(repair||'Current P2 memory risk')+'">'+risk+' risk</span>':'<span class="v470-risk none">new</span>')+'</div>'+
+        '<div class="v470-actions"><button type="button" class="v470-icon" data-v470-audio="'+escapeHtml(card.id)+'" aria-label="Hear '+escapeHtml(card.fr)+'">▶</button><button type="button" class="secondary" data-v470-study="'+escapeHtml(card.id)+'" '+(progress.suspended?'disabled':'')+'>Study</button><button type="button" class="secondary" data-v470-list="'+escapeHtml(card.id)+'">+ List</button></div>'+
+        '</article>';
+    }
+    function v470DiscoveryStats(cards){
+      let due=0,weak=0,prodGap=0,listeningGap=0,families=0;
+      for(const card of cards){
+        if(isDue(card))due++;
+        const state=v470NoteState(card);
+        if(state.started&&state.risk>=28)weak++;
+        if(state.modes.recognition.started&&!state.productiveSecure&&state.productionGap>=.12)prodGap++;
+        if(state.modes.recognition.secure&&!state.modes.listening.secure)listeningGap++;
+        if((card.familySize||1)>1)families++;
+      }
+      return {due,weak,prodGap,listeningGap,families};
+    }
+    function v470SetDiscovery(kind){
+      const base={...state.browse,page:1,status:'ALL',sort:'frequency',query:''};
+      if(kind==='due')Object.assign(base,{query:'due:true',sort:'due'});
+      else if(kind==='weak')Object.assign(base,{query:'risk:high',sort:'weak'});
+      else if(kind==='production')Object.assign(base,{query:'gap:production',sort:'weak'});
+      else if(kind==='listening')Object.assign(base,{query:'gap:listening'});
+      else if(kind==='families')Object.assign(base,{query:'family-size:2',sort:'family'});
+      else if(kind==='unseen')Object.assign(base,{query:'-introduced:true'});
+      else if(kind==='starred')Object.assign(base,{status:'starred'});
+      state.browse=base;renderBrowse(true);
+    }
+    function v470ActiveDiscovery(){
+      const q=String(state.browse.query||'');
+      if(q==='due:true')return'due';if(q==='risk:high')return'weak';if(q==='gap:production')return'production';if(q==='gap:listening')return'listening';if(q==='family-size:2')return'families';if(q==='-introduced:true')return'unseen';if(state.browse.status==='starred'&&!q)return'starred';return'all';
+    }
+
+    function v470ListDialog(cardId){
+      const card=state.cardById.get(cardId);if(!card)return;
+      $('#v470-list-dialog')?.remove();
+      const dialog=document.createElement('dialog');dialog.id='v470-list-dialog';dialog.className='v470-list-dialog';
+      const decks=customDeckEntries();
+      dialog.innerHTML='<form method="dialog" class="v470-list-card"><div class="v470-dialog-head"><div><p class="eyebrow">Custom list</p><h3>Add '+escapeHtml(card.fr)+'</h3></div><button value="cancel" aria-label="Close">×</button></div>'+
+        '<div class="v470-list-existing">'+(decks.length?decks.map(([id,deck])=>'<button type="button" data-v470-add-deck="'+escapeHtml(id)+'"><span>'+escapeHtml(deck.name)+'</span><small>'+deck.cardIds.length+' words'+(deck.cardIds.includes(cardId)?' · already added':'')+'</small></button>').join(''):'<p>No custom lists yet.</p>')+'</div>'+
+        '<div class="v470-new-list"><input id="v470-new-list-name" maxlength="60" placeholder="New list name"><button type="button" class="primary" id="v470-create-list">Create & add</button></div></form>';
+      document.body.append(dialog);if(typeof v405PrepareDialog==='function')v405PrepareDialog(dialog);if(typeof v405PrepareButtons==='function')v405PrepareButtons(dialog);if(typeof v405PrepareForms==='function')v405PrepareForms(dialog);
+      $('[data-v470-add-deck]',dialog).forEach(button=>button.addEventListener('click',()=>{const id=button.dataset.v470AddDeck,added=addCardsToCustomDeck(id,[cardId]);showToast(added?'Added to '+state.customDecks[id].name+'.':'Already in '+state.customDecks[id].name+'.');dialog.close();}));
+      $('#v470-create-list',dialog)?.addEventListener('click',()=>{const id=createCustomDeck($('#v470-new-list-name',dialog).value);if(!id)return;addCardsToCustomDeck(id,[cardId]);showToast('Created '+state.customDecks[id].name+' and added the word.');dialog.close();});
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal?.();
+    }
+    function v470CurrentSmartQuery(){
+      const b=state.browse,parts=[String(b.query||'').trim()];
+      if(b.level!=='ALL')parts.push('level:'+b.level);
+      if(b.status!=='ALL')parts.push('status:'+b.status);
+      if(b.theme!=='ALL')parts.push('theme:'+b.theme);
+      if(b.pos!=='ALL')parts.push('pos:'+b.pos);
+      if(b.quality!=='all')parts.push('quality:'+(b.quality==='needs-review'?'review':b.quality));
+      if(b.customDeck!=='ALL'){const name=state.customDecks[b.customDeck]?.name;if(name)parts.push('deck:"'+String(name).replace(/"/g,'')+'"');}
+      return parts.filter(Boolean).join(' ');
+    }
+    function v470SaveSearchDialog(){
+      const query=v470CurrentSmartQuery();if(!query){showToast('Add a search or filter before saving a smart deck.');return;}
+      $('#v470-save-search-dialog')?.remove();
+      const dialog=document.createElement('dialog');dialog.id='v470-save-search-dialog';dialog.className='v470-list-dialog';
+      dialog.innerHTML='<form method="dialog" class="v470-list-card"><div class="v470-dialog-head"><div><p class="eyebrow">Smart deck</p><h3>Save this live search</h3></div><button value="cancel" aria-label="Close">×</button></div><label class="v470-save-field"><span>Name</span><input id="v470-smart-name" maxlength="80" placeholder="e.g. Weak A2 travel"></label><div class="v470-query-preview">'+escapeHtml(query)+'</div><button type="button" class="primary" id="v470-save-smart">Save smart deck</button></form>';
+      document.body.append(dialog);if(typeof v405PrepareDialog==='function')v405PrepareDialog(dialog);if(typeof v405PrepareButtons==='function')v405PrepareButtons(dialog);if(typeof v405PrepareForms==='function')v405PrepareForms(dialog);
+      $('#v470-save-smart',dialog)?.addEventListener('click',()=>{try{v3CreateSmartDeck($('#v470-smart-name',dialog).value,query);showToast('Smart deck saved.');dialog.close();}catch(error){showToast(error.message);}});
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal?.();requestAnimationFrame(()=>$('#v470-smart-name',dialog)?.focus());
+    }
+    function v470PracticeResults(cards){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting result practice.');return;}
+      const selected=cards.filter(card=>isAvailable(card)).slice(0,30);
+      if(!selected.length){showToast('No available matching words to practice.');return;}
+      v440StartPracticeQueue(selected);setView('study');
+    }
+
+    function v470BindBrowse(cards,focusSearch=false){
+      const search=$('#v470-search');
+      search?.addEventListener('input',event=>{state.browse.query=event.target.value;state.browse.page=1;clearTimeout(state.browseSearchTimer);state.browseSearchTimer=setTimeout(()=>renderBrowse(true),100);});
+      $('#v470-filter')?.addEventListener('click',v381OpenFilters);
+      $('#v470-manage')?.addEventListener('click',()=>{state.v381BrowseMode='manage';renderBrowse();});
+      $('#v470-save-search')?.addEventListener('click',v470SaveSearchDialog);
+      $('#v470-practice-results')?.addEventListener('click',()=>v470PracticeResults(cards));
+      $('[data-v470-discovery]',main).forEach(button=>button.addEventListener('click',()=>v470SetDiscovery(button.dataset.v470Discovery)));
+      $('[data-v470-open]',main).forEach(row=>{row.addEventListener('click',event=>{if(event.target.closest('button,input,select,a'))return;v381OpenWord(row.dataset.v470Open);});row.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();v381OpenWord(row.dataset.v470Open);}});});
+      $('[data-v470-audio]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const card=state.cardById.get(button.dataset.v470Audio);if(card)v450PlayModelAudio(card);}));
+      $('[data-v470-study]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();startSingleCard(button.dataset.v470Study);}));
+      $('[data-v470-list]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();v470ListDialog(button.dataset.v470List);}));
+      $('[data-v470-family]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();state.browse={...state.browse,query:'family:"'+button.dataset.v470Family+'"',sort:'family',page:1,status:'ALL'};renderBrowse(true);}));
+      $('#v470-prev')?.addEventListener('click',()=>{state.browse.page=Math.max(1,state.browse.page-1);renderBrowse();window.scrollTo({top:0,behavior:'auto'});});
+      $('#v470-next')?.addEventListener('click',()=>{state.browse.page++;renderBrowse();window.scrollTo({top:0,behavior:'auto'});});
+      $('#v470-clear')?.addEventListener('click',()=>{state.browse={...DEFAULT_BROWSE,pageSize:50};renderBrowse(true);});
+      if(focusSearch&&search){search.focus({preventScroll:true});search.setSelectionRange(search.value.length,search.value.length);}
+    }
+
+    function v470RenderBrowse(focusSearch=false){
+      depthIndexSkills();
+      if(state.v381BrowseMode==='manage')return v470RenderBrowseBase(focusSearch);
+      if(!state.browse.pageSize||state.browse.pageSize===100)state.browse.pageSize=50;
+      const cards=v470BrowseCards(),pageSize=state.browse.pageSize,pages=Math.max(1,Math.ceil(cards.length/pageSize));
+      state.browse.page=clamp(state.browse.page,1,pages);
+      const start=(state.browse.page-1)*pageSize,shown=cards.slice(start,start+pageSize),stats=v470DiscoveryStats(cards),active=v470ActiveDiscovery(),filterCount=v381BrowseFilterCount(),summary=v381BrowseFilterSummary();
+      const chips=[['all','All',cards.length],['due','Due',stats.due],['weak','Weak',stats.weak],['production','Production gaps',stats.prodGap],['listening','Listening gaps',stats.listeningGap],['families','Families',stats.families],['unseen','Unseen',state.cards.filter(card=>!v470NoteState(card).started).length],['starred','Starred',state.cards.filter(card=>getProgress(card.id).starred).length]];
+      main.className='main';
+      main.innerHTML='<div class="v470-shell"><header class="v470-head"><div><p class="eyebrow">Vocabulary workspace</p><h2>Words</h2><p>Find a word, see what you actually know about it, discover related vocabulary, and act immediately.</p></div><button class="ghost" id="v470-manage">Manage catalog</button></header>'+
+        '<section class="v470-search-panel"><div class="v470-search-row"><div class="v470-search-wrap"><span aria-hidden="true">⌕</span><input id="v470-search" type="search" autocomplete="off" placeholder="French, English, family, tag… try “connaisance”" value="'+escapeHtml(state.browse.query)+'" aria-label="Search vocabulary"></div><button class="secondary" id="v470-filter">Filters'+(filterCount?'<b>'+filterCount+'</b>':'')+'</button><button class="secondary" id="v470-save-search" '+(v470CurrentSmartQuery()?'':'disabled')+'>Save search</button></div>'+
+        '<div class="v470-discovery" aria-label="Vocabulary discovery filters">'+chips.map(([key,label,count])=>'<button type="button" class="'+(active===key?'active':'')+'" data-v470-discovery="'+key+'"><span>'+escapeHtml(label)+'</span><small>'+Number(count).toLocaleString()+'</small></button>').join('')+'</div>'+
+        '<details class="v470-search-help"><summary>Power search</summary><p><code>level:A2</code><code>risk:high</code><code>secure:production</code><code>gap:listening</code><code>skill:spelling</code><code>family:aller</code><code>tag:travel</code><code>-introduced:true</code></p></details></section>'+
+        '<div class="v470-result-head"><div><strong>'+cards.length.toLocaleString()+'</strong> matching word'+(cards.length===1?'':'s')+(cards.length?' · '+(start+1)+'–'+Math.min(start+pageSize,cards.length):'')+(state.browse.query&&state.browse.sort==='frequency'?' · relevance ranked':'')+'</div><div class="v470-result-actions">'+(summary?'<span title="'+escapeHtml(summary)+'">'+escapeHtml(summary)+'</span>':'')+'<button class="secondary" id="v470-practice-results" '+(cards.length?'':'disabled')+'>Practice results</button></div></div>'+
+        (shown.length?'<section class="v470-list" aria-label="Vocabulary results">'+shown.map(v470WordRow).join('')+'</section>':'<div class="v470-empty"><h3>No matching vocabulary</h3><p>Try a shorter word, remove a filter, or use the English meaning.</p><button class="secondary" id="v470-clear">Clear search & filters</button></div>')+
+        (pages>1?'<div class="v470-pagination"><button class="secondary" id="v470-prev" '+(state.browse.page<=1?'disabled':'')+'>Previous</button><span>Page '+state.browse.page+' of '+pages+'</span><button class="secondary" id="v470-next" '+(state.browse.page>=pages?'disabled':'')+'>Next</button></div>':'')+'</div>';
+      v470BindBrowse(cards,focusSearch);v420NormalizeSurface();
+    }
+    const v470RenderBrowseBase=renderBrowse;
+    renderBrowse=v470RenderBrowse;
+
+    const v470OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v470OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);
+      if(dialog&&card&&!dialog.querySelector('.v470-detail-intelligence')){
+        const intelligence=v470NoteState(card),target=Math.round((normalizeSettings(state.settings||{}).desiredRetention||.9)*100),risk=intelligence.started?Math.round(intelligence.risk):0;
+        const section=document.createElement('section');section.className='v381-detail-section v470-detail-intelligence';
+        section.innerHTML='<h4>Skill intelligence</h4><div class="v470-detail-skills">'+[['recognition','Recognition'],['production','Production'],['listening','Listening'],['spelling','Spelling'],['article','Article']].map(([skill,label])=>{const s=intelligence.modes[skill];if(!s.eligible)return'';return '<div><span>'+label+'</span><strong>'+(s.started?Math.round(s.retrievability*100)+'%':'Not started')+'</strong><small>'+(s.secure?'secure ≥ '+target+'%':s.due?'due now':s.started?'building':'not introduced')+'</small></div>';}).join('')+'</div>'+
+          (intelligence.started?'<div class="v470-detail-risk"><span>P2 memory risk</span><strong>'+risk+'</strong><small>'+escapeHtml(intelligence.repair?.label||'No dominant repair signal')+'</small></div>':'')+
+          ((card.familySize||1)>1?'<button class="secondary" id="v470-open-family">Browse all '+card.familySize+' related forms</button>':'');
+        const memory=[...dialog.querySelectorAll('.v381-detail-section')].find(node=>node.querySelector('h4')?.textContent==='Memory');
+        memory?memory.after(section):dialog.querySelector('.v381-detail-scroll')?.append(section);
+        $('#v470-open-family',dialog)?.addEventListener('click',()=>{dialog.close();state.browse={...state.browse,query:'family:"'+card.familyKey+'"',sort:'family',status:'ALL',page:1};renderBrowse(true);});
+      }
+      return result;
+    };
+
+    function v470EnsureStyles(){
+      if(document.querySelector('#v470-smart-words-style'))return;
+      const style=document.createElement('style');style.id='v470-smart-words-style';
+      style.textContent='.v470-shell{max-width:1120px;margin:0 auto;display:grid;gap:.72rem}.v470-head{display:flex;align-items:end;justify-content:space-between;gap:1rem}.v470-head h2{margin:.1rem 0 .25rem}.v470-head p:last-child{margin:0;color:var(--muted)}.v470-search-panel{display:grid;gap:.55rem;padding:.72rem;border:1px solid var(--line);border-radius:17px;background:var(--surface)}.v470-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.45rem}.v470-search-wrap{position:relative}.v470-search-wrap>span{position:absolute;left:.82rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1.05rem}.v470-search-wrap input{min-height:48px;padding-left:2.35rem;background:var(--surface-solid)}#v470-filter{position:relative}#v470-filter b{display:inline-grid;place-items:center;min-width:1.25rem;height:1.25rem;margin-left:.3rem;padding:0 .25rem;border-radius:999px;background:var(--navy);color:white;font-size:.62rem}.v470-discovery{display:flex;gap:.35rem;overflow-x:auto;scrollbar-width:none}.v470-discovery::-webkit-scrollbar{display:none}.v470-discovery button{flex:0 0 auto;display:flex;align-items:center;gap:.35rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-solid);color:var(--muted);padding:.42rem .62rem;font-size:.7rem;font-weight:850}.v470-discovery button.active{background:var(--primary-bg);color:var(--primary-text);border-color:transparent}.v470-discovery small{font-size:.6rem;opacity:.78}.v470-search-help summary{cursor:pointer;color:var(--muted);font-size:.68rem;font-weight:800}.v470-search-help p{display:flex;flex-wrap:wrap;gap:.3rem;margin:.4rem 0 0}.v470-search-help code{padding:.2rem .35rem;border-radius:7px;background:var(--surface-muted);font-size:.62rem}.v470-result-head{display:flex;justify-content:space-between;align-items:center;gap:.7rem;color:var(--muted);font-size:.7rem}.v470-result-head strong{color:var(--navy)}.v470-result-actions{display:flex;align-items:center;gap:.45rem;min-width:0}.v470-result-actions>span{max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v470-result-actions button{padding:.45rem .62rem;font-size:.68rem}.v470-list{display:grid;gap:.42rem}.v470-word-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.75rem;align-items:center;padding:.68rem .72rem;border:1px solid var(--line);border-radius:14px;background:var(--surface-solid);cursor:pointer}.v470-word-row:hover{border-color:color-mix(in srgb,var(--blue) 45%,var(--line));background:color-mix(in srgb,var(--blue) 3%,var(--surface-solid))}.v470-word-title{display:flex;align-items:baseline;gap:.48rem;min-width:0}.v470-word-title strong{font-size:1.04rem;color:var(--navy)}.v470-star{color:#b8860b}.v470-word-main>p{margin:.12rem 0 .3rem;color:var(--ink);font-size:.8rem}.v470-meta{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;color:var(--muted);font-size:.62rem}.v470-meta>span:not(.level-chip),.v470-meta button{padding:.2rem .34rem;border:0;border-radius:7px;background:var(--surface-muted);color:var(--muted);font:inherit}.v470-meta button{cursor:pointer;color:var(--blue);font-weight:850}.v470-intelligence{display:flex;align-items:center;gap:.45rem}.v470-skills{display:flex;gap:.25rem}.v470-skill-chip{display:grid;grid-template-columns:auto auto;align-items:center;gap:.2rem;padding:.27rem .34rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-muted);min-width:48px}.v470-skill-chip b{font-size:.62rem;color:var(--navy)}.v470-skill-chip small{font-size:.56rem;color:var(--muted)}.v470-skill-chip.secure{border-color:color-mix(in srgb,var(--green) 38%,var(--line));background:color-mix(in srgb,var(--green) 8%,var(--surface))}.v470-skill-chip.due{border-color:color-mix(in srgb,var(--red) 35%,var(--line))}.v470-risk{padding:.27rem .38rem;border-radius:8px;font-size:.61rem;font-weight:900;white-space:nowrap}.v470-risk.high{background:color-mix(in srgb,var(--red) 12%,var(--surface));color:var(--red)}.v470-risk.medium{background:color-mix(in srgb,#b8860b 12%,var(--surface));color:#876500}.v470-risk.low,.v470-risk.none{background:var(--surface-muted);color:var(--muted)}.v470-actions{display:flex;align-items:center;gap:.3rem}.v470-actions button{padding:.4rem .52rem;font-size:.68rem;white-space:nowrap}.v470-icon{width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted);color:var(--navy)}.v470-pagination{display:flex;justify-content:center;align-items:center;gap:.65rem;color:var(--muted);font-size:.7rem}.v470-empty{padding:3rem 1rem;text-align:center;border:1px dashed var(--line);border-radius:16px;color:var(--muted)}.v470-list-dialog{width:min(520px,calc(100vw - 1rem));padding:0;border:1px solid var(--line);border-radius:19px;background:var(--surface-solid);color:var(--ink)}.v470-list-dialog::backdrop{background:rgba(0,0,0,.48)}.v470-list-card{padding:.9rem;display:grid;gap:.7rem}.v470-dialog-head{display:flex;justify-content:space-between;gap:.7rem;align-items:flex-start}.v470-dialog-head h3{margin:.1rem 0}.v470-dialog-head>button{width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted);color:var(--navy)}.v470-list-existing{display:grid;gap:.35rem;max-height:260px;overflow:auto}.v470-list-existing>button{display:flex;justify-content:space-between;gap:.5rem;text-align:left;padding:.55rem .62rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--navy)}.v470-list-existing small{color:var(--muted)}.v470-new-list{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.4rem;padding-top:.65rem;border-top:1px solid var(--line)}.v470-save-field{display:grid;gap:.3rem;font-size:.7rem;font-weight:850;color:var(--navy)}.v470-query-preview{padding:.55rem;border-radius:10px;background:var(--surface-muted);font:600 .68rem/1.4 ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}.v470-detail-skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem}.v470-detail-skills>div{padding:.5rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-muted)}.v470-detail-skills span,.v470-detail-skills strong,.v470-detail-skills small{display:block}.v470-detail-skills span,.v470-detail-skills small{font-size:.62rem;color:var(--muted)}.v470-detail-skills strong{margin:.12rem 0;color:var(--navy)}.v470-detail-risk{display:flex;align-items:center;gap:.45rem;margin:.55rem 0;padding:.5rem;border-radius:10px;background:var(--surface-muted);font-size:.68rem}.v470-detail-risk strong{color:var(--red)}.v470-detail-risk small{color:var(--muted);margin-left:auto}@media(max-width:820px){.v470-word-row{grid-template-columns:minmax(0,1fr) auto}.v470-intelligence{grid-column:1}.v470-actions{grid-column:2;grid-row:1/3;align-self:center;flex-direction:column}.v470-actions button{width:72px}.v470-kpi{display:none}}@media(max-width:600px){.v470-head{align-items:flex-start}.v470-head>button{font-size:.65rem}.v470-search-row{grid-template-columns:minmax(0,1fr) auto}.v470-search-row #v470-save-search{grid-column:1/-1}.v470-result-head{align-items:flex-start;flex-direction:column}.v470-result-actions{width:100%;justify-content:space-between}.v470-result-actions>span{max-width:62vw}.v470-word-row{grid-template-columns:minmax(0,1fr);gap:.48rem}.v470-intelligence{grid-column:1;justify-content:space-between}.v470-actions{grid-column:1;grid-row:auto;flex-direction:row}.v470-actions button{width:auto;flex:1}.v470-icon{flex:0 0 38px!important}.v470-skill-chip{min-width:44px}.v470-new-list{grid-template-columns:1fr}.v470-detail-skills{grid-template-columns:repeat(2,minmax(0,1fr))}.v470-detail-risk{align-items:flex-start;flex-wrap:wrap}.v470-detail-risk small{width:100%;margin:0}}';
+      document.head.append(style);
+    }
+
+    const v470NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v470NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p6-smart-words';
+      document.documentElement.dataset.wordsWorkspace='v470';
+      document.documentElement.dataset.search='ranked-fuzzy-plus-filters';
+      document.documentElement.dataset.discovery='skill-aware';
+    };
+    const v470InitBase=init;
+    init=async function(options={}){
+      v470EnsureStyles();
+      const result=await v470InitBase(options);
+      v420NormalizeSurface();
       return result;
     };
 
