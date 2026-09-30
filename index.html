@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.3.0';
-    const APP_RELEASE = 'P2 Study Engine 2.0';
+    const APP_VERSION = '4.4.0';
+    const APP_RELEASE = 'P3 Frictionless Study UX';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -14695,6 +14695,207 @@ qui	who	A1	question word`;
       const result=await v430InitBase(options);
       v430EvidenceCache.stamp='';
       v420NormalizeSurface();
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.4.0 FRICTIONLESS STUDY UX
+       Everyday plan editing, fast short sessions, visible progress, visible
+       Undo, and practice-only convenience repeats. P2 scheduling stays
+       authoritative and no stable learning data is reset.
+       ================================================================ */
+    const V440_VERSION='4.4.0';
+    const V440_RELEASE='P3 Frictionless Study UX';
+
+    function v440SavedPlan(){ return normalizeSession(state.settings?.session||state.session||{}); }
+
+    function v440QuickStart(size=10){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){
+        showToast('Resume or discard the saved session before starting a different queue.');
+        return;
+      }
+      state.session=normalizeSession({...v440SavedPlan(),mode:'today',size,scheduleMode:'review',lessonId:0});
+      buildQueue();
+      if(!state.queue.length){showToast('Nothing is scheduled under your current plan.');renderDashboard();return;}
+      setView('study');
+    }
+
+    function v440PlanSelect(id,label,options,value){
+      return '<label class="v440-plan-field"><span>'+escapeHtml(label)+'</span><select id="'+id+'">'+
+        options.map(([v,t])=>'<option value="'+escapeHtml(String(v))+'" '+(String(v)===String(value)?'selected':'')+'>'+escapeHtml(t)+'</option>').join('')+
+        '</select></label>';
+    }
+
+    function v440OpenPlanDialog(){
+      document.querySelector('#v440-plan-dialog')?.remove();
+      const plan=v440SavedPlan(),settings=normalizeSettings(state.settings||{}),active=state.view==='study';
+      const dialog=document.createElement('dialog');
+      dialog.id='v440-plan-dialog';dialog.className='v440-plan-dialog';
+      dialog.innerHTML='<form method="dialog" class="v440-plan-card">'+
+        '<div class="v440-plan-head"><div><p class="eyebrow">Daily study plan</p><h2>Change what happens when you press Study</h2><p>Keep everyday choices here. Advanced scheduler controls remain in Settings.</p></div><button class="v440-plan-close" value="cancel" aria-label="Close">×</button></div>'+
+        (active?'<div class="v440-plan-note">This changes your next session. The session currently in progress stays unchanged.</div>':'')+
+        '<div class="v440-plan-grid">'+
+          v440PlanSelect('v440-plan-deck','Level',[['A1','A1'],['A2','A2'],['B1','B1'],['B2','B2'],['ALL','All levels']],plan.deck)+
+          v440PlanSelect('v440-plan-size','Session size',[[10,'10 cards'],[20,'20 cards'],[30,'30 cards'],[50,'50 cards'],[0,'All scheduled']],plan.size)+
+          v440PlanSelect('v440-plan-new','New words per day',[[0,'0 — reviews only'],[5,'5'],[10,'10'],[15,'15'],[20,'20'],[30,'30']],settings.dailyNewLimit)+
+          v440PlanSelect('v440-plan-practice','Practice style',[['classic','Classic recall'],['mixed','Mixed challenge'],['choice','Multiple choice'],['listening','Listening']],plan.practice)+
+          v440PlanSelect('v440-plan-skill','Skill focus',[['balanced','Adaptive / balanced'],['recognition','Recognition'],['production','Production'],['all','All skills']],plan.skillMode||'balanced')+
+        '</div><div class="v440-plan-actions"><button type="button" class="secondary" id="v440-plan-advanced">Advanced settings</button><div class="button-row"><button value="cancel" class="secondary">Cancel</button><button type="button" class="primary" id="v440-plan-save">Save plan</button></div></div></form>';
+      document.body.append(dialog);
+      if(typeof v405PrepareDialog==='function')v405PrepareDialog(dialog);
+      if(typeof v405PrepareButtons==='function')v405PrepareButtons(dialog);
+      if(typeof v405PrepareForms==='function')v405PrepareForms(dialog);
+
+      $('#v440-plan-save',dialog)?.addEventListener('click',()=>{
+        const next=normalizeSession({...plan,
+          deck:$('#v440-plan-deck',dialog).value,
+          size:Number($('#v440-plan-size',dialog).value),
+          practice:$('#v440-plan-practice',dialog).value,
+          skillMode:$('#v440-plan-skill',dialog).value,
+          mode:'today',scheduleMode:'review',lessonId:0
+        });
+        state.settings=normalizeSettings({...state.settings,dailyNewLimit:Number($('#v440-plan-new',dialog).value),session:next});
+        saveSettings();
+        if(state.view!=='study')state.session=normalizeSession({...state.session,...next});
+        dialog.close();dialog.remove();
+        if(state.view==='dashboard')renderDashboard();else showToast('Daily study plan saved for the next session.');
+      });
+      $('#v440-plan-advanced',dialog)?.addEventListener('click',()=>{
+        dialog.close();dialog.remove();
+        state.v371SettingsTab='study';
+        if(typeof saveSessionSnapshot==='function')saveSessionSnapshot();
+        setView('settings');
+        requestAnimationFrame(()=>{if(typeof v371SwitchTab==='function')v371SwitchTab('study');});
+      });
+      dialog.addEventListener('close',()=>setTimeout(()=>dialog.remove(),0),{once:true});
+      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+    }
+
+    function v440PolishHome(){
+      if(state.view!=='dashboard')return;
+      const card=main.querySelector('.v382-do-card'),actions=card?.querySelector('.v382-action-stack .button-row'),edit=$('#v382-edit-study');
+      if(!card||!actions)return;
+      const resume=normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds),q=v382QueueSummary(),primary=resume?$('#v382-resume'):$('#v382-study');
+      if(primary){
+        if(resume){const remaining=Math.max(0,resume.queueIds.length-resume.queueIndex);primary.textContent='Resume · '+remaining+' left';}
+        else primary.textContent='Study now'+(q.minutes?' · ~'+q.minutes+' min':'');
+      }
+      const review=$('#v382-review');if(review)review.textContent='Reviews only';
+      if(!resume&&q.planned>10&&!$('#v440-quick10')){
+        const quick=document.createElement('button');quick.type='button';quick.className='secondary';quick.id='v440-quick10';quick.textContent='Quick 10';
+        quick.addEventListener('click',()=>v440QuickStart(10));actions.appendChild(quick);
+      }
+      if(edit){
+        const replacement=edit.cloneNode(true);replacement.textContent='Change daily plan';replacement.id='v382-edit-study';
+        edit.replaceWith(replacement);replacement.addEventListener('click',v440OpenPlanDialog);
+      }
+      const lead=card.querySelector('.v382-do-lead');
+      if(lead&&!resume&&q.planned){
+        const due=q.due?.length||0,newCount=q.newNotes||0;
+        lead.textContent=[due?due+' due':'reviews clear',newCount?newCount+' new available':'no new cards needed','FSRS priority applied'].join(' · ');
+      }
+      const details=main.querySelector('.v382-home-details>summary');if(details)details.textContent='More details';
+    }
+
+    function v440StartPracticeQueue(cards){
+      const available=cards.filter(card=>card&&isAvailable(card));
+      if(!available.length){showToast('No cards are available for practice.');return;}
+      state.session=normalizeSession({...state.session,scheduleMode:'practice',requeueAgain:false,lessonId:0});
+      state.queue=spaceSiblingFamilies(available);state.sessionSeedIds=available.map(card=>card.id);state.queueIndex=0;state.flipped=false;
+      state.history=[];state.undoStack=[];state.currentCardKey='';state.typedAnswer='';state.choiceAnswer='';state.practiceResult=null;state.combo=0;
+      state.sessionStats=newSessionStats();saveSessionSnapshot();renderCurrentCard();
+    }
+
+    function v440PatchCompletion(){
+      const summary=$('#study-stage .session-summary');if(!summary)return false;
+      const missed=$('#review-missed',summary);
+      if(missed&&!missed.dataset.v440Bound){
+        const replacement=missed.cloneNode(true);replacement.dataset.v440Bound='true';replacement.textContent='Practice missed';missed.replaceWith(replacement);
+        replacement.addEventListener('click',()=>{
+          const stats=state.sessionStats||newSessionStats();
+          const cards=(stats.missedIds||[]).map(id=>state.cardById.get(id)||state.depthSkillIndex.get(id));
+          v440StartPracticeQueue(cards);
+        });
+      }
+      const repeat=$('#repeat-session',summary);
+      if(repeat&&!repeat.dataset.v440Bound){
+        const replacement=repeat.cloneNode(true);replacement.dataset.v440Bound='true';replacement.textContent='Practice session again';repeat.replaceWith(replacement);
+        replacement.addEventListener('click',()=>{
+          state.session=normalizeSession({...state.session,scheduleMode:'practice',requeueAgain:false,lessonId:0});
+          repeatCurrentSession();
+        });
+      }
+      const settings=summary.querySelector('[data-view-link="settings"]');
+      if(settings&&!settings.dataset.v440Bound){
+        const replacement=settings.cloneNode(true);replacement.dataset.v440Bound='true';replacement.removeAttribute('data-view-link');replacement.textContent='Change plan';
+        settings.replaceWith(replacement);replacement.addEventListener('click',v440OpenPlanDialog);
+      }
+      const home=summary.querySelector('[data-view-link="dashboard"]');if(home)home.textContent='Back to Home';
+      return true;
+    }
+
+    function v440StudyProgress(){
+      const shell=document.querySelector('.v383-study-shell'),head=shell?.querySelector('.v383-study-head');if(!shell||!head)return;
+      let progress=shell.querySelector('.v440-study-progress');
+      if(!progress){progress=document.createElement('div');progress.className='v440-study-progress';progress.innerHTML='<i></i>';head.insertAdjacentElement('afterend',progress);}
+      const complete=Boolean($('#study-stage .session-summary')),total=Math.max(1,state.queue.length||1),done=complete?total:Math.min(total,state.queueIndex),pct=complete?100:Math.round(done/total*100);
+      progress.firstElementChild.style.width=pct+'%';progress.setAttribute('role','progressbar');progress.setAttribute('aria-valuemin','0');progress.setAttribute('aria-valuemax','100');progress.setAttribute('aria-valuenow',String(pct));progress.setAttribute('aria-label','Session progress');
+    }
+
+    function v440PolishStudy(){
+      if(state.view!=='study')return;
+      const exit=$('#v383-exit-study');if(exit){exit.textContent='← Home';exit.setAttribute('aria-label','Save session and return Home');}
+      const settings=$('#v383-study-settings');
+      if(settings&&!settings.dataset.v440Bound){
+        const replacement=settings.cloneNode(true);replacement.dataset.v440Bound='true';replacement.textContent='Change next-session plan';settings.replaceWith(replacement);
+        replacement.addEventListener('click',()=>{if(typeof v383CloseNativeMenus==='function')v383CloseNativeMenus();v440OpenPlanDialog();});
+      }
+      if(v440PatchCompletion()){v440StudyProgress();return;}
+      const quick=document.querySelector('#study-stage .v383-quick-tools'),undo=$('#undo-rating');
+      if(quick&&undo&&!undo.classList.contains('v440-undo')){
+        undo.classList.add('v440-undo');undo.dataset.tooltip='Undo last rating';undo.setAttribute('aria-label','Undo last rating');
+        const more=quick.querySelector('.v383-card-more');more?quick.insertBefore(undo,more):quick.appendChild(undo);
+      }
+      v440StudyProgress();
+    }
+
+    function v440EnsureStyles(){
+      if(document.querySelector('#v440-frictionless-style'))return;
+      const style=document.createElement('style');style.id='v440-frictionless-style';
+      style.textContent='.v440-plan-dialog{width:min(680px,calc(100vw - 1rem));max-height:90dvh;border:1px solid var(--line);border-radius:22px;background:var(--surface-solid);color:var(--ink);padding:0;box-shadow:var(--shadow)}'+
+        '.v440-plan-dialog::backdrop{background:rgba(0,0,0,.52);backdrop-filter:blur(4px)}'+
+        '.v440-plan-card{padding:1.1rem;display:grid;gap:1rem;overflow:auto;max-height:90dvh}.v440-plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}.v440-plan-head h2{margin:.12rem 0 .3rem}.v440-plan-head p:last-child{margin:0;color:var(--muted)}'+
+        '.v440-plan-close{width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--navy);font-size:1.4rem}.v440-plan-note{padding:.65rem .75rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);color:var(--muted);font-size:.8rem}'+
+        '.v440-plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.v440-plan-field{display:grid;gap:.34rem}.v440-plan-field>span{font-size:.76rem;font-weight:850;color:var(--navy)}.v440-plan-actions{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding-top:.2rem}.v440-plan-actions .button-row{margin:0}'+
+        '.v440-study-progress{height:3px;flex:0 0 3px;border-radius:99px;background:color-mix(in srgb,var(--navy) 8%,transparent);overflow:hidden;margin:-.22rem .1rem .05rem}.v440-study-progress>i{display:block;height:100%;width:0;background:var(--green);border-radius:inherit;transition:width .18s ease}.v440-undo:disabled{display:none!important}'+
+        '@media(max-width:760px){.v440-plan-grid{grid-template-columns:1fr}.v440-plan-actions{align-items:stretch;flex-direction:column-reverse}.v440-plan-actions>button,.v440-plan-actions .button-row{width:100%}.v440-plan-actions .button-row{display:grid;grid-template-columns:1fr 1fr}.v383-quick-tools{flex-wrap:nowrap;overflow:visible}.v440-study-progress{margin:-.18rem 0 0}}'+
+        '@media(max-width:390px){.v382-action-stack .button-row #v440-quick10{width:100%}}';
+      document.head.append(style);
+    }
+
+    const v440RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v440RenderDashboardBase();v440PolishHome();return result;};
+    const v440RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v440RenderStudyBase();v440PolishStudy();return result;};
+    const v440RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v440RenderCurrentCardBase();v440PolishStudy();return result;};
+
+    const v440NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v440NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p3-frictionless-study-ux';
+      document.documentElement.dataset.studyUx='v440';
+      document.documentElement.dataset.dailyPlan='inline';
+      document.documentElement.dataset.safePracticeRepeat='true';
+    };
+    const v440InitBase=init;
+    init=async function(options={}){
+      v440EnsureStyles();
+      const result=await v440InitBase(options);
+      v420NormalizeSurface();
+      if(state.view==='dashboard')v440PolishHome();
+      if(state.view==='study')v440PolishStudy();
       return result;
     };
 
