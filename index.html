@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.1.8';
-    const APP_RELEASE = 'Words Performance Bug Fix';
+    const APP_VERSION = '4.2.0';
+    const APP_RELEASE = 'P1 Vocabulary Database Audit';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -3080,7 +3080,7 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
       { kind:'raw', url:'https://cdn.jsdelivr.net/gh/kooruhana/sakanaVocab@main/data/french.json', label:'validated CDN fallback' },
       { kind:'raw', url:'https://raw.githubusercontent.com/kooruhana/sakanaVocab/main/data/french.json', label:'validated GitHub fallback' }
     ];
-    const CACHE_KEY = `french3000-production-${PINNED_BLOB_SHA.slice(0,12)}-v4`;
+    const CACHE_KEY = `french3000-production-${PINNED_BLOB_SHA.slice(0,12)}-v5`;
     const PROGRESS_KEY = 'french3000-progress-v2';
     const LEGACY_PROGRESS_KEYS = ['french3000-progress-v1'];
     const SETTINGS_KEY = 'french3000-settings-v2';
@@ -3217,6 +3217,63 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
       'sang': { en:'blood', level:'A2', exampleFr:'Le cœur fait circuler le sang.', exampleEn:'The heart circulates blood.' },
       'tuer': { en:'to kill', level:'A2', exampleFr:'Fumer tue.', exampleEn:'Smoking kills.' },
       'y': { en:'there; to it; about it', level:'A1', exampleFr:'J’y vais demain.', exampleEn:'I am going there tomorrow.' }
+    });
+
+
+    /* P1 — learner-first vocabulary corrections.
+       These overrides never change stable IDs, CEFR bands, frequency order,
+       or review history. They only correct learner-facing lexical metadata. */
+    const P1_META_GLOSS_RE=/\b(?:inflection of|plural form of|plural of|feminine singular form|masculine singular form|alternative form of|alternative spelling of|misspelling of|initialism of|acronym of|obsolete form|archaic form|conjugated form of)\b/i;
+    const P1_POS_OVERRIDES=Object.freeze({
+      lire:'verb',sortir:'verb',devenir:'verb',
+      bon:'adjective',petit:'adjective',grand:'adjective',beau:'adjective',nouveau:'adjective',jeune:'adjective',vieux:'adjective',chaud:'adjective',froid:'adjective',facile:'adjective',difficile:'adjective',heureux:'adjective',triste:'adjective',rouge:'adjective',bleu:'adjective',vert:'adjective',blanc:'adjective',noir:'adjective',
+      meilleur:'adjective',meilleure:'adjective',fou:'adjective',parfait:'adjective',faux:'adjective',gris:'adjective',blond:'adjective',vrai:'adjective',dur:'adjective',réel:'adjective',nécessaire:'adjective',silencieux:'adjective',sourd:'adjective',militaire:'adjective',
+      deux:'number',trois:'number',quatre:'number',cinq:'number',six:'number',sept:'number',huit:'number',neuf:'number',dix:'number',mille:'number',cent:'number',vingt:'number',
+      moi:'pronoun',toi:'pronoun',aucune:'determiner',aucun:'determiner',chaque:'determiner',plusieurs:'determiner',quelque:'determiner',
+      car:'conjunction',jusque:'preposition',hors:'preposition',
+      animal:'noun',instant:'noun',sujet:'noun',ennemi:'noun',goutte:'noun',restau:'noun',patiente:'noun',grecque:'noun'
+    });
+    const P1_GRAMMAR_OVERRIDES=Object.freeze({
+      homme:{article:'un',gender:'m',plural:'hommes'},femme:{article:'une',gender:'f',plural:'femmes'},enfant:{article:'un/une',gender:'m/f',plural:'enfants'},
+      ami:{article:'un',gender:'m',plural:'amis'},amie:{article:'une',gender:'f',plural:'amies'},père:{article:'un',gender:'m',plural:'pères'},mère:{article:'une',gender:'f',plural:'mères'},frère:{article:'un',gender:'m',plural:'frères'},sœur:{article:'une',gender:'f',plural:'sœurs'},
+      famille:{article:'une',gender:'f',plural:'familles'},maison:{article:'une',gender:'f',plural:'maisons'},école:{article:'une',gender:'f',plural:'écoles'},travail:{article:'un',gender:'m',plural:'travaux'},ville:{article:'une',gender:'f',plural:'villes'},rue:{article:'une',gender:'f',plural:'rues'},
+      eau:{article:'une',gender:'f',plural:'eaux'},pain:{article:'un',gender:'m',plural:'pains'},fromage:{article:'un',gender:'m',plural:'fromages'},vin:{article:'un',gender:'m',plural:'vins'},café:{article:'un',gender:'m',plural:'cafés'},thé:{article:'un',gender:'m',plural:'thés'},lait:{article:'un',gender:'m',plural:'laits'},
+      livre:{article:'un',gender:'m',plural:'livres'},voiture:{article:'une',gender:'f',plural:'voitures'},train:{article:'un',gender:'m',plural:'trains'},chien:{article:'un',gender:'m',plural:'chiens'},chat:{article:'un',gender:'m',plural:'chats'},table:{article:'une',gender:'f',plural:'tables'},porte:{article:'une',gender:'f',plural:'portes'},fenêtre:{article:'une',gender:'f',plural:'fenêtres'},
+      jour:{article:'un',gender:'m',plural:'jours'},nuit:{article:'une',gender:'f',plural:'nuits'},matin:{article:'un',gender:'m',plural:'matins'},soir:{article:'un',gender:'m',plural:'soirs'},temps:{article:'un',gender:'m',plural:'temps'},
+      animal:{article:'un',gender:'m',plural:'animaux'},instant:{article:'un',gender:'m',plural:'instants'},sujet:{article:'un',gender:'m',plural:'sujets'},ennemi:{article:'un',gender:'m',plural:'ennemis'},goutte:{article:'une',gender:'f',plural:'gouttes'},restau:{article:'un',gender:'m',plural:'restaus'},patiente:{article:'une',gender:'f',plural:'patientes'},grecque:{article:'une',gender:'f',plural:'Grecques'}
+    });
+    const P1_LEXICAL_OVERRIDES=Object.freeze({
+      lire:{en:'to read',exampleFr:'Je lis un livre avant de dormir.',exampleEn:'I read a book before going to sleep.'},
+      car:{en:'because; for',exampleFr:'Je rentre, car il est tard.',exampleEn:'I am going home because it is late.'},
+      sortir:{en:'to go out; to leave; to take out',exampleFr:'Nous sortons ce soir.',exampleEn:'We are going out tonight.'},
+      devenir:{en:'to become',exampleFr:'Elle veut devenir médecin.',exampleEn:'She wants to become a doctor.'},
+      meilleur:{en:'better; best',exampleFr:'C’est le meilleur choix.',exampleEn:'It is the best choice.'},
+      meilleure:{en:'better; best (feminine singular)',lemma:'meilleur',exampleFr:'Cette solution est meilleure.',exampleEn:'This solution is better.'},
+      fou:{en:'crazy; mad',exampleFr:'Cette idée paraît folle.',exampleEn:'This idea seems crazy.'},
+      parfait:{en:'perfect',exampleFr:'Le résultat est parfait.',exampleEn:'The result is perfect.'},
+      faux:{en:'false; wrong; fake',exampleFr:'Cette réponse est fausse.',exampleEn:'This answer is wrong.'},
+      animal:{en:'animal',exampleFr:'Le chien est un animal domestique.',exampleEn:'The dog is a domestic animal.'},
+      gris:{en:'gray; grey',exampleFr:'Le ciel est gris aujourd’hui.',exampleEn:'The sky is gray today.'},
+      blond:{en:'blond; fair-haired',exampleFr:'Il a les cheveux blonds.',exampleEn:'He has blond hair.'},
+      vrai:{en:'true; real',exampleFr:'Cette histoire est vraie.',exampleEn:'This story is true.'},
+      dur:{en:'hard; difficult; tough',exampleFr:'Cet exercice est dur.',exampleEn:'This exercise is hard.'},
+      mille:{en:'thousand; one thousand',exampleFr:'La ville compte mille habitants.',exampleEn:'The town has one thousand inhabitants.'},
+      réel:{en:'real; actual',exampleFr:'Le problème est réel.',exampleEn:'The problem is real.'},
+      cent:{en:'hundred; one hundred',exampleFr:'Il y a cent pages.',exampleEn:'There are one hundred pages.'},
+      vingt:{en:'twenty',exampleFr:'Elle a vingt ans.',exampleEn:'She is twenty years old.'},
+      silencieux:{en:'quiet; silent',exampleFr:'La salle est silencieuse.',exampleEn:'The room is quiet.'},
+      sourd:{en:'deaf',exampleFr:'Cet homme est sourd.',exampleEn:'This man is deaf.'},
+      instant:{en:'moment; instant',exampleFr:'Attends un instant.',exampleEn:'Wait a moment.'},
+      sujet:{en:'subject; topic',exampleFr:'Nous parlons de ce sujet demain.',exampleEn:'We will talk about this topic tomorrow.'},
+      nécessaire:{en:'necessary; needed',exampleFr:'Ce document est nécessaire.',exampleEn:'This document is necessary.'},
+      ennemi:{en:'enemy',exampleFr:'Il refuse de voir son voisin comme un ennemi.',exampleEn:'He refuses to see his neighbor as an enemy.'},
+      militaire:{en:'military',exampleFr:'Il travaille dans le domaine militaire.',exampleEn:'He works in the military field.'},
+      goutte:{en:'drop',exampleFr:'Une goutte d’eau tombe sur la table.',exampleEn:'A drop of water falls on the table.'},
+      aucune:{en:'no; none; not any (feminine singular)',exampleFr:'Il n’a aucune raison de partir.',exampleEn:'He has no reason to leave.'},
+      restau:{en:'restaurant (informal)',exampleFr:'On mange au restau ce soir.',exampleEn:'We are eating at a restaurant tonight.'},
+      celles:{en:'those; the ones (feminine plural)',exampleFr:'Je préfère celles que tu as choisies.',exampleEn:'I prefer the ones you chose.'},
+      patiente:{en:'female patient',exampleFr:'La patiente attend le médecin.',exampleEn:'The patient is waiting for the doctor.'},
+      grecque:{en:'Greek woman; female Greek',exampleFr:'Cette Grecque habite à Athènes.',exampleEn:'This Greek woman lives in Athens.'}
     });
 
     const GRAMMAR_OVERRIDES = Object.freeze({"adresse":{"article":"l’","gender":"f","plural":"adresses"},"ami":{"article":"un","gender":"m","plural":"amis"},"amie":{"article":"une","gender":"f","plural":"amies"},"appartement":{"article":"un","gender":"m","plural":"appartements"},"avion":{"article":"un","gender":"m","plural":"avions"},"banque":{"article":"une","gender":"f","plural":"banques"},"bibliothèque":{"article":"une","gender":"f","plural":"bibliothèques"},"bus":{"article":"un","gender":"m","plural":"bus"},"café":{"article":"un","gender":"m","plural":"cafés"},"chaise":{"article":"une","gender":"f","plural":"chaises"},"chambre":{"article":"une","gender":"f","plural":"chambres"},"chat":{"article":"un","gender":"m","plural":"chats"},"chaussure":{"article":"une","gender":"f","plural":"chaussures"},"chemise":{"article":"une","gender":"f","plural":"chemises"},"cinéma":{"article":"un","gender":"m","plural":"cinémas"},"classe":{"article":"une","gender":"f","plural":"classes"},"couleur":{"article":"une","gender":"f","plural":"couleurs"},"cuisine":{"article":"une","gender":"f","plural":"cuisines"},"dentiste":{"article":"un/une","gender":"m/f","plural":"dentistes"},"directeur":{"article":"un","gender":"m","plural":"directeurs"},"directrice":{"article":"une","gender":"f","plural":"directrices"},"école":{"article":"une","gender":"f","plural":"écoles"},"étage":{"article":"un","gender":"m","plural":"étages"},"étagère":{"article":"une","gender":"f","plural":"étagères"},"famille":{"article":"une","gender":"f","plural":"familles"},"femme":{"article":"une","gender":"f","plural":"femmes"},"fenêtre":{"article":"une","gender":"f","plural":"fenêtres"},"fleur":{"article":"une","gender":"f","plural":"fleurs"},"gare":{"article":"une","gender":"f","plural":"gares"},"garçon":{"article":"un","gender":"m","plural":"garçons"},"hôtel":{"article":"un","gender":"m","plural":"hôtels"},"homme":{"article":"un","gender":"m","plural":"hommes"},"jour":{"article":"un","gender":"m","plural":"jours"},"heure":{"article":"une","gender":"f","plural":"heures"},"livre":{"article":"un","gender":"m","plural":"livres"},"maison":{"article":"une","gender":"f","plural":"maisons"},"magasin":{"article":"un","gender":"m","plural":"magasins"},"mari":{"article":"un","gender":"m","plural":"maris"},"matin":{"article":"un","gender":"m","plural":"matins"},"métro":{"article":"un","gender":"m","plural":"métros"},"mois":{"article":"un","gender":"m","plural":"mois"},"musée":{"article":"un","gender":"m","plural":"musées"},"nom":{"article":"un","gender":"m","plural":"noms"},"numéro":{"article":"un","gender":"m","plural":"numéros"},"ordinateur":{"article":"un","gender":"m","plural":"ordinateurs"},"pantalon":{"article":"un","gender":"m","plural":"pantalons"},"photo":{"article":"une","gender":"f","plural":"photos"},"pièce":{"article":"une","gender":"f","plural":"pièces"},"porte":{"article":"une","gender":"f","plural":"portes"},"prix":{"article":"un","gender":"m","plural":"prix"},"profession":{"article":"une","gender":"f","plural":"professions"},"restaurant":{"article":"un","gender":"m","plural":"restaurants"},"robe":{"article":"une","gender":"f","plural":"robes"},"rue":{"article":"une","gender":"f","plural":"rues"},"sac":{"article":"un","gender":"m","plural":"sacs"},"salle":{"article":"une","gender":"f","plural":"salles"},"semaine":{"article":"une","gender":"f","plural":"semaines"},"soir":{"article":"un","gender":"m","plural":"soirs"},"table":{"article":"une","gender":"f","plural":"tables"},"téléphone":{"article":"un","gender":"m","plural":"téléphones"},"train":{"article":"un","gender":"m","plural":"trains"},"université":{"article":"une","gender":"f","plural":"universités"},"ville":{"article":"une","gender":"f","plural":"villes"},"voiture":{"article":"une","gender":"f","plural":"voitures"},"vêtement":{"article":"un","gender":"m","plural":"vêtements"},"année":{"article":"une","gender":"f","plural":"années"},"pain":{"article":"un","gender":"m","plural":"pains"},"fromage":{"article":"un","gender":"m","plural":"fromages"},"viande":{"article":"une","gender":"f","plural":"viandes"},"poisson":{"article":"un","gender":"m","plural":"poissons"},"salade":{"article":"une","gender":"f","plural":"salades"},"eau":{"article":"une","gender":"f","plural":"eaux"},"lait":{"article":"un","gender":"m","plural":""},"farine":{"article":"une","gender":"f","plural":"farines"},"beurre":{"article":"un","gender":"m","plural":""},"sucre":{"article":"un","gender":"m","plural":"sucres"},"confiture":{"article":"une","gender":"f","plural":"confitures"},"œuf":{"article":"un","gender":"m","plural":"œufs"},"fruit":{"article":"un","gender":"m","plural":"fruits"},"légume":{"article":"un","gender":"m","plural":"légumes"},"être":{"auxiliary":"avoir","pastParticiple":"été"},"avoir":{"auxiliary":"avoir","pastParticiple":"eu"},"aller":{"auxiliary":"être","pastParticiple":"allé"},"venir":{"auxiliary":"être","pastParticiple":"venu"},"arriver":{"auxiliary":"être","pastParticiple":"arrivé"},"partir":{"auxiliary":"être","pastParticiple":"parti"},"entrer":{"auxiliary":"être/avoir","pastParticiple":"entré"},"sortir":{"auxiliary":"être/avoir","pastParticiple":"sorti"},"monter":{"auxiliary":"être/avoir","pastParticiple":"monté"},"descendre":{"auxiliary":"être/avoir","pastParticiple":"descendu"},"rester":{"auxiliary":"être","pastParticiple":"resté"},"tomber":{"auxiliary":"être","pastParticiple":"tombé"},"naître":{"auxiliary":"être","pastParticiple":"né"},"mourir":{"auxiliary":"être","pastParticiple":"mort"},"faire":{"auxiliary":"avoir","pastParticiple":"fait"},"prendre":{"auxiliary":"avoir","pastParticiple":"pris"},"boire":{"auxiliary":"avoir","pastParticiple":"bu"},"voir":{"auxiliary":"avoir","pastParticiple":"vu"},"lire":{"auxiliary":"avoir","pastParticiple":"lu"},"écrire":{"auxiliary":"avoir","pastParticiple":"écrit"},"mettre":{"auxiliary":"avoir","pastParticiple":"mis"},"pouvoir":{"auxiliary":"avoir","pastParticiple":"pu"},"vouloir":{"auxiliary":"avoir","pastParticiple":"voulu"},"savoir":{"auxiliary":"avoir","pastParticiple":"su"},"devoir":{"auxiliary":"avoir","pastParticiple":"dû"},"dire":{"auxiliary":"avoir","pastParticiple":"dit"},"recevoir":{"auxiliary":"avoir","pastParticiple":"reçu"},"ouvrir":{"auxiliary":"avoir","pastParticiple":"ouvert"},"acheter":{"auxiliary":"avoir","pastParticiple":"acheté"},"manger":{"auxiliary":"avoir","pastParticiple":"mangé"},"parler":{"auxiliary":"avoir","pastParticiple":"parlé"},"travailler":{"auxiliary":"avoir","pastParticiple":"travaillé"},"habiter":{"auxiliary":"avoir","pastParticiple":"habité"},"aimer":{"auxiliary":"avoir","pastParticiple":"aimé"}});
@@ -4331,23 +4388,29 @@ qui	who	A1	question word`;
       for(const word of ordered){
         const originalLevel=normalizeLevel(word.level);
         if(!LEVELS.includes(originalLevel)) continue;
-        const fr=String(word.word||'').trim(), normalized=normalizeWord(fr), curated=CURATED[normalized];
+        const fr=String(word.word||'').trim(), normalized=normalizeWord(fr), curated=CURATED[normalized], p1=P1_LEXICAL_OVERRIDES[normalized]||{};
         const id=String(word.id||`fr:${fr}`).trim();
         if(!id || !fr || seen.has(id)) continue;
-        const en=String(curated?.en||word.meaning||'').trim();
-        const level=curated?.level||originalLevel;
+        const en=String(p1.en||curated?.en||word.meaning||'').trim();
+        const level=p1.level||curated?.level||originalLevel;
         if(!en || !LEVELS.includes(level)) continue;
-        const example=chooseExample(word,curated); const core=isCoreEntry(fr,en);
+        const example=(p1.exampleFr&&p1.exampleEn)?{fr:p1.exampleFr,en:p1.exampleEn,kind:'curated'}:chooseExample(word,curated);
+        const grammar={...grammarMetadata(fr),...(P1_GRAMMAR_OVERRIDES[normalized]||{})};
+        const pos=formatPos(p1.pos||P1_POS_OVERRIDES[normalized]||word.pos);
+        const core=isCoreEntry(fr,en);
         if(example.kind==='source') authenticExamples++;
         if(example.kind==='curated') curatedExamples++;
         if(example.kind==='rejected-crafted') rejectedCraftedExamples++;
         if(level!==originalLevel) levelOverrides++; if(core) coreEntries++; else supplementalEntries++;
         cards.push({
-          id, fr, en, ipa:String(word.ipa||'').trim(), pos:formatPos(word.pos), level, sourceLevel:originalLevel,
-          order:finiteNumber(word.order,999999), lemma:COMMON_LEMMAS[normalized]||'', core,
+          id, fr, en, ipa:String(word.ipa||'').trim(), pos, level, sourceLevel:originalLevel,
+          sourceMeaning:String(word.meaning||'').trim(), sourcePos:String(word.pos||'').trim(),
+          sourceTags:Array.isArray(word.tags)?word.tags.map(tag=>String(tag)):[], sourceVerified:Array.isArray(word.tags)&&word.tags.includes('verified'),
+          order:finiteNumber(word.order,999999), lemma:p1.lemma||COMMON_LEMMAS[normalized]||'', core,
           exampleFr:example.fr, exampleEn:example.en, exampleKind:example.kind,
-          article:grammarMetadata(fr).article||'', gender:grammarMetadata(fr).gender||'', plural:grammarMetadata(fr).plural||'',
-          auxiliary:grammarMetadata(fr).auxiliary||'', pastParticiple:grammarMetadata(fr).pastParticiple||''
+          article:grammar.article||'', gender:grammar.gender||'', plural:grammar.plural||'',
+          auxiliary:grammar.auxiliary||'', pastParticiple:grammar.pastParticiple||'',
+          p1Curated:Boolean(P1_LEXICAL_OVERRIDES[normalized]||P1_POS_OVERRIDES[normalized]||P1_GRAMMAR_OVERRIDES[normalized]), p1CurationVersion:'4.2.0'
         });
         seen.add(id);
         if(cards.length>=MAX_VALID_CARDS) break;
@@ -12124,8 +12187,10 @@ qui	who	A1	question word`;
       const examples=typeof v392ExamplesFor==='function'?v392ExamplesFor(card):[];
       if(!examples.length)warnings.push('no validated example');
       else if(Number(examples[0]?.quality||0)<76)warnings.push('low-confidence example');
+      if(P1_META_GLOSS_RE.test(String(card.en||'')))critical.push('dictionary metadata gloss');
       if((card.lexicalIssues||[]).includes('dictionary-form gloss'))warnings.push('dictionary-style gloss');
       if((card.lexicalIssues||[]).includes('broad gloss'))warnings.push('broad gloss');
+      if(card.sourcePos&&P1_POS_OVERRIDES[normalizeWord(card.fr)]&&posGroup(card.pos)!==posGroup(P1_POS_OVERRIDES[normalizeWord(card.fr)]))critical.push('learner POS mismatch');
       return {critical:[...new Set(critical)],warnings:[...new Set(warnings)]};
     }
     function v396StructuralAudit(){
