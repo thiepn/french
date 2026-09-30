@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.4.0';
-    const APP_RELEASE = 'P3 Frictionless Study UX';
+    const APP_VERSION = '4.5.0';
+    const APP_RELEASE = 'P4 Listening, Pronunciation & Audio Mastery';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -14896,6 +14896,354 @@ qui	who	A1	question word`;
       v420NormalizeSurface();
       if(state.view==='dashboard')v440PolishHome();
       if(state.view==='study')v440PolishStudy();
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.5.0 LISTENING, PRONUNCIATION & AUDIO MASTERY
+       Separates authoritative model audio from learner recordings, upgrades
+       listening-card playback, adds compact pronunciation practice and an
+       optional intelligibility check, and surfaces audio-skill progress.
+       Pronunciation practice never changes FSRS scheduling by itself.
+       ================================================================ */
+    const V450_VERSION='4.5.0';
+    const V450_RELEASE='P4 Listening, Pronunciation & Audio Mastery';
+    const V450_AUDIO_LOG_KEY='french3000-pronunciation-log-v450';
+    const V450_AUDIO_LOG_MAX=1200;
+
+    function v450LoadAudioLog(){
+      try{
+        const raw=JSON.parse(localStorage.getItem(V450_AUDIO_LOG_KEY)||'[]');
+        return Array.isArray(raw)?raw.slice(-V450_AUDIO_LOG_MAX):[];
+      }catch{return [];}
+    }
+    function v450SaveAudioLog(){
+      try{localStorage.setItem(V450_AUDIO_LOG_KEY,JSON.stringify((state.v450AudioLog||[]).slice(-V450_AUDIO_LOG_MAX)));}catch{}
+    }
+    state.v450AudioLog=v450LoadAudioLog();
+
+    function v450LogPronunciation(card,score,passed){
+      const noteId=depthBaseId(card);
+      state.v450AudioLog.push({t:now(),noteId,score:clamp(finiteNumber(score),0,1),passed:passed===true});
+      if(state.v450AudioLog.length>V450_AUDIO_LOG_MAX)state.v450AudioLog=state.v450AudioLog.slice(-V450_AUDIO_LOG_MAX);
+      v450SaveAudioLog();
+    }
+    function v450PronunciationStats(cardOrId){
+      const noteId=depthBaseId(cardOrId),items=(state.v450AudioLog||[]).filter(item=>item.noteId===noteId);
+      const attempts=items.length,passes=items.filter(item=>item.passed).length,best=attempts?Math.max(...items.map(item=>finiteNumber(item.score))):0;
+      return {attempts,passes,best,passRate:attempts?Math.round(passes/attempts*100):0,last:items.at(-1)||null};
+    }
+    function v450GlobalPronunciationStats(){
+      const items=state.v450AudioLog||[],notes=new Set(items.map(item=>item.noteId)),passes=items.filter(item=>item.passed).length;
+      return {attempts:items.length,notes:notes.size,passes,passRate:items.length?Math.round(passes/items.length*100):0};
+    }
+
+    function v450ListeningSnapshot(cardOrId){
+      const noteId=depthBaseId(cardOrId),skill=state.depthSkillIndex?.get(depthSkillId(noteId,'listening',0));
+      if(!skill)return {status:'Not available',seen:0,stability:0,retrievability:0,due:false};
+      const p=normalizeProgressEntry(getProgress(skill.id)),started=p.seen>0||p.status!=='new';
+      return {
+        status:started?statusLabel(p):'Not started',
+        seen:p.seen,
+        stability:finiteNumber(p.stability),
+        retrievability:finiteNumber(v3MemorySnapshot(skill).retrievability),
+        due:isDue(skill)
+      };
+    }
+
+    function v450StopModelAudio(){
+      try{if(typeof v3StopCardAudio==='function')v3StopCardAudio();}catch{}
+      try{stopSpeech();}catch{}
+    }
+    function v450SpeakModel(text,rate=null){
+      if(!state.speechAvailable){showToast('French speech synthesis is unavailable in this browser.');return Promise.resolve(false);}
+      if(!text){showToast('No French text is available for this card.');return Promise.resolve(false);}
+      v450StopModelAudio();
+      const speech=normalizeSpeech(state.settings.speech),utterance=new SpeechSynthesisUtterance(text);
+      utterance.lang='fr-FR';utterance.rate=clamp(rate==null?speech.rate:rate,.5,1.25);
+      const selected=state.voices.find(voice=>voice.voiceURI===speech.voiceURI&&/^fr([-_]|$)/i.test(voice.lang));
+      const fallback=state.voices.find(voice=>/^fr([-_]|$)/i.test(voice.lang));
+      if(selected||fallback)utterance.voice=selected||fallback;
+      utterance.onstart=()=>{state.speechState='playing';state.currentUtterance=utterance;updateSpeechButtons();};
+      utterance.onpause=()=>{state.speechState='paused';updateSpeechButtons();};
+      utterance.onresume=()=>{state.speechState='playing';updateSpeechButtons();};
+      utterance.onend=()=>{state.speechState='idle';state.currentUtterance=null;updateSpeechButtons();};
+      utterance.onerror=()=>{state.speechState='idle';state.currentUtterance=null;updateSpeechButtons();showToast('The French model voice could not play this text.');};
+      speechSynthesis.speak(utterance);
+      return Promise.resolve(true);
+    }
+    async function v450PlayModelAudio(card,{slow=false}={}){
+      const note=depthNoteFor(card)||card;if(!note)return false;
+      v450StopModelAudio();
+      if(note.audioUrl){
+        try{
+          const audio=new Audio(note.audioUrl);
+          audio.playbackRate=slow?.72:normalizeSettings(state.settings).audioPlaybackRate;
+          state.cardAudio=audio;
+          audio.onended=()=>{if(state.cardAudio===audio)state.cardAudio=null;};
+          await audio.play();
+          return true;
+        }catch{}
+      }
+      const base=normalizeSpeech(state.settings.speech).rate;
+      return v450SpeakModel(note.fr,slow?Math.min(.68,base):base);
+    }
+    async function v450PlayLearnerAudio(card){
+      const url=await depthLoadRecordedAudio(card);
+      if(!url){showToast('No pronunciation recording is saved for this word yet.');return false;}
+      v450StopModelAudio();
+      try{
+        const audio=new Audio(url);audio.playbackRate=1;state.cardAudio=audio;
+        audio.onended=()=>{if(state.cardAudio===audio)state.cardAudio=null;};
+        await audio.play();return true;
+      }catch{showToast('Your recording could not be played.');return false;}
+    }
+
+    /* Model audio must never silently fall back to the learner's own
+       pronunciation recording. Learner audio is available only via
+       v450PlayLearnerAudio(). */
+    depthPlayAudio=v450PlayModelAudio;
+    v3PlayCardAudio=function(card){return v450PlayModelAudio(card);};
+
+    async function v450ToggleRecording(card,button){
+      if(state.depthRecorder&&state.depthRecorder.state==='recording'){
+        if(state.v450RecordingNoteId!==depthBaseId(card)){showToast('Finish the current recording first.');return;}
+        state.depthRecorder.stop();
+        if(button){button.disabled=true;button.textContent='Saving…';}
+        return;
+      }
+      if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){showToast('Microphone recording is unavailable in this browser.');return;}
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:true}),chunks=[],recorder=new MediaRecorder(stream);
+        state.depthRecordingStream=stream;state.depthRecorder=recorder;state.v450RecordingNoteId=depthBaseId(card);
+        recorder.ondataavailable=event=>{if(event.data?.size)chunks.push(event.data);};
+        recorder.onstop=async()=>{
+          stream.getTracks().forEach(track=>track.stop());
+          const blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'}),key=depthBaseId(card);
+          try{
+            await depthDbPut('media','audio:'+key,blob);
+            if(state.depthAudioUrls[key])URL.revokeObjectURL(state.depthAudioUrls[key]);
+            state.depthAudioUrls[key]=URL.createObjectURL(blob);
+            showToast('Your pronunciation recording was saved locally.');
+          }catch{showToast('The pronunciation recording could not be saved.');}
+          state.depthRecorder=null;state.depthRecordingStream=null;state.v450RecordingNoteId='';
+          const current=$('#v450-record');if(current){current.disabled=false;current.textContent='Record me';}
+          v450RefreshLearnerAudioButton(card);
+        };
+        recorder.start();
+        if(button)button.textContent='Stop recording';
+        showToast('Recording… say the French aloud, then press Stop.');
+      }catch{showToast('Microphone permission was not granted.');}
+    }
+
+    async function v450RefreshLearnerAudioButton(card){
+      const button=$('#v450-play-mine');if(!button)return;
+      const url=await depthLoadRecordedAudio(card);
+      if(!document.body.contains(button))return;
+      button.disabled=!url;button.textContent=url?'Play mine':'No recording yet';
+    }
+
+    function v450PronunciationSimilarity(card,transcript){
+      const note=depthNoteFor(card)||card,candidates=[note.fr,...(note.aliases||[])].filter(Boolean).map(depthLoose).filter(Boolean),heard=depthLoose(transcript);
+      if(!heard||!candidates.length)return 0;
+      let best=0;
+      for(const target of candidates){
+        const distance=levenshtein(target,heard),score=1-distance/Math.max(target.length,heard.length,1);
+        best=Math.max(best,score);
+      }
+      return clamp(best,0,1);
+    }
+    function v450CheckPronunciation(card){
+      const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition,status=$('#v450-pronunciation-result'),button=$('#v450-check');
+      if(!Recognition){showToast('Speech recognition is unavailable in this browser.');return;}
+      const recognition=new Recognition();recognition.lang='fr-FR';recognition.interimResults=false;recognition.maxAlternatives=5;
+      if(button){button.disabled=true;button.textContent='Listening…';}
+      if(status)status.textContent='Speak the French once at a natural pace.';
+      recognition.onresult=event=>{
+        const alternatives=Array.from(event.results?.[0]||[]).map(item=>String(item.transcript||'').trim()).filter(Boolean);
+        let bestText='',bestScore=0;
+        for(const transcript of alternatives){const score=v450PronunciationSimilarity(card,transcript);if(score>bestScore){bestScore=score;bestText=transcript;}}
+        const passed=bestScore>=.82;v450LogPronunciation(card,bestScore,passed);
+        if(status){
+          const pct=Math.round(bestScore*100);
+          status.innerHTML='<strong>'+(passed?'Recognized clearly':'Recognition mismatch')+'</strong><span>Heard: '+escapeHtml(bestText||'—')+' · '+pct+'% text match</span><small>This checks intelligibility only. It does not score accent quality.</small>';
+        }
+        v450UpdatePronunciationStats(card);
+      };
+      recognition.onerror=event=>{
+        if(status)status.innerHTML='<strong>Could not check this attempt</strong><span>'+escapeHtml(event.error||'Speech recognition failed')+'</span><small>No SRS data was changed.</small>';
+      };
+      recognition.onend=()=>{const current=$('#v450-check');if(current){current.disabled=false;current.textContent='Check intelligibility';}};
+      try{recognition.start();}catch{if(button){button.disabled=false;button.textContent='Check intelligibility';}showToast('Speech recognition could not start.');}
+    }
+
+    function v450UpdatePronunciationStats(card){
+      const stats=v450PronunciationStats(card),listening=v450ListeningSnapshot(card),target=$('#v450-audio-stats');if(!target)return;
+      target.innerHTML='<span><strong>'+escapeHtml(listening.status)+'</strong> listening</span>'+
+        '<span><strong>'+Math.round(listening.retrievability*100)+'%</strong> recall</span>'+
+        '<span><strong>'+(stats.attempts?stats.passRate+'%':'—')+'</strong> intelligibility</span>'+
+        '<span><strong>'+stats.attempts+'</strong> checks</span>';
+    }
+
+    function v450PronunciationPanel(card){
+      const skill=depthSkillOf(card),open=skill==='listening'?' open':'',supportsRecognition=('SpeechRecognition'in window||'webkitSpeechRecognition'in window);
+      return '<details class="v450-pronunciation" id="v450-pronunciation"'+open+'>'+
+        '<summary><span><strong>Pronunciation</strong><small>Listen → imitate → compare</small></span><span class="v450-chevron" aria-hidden="true">+</span></summary>'+
+        '<div class="v450-pronunciation-body"><div class="v450-audio-stats" id="v450-audio-stats"></div>'+
+        '<div class="v450-audio-actions"><button type="button" class="secondary" id="v450-model">Hear model</button><button type="button" class="secondary" id="v450-slow">Slow model</button><button type="button" class="secondary" id="v450-record">Record me</button><button type="button" class="secondary" id="v450-play-mine" disabled>Play mine</button><button type="button" class="secondary" id="v450-check" '+(supportsRecognition?'':'disabled')+'>Check intelligibility</button></div>'+
+        '<div class="v450-pronunciation-result" id="v450-pronunciation-result" aria-live="polite"><span>Recordings stay on this device. The optional speech check compares recognized French text; it is not an accent score.</span></div>'+
+        '</div></details>';
+    }
+
+    function v450BindAudioPanel(card){
+      $('#v450-model')?.addEventListener('click',()=>v450PlayModelAudio(card));
+      $('#v450-slow')?.addEventListener('click',()=>v450PlayModelAudio(card,{slow:true}));
+      $('#v450-record')?.addEventListener('click',event=>v450ToggleRecording(card,event.currentTarget));
+      $('#v450-play-mine')?.addEventListener('click',()=>v450PlayLearnerAudio(card));
+      $('#v450-check')?.addEventListener('click',()=>v450CheckPronunciation(card));
+      v450UpdatePronunciationStats(card);v450RefreshLearnerAudioButton(card);
+    }
+
+    function v450PatchQuickAudio(card){
+      const quick=document.querySelector('#study-stage .v383-quick-tools'),speaker=$('#speak-word');
+      if(speaker&&!speaker.dataset.v450Model){
+        const replacement=speaker.cloneNode(true);replacement.dataset.v450Model='true';replacement.dataset.tooltip='Hear model';replacement.setAttribute('aria-label','Hear model pronunciation');
+        speaker.replaceWith(replacement);replacement.addEventListener('click',()=>v450PlayModelAudio(card));
+      }
+      if(quick&&!quick.querySelector('#v450-quick-slow')){
+        const slow=document.createElement('button');slow.type='button';slow.id='v450-quick-slow';slow.className='v367-icon-btn v450-quick-slow';slow.dataset.tooltip='Slow model';slow.setAttribute('aria-label','Hear model pronunciation slowly');slow.textContent='0.7×';
+        const more=quick.querySelector('.v383-card-more');more?quick.insertBefore(slow,more):quick.appendChild(slow);
+        slow.addEventListener('click',()=>v450PlayModelAudio(card,{slow:true}));
+      }
+    }
+
+    function v450PolishCurrentAudio(){
+      if(state.view!=='study')return;
+      const stage=$('#study-stage'),card=state.queue[state.queueIndex];if(!stage||!card||stage.querySelector('.session-summary'))return;
+      v450PatchQuickAudio(card);
+      const listening=currentPractice(card)==='listening'&&!state.flipped;
+      const prompt=stage.querySelector('.listening-copy');
+      if(listening&&prompt)prompt.textContent='Listen without reading. Replay normally or use 0.7× only when you need to isolate the sounds.';
+      if(state.flipped&&!stage.querySelector('#v450-pronunciation')){
+        const response=stage.querySelector('.v383-response-dock');
+        const panel=document.createElement('div');panel.innerHTML=v450PronunciationPanel(card);
+        const node=panel.firstElementChild;
+        response?response.before(node):stage.appendChild(node);
+        v450BindAudioPanel(card);
+      }
+    }
+
+    const v450ScheduleAutoSpeechBase=scheduleAutoSpeech;
+    scheduleAutoSpeech=function(card,shown,frontIsFrench,practice='classic'){
+      if(practice==='listening'&&!shown){
+        const key='v450|'+card.id+'|'+state.queueIndex+'|listening';
+        if(state.lastAutoSpeechKey===key)return;
+        if(state.autoSpeechTimer)clearTimeout(state.autoSpeechTimer);
+        state.lastAutoSpeechKey=key;
+        state.autoSpeechTimer=setTimeout(()=>{state.autoSpeechTimer=null;if(state.currentCardKey===card.id+'|'+state.queueIndex&&!state.flipped)v450PlayModelAudio(card);},180);
+        return;
+      }
+      return v450ScheduleAutoSpeechBase(card,shown,frontIsFrench,practice);
+    };
+
+    function v450StartListeningSprint(){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting Listening 10.');return;}
+      state.session=normalizeSession({...v440SavedPlan(),mode:'today',skillMode:'listening',practice:'listening',size:10,scheduleMode:'review',lessonId:0});
+      buildQueue();
+      if(!state.queue.length){showToast('No listening cards are ready under the current learning gates.');renderDashboard();return;}
+      setView('study');
+    }
+
+    function v450PolishHomeAudio(){
+      if(state.view!=='dashboard')return;
+      const details=main.querySelector('.v382-home-details .v382-details-block:last-child .button-row');
+      if(details&&!$('#v450-listening10')){
+        const button=document.createElement('button');button.type='button';button.className='secondary';button.id='v450-listening10';button.textContent='Listening 10';
+        button.addEventListener('click',v450StartListeningSprint);details.prepend(button);
+      }
+    }
+
+    function v450AudioProgressPanel(){
+      depthIndexSkills();
+      let started=0,learned=0,due=0,total=0;
+      for(const note of state.depthBaseNotes||[]){
+        const skill=state.depthSkillIndex.get(depthSkillId(note.id,'listening',0));if(!skill)continue;total++;
+        const p=normalizeProgressEntry(getProgress(skill.id));if(p.seen||p.status!=='new')started++;if(p.status==='learned')learned++;if(isDue(skill))due++;
+      }
+      const pron=v450GlobalPronunciationStats();
+      return '<section class="panel v450-progress-panel"><div class="section-heading"><div><p class="eyebrow">Audio mastery</p><h3>Listening & pronunciation</h3><p>Listening is independently scheduled. Pronunciation checks are optional practice and never alter FSRS intervals.</p></div><button class="secondary" id="v450-progress-listen">Listening 10</button></div>'+
+        '<div class="v450-progress-grid"><div><strong>'+started.toLocaleString()+'</strong><span>listening skills started</span></div><div><strong>'+learned.toLocaleString()+'</strong><span>listening skills learned</span></div><div><strong>'+due.toLocaleString()+'</strong><span>listening reviews due</span></div><div><strong>'+pron.notes.toLocaleString()+'</strong><span>words pronunciation-checked</span></div><div><strong>'+(pron.attempts?pron.passRate+'%':'—')+'</strong><span>speech-recognition pass rate</span></div></div></section>';
+    }
+
+    function v450PolishSettingsAudio(){
+      if(state.view!=='settings')return;
+      main.querySelectorAll('label').forEach(label=>{if(label.textContent.trim()==='Recorded audio speed')label.childNodes[0].textContent='Model audio speed';});
+      main.querySelectorAll('p').forEach(p=>{if(p.textContent.trim()==='French speech and recorded-audio playback.')p.textContent='French model pronunciation, playback speed, and voice selection.';});
+    }
+
+    const v450OpenPlanDialogBase=v440OpenPlanDialog;
+    v440OpenPlanDialog=function(){
+      const result=v450OpenPlanDialogBase(),select=$('#v440-plan-skill');
+      if(select){
+        if(!select.querySelector('option[value="listening"]'))select.insertAdjacentHTML('beforeend','<option value="listening">Listening</option>');
+        if(!select.querySelector('option[value="spelling"]'))select.insertAdjacentHTML('beforeend','<option value="spelling">Spelling</option>');
+        select.value=v440SavedPlan().skillMode||'balanced';
+      }
+      return result;
+    };
+
+    const v450OpenInspectorBase=v3OpenInspector;
+    v3OpenInspector=function(id){
+      const result=v450OpenInspectorBase(id),dialog=$('#v3-card-inspector'),card=state.cardById.get(id)||depthNoteFor(id);
+      if(dialog&&card){
+        const old=$('#depth-play-recording',dialog);if(old){const replacement=old.cloneNode(true);replacement.textContent='Hear model';old.replaceWith(replacement);replacement.addEventListener('click',()=>v450PlayModelAudio(card));}
+        const row=dialog.querySelector('.button-row');
+        if(row&&!$('#v450-inspector-mine',dialog)){row.insertAdjacentHTML('beforeend','<button type="button" class="secondary" id="v450-inspector-mine">Play my recording</button>');$('#v450-inspector-mine',dialog).addEventListener('click',()=>v450PlayLearnerAudio(card));}
+      }
+      return result;
+    };
+
+    const v450RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v450RenderDashboardBase();v450PolishHomeAudio();return result;};
+    const v450RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v450RenderCurrentCardBase();v450PolishCurrentAudio();return result;};
+    const v450RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v450RenderSettingsBase();v450PolishSettingsAudio();return result;};
+    const v450RenderProgressBase=renderProgress;
+    renderProgress=function(){
+      const result=v450RenderProgressBase();
+      if(state.view==='progress'&&!main.querySelector('.v450-progress-panel')){
+        main.insertAdjacentHTML('beforeend',v450AudioProgressPanel());
+        $('#v450-progress-listen')?.addEventListener('click',v450StartListeningSprint);
+      }
+      return result;
+    };
+
+    function v450EnsureStyles(){
+      if(document.querySelector('#v450-audio-mastery-style'))return;
+      const style=document.createElement('style');style.id='v450-audio-mastery-style';
+      style.textContent='.v450-quick-slow{font-size:.68rem!important;font-weight:900!important;letter-spacing:-.02em}.v450-pronunciation{margin:.15rem 0;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid);overflow:hidden}.v450-pronunciation>summary{list-style:none;cursor:pointer;padding:.72rem .82rem;display:flex;align-items:center;justify-content:space-between;gap:.7rem}.v450-pronunciation>summary::-webkit-details-marker{display:none}.v450-pronunciation>summary span:first-child{display:grid;gap:.08rem}.v450-pronunciation>summary strong{color:var(--navy);font-size:.84rem}.v450-pronunciation>summary small{color:var(--muted);font-size:.68rem}.v450-pronunciation[open] .v450-chevron{transform:rotate(45deg)}.v450-pronunciation-body{padding:0 .82rem .82rem;display:grid;gap:.65rem}.v450-audio-stats{display:flex;flex-wrap:wrap;gap:.4rem}.v450-audio-stats span{padding:.35rem .52rem;border-radius:10px;background:var(--surface-muted);color:var(--muted);font-size:.67rem}.v450-audio-stats strong{color:var(--navy)}.v450-audio-actions{display:flex;flex-wrap:wrap;gap:.4rem}.v450-audio-actions button{min-height:38px;padding:.42rem .62rem;font-size:.74rem}.v450-pronunciation-result{display:grid;gap:.12rem;padding:.55rem .65rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.72rem}.v450-pronunciation-result strong{color:var(--navy)}.v450-pronunciation-result span,.v450-pronunciation-result small{display:block}.v450-progress-panel{margin-top:1rem}.v450-progress-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.55rem}.v450-progress-grid>div{padding:.72rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-solid)}.v450-progress-grid strong{display:block;color:var(--navy);font:700 1.35rem/1 Georgia,serif}.v450-progress-grid span{display:block;margin-top:.22rem;color:var(--muted);font-size:.7rem}@media(max-width:760px){.v450-pronunciation-body{padding:0 .65rem .65rem}.v450-audio-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.v450-audio-actions button{width:100%}.v450-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v450-progress-grid>div:last-child{grid-column:1/-1}.v383-quick-tools .v450-quick-slow{flex:0 0 38px}}';
+      document.head.append(style);
+    }
+
+    const v450NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v450NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p4-audio-mastery';
+      document.documentElement.dataset.audioMastery='v450';
+      document.documentElement.dataset.modelAudio='separate-from-learner-recording';
+      document.documentElement.dataset.pronunciationCheck='practice-only';
+    };
+    const v450InitBase=init;
+    init=async function(options={}){
+      v450EnsureStyles();
+      state.v450AudioLog=v450LoadAudioLog();
+      const result=await v450InitBase(options);
+      v420NormalizeSurface();
+      if(state.view==='dashboard')v450PolishHomeAudio();
+      if(state.view==='study')v450PolishCurrentAudio();
+      if(state.view==='settings')v450PolishSettingsAudio();
       return result;
     };
 
