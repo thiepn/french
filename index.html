@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.2.0';
-    const APP_RELEASE = 'P1 Vocabulary Database Audit';
+    const APP_VERSION = '4.2.1';
+    const APP_RELEASE = 'P1 Vocabulary Audit Verification';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -4317,7 +4317,7 @@ qui	who	A1	question word`;
 
     function formatPos(value){
       const key=String(value||'').toLowerCase();
-      const map={noun:'noun',verb:'verb',vit:'verb',vtr:'verb',adj:'adjective',adjective:'adjective',adv:'adverb',adverb:'adverb',pron:'pronoun',pronoun:'pronoun',prep:'preposition',preposition:'preposition',conj:'conjunction',conjunction:'conjunction',interj:'interjection',det:'determiner',determiner:'determiner',num:'number',expression:'expression','question phrase':'expression','question word':'pronoun'};
+      const map={noun:'noun',fp:'noun',mp:'noun',verb:'verb',vit:'verb',vtr:'verb',vr:'verb',adj:'adjective',adjective:'adjective',adv:'adverb',adverb:'adverb',pron:'pronoun',pronoun:'pronoun',prep:'preposition',preposition:'preposition',conj:'conjunction',conjunction:'conjunction',interj:'interjection',art:'determiner',det:'determiner',determiner:'determiner',num:'number',expression:'expression','question phrase':'expression','question word':'pronoun'};
       return map[key]||String(value||'').trim();
     }
     function posGroup(value){
