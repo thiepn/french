@@ -14482,6 +14482,29 @@ qui	who	A1	question word`;
 
     document.documentElement.dataset.wordsPerformanceFix='v418';
 
+
+    /* v4.2.0 final surface identity. Older release-candidate wrappers remain
+       for compatibility, but P1 is now the active production release. */
+    function v420NormalizeSurface(){
+      document.documentElement.dataset.appVersion=APP_VERSION;
+      document.documentElement.dataset.release='p1-vocabulary-database-audit';
+      document.documentElement.dataset.productScope='vocabulary-srs';
+      document.documentElement.dataset.vocabularyAudit='v420';
+      delete document.documentElement.dataset.releaseCandidate;
+      delete document.documentElement.dataset.featureFreeze;
+      const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${APP_VERSION}`;
+      const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${APP_VERSION}`);
+      document.title='French 3000 — Vocabulary flashcards';
+    }
+    const v420RenderDashboardBase=renderDashboard;renderDashboard=function(){const r=v420RenderDashboardBase();v420NormalizeSurface();return r;};
+    const v420RenderBrowseBase=renderBrowse;renderBrowse=function(focusSearch=false){const r=v420RenderBrowseBase(focusSearch);v420NormalizeSurface();return r;};
+    const v420RenderProgressBase=renderProgress;renderProgress=function(){const r=v420RenderProgressBase();v420NormalizeSurface();return r;};
+    const v420RenderSettingsBase=renderSettings;renderSettings=function(){const r=v420RenderSettingsBase();v420NormalizeSurface();return r;};
+    const v420RenderCurrentCardBase=renderCurrentCard;renderCurrentCard=function(){const r=v420RenderCurrentCardBase();v420NormalizeSurface();return r;};
+    const v420SetViewBase=setView;setView=function(view,options={}){const r=v420SetViewBase(view,options);v420NormalizeSurface();return r;};
+    const v420InitBase=init;init=async function(options={}){const r=await v420InitBase(options);v396AuditCache=null;v420NormalizeSurface();return r;};
+
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
       const ok=required.every(fn=>typeof fn==='function');
