@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.2.1';
-    const APP_RELEASE = 'P1 Vocabulary Audit Verification';
+    const APP_VERSION = '4.3.0';
+    const APP_RELEASE = 'P2 Study Engine 2.0';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -14504,6 +14504,199 @@ qui	who	A1	question word`;
     const v420RenderCurrentCardBase=renderCurrentCard;renderCurrentCard=function(){const r=v420RenderCurrentCardBase();v420NormalizeSurface();return r;};
     const v420SetViewBase=setView;setView=function(view,options={}){const r=v420SetViewBase(view,options);v420NormalizeSurface();return r;};
     const v420InitBase=init;init=async function(options={}){const r=await v420InitBase(options);v396AuditCache=null;v420NormalizeSurface();return r;};
+
+
+    /* ================================================================
+       v4.3.0 STUDY ENGINE 2.0
+       Unifies the existing FSRS-compatible scheduler, directional skill
+       schedules, weakness evidence, queue priority, and leech repair.
+       No stable note IDs or prior review history are reset.
+       ================================================================ */
+    const V430_VERSION='4.3.0';
+    const V430_RELEASE='P2 Study Engine 2.0';
+    const V430_EVIDENCE_DAYS=60;
+    const V430_MAX_EVIDENCE=12000;
+    let v430EvidenceCache={stamp:'',byId:new Map(),byNote:new Map(),mistakesById:new Map(),mistakesByNote:new Map()};
+
+    function v430EvidenceStamp(){
+      const reviews=state.reviewLog||[],mistakes=state.mistakeLog||[];
+      return [reviews.length,reviews.at(-1)?.t||0,mistakes.length,mistakes.at(-1)?.t||0].join(':');
+    }
+    function v430AddEvidence(map,key,entry){
+      if(!key)return;
+      const current=map.get(key)||{reviews:0,failures:0,hard:0,issues:0,responseTotal:0,responseCount:0,lastT:0,lastRating:''};
+      current.reviews++;
+      if(entry.correct===false||entry.rating==='again')current.failures++;
+      if(entry.rating==='hard')current.hard++;
+      if(entry.answerIssue||['close','missing-article','review'].includes(entry.typedQuality))current.issues++;
+      const ms=finiteNumber(entry.responseMs,0);
+      if(ms>0){current.responseTotal+=ms;current.responseCount++;}
+      if((entry.t||0)>=current.lastT){current.lastT=entry.t||0;current.lastRating=entry.rating||'';}
+      map.set(key,current);
+    }
+    function v430AddMistake(map,key){
+      if(!key)return;
+      map.set(key,(map.get(key)||0)+1);
+    }
+    function v430BuildEvidence(){
+      const stamp=v430EvidenceStamp();
+      if(v430EvidenceCache.stamp===stamp)return v430EvidenceCache;
+      const byId=new Map(),byNote=new Map(),mistakesById=new Map(),mistakesByNote=new Map(),cutoff=now()-days(V430_EVIDENCE_DAYS);
+      for(const entry of (state.reviewLog||[]).slice(-V430_MAX_EVIDENCE)){
+        if(!entry||entry.t<cutoff)continue;
+        const noteId=typeof depthBaseId==='function'?depthBaseId(entry.noteId||entry.id):String(entry.noteId||entry.id||'');
+        v430AddEvidence(byId,entry.id,entry);
+        v430AddEvidence(byNote,noteId,entry);
+      }
+      for(const entry of (state.mistakeLog||[]).slice(-4000)){
+        if(!entry||entry.t<cutoff)continue;
+        const noteId=typeof depthBaseId==='function'?depthBaseId(entry.id):String(entry.id||'');
+        v430AddMistake(mistakesById,entry.id);
+        v430AddMistake(mistakesByNote,noteId);
+      }
+      v430EvidenceCache={stamp,byId,byNote,mistakesById,mistakesByNote};
+      return v430EvidenceCache;
+    }
+    function v430EvidenceFor(card){
+      const cache=v430BuildEvidence(),noteId=typeof depthBaseId==='function'?depthBaseId(card):String(card?.noteId||card?.id||'');
+      const exact=cache.byId.get(card?.id),note=cache.byNote.get(noteId);
+      const evidence=exact&&exact.reviews>=2?exact:(exact||note||{reviews:0,failures:0,hard:0,issues:0,responseTotal:0,responseCount:0,lastT:0,lastRating:''});
+      return {...evidence,mistakes:(cache.mistakesById.get(card?.id)||cache.mistakesByNote.get(noteId)||0)};
+    }
+    function v430SkillStrength(card){
+      if(!card)return 0;
+      const p=normalizeProgressEntry(getProgress(card.id)),m=v3MemorySnapshot(card);
+      if(p.status==='new'&&!p.seen)return 0;
+      const recall=clamp(m.retrievability||0,0,1),stability=clamp(Math.log1p(m.stability||0)/Math.log(31),0,1);
+      const success=p.seen?clamp(p.successes/Math.max(1,p.seen),0,1):0;
+      const learned=p.status==='learned'?1:p.status==='learning'?.45:0;
+      return clamp(recall*.42+stability*.23+success*.2+learned*.15,0,1);
+    }
+    function v430DirectionalMastery(card){
+      if(typeof depthSkillId!=='function')return {recognition:0,production:0,gap:0};
+      const noteId=depthBaseId(card),recognition=state.depthSkillIndex?.get(depthSkillId(noteId,'recognition',0));
+      const productionCards=typeof depthCreateSkillCards==='function'?(depthNoteFor(card)?depthCreateSkillCards(depthNoteFor(card),'production'):[]): [];
+      const recognitionScore=v430SkillStrength(recognition);
+      const productionScore=productionCards.length?Math.min(...productionCards.map(v430SkillStrength)):0;
+      return {recognition:recognitionScore,production:productionScore,gap:Math.max(0,recognitionScore-productionScore)};
+    }
+    function v430WeaknessProfile(card){
+      const p=normalizeProgressEntry(getProgress(card.id)),m=v3MemorySnapshot(card),e=v430EvidenceFor(card);
+      const overdue=Math.min(30,dueAge(card)/days(1));
+      const failureRate=e.reviews?e.failures/e.reviews:0,issueRate=e.reviews?e.issues/e.reviews:0;
+      const avgMs=e.responseCount?e.responseTotal/e.responseCount:0;
+      const direction=v430DirectionalMastery(card),skill=typeof depthSkillOf==='function'?depthSkillOf(card):'recognition';
+      const directionPenalty=skill==='production'?direction.gap*12:0;
+      const score=
+        overdue*1.7+
+        Math.min(10,p.lapses)*6+
+        Math.max(0,(m.difficulty||5)-5)*5.5+
+        Math.max(0,.9-(m.retrievability||0))*32+
+        failureRate*18+
+        issueRate*10+
+        Math.min(10,e.mistakes*2)+
+        Math.min(8,Math.max(0,avgMs-7000)/3500)+
+        (p.lastRating==='again'?7:p.lastRating==='hard'?2.5:0)+
+        directionPenalty;
+      return {score,overdue,failureRate,issueRate,avgMs,direction,...e,memory:m,progress:p};
+    }
+    function v430RepairFocus(card){
+      const w=v430WeaknessProfile(card),skill=typeof depthSkillOf==='function'?depthSkillOf(card):'recognition';
+      if(w.issueRate>=.3||w.mistakes>=3)return {label:'Answer precision',detail:'Repeated typed-answer errors are the main signal. Compare spelling, accents, articles, and the exact target meaning.'};
+      if(skill==='production'&&w.direction.gap>=.25)return {label:'Production gap',detail:'Recognition is stronger than French production. Use active English → French recall before adding more new material.'};
+      if(w.progress.lapses>=3||w.failureRate>=.35)return {label:'Repeated forgetting',detail:'This item has repeated retrieval failures. Clarify the meaning distinction, then use short practice before the next scheduled review.'};
+      if(w.avgMs>=18000)return {label:'Slow retrieval',detail:'Answers are usually correct but slow. Practice faster retrieval without changing the scheduled interval.'};
+      return {label:'Memory risk',detail:'The current FSRS memory estimate and due history make this item high priority for repair.'};
+    }
+
+    /* One authoritative weakness model now drives difficult-card detection,
+       weakest-first sessions, and the adaptive due queue. */
+    weaknessScore=function(card){return v430WeaknessProfile(card).score;};
+    const v430IsDifficultBase=isDifficult;
+    isDifficult=function(card){
+      const w=v430WeaknessProfile(card);
+      return v430IsDifficultBase(card)||w.score>=28||(w.reviews>=4&&w.failureRate>=.3)||(w.reviews>=4&&w.issueRate>=.35);
+    };
+    if(typeof v394ReviewRisk==='function')v394ReviewRisk=function(card){return v430WeaknessProfile(card).score;};
+    if(typeof v394DueTier==='function')v394DueTier=function(card){
+      const p=normalizeProgressEntry(getProgress(card.id)),w=v430WeaknessProfile(card);
+      if(p.status==='learning'||p.relearning||p.fsrsState==='learning'||p.fsrsState==='relearning')return 0;
+      if(isLeech(card)||w.score>=28||w.memory.retrievability<.78)return 1;
+      return 2;
+    };
+
+    /* Persist the memory state that produced every scheduled decision, not
+       only the resulting interval. This makes later calibration/auditing
+       possible without changing existing review-log IDs. */
+    const v430NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      return v430NormalizeReviewLogBase(raw,knownIds).map(entry=>({
+        ...entry,
+        stability:clamp(finiteNumber(entry.stability),0,36500),
+        difficulty:clamp(finiteNumber(entry.difficulty,5),1,10),
+        retrievability:clamp(finiteNumber(entry.retrievability),0,1),
+        scheduledDays:clamp(finiteNumber(entry.scheduledDays,entry.interval||0),0,36500),
+        fsrsState:['new','learning','review','relearning'].includes(entry.fsrsState)?entry.fsrsState:''
+      }));
+    };
+    const v430RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v430RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      const entry=state.reviewLog?.at(-1);
+      if(entry&&entry.id===card.id){
+        const memory=v3MemorySnapshot(card,entry.t||now());
+        Object.assign(entry,{
+          stability:finiteNumber(next?.stability,memory.stability),
+          difficulty:finiteNumber(next?.difficulty,memory.difficulty),
+          retrievability:clamp(finiteNumber(memory.retrievability),0,1),
+          scheduledDays:finiteNumber(next?.scheduledDays,next?.interval||0),
+          fsrsState:next?.fsrsState||''
+        });
+        saveReviewLog();
+        v430EvidenceCache.stamp='';
+      }
+      return result;
+    };
+
+    /* Add a concrete diagnosis to the existing leech repair flow. */
+    const v430OpenLeechRepairBase=depthOpenLeechRepair;
+    depthOpenLeechRepair=function(card){
+      const result=v430OpenLeechRepairBase(card),dialog=document.querySelector('#depth-leech-dialog');
+      if(dialog&&!dialog.querySelector('.v430-repair-diagnosis')){
+        const focus=v430RepairFocus(card),w=v430WeaknessProfile(card);
+        const grid=dialog.querySelector('.depth-repair-grid');
+        const html='<div class="v430-repair-diagnosis"><strong>'+escapeHtml(focus.label)+'</strong><span>'+escapeHtml(focus.detail)+'</span><small>Weakness '+Math.round(w.score)+' · '+Math.round(w.failureRate*100)+'% recent failures · '+Math.round(w.issueRate*100)+'% answer-precision errors</small></div>';
+        if(grid)grid.insertAdjacentHTML('beforebegin',html);
+      }
+      return result;
+    };
+    function v430EnsureStyles(){
+      if(document.querySelector('#v430-study-engine-style'))return;
+      const style=document.createElement('style');style.id='v430-study-engine-style';
+      style.textContent='.v430-repair-diagnosis{display:grid;gap:.3rem;margin:.8rem 0;padding:.75rem .85rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v430-repair-diagnosis strong{color:var(--navy)}.v430-repair-diagnosis span,.v430-repair-diagnosis small{color:var(--muted)}';
+      document.head.append(style);
+    }
+
+    /* P2 surface identity. Existing v4.2 render wrappers call
+       v420NormalizeSurface dynamically, so upgrading this single hook keeps
+       every view consistent without duplicating render controllers. */
+    const v430NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v430NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p2-study-engine-2-0';
+      document.documentElement.dataset.studyEngine='v430';
+      document.documentElement.dataset.scheduler='fsrs5-compatible';
+      document.documentElement.dataset.directionalMastery='separate-skill-schedules';
+      document.documentElement.dataset.weaknessModel='v430';
+    };
+    const v430InitBase=init;
+    init=async function(options={}){
+      v430EnsureStyles();
+      const result=await v430InitBase(options);
+      v430EvidenceCache.stamp='';
+      v420NormalizeSurface();
+      return result;
+    };
 
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
