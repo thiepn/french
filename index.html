@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.5.0';
-    const APP_RELEASE = 'P4 Listening, Pronunciation & Audio Mastery';
+    const APP_VERSION = '4.6.0';
+    const APP_RELEASE = 'P5 Progress & Vocabulary Intelligence';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -15244,6 +15244,260 @@ qui	who	A1	question word`;
       if(state.view==='dashboard')v450PolishHomeAudio();
       if(state.view==='study')v450PolishCurrentAudio();
       if(state.view==='settings')v450PolishSettingsAudio();
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.6.0 PROGRESS & VOCABULARY INTELLIGENCE
+       Replaces vanity metrics with evidence-based vocabulary intelligence:
+       note coverage, current FSRS security, directional skill gaps, weak
+       clusters, repair causes, review pressure, and concrete next actions.
+       This layer is analytic only; it never changes scheduler decisions.
+       ================================================================ */
+    const V460_VERSION='4.6.0';
+    const V460_RELEASE='P5 Progress & Vocabulary Intelligence';
+
+    function v460SkillCards(note,skill){
+      if(!note||!DEPTH_SKILLS[skill])return [];
+      return depthCreateSkillCards(note,skill).filter(card=>depthSkillOf(card)===skill);
+    }
+    function v460SkillState(note,skill){
+      const cards=v460SkillCards(note,skill);
+      if(!cards.length)return {eligible:false,started:false,learned:false,secure:false,due:false,retrievability:0,stability:0,risk:0,cards:[]};
+      const target=normalizeSettings(state.settings).desiredRetention||.9;
+      const rows=cards.map(card=>{
+        const p=normalizeProgressEntry(getProgress(card.id)),m=v3MemorySnapshot(card),started=p.seen>0||p.status!=='new';
+        return {card,p,m,started,learned:p.status==='learned',secure:p.status==='learned'&&m.retrievability>=target,due:isDue(card),risk:started?v430WeaknessProfile(card).score:0};
+      });
+      const startedRows=rows.filter(row=>row.started);
+      return {
+        eligible:true,
+        started:startedRows.length>0,
+        learned:rows.every(row=>row.learned),
+        secure:rows.every(row=>row.secure),
+        due:rows.some(row=>row.due),
+        retrievability:startedRows.length?Math.min(...startedRows.map(row=>row.m.retrievability)):0,
+        stability:startedRows.length?Math.min(...startedRows.map(row=>row.m.stability)):0,
+        risk:startedRows.length?Math.max(...startedRows.map(row=>row.risk)):0,
+        cards:rows
+      };
+    }
+    function v460NoteState(note){
+      const recognition=v460SkillState(note,'recognition'),production=v460SkillState(note,'production'),listening=v460SkillState(note,'listening'),spelling=v460SkillState(note,'spelling'),article=v460SkillState(note,'article');
+      const modes={recognition,production,listening,spelling,article};
+      const eligible=Object.values(modes).filter(item=>item.eligible),started=eligible.some(item=>item.started);
+      const worst=eligible.flatMap(item=>item.cards).filter(row=>row.started).sort((a,b)=>b.risk-a.risk)[0]||null;
+      return {
+        note,modes,started,
+        receptiveSecure:recognition.secure,
+        productiveSecure:production.secure,
+        balancedSecure:recognition.secure&&production.secure,
+        due:eligible.some(item=>item.due),
+        risk:worst?.risk||0,
+        worstCard:worst?.card||null,
+        repair:worst?.card?v430RepairFocus(worst.card):null,
+        productionGap:Math.max(0,finiteNumber(v430DirectionalMastery(note).gap))
+      };
+    }
+    function v460AllNoteStates(){
+      depthIndexSkills();
+      return (state.depthBaseNotes||state.cards||[]).filter(note=>!note.userCreated||note.fr).map(v460NoteState);
+    }
+    function v460Pct(n,d){return d?Math.round(n/d*100):0;}
+    function v460Coverage(states){
+      const total=states.length,introduced=states.filter(item=>item.started).length,receptive=states.filter(item=>item.receptiveSecure).length,productive=states.filter(item=>item.productiveSecure).length,balanced=states.filter(item=>item.balancedSecure).length;
+      return {total,introduced,receptive,productive,balanced,unseen:Math.max(0,total-introduced)};
+    }
+    function v460SkillSummary(states,skill){
+      const rows=states.map(item=>item.modes[skill]).filter(item=>item.eligible),eligible=rows.length,started=rows.filter(item=>item.started).length,secure=rows.filter(item=>item.secure).length,due=rows.filter(item=>item.due).length;
+      const seenRows=rows.filter(item=>item.started),recall=seenRows.length?Math.round(seenRows.reduce((sum,item)=>sum+item.retrievability,0)/seenRows.length*100):0;
+      return {skill,eligible,started,secure,due,recall,securePct:v460Pct(secure,eligible)};
+    }
+    function v460LevelSummary(states,level){
+      const rows=states.filter(item=>item.note.level===level),coverage=v460Coverage(rows);
+      return {...coverage,level,receptivePct:v460Pct(coverage.receptive,coverage.total),productivePct:v460Pct(coverage.productive,coverage.total),balancedPct:v460Pct(coverage.balanced,coverage.total)};
+    }
+    function v460ThemeClusters(states){
+      const groups=new Map();
+      states.filter(item=>item.started).forEach(item=>{
+        const key=item.note.theme||'general';
+        if(!groups.has(key))groups.set(key,{theme:key,started:0,highRisk:0,riskTotal:0,due:0});
+        const row=groups.get(key);row.started++;row.riskTotal+=item.risk;if(item.risk>=28)row.highRisk++;if(item.due)row.due++;
+      });
+      return [...groups.values()].map(row=>({...row,avgRisk:row.started?row.riskTotal/row.started:0,rank:row.highRisk*8+row.due*2+(row.started?row.riskTotal/row.started:0)})).sort((a,b)=>b.rank-a.rank||b.highRisk-a.highRisk||b.avgRisk-a.avgRisk);
+    }
+    function v460RepairCauses(states){
+      const counts=new Map();
+      states.filter(item=>item.risk>=20&&item.repair).forEach(item=>counts.set(item.repair.label,(counts.get(item.repair.label)||0)+1));
+      return [...counts.entries()].map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count);
+    }
+    function v460ReviewPressure(){
+      const nowTs=now(),day=days(1),rows=[];
+      for(const card of state.depthSkillIndex?.values?.()||[]){
+        const p=normalizeProgressEntry(getProgress(card.id));
+        if(p.status==='new'||p.suspended||(!p.seen&&p.status==='new'))continue;
+        const due=Math.max(finiteNumber(p.due),finiteNumber(p.buriedUntil));
+        if(due)rows.push(due);
+      }
+      return {
+        now:rows.filter(due=>due<=nowTs).length,
+        tomorrow:rows.filter(due=>due>nowTs&&due<=nowTs+day).length,
+        threeDays:rows.filter(due=>due>nowTs+day&&due<=nowTs+3*day).length,
+        week:rows.filter(due=>due>nowTs+3*day&&due<=nowTs+7*day).length
+      };
+    }
+    function v460GapSummary(states){
+      const started=states.filter(item=>item.modes.recognition.started||item.modes.production.started);
+      const rec=started.length?started.reduce((sum,item)=>sum+(item.modes.recognition.secure?1:0),0)/started.length:0;
+      const prod=started.length?started.reduce((sum,item)=>sum+(item.modes.production.secure?1:0),0)/started.length:0;
+      return {recognition:rec,production:prod,gap:Math.max(0,rec-prod)};
+    }
+    function v460WeakestNotes(states,limit=8){
+      return states.filter(item=>item.started&&item.risk>0).sort((a,b)=>b.risk-a.risk).slice(0,limit);
+    }
+
+    function v460StartSkill10(skill){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting a focused session.');return;}
+      state.session=normalizeSession({...v440SavedPlan(),mode:'today',skillMode:skill,practice:skill==='listening'?'listening':'classic',size:10,scheduleMode:'review',order:'smart',lessonId:0});
+      buildQueue();
+      if(!state.queue.length){showToast('No '+skill+' cards are ready under the current learning gates.');renderProgress();return;}
+      setView('study');
+    }
+    function v460RepairWeakest(states){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting a repair session.');return;}
+      const cards=v460WeakestNotes(states,10).map(item=>item.worstCard).filter(Boolean);
+      if(!cards.length){showToast('No weak reviewed cards need repair right now.');return;}
+      v440StartPracticeQueue(cards);
+      setView('study');
+    }
+    function v460PracticeTheme(states,theme){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting focused practice.');return;}
+      const cards=states.filter(item=>item.note.theme===theme&&item.started).sort((a,b)=>b.risk-a.risk).slice(0,10).map(item=>item.worstCard).filter(Boolean);
+      if(!cards.length){showToast('No reviewed cards are available in this topic yet.');return;}
+      v440StartPracticeQueue(cards);setView('study');
+    }
+
+    function v460CoverageFunnel(coverage){
+      const rows=[
+        ['Introduced',coverage.introduced,coverage.total,'Seen in at least one scheduled skill'],
+        ['Recognition secure',coverage.receptive,coverage.total,'Recognition is learned and currently at or above your retention target'],
+        ['Production secure',coverage.productive,coverage.total,'All production senses are learned and currently at or above your retention target'],
+        ['Balanced secure',coverage.balanced,coverage.total,'Both recognition and production are currently secure']
+      ];
+      return '<div class="v460-funnel">'+rows.map(([label,value,total,help])=>'<div class="v460-funnel-row"><div><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(help)+'</small></div><div class="v460-funnel-bar">'+progressBar(v460Pct(value,total),label+': '+value+' of '+total)+'</div><span>'+value.toLocaleString()+' <small>'+v460Pct(value,total)+'%</small></span></div>').join('')+'</div>';
+    }
+    function v460LevelRows(states){
+      return LEVELS.map(level=>{
+        const row=v460LevelSummary(states,level);
+        return '<div class="v460-level-row"><span class="level-chip level-'+level.toLowerCase()+'">'+level+'</span><div><div class="v460-level-bars"><span title="Recognition secure" style="width:'+row.receptivePct+'%"></span><span title="Production secure" style="width:'+row.productivePct+'%"></span></div><small>'+row.receptive.toLocaleString()+' recognition · '+row.productive.toLocaleString()+' production · '+row.total.toLocaleString()+' total</small></div><strong>'+row.balancedPct+'%</strong></div>';
+      }).join('');
+    }
+    function v460SkillRows(states){
+      const labels={recognition:'Recognition',production:'Production',listening:'Listening',spelling:'Spelling',article:'Article & gender'};
+      return Object.keys(labels).map(skill=>{
+        const row=v460SkillSummary(states,skill);
+        return '<div class="v460-skill-row"><div><strong>'+labels[skill]+'</strong><small>'+row.started.toLocaleString()+' started · '+row.due.toLocaleString()+' due</small></div><div>'+progressBar(row.securePct,labels[skill]+' secure: '+row.secure+' of '+row.eligible)+'</div><span><strong>'+row.securePct+'%</strong><small>'+row.recall+'% current recall</small></span></div>';
+      }).join('');
+    }
+    function v460WeakRows(states){
+      const rows=v460WeakestNotes(states,6);
+      if(!rows.length)return '<div class="v460-empty">No reviewed vocabulary has enough weakness evidence yet.</div>';
+      return rows.map(item=>{
+        const focus=item.repair||{label:'Memory risk'},note=item.note;
+        return '<button type="button" class="v460-weak-row" data-v460-word="'+escapeHtml(note.id)+'"><span><strong lang="fr">'+escapeHtml(note.fr)+'</strong><small>'+escapeHtml(note.en)+'</small></span><span class="v460-risk">'+Math.round(item.risk)+' risk</span><span>'+escapeHtml(focus.label)+'</span></button>';
+      }).join('');
+    }
+    function v460ClusterRows(states){
+      const rows=v460ThemeClusters(states).slice(0,4);
+      if(!rows.length)return '<div class="v460-empty">Topic intelligence appears after reviewed vocabulary accumulates.</div>';
+      return rows.map(row=>'<div class="v460-cluster-row"><div><strong>'+escapeHtml(THEME_LABELS[row.theme]||row.theme)+'</strong><small>'+row.started+' reviewed notes · '+row.highRisk+' high risk · '+row.due+' due</small></div><span>avg '+Math.round(row.avgRisk)+'</span><button class="secondary" data-v460-theme="'+escapeHtml(row.theme)+'">Practice</button></div>').join('');
+    }
+    function v460ActionAdvice(states,pressure){
+      const coverage=v460Coverage(states),gap=v460GapSummary(states),highRisk=states.filter(item=>item.risk>=28).length,actions=[];
+      if(pressure.now)actions.push({title:'Clear scheduled reviews',detail:pressure.now+' skill review'+(pressure.now===1?' is':'s are')+' due now.',action:'due',label:'Review due'});
+      if(highRisk)actions.push({title:'Repair weak vocabulary',detail:highRisk+' reviewed note'+(highRisk===1?' has':'s have')+' high memory risk.',action:'repair',label:'Repair 10'});
+      if(gap.gap>=.12)actions.push({title:'Close the production gap',detail:'Current secure production trails recognition by '+Math.round(gap.gap*100)+' percentage points among started vocabulary.',action:'production',label:'Production 10'});
+      const listening=v460SkillSummary(states,'listening'),recognition=v460SkillSummary(states,'recognition');
+      if(actions.length<3&&recognition.secure>=20&&listening.securePct+15<recognition.securePct)actions.push({title:'Build listening transfer',detail:'Listening security is materially behind visual recognition.',action:'listening',label:'Listening 10'});
+      if(actions.length<3&&coverage.unseen>0)actions.push({title:'Keep expanding',detail:coverage.unseen.toLocaleString()+' catalog notes remain untouched. Your normal Today queue will introduce them at the saved pace.',action:'today',label:'Study today'});
+      return actions.slice(0,3);
+    }
+    function v460IntelligenceHtml(states){
+      const coverage=v460Coverage(states),week=rollingStats(7),pressure=v460ReviewPressure(),gap=v460GapSummary(states),causes=v460RepairCauses(states).slice(0,3),actions=v460ActionAdvice(states,pressure),retentionTarget=Math.round((normalizeSettings(state.settings).desiredRetention||.9)*100);
+      return '<div class="v460-progress-shell">'+
+        '<header class="v460-head"><div><p class="eyebrow">Vocabulary intelligence</p><h2>What you know, what is fragile, what to do next</h2><p>These are app estimates from your scheduled skill history and FSRS memory state—not a claim about your full real-world French vocabulary.</p></div><div class="v460-confidence"><strong>'+coverage.balanced.toLocaleString()+'</strong><span>balanced-secure notes</span><small>at '+retentionTarget+'% retention target</small></div></header>'+
+        '<section class="v460-kpis"><article><span>Catalog</span><strong>'+coverage.total.toLocaleString()+'</strong><small>vocabulary notes</small></article><article><span>Introduced</span><strong>'+coverage.introduced.toLocaleString()+'</strong><small>'+v460Pct(coverage.introduced,coverage.total)+'% of catalog</small></article><article><span>Recognition secure</span><strong>'+coverage.receptive.toLocaleString()+'</strong><small>'+v460Pct(coverage.receptive,coverage.total)+'% of catalog</small></article><article><span>Production secure</span><strong>'+coverage.productive.toLocaleString()+'</strong><small>'+v460Pct(coverage.productive,coverage.total)+'% of catalog</small></article><article><span>7-day accuracy</span><strong>'+(week.reviewed?week.accuracy+'%':'—')+'</strong><small>'+week.reviewed.toLocaleString()+' answers</small></article></section>'+
+        '<section class="v460-main-grid"><article class="v460-card v460-wide"><div class="v460-card-head"><div><h3>Vocabulary coverage</h3><p>Security means the skill is learned and its current estimated recall is at or above your configured retention target.</p></div></div>'+v460CoverageFunnel(coverage)+'</article>'+
+        '<article class="v460-card"><div class="v460-card-head"><div><h3>Review pressure</h3><p>Scheduled skill reviews, not just note-level due counts.</p></div></div><div class="v460-pressure"><div><strong>'+pressure.now+'</strong><span>due now</span></div><div><strong>'+pressure.tomorrow+'</strong><span>next 24h</span></div><div><strong>'+pressure.threeDays+'</strong><span>days 2–3</span></div><div><strong>'+pressure.week+'</strong><span>days 4–7</span></div></div></article>'+
+        '<article class="v460-card"><div class="v460-card-head"><div><h3>Directional balance</h3><p>Secure recall among vocabulary you have started.</p></div></div><div class="v460-direction"><div><span>Recognition</span><strong>'+Math.round(gap.recognition*100)+'%</strong></div><div class="v460-gap-line"><i style="width:'+Math.round(gap.recognition*100)+'%"></i></div><div><span>Production</span><strong>'+Math.round(gap.production*100)+'%</strong></div><div class="v460-gap-line production"><i style="width:'+Math.round(gap.production*100)+'%"></i></div><p>'+Math.round(gap.gap*100)+' percentage-point recognition → production gap.</p></div></article>'+
+        '</section>'+
+        '<section class="v460-two-grid"><article class="v460-card"><div class="v460-card-head"><div><h3>Secure coverage by CEFR level</h3><p>Blue = recognition, secondary bar = production. Right side is balanced security.</p></div></div><div class="v460-levels">'+v460LevelRows(states)+'</div></article><article class="v460-card"><div class="v460-card-head"><div><h3>Skill health</h3><p>Each skill is independently scheduled.</p></div></div><div class="v460-skills">'+v460SkillRows(states)+'</div></article></section>'+
+        '<section class="v460-two-grid"><article class="v460-card"><div class="v460-card-head"><div><h3>Weakest vocabulary now</h3><p>P2 risk combines lapses, retrievability, errors, speed, due age, and skill gaps.</p></div><button class="v372-text-button" id="v460-repair-top">Repair top 10</button></div><div class="v460-weak-list">'+v460WeakRows(states)+'</div></article><article class="v460-card"><div class="v460-card-head"><div><h3>Weak clusters</h3><p>Topics accumulating the most review risk.</p></div></div><div class="v460-clusters">'+v460ClusterRows(states)+'</div>'+(causes.length?'<div class="v460-causes"><strong>Main repair signals</strong>'+causes.map(item=>'<span>'+escapeHtml(item.label)+' · '+item.count+'</span>').join('')+'</div>':'')+'</article></section>'+
+        '<section class="v460-card v460-next"><div class="v460-card-head"><div><h3>Best next actions</h3><p>Actions are generated from current review pressure and skill imbalance. Repair sessions are practice-only.</p></div></div><div class="v460-actions">'+actions.map(item=>'<article><div><strong>'+escapeHtml(item.title)+'</strong><p>'+escapeHtml(item.detail)+'</p></div><button class="'+(item.action==='due'?'primary':'secondary')+'" data-v460-action="'+item.action+'">'+escapeHtml(item.label)+'</button></article>').join('')+'</div></section>'+
+        '<section class="v460-details"><div><strong>Deeper analytics</strong><span>Activity, history, diagnostics, audio mastery, roadmap, and legacy reports remain available on demand.</span></div><div class="v460-detail-buttons">'+[['mastery','Mastery'],['activity','Activity'],['weak','Weak spots'],['history','History'],['diagnostics','Diagnostics']].map(pair=>'<button type="button" data-v372-open="'+pair[0]+'">'+pair[1]+'</button>').join('')+'</div></section>'+
+        '</div>';
+    }
+
+    function v460BindProgress(states){
+      $('[data-v372-open]',main).forEach(button=>button.addEventListener('click',()=>v372OpenDetails(button.dataset.v372Open)));
+      $('#v460-repair-top')?.addEventListener('click',()=>v460RepairWeakest(states));
+      $('[data-v460-theme]',main).forEach(button=>button.addEventListener('click',()=>v460PracticeTheme(states,button.dataset.v460Theme)));
+      $('[data-v460-word]',main).forEach(button=>button.addEventListener('click',()=>v3OpenInspector(button.dataset.v460Word)));
+      $('[data-v460-action]',main).forEach(button=>button.addEventListener('click',()=>{
+        const action=button.dataset.v460Action;
+        if(action==='due'){v382StartSession('due');return;}
+        if(action==='repair'){v460RepairWeakest(states);return;}
+        if(action==='production'||action==='listening'){v460StartSkill10(action);return;}
+        if(action==='today'){v382StartSession('today');return;}
+      }));
+    }
+
+    function v460TransformProgress(){
+      if(state.view!=='progress')return;
+      const states=v460AllNoteStates(),old=main.querySelector('.v372-progress-shell'),dialog=main.querySelector('#v372-progress-dialog'),audio=main.querySelector('.v450-progress-panel');
+      if(old)old.remove();
+      const shell=document.createElement('div');shell.innerHTML=v460IntelligenceHtml(states);
+      const intelligence=shell.firstElementChild;
+      dialog?main.insertBefore(intelligence,dialog):main.prepend(intelligence);
+      if(audio&&dialog){
+        const mastery=dialog.querySelector('[data-v372-detail-panel="mastery"]');
+        if(mastery){
+          const wrap=document.createElement('details');wrap.className='v372-detail-card';wrap.innerHTML='<summary>Audio mastery</summary><div class="v372-detail-content"></div>';
+          wrap.querySelector('.v372-detail-content').append(audio);mastery.prepend(wrap);
+        }
+      }
+      v460BindProgress(states);
+      document.title='French 3000 — Vocabulary intelligence';
+    }
+
+    function v460EnsureStyles(){
+      if(document.querySelector('#v460-vocabulary-intelligence-style'))return;
+      const style=document.createElement('style');style.id='v460-vocabulary-intelligence-style';
+      style.textContent='.v460-progress-shell{max-width:1120px;margin:0 auto;display:grid;gap:.85rem}.v460-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:end}.v460-head h2{margin:.12rem 0 .35rem}.v460-head p:last-child{margin:0;color:var(--muted);max-width:72ch}.v460-confidence{min-width:180px;padding:.8rem .9rem;border:1px solid var(--line);border-radius:16px;background:var(--surface-solid);text-align:right}.v460-confidence strong{display:block;color:var(--navy);font:800 1.8rem/1 Georgia,serif}.v460-confidence span,.v460-confidence small{display:block;color:var(--muted);font-size:.69rem;margin-top:.12rem}.v460-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem}.v460-kpis article{padding:.72rem;border:1px solid var(--line);border-radius:14px;background:var(--surface-solid)}.v460-kpis span,.v460-kpis small{display:block;color:var(--muted);font-size:.67rem}.v460-kpis strong{display:block;margin:.18rem 0;color:var(--navy);font:800 1.45rem/1 Georgia,serif}.v460-main-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(250px,.55fr);gap:.75rem}.v460-card{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);min-width:0}.v460-wide{grid-row:span 2}.v460-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem;margin-bottom:.7rem}.v460-card-head h3{margin:0;font-size:1rem}.v460-card-head p{margin:.2rem 0 0;color:var(--muted);font-size:.72rem;line-height:1.4}.v460-funnel{display:grid;gap:.55rem}.v460-funnel-row{display:grid;grid-template-columns:minmax(155px,.7fr) minmax(180px,1fr) auto;gap:.65rem;align-items:center}.v460-funnel-row>div:first-child strong,.v460-funnel-row>div:first-child small{display:block}.v460-funnel-row>div:first-child strong{color:var(--navy);font-size:.78rem}.v460-funnel-row>div:first-child small{color:var(--muted);font-size:.62rem;margin-top:.08rem}.v460-funnel-row>span{min-width:74px;text-align:right;color:var(--navy);font-weight:900;font-size:.78rem}.v460-funnel-row>span small{color:var(--muted);font-weight:700}.v460-pressure{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}.v460-pressure div{padding:.65rem;border-radius:12px;background:var(--surface-muted)}.v460-pressure strong,.v460-pressure span{display:block}.v460-pressure strong{color:var(--navy);font:800 1.25rem/1 Georgia,serif}.v460-pressure span{color:var(--muted);font-size:.65rem;margin-top:.18rem}.v460-direction>div{display:flex;justify-content:space-between;gap:.5rem;color:var(--muted);font-size:.72rem}.v460-direction>div strong{color:var(--navy)}.v460-gap-line{height:8px;margin:.3rem 0 .65rem;border-radius:99px;background:var(--surface-muted);overflow:hidden}.v460-gap-line i{display:block;height:100%;border-radius:inherit;background:var(--blue)}.v460-gap-line.production i{background:var(--green)}.v460-direction p{margin:.15rem 0 0;color:var(--muted);font-size:.68rem}.v460-two-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.v460-levels,.v460-skills,.v460-weak-list,.v460-clusters{display:grid;gap:.42rem}.v460-level-row,.v460-skill-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.55rem;align-items:center;padding:.48rem 0;border-top:1px solid var(--line)}.v460-level-row:first-child,.v460-skill-row:first-child{border-top:0}.v460-level-row small,.v460-skill-row small{display:block;color:var(--muted);font-size:.62rem;margin-top:.13rem}.v460-level-bars{position:relative;height:8px;border-radius:99px;background:var(--surface-muted);overflow:hidden}.v460-level-bars span{position:absolute;left:0;height:50%;background:var(--blue)}.v460-level-bars span:first-child{top:0}.v460-level-bars span:nth-child(2){bottom:0;background:var(--green)}.v460-level-row>strong{font-size:.72rem;color:var(--navy)}.v460-skill-row>div:first-child{min-width:100px}.v460-skill-row>div:first-child strong{font-size:.74rem;color:var(--navy)}.v460-skill-row>span{text-align:right}.v460-skill-row>span strong{display:block;color:var(--navy);font-size:.76rem}.v460-weak-row{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(90px,.6fr);gap:.55rem;align-items:center;padding:.5rem .55rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-muted);color:var(--ink);text-align:left}.v460-weak-row strong,.v460-weak-row small{display:block}.v460-weak-row strong{color:var(--navy)}.v460-weak-row small{color:var(--muted);font-size:.63rem;margin-top:.06rem}.v460-weak-row>span:last-child{color:var(--muted);font-size:.66rem}.v460-risk{font-size:.65rem;font-weight:900;color:var(--red)}.v460-cluster-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.5rem;align-items:center;padding:.5rem 0;border-top:1px solid var(--line)}.v460-cluster-row:first-child{border-top:0}.v460-cluster-row strong,.v460-cluster-row small{display:block}.v460-cluster-row strong{font-size:.76rem;color:var(--navy)}.v460-cluster-row small,.v460-cluster-row>span{font-size:.63rem;color:var(--muted)}.v460-cluster-row button{padding:.38rem .5rem;font-size:.66rem}.v460-causes{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.65rem;padding-top:.65rem;border-top:1px solid var(--line)}.v460-causes strong{width:100%;font-size:.7rem;color:var(--navy)}.v460-causes span{padding:.28rem .45rem;border-radius:999px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v460-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}.v460-actions article{display:flex;flex-direction:column;justify-content:space-between;gap:.6rem;padding:.7rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted)}.v460-actions strong{color:var(--navy);font-size:.78rem}.v460-actions p{margin:.18rem 0 0;color:var(--muted);font-size:.67rem;line-height:1.4}.v460-actions button{width:100%;font-size:.7rem}.v460-details{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.7rem;align-items:center;padding:.7rem .8rem;border:1px solid var(--line);border-radius:15px;background:var(--surface)}.v460-details strong,.v460-details span{display:block}.v460-details strong{color:var(--navy);font-size:.78rem}.v460-details span{color:var(--muted);font-size:.66rem;margin-top:.1rem}.v460-detail-buttons{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end}.v460-detail-buttons button{padding:.4rem .55rem;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted);color:var(--navy);font-size:.67rem;font-weight:850}.v460-empty{padding:1.2rem;text-align:center;color:var(--muted);font-size:.72rem}@media(max-width:900px){.v460-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.v460-main-grid,.v460-two-grid{grid-template-columns:1fr}.v460-wide{grid-row:auto}.v460-actions{grid-template-columns:1fr 1fr}.v460-details{grid-template-columns:1fr}.v460-detail-buttons{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}}@media(max-width:600px){.v460-progress-shell{gap:.65rem}.v460-head{grid-template-columns:1fr auto}.v460-head h2{font-size:1.45rem}.v460-head p:last-child{font-size:.72rem}.v460-confidence{min-width:110px;padding:.62rem}.v460-confidence strong{font-size:1.45rem}.v460-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem}.v460-kpis article:last-child{grid-column:1/-1}.v460-funnel-row{grid-template-columns:1fr auto;gap:.35rem}.v460-funnel-row>div:first-child{grid-column:1/-1}.v460-funnel-bar{grid-column:1}.v460-funnel-row>span{grid-column:2;grid-row:2}.v460-actions{grid-template-columns:1fr}.v460-weak-row{grid-template-columns:minmax(0,1fr) auto}.v460-weak-row>span:last-child{grid-column:1/-1}.v460-cluster-row{grid-template-columns:minmax(0,1fr) auto}.v460-cluster-row button{grid-column:1/-1;width:100%}.v460-skill-row{grid-template-columns:1fr auto}.v460-skill-row>div:nth-child(2){grid-column:1/-1;grid-row:2}.v460-skill-row>span{grid-column:2;grid-row:1}.v460-level-row{grid-template-columns:auto minmax(0,1fr) auto}}';
+      document.head.append(style);
+    }
+
+    const v460RenderProgressBase=renderProgress;
+    renderProgress=function(){
+      const result=v460RenderProgressBase();
+      v460TransformProgress();
+      return result;
+    };
+
+    const v460NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v460NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p5-progress-vocabulary-intelligence';
+      document.documentElement.dataset.progressIntelligence='v460';
+      document.documentElement.dataset.vocabularyEstimate='fsrs-evidence-based';
+    };
+    const v460InitBase=init;
+    init=async function(options={}){
+      v460EnsureStyles();
+      const result=await v460InitBase(options);
+      v420NormalizeSurface();
+      if(state.view==='progress')v460TransformProgress();
       return result;
     };
 
