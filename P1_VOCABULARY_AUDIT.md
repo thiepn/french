@@ -1,7 +1,7 @@
 # French3000 P1 — Vocabulary Database Audit
 
 Date: 2026-09-30  
-Release: v4.2.0 — P1 Vocabulary Database Audit  
+Release: v4.2.1 — P1 Vocabulary Audit Verification  
 Production catalogue target: 3,000 records  
 Pinned source fingerprint: `14beb3f21e908a471fe213c99ebc776bd11a5222`
 
@@ -38,7 +38,7 @@ The main defect was not structural completeness. It was learner relevance. Some 
 
 Six explicit dictionary-metadata glosses were also found in the raw 3,000-record source, including forms such as `meilleure`, `aucune`, `restau`, `celles`, `patiente`, and `Grecque`.
 
-## Implemented in v4.2.0
+## Implemented in v4.2.0–v4.2.1
 
 ### 1. Source provenance is retained
 
@@ -113,7 +113,7 @@ Existing checks still cover:
 
 The prepared vocabulary cache was bumped from v4 to v5 so existing installations rebuild from the P1 pipeline.
 
-The PWA shell cache was bumped from v2 to v3.
+The PWA shell cache was bumped from v2 to v4 across the P1 rollout.
 
 No user progress, review history, stable card IDs, CEFR bands, or frequency order is intentionally reset.
 
@@ -130,6 +130,12 @@ P1 makes the catalogue structurally safer and substantially improves the highest
 
 These are non-blocking editorial queues; they should not be auto-filled from uncertain heuristics.
 
+### 7. Final POS normalization verification
+
+v4.2.1 closes one remaining source-schema mismatch: French3000 now normalizes source `art` records as determiners, `fp/mp` records as nouns, and `vr` records as verbs. This prevents common articles such as `le`, `la`, `les`, `un`, `une`, `des`, and `du` from falling into the generic “other” POS bucket.
+
+The current two inline JavaScript programs both pass syntax validation after the final P1 changes.
+
 ## Release status
 
-v4.2.0 keeps French3000 focused as a vocabulary/SRS product and establishes a safer base for P2 — Study Engine 2.0.
+v4.2.1 completes P1 while keeping French3000 focused as a vocabulary/SRS product and establishes the verified base for P2 — Study Engine 2.0.
