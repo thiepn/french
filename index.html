@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.9.0';
-    const APP_RELEASE = 'P8 Adaptive Vocabulary Curriculum & Personalized Learning Path';
+    const APP_VERSION = '5.0.0';
+    const APP_RELEASE = 'P9 Vocabulary Usage, Collocations & Natural French Production';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -16455,6 +16455,393 @@ qui	who	A1	question word`;
       if(state.view==='progress')v490DecorateProgress();
       if(state.view==='settings')v490DecorateSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v4.9.0';
+      return result;
+    };
+
+
+    /* ================================================================
+       v5.0.0 VOCABULARY USAGE, COLLOCATIONS & NATURAL FRENCH PRODUCTION
+       Trains reference-backed lexical constructions and verified example
+       chunks without promoting generated or incidental text into rules.
+       Usage work is independently evidenced and practice-only: it never
+       changes the underlying vocabulary SRS interval.
+       ================================================================ */
+    const V500_VERSION='5.0.0';
+    const V500_RELEASE='P9 Vocabulary Usage, Collocations & Natural French Production';
+    const V500_USAGE_SECURE_ATTEMPTS=3;
+    const V500_USAGE_SECURE_ACCURACY=.80;
+    const V500_USAGE_REFRESH_DAYS=60;
+    V490_PATH_FOCI.add('usage');
+
+    function v500BaseNote(card){return depthNoteFor(card)||state.cardById.get(depthBaseId(card))||card;}
+    function v500UsageForms(card){
+      const note=v500BaseNote(card)||card,forms=[String(note?.usagePattern||'').trim(),String(note?.usagePatternAlt||'').trim()].filter(Boolean);
+      return [...new Set(forms)];
+    }
+    function v500UsageKey(card,pattern){return depthBaseId(card)+'|'+normalizeTyped(pattern);}
+    function v500PatternChallenge(pattern){
+      const source=String(pattern||'').trim();
+      if(!source)return {prompt:'',answer:'',full:''};
+      const connectors=[];
+      const prompt=source.replace(/(\s)(à|de)(?=\s|\s*\+)/giu,function(match,space,word){connectors.push(word);return space+'_____';});
+      if(connectors.length)return {prompt:prompt,answer:connectors.join(' … '),full:source,kind:'connector'};
+      return {prompt:source,answer:source,full:source,kind:'frame'};
+    }
+    function v500RawUsageEntry(raw){
+      return raw&&raw.usagePractice===true&&typeof raw.usagePattern==='string'&&raw.usagePattern.trim();
+    }
+
+    const v500NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){
+        if(!entry||typeof entry!=='object')continue;
+        const key=[finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|');
+        lookup.set(key,entry);
+      }
+      return v500NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const key=[finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),original=lookup.get(key);
+        if(!v500RawUsageEntry(original))return entry;
+        return {...entry,usagePractice:true,usagePattern:String(original.usagePattern).slice(0,220),usageKey:String(original.usageKey||v500UsageKey({id:entry.noteId||entry.id},original.usagePattern)).slice(0,500)};
+      });
+    };
+
+    function v500UsageEntries(card,pattern){
+      const key=v500UsageKey(card,pattern),cutoff=now()-days(365);
+      return state.reviewLog.filter(function(entry){return entry.usagePractice===true&&entry.usageKey===key&&entry.t>=cutoff;}).sort(function(a,b){return a.t-b.t;});
+    }
+    function v500UsageFormState(card,pattern){
+      const entries=v500UsageEntries(card,pattern),attempts=entries.length,successes=entries.filter(function(entry){return entry.rating!=='again'&&entry.correct!==false;}).length;
+      const last=entries[entries.length-1]||null,accuracy=attempts?successes/attempts:0,lastAt=last?finiteNumber(last.t):0,lastSuccess=Boolean(last&&last.rating!=='again'&&last.correct!==false);
+      const stale=Boolean(lastAt&&now()-lastAt>days(V500_USAGE_REFRESH_DAYS));
+      const secure=attempts>=V500_USAGE_SECURE_ATTEMPTS&&accuracy>=V500_USAGE_SECURE_ACCURACY&&lastSuccess&&!stale;
+      let status='unseen';if(secure)status='secure';else if(stale&&attempts>=V500_USAGE_SECURE_ATTEMPTS&&accuracy>=V500_USAGE_SECURE_ACCURACY)status='refresh';else if(attempts)status='building';
+      return {pattern:pattern,attempts:attempts,successes:successes,accuracy:accuracy,lastAt:lastAt,lastSuccess:lastSuccess,stale:stale,secure:secure,status:status};
+    }
+    function v500UsageState(card){
+      const note=v500BaseNote(card),forms=v500UsageForms(note),formStates=forms.map(function(pattern){return v500UsageFormState(note,pattern);});
+      const recognition=v470SkillState(note,'recognition'),production=v470SkillState(note,'production');
+      const started=formStates.some(function(item){return item.attempts>0;}),secure=Boolean(forms.length)&&formStates.every(function(item){return item.secure;});
+      const refresh=formStates.some(function(item){return item.status==='refresh';}),gap=Boolean(forms.length&&(recognition.secure||production.started)&&!secure);
+      const attempts=formStates.reduce(function(sum,item){return sum+item.attempts;},0),successes=formStates.reduce(function(sum,item){return sum+item.successes;},0);
+      return {ready:forms.length>0,forms:forms,formStates:formStates,started:started,secure:secure,refresh:refresh,gap:gap,attempts:attempts,successes:successes,accuracy:attempts?successes/attempts:0,recognition:recognition,production:production};
+    }
+    function v500UsageLabel(info){
+      if(!info.ready)return 'No usage frame';
+      if(info.secure)return 'Usage secure';
+      if(info.refresh)return 'Refresh usage';
+      if(info.started)return 'Usage '+Math.round(info.accuracy*100)+'%';
+      if(info.gap)return 'Usage gap';
+      return 'Usage ready';
+    }
+    function v500UsagePriority(note){
+      const info=v500UsageState(note),risk=cardStatus(note)==='new'?0:v430WeaknessProfile(v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note).score;
+      let score=Math.min(55,risk)+(info.gap?65:0)+(info.refresh?55:0)+(info.started&&!info.secure?38:0)+(info.production.secure?18:info.production.started?10:0);
+      score+=Math.max(0,18-Math.min(18,(finiteNumber(note.order,3000)/3000)*18));
+      return score;
+    }
+    function v500UsagePool(cards){
+      const list=(cards||state.cards).map(v500BaseNote).filter(Boolean),seen=new Set(),out=[];
+      for(const note of list){
+        if(seen.has(note.id)||note.core===false||!isAvailable(note)||!v500UsageForms(note).length)continue;
+        seen.add(note.id);const info=v500UsageState(note);
+        /* Direct usage practice can be started once the word has at least
+           recognition evidence. The adaptive path waits for stronger recall. */
+        if(!info.recognition.started&&!info.production.started)continue;
+        out.push(note);
+      }
+      return out.sort(function(a,b){return v500UsagePriority(b)-v500UsagePriority(a)||a.order-b.order;});
+    }
+    function v500NextUsageForm(note){
+      const info=v500UsageState(note);
+      if(!info.formStates.length)return '';
+      return [...info.formStates].sort(function(a,b){
+        const ar=a.secure?2:a.status==='building'?1:0,br=b.secure?2:b.status==='building'?1:0;
+        return ar-br||a.accuracy-b.accuracy||a.attempts-b.attempts;
+      })[0].pattern;
+    }
+    function v500UsageTask(note,pattern){
+      const base=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note,challenge=v500PatternChallenge(pattern),stateInfo=v500UsageFormState(note,pattern);
+      const reason=stateInfo.status==='refresh'?'This construction was previously strong but has not been recalled recently.':stateInfo.attempts?'This reference-backed construction is not secure yet.':'The word is familiar enough to learn the construction that makes it sound natural in French.';
+      return {...base,v500UsagePractice:true,v500UsagePattern:pattern,v500UsageChallenge:challenge,v490PracticeOnly:true,v490Category:'usage',v490Reason:reason};
+    }
+    function v500UsageTasks(cards,count=10){
+      const tasks=[];for(const note of v500UsagePool(cards)){const pattern=v500NextUsageForm(note);if(pattern)tasks.push(v500UsageTask(note,pattern));if(tasks.length>=count)break;}return tasks;
+    }
+    function v500UsageStats(cards){
+      const notes=(cards||state.cards).map(v500BaseNote).filter(Boolean),seenNotes=new Set(),formStates=[];
+      for(const note of notes){
+        if(seenNotes.has(note.id)||note.core===false)continue;seenNotes.add(note.id);
+        for(const pattern of v500UsageForms(note))formStates.push({note:note,...v500UsageFormState(note,pattern)});
+      }
+      const practiced=formStates.filter(function(item){return item.attempts>0;}).length,secure=formStates.filter(function(item){return item.secure;}).length,refresh=formStates.filter(function(item){return item.status==='refresh';}).length;
+      const gapNotes=[...seenNotes].map(function(id){return state.cardById.get(id);}).filter(Boolean).filter(function(note){return v500UsageState(note).gap;}).length;
+      return {patterns:formStates.length,words:new Set(formStates.map(function(item){return item.note.id;})).size,practiced:practiced,secure:secure,refresh:refresh,gaps:gapNotes,securePct:formStates.length?Math.round(secure/formStates.length*100):0};
+    }
+
+    const v500RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v500RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v500UsagePractice){
+        const entry=state.reviewLog?.at(-1);
+        if(entry&&entry.id===card.id){
+          entry.usagePractice=true;entry.usagePattern=String(card.v500UsagePattern||'').slice(0,220);entry.usageKey=v500UsageKey(card,card.v500UsagePattern);
+          saveReviewLog();
+        }
+      }
+      return result;
+    };
+
+    const v500CardPresentationBase=v366CardPresentation;
+    v366CardPresentation=function(card,practice,shown){
+      if(card?.v500UsagePractice){
+        const note=v500BaseNote(card),challenge=card.v500UsageChallenge||v500PatternChallenge(card.v500UsagePattern);
+        if(!shown)return {label:'Natural French construction',main:challenge.prompt||card.v500UsagePattern,sub:(v393PrimaryMeaning(note)||note.en||'')+' · Recall what belongs in the blank, then reveal.',lang:'fr'};
+        return {label:'Reference-backed usage',main:card.v500UsagePattern,sub:challenge.answer&&challenge.kind==='connector'?'Missing connector: '+challenge.answer:'Learn the complete lexical frame as one unit.',lang:'fr'};
+      }
+      return v500CardPresentationBase(card,practice,shown);
+    };
+
+    const v500CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v500UsagePractice?'classic':v500CurrentPracticeBase(card);};
+
+    const v500RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v500UsagePractice)return v500RateCardBase(rating);
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;
+      state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v500RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    const v500NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v500NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v500UsageTasks=Array.isArray(raw?.v500UsageTasks)?raw.v500UsageTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max&&typeof item.pattern==='string';}).slice(0,100).map(function(item){return {index:item.index,pattern:String(item.pattern).slice(0,220)};}):[];
+      return result;
+    };
+    const v500SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v500SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v500UsagePractice)tasks.push({index:index,pattern:card.v500UsagePattern});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v500UsageTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v500ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v500UsageTasks)?[...state.resumeSnapshot.v500UsageTasks]:[];
+      const result=v500ResumeBase();
+      for(const item of tasks){
+        const base=state.queue?.[item.index];if(!base)continue;
+        const note=v500BaseNote(base),restored=v500UsageTask(note,item.pattern);
+        state.queue[item.index]={...base,...restored};
+      }
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
+    function v500StartUsage(cards,count=10){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting usage practice.');return;}
+      depthIndexSkills();const tasks=v500UsageTasks(cards,Math.max(1,finiteNumber(count,10)));
+      if(!tasks.length){showToast('No reference-backed usage patterns are ready for practice in this selection.');return;}
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'production',scheduleMode:'practice',practice:'classic',typed:false,size:tasks.length,quality:'core'});
+      state.queue=tasks;v490ResetSessionQueue();setView('study');announce('Natural French usage practice started');
+    }
+
+    function v500UsageChip(card){
+      const info=v500UsageState(card),cls=info.secure?'secure':info.refresh?'refresh':info.gap?'gap':info.started?'building':'ready';
+      return '<span class="v500-usage-chip '+cls+'" title="'+escapeHtml(info.attempts?(info.successes+' of '+info.attempts+' successful usage recalls'):'Reference-backed construction available')+'">'+escapeHtml(v500UsageLabel(info))+'</span>';
+    }
+
+    const v500MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value);
+      if(key==='usage'||key==='pattern'){
+        const info=v500UsageState(card);
+        if(['1','true','yes','on','ready'].includes(normalized))return info.ready;
+        if(['0','false','no','off','none'].includes(normalized))return !info.ready;
+        if(normalized==='secure')return info.secure;
+        if(normalized==='gap')return info.gap;
+        if(normalized==='building')return info.started&&!info.secure&&!info.refresh;
+        if(normalized==='refresh'||normalized==='due')return info.refresh;
+        if(normalized==='unseen')return info.ready&&!info.started;
+        if(normalized)return info.forms.some(function(pattern){return normalizeTyped(pattern).includes(normalized);});
+        return info.ready;
+      }
+      return v500MatchFilterBase(card,key,value);
+    };
+
+    function v500DecorateBrowse(){
+      if(state.view!=='browse'||!main.querySelector('.v470-shell'))return;
+      const cards=v470BrowseCards(),stats=v500UsageStats(state.cards),discovery=main.querySelector('.v470-discovery');
+      if(discovery&&!discovery.querySelector('[data-v500-usage]')){
+        const ready=document.createElement('button');ready.type='button';ready.dataset.v500Usage='ready';ready.className=state.browse.query==='usage:ready'?'active':'';ready.innerHTML='<span>Usage patterns</span><small>'+stats.patterns.toLocaleString()+'</small>';
+        ready.addEventListener('click',function(){state.browse={...DEFAULT_BROWSE,pageSize:50,query:'usage:ready',page:1};renderBrowse(true);});discovery.append(ready);
+        const gaps=document.createElement('button');gaps.type='button';gaps.dataset.v500Usage='gap';gaps.className=state.browse.query==='usage:gap'?'active':'';gaps.innerHTML='<span>Usage gaps</span><small>'+stats.gaps.toLocaleString()+'</small>';
+        gaps.addEventListener('click',function(){state.browse={...DEFAULT_BROWSE,pageSize:50,query:'usage:gap',page:1};renderBrowse(true);});discovery.append(gaps);
+      }
+      const actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v500-practice-usage')){
+        const button=document.createElement('button');button.type='button';button.className='secondary';button.id='v500-practice-usage';button.disabled=!cards.some(function(card){return v500UsageState(card).ready;});button.textContent='Usage 10';
+        button.addEventListener('click',function(){v500StartUsage(cards,10);});actions.append(button);
+      }
+      const help=main.querySelector('.v470-search-help p');
+      if(help&&!help.querySelector('[data-v500-help]'))help.insertAdjacentHTML('beforeend','<code data-v500-help>usage:gap</code><code data-v500-help>usage:secure</code><code data-v500-help>pattern:à</code>');
+      main.querySelectorAll('[data-v470-open]').forEach(function(row){
+        const card=state.cardById.get(row.dataset.v470Open),meta=row.querySelector('.v470-meta');
+        if(card&&meta&&!meta.querySelector('.v500-usage-chip')&&v500UsageState(card).ready)meta.insertAdjacentHTML('beforeend',v500UsageChip(card));
+      });
+    }
+    const v500RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v500RenderBrowseBase(focusSearch);v500DecorateBrowse();return result;};
+
+    function v500UsageDetailHtml(card){
+      const note=v500BaseNote(card),info=v500UsageState(note);if(!info.ready)return '';
+      const chunk=typeof v480ContextChunk==='function'?v480ContextChunk(note):'';
+      return '<section class="v381-detail-section v500-usage-detail"><h4>Usage & natural production</h4><div class="v500-usage-status">'+v500UsageChip(note)+'</div><div class="v500-patterns">'+info.formStates.map(function(item){
+        const challenge=v500PatternChallenge(item.pattern),status=item.secure?'secure':item.status==='refresh'?'refresh':item.attempts?'building':'new';
+        return '<article class="'+status+'"><span>Reference-backed construction</span><strong lang="fr">'+escapeHtml(item.pattern)+'</strong><small>'+escapeHtml(challenge.kind==='connector'?'Key connector: '+challenge.answer:'Learn this as one lexical frame.')+(item.attempts?' · '+item.successes+'/'+item.attempts+' successful':' · not practiced yet')+'</small></article>';
+      }).join('')+'</div>'+
+      (note.exampleFr?'<div class="v500-example-evidence"><span>Verified example</span><p lang="fr">'+escapeHtml(note.exampleFr)+'</p>'+(note.exampleEn?'<p>'+escapeHtml(note.exampleEn)+'</p>':'')+'</div>':'')+
+      (chunk?'<div class="v500-example-chunk"><span>Example phrase chunk</span><strong lang="fr">'+escapeHtml(chunk)+'</strong><small>This chunk is extracted from a verified example. It is useful phrase memory, but is not automatically classified as a general collocation rule.</small></div>':'')+
+      '<div class="button-row"><button type="button" class="primary" id="v500-practice-word-usage">Practice usage</button>'+(note.exampleFr?'<button type="button" class="secondary" id="v500-hear-usage-example">Hear example</button>':'')+'</div></section>';
+    }
+    const v500OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v500OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      if(!dialog.querySelector('.v500-usage-detail')&&v500UsageState(card).ready){
+        const scroll=dialog.querySelector('.v381-detail-scroll');scroll?.insertAdjacentHTML('beforeend',v500UsageDetailHtml(card));
+        $('#v500-practice-word-usage',dialog)?.addEventListener('click',function(){dialog.close();v500StartUsage([card],Math.max(1,v500UsageForms(card).length));});
+        $('#v500-hear-usage-example',dialog)?.addEventListener('click',function(){speakFrench(card.exampleFr);});
+      }
+      const legacy=dialog.querySelector('.v391-usage-callout');
+      if(legacy&&!legacy.querySelector('.v500-reference-label'))legacy.insertAdjacentHTML('afterbegin','<small class="v500-reference-label">Reference-backed lexical frame</small>');
+      return result;
+    };
+
+    function v500DecorateStudy(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex];
+      if(card?.v500UsagePractice){
+        const header=main.querySelector('.v366-study-header');
+        if(header&&!main.querySelector('.v500-study-banner'))header.insertAdjacentHTML('afterend','<div class="v500-study-banner"><strong>Natural French</strong><span>Complete the reference-backed construction mentally, reveal it, then rate whether you produced the correct frame. This is practice-only and does not change the word’s SRS schedule.</span></div>');
+      }
+    }
+    const v500RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v500RenderStudyBase();v500DecorateStudy();return result;};
+
+    const v500RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){
+      const result=v500RenderCurrentCardBase();const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v500UsagePractice||!stage)return result;
+      const duplicate=stage.querySelector('.v395-usage');if(duplicate)duplicate.remove();
+      const reason=stage.querySelector('.v490-path-reason');
+      if(!reason){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');
+        flash?.insertAdjacentHTML('afterend','<div class="v500-usage-note"><strong>Why this matters</strong><span>English prepositions and French constructions do not map word-for-word. Recall the complete French frame as one lexical unit.</span></div>');
+      }
+      v500DecorateStudy();return result;
+    };
+
+    /* P8 integration: usage becomes a first-class adaptive path focus and
+       practice lane, without displacing scheduled due reviews. */
+    const v500EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='usage')return 'usage';
+      const base=v500EffectiveFocusBase();
+      if(configured!=='auto')return base;
+      const stats=v500UsageStats(state.cards),context=typeof v480ContextStats==='function'?v480ContextStats(state.cards):{gaps:0};
+      if(stats.gaps>=8&&stats.gaps>=Math.max(8,context.gaps))return 'usage';
+      return base;
+    };
+    const v500FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='usage'?'Natural usage':v500FocusLabelBase(value);};
+    const v500FocusBiasBase=v490FocusBias;
+    v490FocusBias=function(skill,category,focus){return v500FocusBiasBase(skill,category,focus)+(focus==='usage'&&category==='usage'?40:0);};
+    const v500TaskLabelBase=v490TaskLabel;
+    v490TaskLabel=function(card){return card?.v490Category==='usage'?'Usage pattern':v500TaskLabelBase(card);};
+
+    const v500PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v500PersonalPlanBase(limit),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30)),focus=v490EffectiveFocus();
+      const existingUsageKeys=new Set(plan.queue.filter(function(card){return card.v500UsagePractice;}).map(function(card){return v500UsageKey(card,card.v500UsagePattern);}));
+      const candidates=v500UsageTasks(state.cards,focus==='usage'?6:3).filter(function(card){
+        const note=v500BaseNote(card),production=v470SkillState(note,'production'),recognition=v470SkillState(note,'recognition');
+        return (production.started||recognition.secure)&&!existingUsageKeys.has(v500UsageKey(card,card.v500UsagePattern));
+      });
+      let added=0;
+      for(const task of candidates){
+        if(added>=(focus==='usage'?5:2))break;
+        if(plan.queue.length>=max){
+          let remove=-1;
+          for(let i=plan.queue.length-1;i>=0;i--){if(plan.queue[i].v490Category!=='retain'){remove=i;break;}}
+          if(remove<0)break;plan.queue.splice(remove,1);
+        }
+        const insertAt=Math.min(plan.queue.length,Math.max(2,4+added*5));
+        plan.queue.splice(insertAt,0,task);added++;
+      }
+      plan.counts={...plan.counts,usage:added};plan.focus=focus;plan.minutes=Math.max(1,Math.round(plan.queue.length*.67));
+      if(focus==='usage'&&added)plan.headline='Build natural French constructions while keeping scheduled reviews current';
+      return plan;
+    };
+
+    function v500DecorateDashboard(){
+      if(state.view!=='dashboard')return;
+      const metrics=main.querySelector('.v490-path-metrics');
+      if(metrics&&!metrics.querySelector('[data-v500-usage-metric]')){
+        const plan=state.v490LastPlan||v490PersonalPlan(30),span=document.createElement('span');span.dataset.v500UsageMetric='1';span.innerHTML='<strong>'+finiteNumber(plan.counts?.usage,0)+'</strong> usage';metrics.append(span);
+      }
+      const actions=main.querySelector('.v490-path-actions');
+      if(actions&&!actions.querySelector('#v500-usage-sprint')){
+        const stats=v500UsageStats(state.cards),button=document.createElement('button');button.type='button';button.className='secondary';button.id='v500-usage-sprint';button.disabled=!stats.patterns;button.textContent='Usage 10';button.addEventListener('click',function(){v500StartUsage(state.cards,10);});actions.insertBefore(button,actions.querySelector('span'));
+      }
+    }
+    const v500RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v500RenderDashboardBase();v500DecorateDashboard();return result;};
+
+    function v500UsageProgressHtml(){
+      const stats=v500UsageStats(state.cards);
+      return '<section class="v500-progress-card"><div class="v500-progress-head"><div><p class="eyebrow">Natural French usage</p><h3>Construction and phrase intelligence</h3><p>Mastery is measured only for reference-backed lexical frames. Verified sentence chunks are shown as supporting phrase evidence, not promoted into rules.</p></div><button class="primary" id="v500-progress-usage" '+(stats.patterns?'':'disabled')+'>Practice usage</button></div><div class="v500-progress-grid"><span><strong>'+stats.words+'</strong> words</span><span><strong>'+stats.patterns+'</strong> reference patterns</span><span><strong>'+stats.practiced+'</strong> practiced</span><span><strong>'+stats.secure+'</strong> secure</span><span><strong>'+stats.gaps+'</strong> usage gaps</span><span><strong>'+stats.securePct+'%</strong> secure coverage</span></div></section>';
+    }
+    function v500DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v500-progress-card'))return;
+      const anchor=main.querySelector('.v460-progress-shell')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterbegin',v500UsageProgressHtml());$('#v500-progress-usage')?.addEventListener('click',function(){v500StartUsage(state.cards,10);});
+    }
+    const v500RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v500RenderProgressBase();v500DecorateProgress();return result;};
+
+    function v500DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');if(select&&!select.querySelector('option[value="usage"]')){select.insertAdjacentHTML('beforeend','<option value="usage">Natural usage & constructions</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v500RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v500RenderSettingsBase();v500DecorateSettings();return result;};
+
+    function v500EnsureStyles(){
+      if(document.querySelector('#v500-usage-style'))return;
+      const style=document.createElement('style');style.id='v500-usage-style';
+      style.textContent='.v500-usage-chip{display:inline-flex;align-items:center;padding:.2rem .38rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-muted);color:var(--muted);font-size:.61rem;font-weight:850;white-space:nowrap}.v500-usage-chip.secure{border-color:color-mix(in srgb,var(--green) 42%,var(--line));background:color-mix(in srgb,var(--green) 9%,var(--surface));color:var(--green)}.v500-usage-chip.gap,.v500-usage-chip.refresh{border-color:color-mix(in srgb,var(--red) 35%,var(--line));background:color-mix(in srgb,var(--red) 8%,var(--surface));color:var(--red)}.v500-usage-chip.building{border-color:color-mix(in srgb,var(--blue) 40%,var(--line));color:var(--blue)}.v500-usage-detail{display:grid;gap:.6rem}.v500-patterns{display:grid;gap:.42rem}.v500-patterns article{padding:.62rem .7rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v500-patterns article.secure{border-color:color-mix(in srgb,var(--green) 38%,var(--line))}.v500-patterns article.refresh{border-color:color-mix(in srgb,var(--red) 32%,var(--line))}.v500-patterns span,.v500-example-evidence>span,.v500-example-chunk>span{display:block;color:var(--muted);font-size:.6rem;font-weight:850;text-transform:uppercase;letter-spacing:.05em}.v500-patterns strong,.v500-example-chunk strong{display:block;margin:.18rem 0;color:var(--navy)}.v500-patterns small,.v500-example-chunk small{display:block;color:var(--muted);font-size:.65rem}.v500-example-evidence,.v500-example-chunk{padding:.62rem .7rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v500-example-evidence p{margin:.2rem 0}.v500-example-evidence p:last-child{color:var(--muted);font-size:.75rem}.v500-reference-label{display:block!important;margin-bottom:.25rem;color:var(--muted)!important;font-size:.58rem!important;text-transform:uppercase;letter-spacing:.05em}.v500-study-banner{display:flex;gap:.55rem;align-items:center;margin:-.35rem 0 .7rem;padding:.6rem .7rem;border:1px solid color-mix(in srgb,var(--blue) 32%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface));font-size:.7rem}.v500-study-banner strong{color:var(--navy);white-space:nowrap}.v500-study-banner span{color:var(--muted)}.v500-usage-note{display:grid;gap:.12rem;margin:.45rem 0;padding:.55rem .65rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-muted);font-size:.68rem}.v500-usage-note strong{color:var(--navy)}.v500-usage-note span{color:var(--muted)}.v500-progress-card{padding:.85rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v500-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem}.v500-progress-head h3{margin:.08rem 0 .2rem}.v500-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem}.v500-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.42rem;margin-top:.7rem}.v500-progress-grid span{padding:.55rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v500-progress-grid strong{display:block;color:var(--navy);font-size:1rem}@media(max-width:760px){.v500-study-banner{align-items:flex-start;flex-direction:column}.v500-progress-head{flex-direction:column}.v500-progress-head button{width:100%}.v500-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:480px){.v500-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}';
+      document.head.append(style);
+    }
+
+    const v500NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v500NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p9-natural-usage';
+      document.documentElement.dataset.usageMastery='v500';
+      document.documentElement.dataset.usageEvidence='reference-patterns-plus-verified-examples';
+    };
+    const v500InitBase=init;
+    init=async function(options){
+      v500EnsureStyles();
+      const result=await v500InitBase(options||{});
+      state.settings=normalizeSettings(state.settings||{});saveSettings();v420NormalizeSurface();
+      if(state.view==='dashboard')v500DecorateDashboard();
+      if(state.view==='browse')v500DecorateBrowse();
+      if(state.view==='study')v500DecorateStudy();
+      if(state.view==='progress')v500DecorateProgress();
+      if(state.view==='settings')v500DecorateSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.0.0';
       return result;
     };
 
