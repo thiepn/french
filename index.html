@@ -15553,6 +15553,7 @@ qui	who	A1	question word`;
       if(key==='family-size'){
         const n=Number(normalized);return Number.isFinite(n)?(card.familySize||1)>=n:false;
       }
+      if(key==='due'&&['1','true','yes','on','today','overdue'].includes(normalized))return noteState().due;
       return v470MatchFilterBase(card,key,value);
     };
 
@@ -15653,8 +15654,8 @@ qui	who	A1	question word`;
     function v470DiscoveryStats(cards){
       let due=0,weak=0,prodGap=0,listeningGap=0,families=0;
       for(const card of cards){
-        if(isDue(card))due++;
         const state=v470NoteState(card);
+        if(state.due)due++;
         if(state.started&&state.risk>=28)weak++;
         if(state.modes.recognition.started&&!state.productiveSecure&&state.productionGap>=.12)prodGap++;
         if(state.modes.recognition.secure&&!state.modes.listening.secure)listeningGap++;
@@ -15687,9 +15688,9 @@ qui	who	A1	question word`;
         '<div class="v470-list-existing">'+(decks.length?decks.map(([id,deck])=>'<button type="button" data-v470-add-deck="'+escapeHtml(id)+'"><span>'+escapeHtml(deck.name)+'</span><small>'+deck.cardIds.length+' words'+(deck.cardIds.includes(cardId)?' · already added':'')+'</small></button>').join(''):'<p>No custom lists yet.</p>')+'</div>'+
         '<div class="v470-new-list"><input id="v470-new-list-name" maxlength="60" placeholder="New list name"><button type="button" class="primary" id="v470-create-list">Create & add</button></div></form>';
       document.body.append(dialog);if(typeof v405PrepareDialog==='function')v405PrepareDialog(dialog);if(typeof v405PrepareButtons==='function')v405PrepareButtons(dialog);if(typeof v405PrepareForms==='function')v405PrepareForms(dialog);
-      $('[data-v470-add-deck]',dialog).forEach(button=>button.addEventListener('click',()=>{const id=button.dataset.v470AddDeck,added=addCardsToCustomDeck(id,[cardId]);showToast(added?'Added to '+state.customDecks[id].name+'.':'Already in '+state.customDecks[id].name+'.');dialog.close();}));
+      $$('[data-v470-add-deck]',dialog).forEach(button=>button.addEventListener('click',()=>{const id=button.dataset.v470AddDeck,added=addCardsToCustomDeck(id,[cardId]);showToast(added?'Added to '+state.customDecks[id].name+'.':'Already in '+state.customDecks[id].name+'.');dialog.close();}));
       $('#v470-create-list',dialog)?.addEventListener('click',()=>{const id=createCustomDeck($('#v470-new-list-name',dialog).value);if(!id)return;addCardsToCustomDeck(id,[cardId]);showToast('Created '+state.customDecks[id].name+' and added the word.');dialog.close();});
-      dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal?.();
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
     }
     function v470CurrentSmartQuery(){
       const b=state.browse,parts=[String(b.query||'').trim()];
@@ -15708,7 +15709,7 @@ qui	who	A1	question word`;
       dialog.innerHTML='<form method="dialog" class="v470-list-card"><div class="v470-dialog-head"><div><p class="eyebrow">Smart deck</p><h3>Save this live search</h3></div><button value="cancel" aria-label="Close">×</button></div><label class="v470-save-field"><span>Name</span><input id="v470-smart-name" maxlength="80" placeholder="e.g. Weak A2 travel"></label><div class="v470-query-preview">'+escapeHtml(query)+'</div><button type="button" class="primary" id="v470-save-smart">Save smart deck</button></form>';
       document.body.append(dialog);if(typeof v405PrepareDialog==='function')v405PrepareDialog(dialog);if(typeof v405PrepareButtons==='function')v405PrepareButtons(dialog);if(typeof v405PrepareForms==='function')v405PrepareForms(dialog);
       $('#v470-save-smart',dialog)?.addEventListener('click',()=>{try{v3CreateSmartDeck($('#v470-smart-name',dialog).value,query);showToast('Smart deck saved.');dialog.close();}catch(error){showToast(error.message);}});
-      dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal?.();requestAnimationFrame(()=>$('#v470-smart-name',dialog)?.focus());
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');requestAnimationFrame(()=>$('#v470-smart-name',dialog)?.focus());
     }
     function v470PracticeResults(cards){
       if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting result practice.');return;}
@@ -15724,12 +15725,12 @@ qui	who	A1	question word`;
       $('#v470-manage')?.addEventListener('click',()=>{state.v381BrowseMode='manage';renderBrowse();});
       $('#v470-save-search')?.addEventListener('click',v470SaveSearchDialog);
       $('#v470-practice-results')?.addEventListener('click',()=>v470PracticeResults(cards));
-      $('[data-v470-discovery]',main).forEach(button=>button.addEventListener('click',()=>v470SetDiscovery(button.dataset.v470Discovery)));
-      $('[data-v470-open]',main).forEach(row=>{row.addEventListener('click',event=>{if(event.target.closest('button,input,select,a'))return;v381OpenWord(row.dataset.v470Open);});row.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();v381OpenWord(row.dataset.v470Open);}});});
-      $('[data-v470-audio]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const card=state.cardById.get(button.dataset.v470Audio);if(card)v450PlayModelAudio(card);}));
-      $('[data-v470-study]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();startSingleCard(button.dataset.v470Study);}));
-      $('[data-v470-list]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();v470ListDialog(button.dataset.v470List);}));
-      $('[data-v470-family]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();state.browse={...state.browse,query:'family:"'+button.dataset.v470Family+'"',sort:'family',page:1,status:'ALL'};renderBrowse(true);}));
+      $$('[data-v470-discovery]',main).forEach(button=>button.addEventListener('click',()=>v470SetDiscovery(button.dataset.v470Discovery)));
+      $$('[data-v470-open]',main).forEach(row=>{row.addEventListener('click',event=>{if(event.target.closest('button,input,select,a'))return;v381OpenWord(row.dataset.v470Open);});row.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('button')){event.preventDefault();v381OpenWord(row.dataset.v470Open);}});});
+      $$('[data-v470-audio]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const card=state.cardById.get(button.dataset.v470Audio);if(card)v450PlayModelAudio(card);}));
+      $$('[data-v470-study]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();startSingleCard(button.dataset.v470Study);}));
+      $$('[data-v470-list]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();v470ListDialog(button.dataset.v470List);}));
+      $$('[data-v470-family]',main).forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();state.browse={...state.browse,query:'family:"'+button.dataset.v470Family+'"',sort:'family',page:1,status:'ALL'};renderBrowse(true);}));
       $('#v470-prev')?.addEventListener('click',()=>{state.browse.page=Math.max(1,state.browse.page-1);renderBrowse();window.scrollTo({top:0,behavior:'auto'});});
       $('#v470-next')?.addEventListener('click',()=>{state.browse.page++;renderBrowse();window.scrollTo({top:0,behavior:'auto'});});
       $('#v470-clear')?.addEventListener('click',()=>{state.browse={...DEFAULT_BROWSE,pageSize:50};renderBrowse(true);});
@@ -15738,12 +15739,16 @@ qui	who	A1	question word`;
 
     function v470RenderBrowse(focusSearch=false){
       depthIndexSkills();
+      const noteCache=new Map(),skillCache=new Map(),noteStateBase=v470NoteState,skillStateBase=v470SkillState;
+      v470NoteState=function(card){const id=depthBaseId(card);if(!noteCache.has(id))noteCache.set(id,noteStateBase(card));return noteCache.get(id);};
+      v470SkillState=function(card,skill){const key=depthBaseId(card)+'|'+skill;if(!skillCache.has(key))skillCache.set(key,skillStateBase(card,skill));return skillCache.get(key);};
       if(state.v381BrowseMode==='manage')return v470RenderBrowseBase(focusSearch);
       if(!state.browse.pageSize||state.browse.pageSize===100)state.browse.pageSize=50;
       const cards=v470BrowseCards(),pageSize=state.browse.pageSize,pages=Math.max(1,Math.ceil(cards.length/pageSize));
       state.browse.page=clamp(state.browse.page,1,pages);
       const start=(state.browse.page-1)*pageSize,shown=cards.slice(start,start+pageSize),stats=v470DiscoveryStats(cards),active=v470ActiveDiscovery(),filterCount=v381BrowseFilterCount(),summary=v381BrowseFilterSummary();
       const chips=[['all','All',cards.length],['due','Due',stats.due],['weak','Weak',stats.weak],['production','Production gaps',stats.prodGap],['listening','Listening gaps',stats.listeningGap],['families','Families',stats.families],['unseen','Unseen',state.cards.filter(card=>!v470NoteState(card).started).length],['starred','Starred',state.cards.filter(card=>getProgress(card.id).starred).length]];
+      try{
       main.className='main';
       main.innerHTML='<div class="v470-shell"><header class="v470-head"><div><p class="eyebrow">Vocabulary workspace</p><h2>Words</h2><p>Find a word, see what you actually know about it, discover related vocabulary, and act immediately.</p></div><button class="ghost" id="v470-manage">Manage catalog</button></header>'+
         '<section class="v470-search-panel"><div class="v470-search-row"><div class="v470-search-wrap"><span aria-hidden="true">⌕</span><input id="v470-search" type="search" autocomplete="off" placeholder="French, English, family, tag… try “connaisance”" value="'+escapeHtml(state.browse.query)+'" aria-label="Search vocabulary"></div><button class="secondary" id="v470-filter">Filters'+(filterCount?'<b>'+filterCount+'</b>':'')+'</button><button class="secondary" id="v470-save-search" '+(v470CurrentSmartQuery()?'':'disabled')+'>Save search</button></div>'+
@@ -15753,6 +15758,7 @@ qui	who	A1	question word`;
         (shown.length?'<section class="v470-list" aria-label="Vocabulary results">'+shown.map(v470WordRow).join('')+'</section>':'<div class="v470-empty"><h3>No matching vocabulary</h3><p>Try a shorter word, remove a filter, or use the English meaning.</p><button class="secondary" id="v470-clear">Clear search & filters</button></div>')+
         (pages>1?'<div class="v470-pagination"><button class="secondary" id="v470-prev" '+(state.browse.page<=1?'disabled':'')+'>Previous</button><span>Page '+state.browse.page+' of '+pages+'</span><button class="secondary" id="v470-next" '+(state.browse.page>=pages?'disabled':'')+'>Next</button></div>':'')+'</div>';
       v470BindBrowse(cards,focusSearch);v420NormalizeSurface();
+      }finally{v470NoteState=noteStateBase;v470SkillState=skillStateBase;}
     }
     const v470RenderBrowseBase=renderBrowse;
     renderBrowse=v470RenderBrowse;
