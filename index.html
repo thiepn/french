@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.0.0';
-    const APP_RELEASE = 'P9 Vocabulary Usage, Collocations & Natural French Production';
+    const APP_VERSION = '5.1.0';
+    const APP_RELEASE = 'P10 Verified Collocation & Phrase Corpus Expansion';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -16842,6 +16842,319 @@ qui	who	A1	question word`;
       if(state.view==='progress')v500DecorateProgress();
       if(state.view==='settings')v500DecorateSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.0.0';
+      return result;
+    };
+
+
+    /* ================================================================
+       v5.1.0 VERIFIED COLLOCATION & PHRASE CORPUS EXPANSION
+       Expands P9 from two ad-hoc usage strings per word into a provenance-
+       tagged corpus. Source-backed constructions and dictionary locutions
+       are distinguished from inherited reference metadata. The corpus is
+       matched against the pinned production vocabulary and never invents
+       phrases from raw translation glosses.
+       ================================================================ */
+    const V510_VERSION='5.1.0';
+    const V510_RELEASE='P10 Verified Collocation & Phrase Corpus Expansion';
+
+    const V510_SOURCES=Object.freeze({
+      tex:{label:"Tex's French Grammar · UT Austin",url:'https://laits.utexas.edu/tex/gr/pre4.html',tier:'verified'},
+      lawlessA:{label:'Progress with Lawless French · à + infinitive',url:'https://progress.lawlessfrench.com/learn/theme/3603304',tier:'verified'},
+      lawlessDe:{label:'Progress with Lawless French · de + infinitive',url:'https://progress.lawlessfrench.com/learn/theme/3744352',tier:'verified'},
+      lawlessBoth:{label:'Progress with Lawless French · à + object + de',url:'https://progress.lawlessfrench.com/learn/theme/4050945',tier:'verified'},
+      lawlessIO:{label:'Progress with Lawless French · indirect objects',url:'https://progress.lawlessfrench.com/learn/theme/3907306',tier:'verified'},
+      acadAvoir:{label:"Dictionnaire de l'Académie française · avoir",url:'https://www.dictionnaire-academie.fr/article/A9A3461',tier:'verified'},
+      acadAttention:{label:"Dictionnaire de l'Académie française · attention",url:'https://www.dictionnaire-academie.fr/article/A9A3040',tier:'verified'},
+      acadCompte:{label:"Dictionnaire de l'Académie française · compte",url:'https://www.dictionnaire-academie.fr/article/A9C3317',tier:'verified'},
+      acadFaire:{label:"Dictionnaire de l'Académie française · faire",url:'https://www.dictionnaire-academie.fr/article/A9F0112',tier:'verified'},
+      acadPrendre:{label:"Dictionnaire de l'Académie française · prendre",url:'https://www.dictionnaire-academie.fr/article/A9P4070',tier:'verified'},
+      acadDecision:{label:"Dictionnaire de l'Académie française · décision",url:'https://www.dictionnaire-academie.fr/article/A7D0285',tier:'verified'},
+      acadPartie:{label:"Dictionnaire de l'Académie française · partie",url:'https://www.dictionnaire-academie.fr/article/A9P0783',tier:'verified'},
+      acadFin:{label:"Dictionnaire de l'Académie française · fin",url:'https://www.dictionnaire-academie.fr/article/A9F0804',tier:'verified'},
+      acadRdv:{label:"Dictionnaire de l'Académie française · rendez-vous",url:'https://www.dictionnaire-academie.fr/article/A9R1684',tier:'verified'},
+      acadQuestion:{label:"Dictionnaire de l'Académie française · poser",url:'https://www.dictionnaire-academie.fr/article/A9P3569',tier:'verified'},
+      acadChance:{label:"Dictionnaire de l'Académie française · chance",url:'https://www.dictionnaire-academie.fr/article/A9C1567',tier:'verified'},
+      legacy:{label:'French3000 pre-P10 reference metadata',url:'',tier:'reference'}
+    });
+
+    /* [anchor, frame, kind, source, blank]
+       blank is the lexical element hidden in P9 usage practice. */
+    const V510_CORPUS_ROWS=Object.freeze([
+      ['apprendre','apprendre à + infinitif','construction','tex','à'],
+      ['arriver','arriver à + infinitif','construction','tex','à'],
+      ['chercher','chercher à + infinitif','construction','tex','à'],
+      ['aider','aider quelqu’un à + infinitif','construction','tex','à'],
+      ['encourager','encourager quelqu’un à + infinitif','construction','tex','à'],
+      ['inviter','inviter quelqu’un à + infinitif','construction','tex','à'],
+      ['penser','penser à + infinitif','construction','lawlessA','à'],
+      ['servir','servir à + infinitif','construction','tex','à'],
+      ['tenir','tenir à + infinitif','construction','tex','à'],
+      ['enseigner','enseigner à + infinitif','construction','lawlessA','à'],
+      ['obliger','obliger quelqu’un à + infinitif','construction','lawlessA','à'],
+      ['arrêter','arrêter de + infinitif','construction','lawlessDe','de'],
+      ['décider','décider de + infinitif','construction','tex','de'],
+      ['essayer','essayer de + infinitif','construction','tex','de'],
+      ['finir','finir de + infinitif','construction','tex','de'],
+      ['oublier','oublier de + infinitif','construction','tex','de'],
+      ['permettre','permettre à quelqu’un de + infinitif','construction','tex','de'],
+      ['promettre','promettre de + infinitif','construction','tex','de'],
+      ['proposer','proposer de + infinitif','construction','tex','de'],
+      ['refuser','refuser de + infinitif','construction','tex','de'],
+      ['rêver','rêver de + infinitif','construction','tex','de'],
+      ['accepter','accepter de + infinitif','construction','lawlessDe','de'],
+      ['demander','demander à quelqu’un de + infinitif','construction','lawlessBoth','de'],
+      ['parler','parler à quelqu’un de + nom / infinitif','construction','lawlessBoth','de'],
+      ['promettre','promettre à quelqu’un de + infinitif','construction','lawlessBoth','de'],
+      ['refuser','refuser à quelqu’un de + infinitif','construction','lawlessBoth','de'],
+      ['souhaiter','souhaiter à quelqu’un de + infinitif','construction','lawlessBoth','de'],
+      ['pardonner','pardonner à quelqu’un de + infinitif','construction','lawlessBoth','de'],
+      ['expliquer','expliquer quelque chose à quelqu’un','valency','lawlessIO','à'],
+      ['montrer','montrer quelque chose à quelqu’un','valency','lawlessIO','à'],
+      ['manquer','manquer à quelqu’un','valency','lawlessIO','à'],
+
+      ['attention','faire attention à + nom','collocation','acadAttention','à'],
+      ['attention','faire attention à + infinitif','collocation','acadAttention','à'],
+      ['attention','faire attention de + infinitif','collocation','acadAttention','de'],
+      ['attention','prêter attention à + nom','collocation','acadAttention','à'],
+      ['tenir','tenir compte de + nom','collocation','acadCompte','de'],
+
+      ['raison','avoir raison','fixed phrase','acadAvoir','raison'],
+      ['tort','avoir tort','fixed phrase','acadAvoir','tort'],
+      ['faim','avoir faim','fixed phrase','acadAvoir','faim'],
+      ['soif','avoir soif','fixed phrase','acadAvoir','soif'],
+      ['chaud','avoir chaud','fixed phrase','acadAvoir','chaud'],
+      ['froid','avoir froid','fixed phrase','acadAvoir','froid'],
+      ['peur','avoir peur','fixed phrase','acadAvoir','peur'],
+      ['envie','avoir envie','fixed phrase','acadAvoir','envie'],
+      ['besoin','avoir besoin','fixed phrase','acadAvoir','besoin'],
+      ['soin','avoir soin de + nom','collocation','acadAvoir','de'],
+      ['mal','avoir mal à + nom','collocation','acadAvoir','à'],
+      ['mal','avoir du mal à + infinitif','collocation','tex','à'],
+
+      ['décision','prendre une décision','collocation','acadDecision','décision'],
+      ['note','prendre des notes','collocation','acadPrendre','notes'],
+      ['note','prendre note de + nom','collocation','acadPrendre','de'],
+      ['effort','faire un effort','collocation','acadFaire','effort'],
+      ['progrès','faire des progrès','collocation','acadFaire','progrès'],
+      ['promenade','faire une promenade','collocation','acadFaire','promenade'],
+      ['ménage','faire le ménage','collocation','acadFaire','ménage'],
+      ['plaisir','faire plaisir à quelqu’un','collocation','acadFaire','à'],
+      ['mal','faire mal à quelqu’un','collocation','acadFaire','à'],
+      ['peur','faire peur à quelqu’un','collocation','acadFaire','à'],
+      ['appel','faire appel à quelqu’un','collocation','acadFaire','à'],
+      ['face','faire face à + nom','collocation','acadFaire','à'],
+      ['rêve','faire un rêve','collocation','acadFaire','rêve'],
+      ['faute','faire une faute','collocation','acadFaire','faute'],
+      ['partie','faire partie de + nom','collocation','acadPartie','de'],
+      ['fin','mettre fin à + nom','collocation','acadFin','à'],
+      ['rendez-vous','prendre rendez-vous avec quelqu’un','collocation','acadRdv','avec'],
+      ['question','poser une question à quelqu’un','collocation','acadQuestion','à'],
+      ['chance','avoir de la chance','fixed phrase','acadChance','chance']
+    ]);
+
+    const V510_CORPUS=Object.freeze(V510_CORPUS_ROWS.map(function(row,index){
+      const source=V510_SOURCES[row[3]]||V510_SOURCES.legacy;
+      return Object.freeze({id:'p10-'+String(index+1).padStart(3,'0'),anchor:row[0],frame:row[1],kind:row[2],sourceKey:row[3],sourceLabel:source.label,sourceUrl:source.url,tier:source.tier,blank:row[4]||'',drillable:true});
+    }));
+    const V510_BY_ANCHOR=new Map();
+    const V510_BY_FRAME=new Map();
+    for(const record of V510_CORPUS){
+      const key=normalizeWord(record.anchor).replace(/’/g,"'");
+      if(!V510_BY_ANCHOR.has(key))V510_BY_ANCHOR.set(key,[]);
+      V510_BY_ANCHOR.get(key).push(record);
+      if(!V510_BY_FRAME.has(normalizeTyped(record.frame)))V510_BY_FRAME.set(normalizeTyped(record.frame),record);
+    }
+
+    function v510CardKeys(card){
+      const note=v500BaseNote(card)||card,values=[note?.fr,note?.lemma].filter(Boolean),keys=new Set();
+      for(const value of values){
+        const normalized=normalizeWord(value).replace(/’/g,"'");if(normalized)keys.add(normalized);
+        const head=typeof v391HeadwordKey==='function'?v391HeadwordKey(normalized):normalized;if(head)keys.add(head);
+      }
+      return [...keys];
+    }
+    function v510CorpusFor(card){
+      const note=v500BaseNote(card)||card;if(!note)return [];
+      if(Array.isArray(note.usageCorpus))return note.usageCorpus;
+      const records=[],seen=new Set();
+      for(const key of v510CardKeys(note))for(const record of V510_BY_ANCHOR.get(key)||[]){
+        const frameKey=normalizeTyped(record.frame);if(seen.has(frameKey))continue;seen.add(frameKey);records.push(record);
+      }
+      const legacy=[String(note.usagePattern||'').trim(),String(note.usagePatternAlt||'').trim()].filter(Boolean);
+      for(const frame of legacy){
+        const frameKey=normalizeTyped(frame);if(seen.has(frameKey))continue;seen.add(frameKey);
+        records.push({id:'legacy-'+note.id+'-'+seen.size,anchor:note.fr,frame:frame,kind:'construction',sourceKey:'legacy',sourceLabel:V510_SOURCES.legacy.label,sourceUrl:'',tier:'reference',blank:'',drillable:true});
+      }
+      return records;
+    }
+    function v510ApplyCorpus(cards){
+      const matchedIds=new Set(),sourceCounts={},kindCounts={},tierCounts={};let matchedRecords=0,legacyRecords=0;
+      for(const card of cards){
+        const records=v510CorpusFor(card);card.usageCorpus=records;
+        if(records.length){
+          matchedIds.add(card.id);matchedRecords+=records.length;
+          const verified=records.filter(function(item){return item.tier==='verified';});
+          card.usageVerifiedCount=verified.length;card.usageCorpusCount=records.length;
+          if(!card.usagePattern&&records[0])card.usagePattern=records[0].frame;
+          if(!card.usagePatternAlt&&records[1])card.usagePatternAlt=records[1].frame;
+          for(const item of records){
+            sourceCounts[item.sourceKey]=(sourceCounts[item.sourceKey]||0)+1;
+            kindCounts[item.kind]=(kindCounts[item.kind]||0)+1;
+            tierCounts[item.tier]=(tierCounts[item.tier]||0)+1;
+            if(item.tier==='reference')legacyRecords++;
+          }
+        }
+      }
+      state.v510CorpusHealth={defined:V510_CORPUS.length,matchedRecords:matchedRecords,matchedWords:matchedIds.size,verified:finiteNumber(tierCounts.verified),reference:legacyRecords,sourceCounts:sourceCounts,kindCounts:kindCounts,unmatchedDefined:V510_CORPUS.filter(function(item){return !cards.some(function(card){return v510CardKeys(card).includes(normalizeWord(item.anchor).replace(/’/g,"'"));});}).length};
+      state.lexicalHealth={...(state.lexicalHealth||{}),usagePatterns:matchedRecords,usageCorpus:state.v510CorpusHealth};
+      return cards;
+    }
+    const v510EnhanceCatalogBase=enhanceCatalog;
+    enhanceCatalog=function(rawCards){return v510ApplyCorpus(v510EnhanceCatalogBase(rawCards));};
+
+    /* P9 now consumes every provenance-tagged corpus record rather than only
+       usagePattern + usagePatternAlt. */
+    v500UsageForms=function(card){
+      return v510CorpusFor(card).filter(function(item){return item.drillable!==false;}).map(function(item){return item.frame;});
+    };
+    function v510RecordForFrame(frame){return V510_BY_FRAME.get(normalizeTyped(frame))||null;}
+    const v510PatternChallengeBase=v500PatternChallenge;
+    v500PatternChallenge=function(pattern){
+      const source=String(pattern||'').trim(),record=v510RecordForFrame(source);
+      if(record?.blank){
+        const token=record.blank,index=source.toLocaleLowerCase('fr').indexOf(token.toLocaleLowerCase('fr'));
+        if(index>=0)return {prompt:source.slice(0,index)+'_____'+source.slice(index+token.length),answer:token,full:source,kind:record.kind==='construction'?'connector':'collocation'};
+      }
+      /* P10 supports the additional connectors used by verified phrase
+         frames, while retaining P9's à/de behavior. */
+      const connectors=[];const prompt=source.replace(/(\s)(à|de|avec|pour|sur|en|par|sans)(?=\s|\s*\+)/giu,function(match,space,word){connectors.push(word);return space+'_____';});
+      if(connectors.length)return {prompt:prompt,answer:connectors.join(' … '),full:source,kind:'connector'};
+      return v510PatternChallengeBase(pattern);
+    };
+
+    function v510RecordState(card,record){return v500UsageFormState(card,record.frame);}
+    function v510SourceBadge(record){
+      const source=V510_SOURCES[record.sourceKey]||V510_SOURCES.legacy;
+      return '<span class="v510-source '+escapeHtml(source.tier)+'">'+escapeHtml(source.tier==='verified'?'Verified source':'Reference metadata')+'</span>';
+    }
+    function v510ExampleEvidenceLabel(card){
+      const kind=v500BaseNote(card)?.exampleKind||'';
+      return {curated:'Curated example',source:'Source example','validated-crafted':'Validated catalog example',user:'Your example','user-edited':'Your edited example'}[kind]||'Example evidence';
+    }
+
+    function v510TasksForKind(cards,kind,count=10){
+      const notes=(cards||state.cards).map(v500BaseNote).filter(Boolean),tasks=[],seen=new Set();
+      for(const note of notes.sort(function(a,b){return v500UsagePriority(b)-v500UsagePriority(a)||a.order-b.order;})){
+        if(seen.has(note.id)||!isAvailable(note))continue;seen.add(note.id);
+        const records=v510CorpusFor(note).filter(function(record){return record.tier==='verified'&&(!kind||record.kind===kind);}).sort(function(a,b){
+          const as=v510RecordState(note,a),bs=v510RecordState(note,b);
+          return Number(as.secure)-Number(bs.secure)||as.attempts-bs.attempts;
+        });
+        for(const record of records){if(tasks.length>=count)return tasks;tasks.push(v500UsageTask(note,record.frame));}
+      }
+      return tasks;
+    }
+    function v510StartKind(cards,kind,count=10){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting phrase practice.');return;}
+      const tasks=v510TasksForKind(cards,kind,count);
+      if(!tasks.length){showToast('No verified '+(kind||'usage')+' records are ready in this selection.');return;}
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'production',scheduleMode:'practice',practice:'classic',typed:false,size:tasks.length,quality:'core'});
+      state.queue=tasks;v490ResetSessionQueue();setView('study');announce('Verified French phrase practice started');
+    }
+
+    function v510DecorateUsageDetail(dialog,card){
+      const section=dialog?.querySelector('.v500-usage-detail');if(!section)return;
+      const records=v510CorpusFor(card),articles=[...section.querySelectorAll('.v500-patterns article')];
+      articles.forEach(function(article,index){
+        const record=records[index];if(!record)return;
+        const label=article.querySelector('span');if(label)label.textContent=record.kind==='fixed phrase'?'Verified fixed phrase':record.kind==='collocation'?'Verified collocation':record.kind==='valency'?'Verified argument pattern':'Verified construction';
+        if(!article.querySelector('.v510-source'))article.insertAdjacentHTML('afterbegin',v510SourceBadge(record));
+        const small=article.querySelector('small');if(small&&record.sourceLabel&&!small.textContent.includes(record.sourceLabel))small.insertAdjacentHTML('beforeend',' · '+escapeHtml(record.sourceLabel));
+      });
+      const example=section.querySelector('.v500-example-evidence>span');if(example)example.textContent=v510ExampleEvidenceLabel(card);
+    }
+    const v510OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v510OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(dialog&&card)v510DecorateUsageDetail(dialog,card);return result;
+    };
+
+    function v510CorpusPanel(){
+      const h=state.v510CorpusHealth||{defined:0,matchedRecords:0,matchedWords:0,verified:0,reference:0,unmatchedDefined:0,kindCounts:{},sourceCounts:{}};
+      const sourceRows=Object.entries(h.sourceCounts||{}).filter(function(pair){return pair[0]!=='legacy';}).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(pair){
+        const source=V510_SOURCES[pair[0]];return '<div><span>'+escapeHtml(source?.label||pair[0])+'</span><strong>'+pair[1]+'</strong></div>';
+      }).join('');
+      return '<section class="v510-corpus-panel"><div class="v510-corpus-head"><div><p class="eyebrow">P10 verified corpus</p><h3>Collocation & phrase coverage</h3><p>Reference grammar and dictionary locutions are stored with provenance. Inherited pre-P10 patterns remain visible but are counted separately instead of being relabelled as independently verified.</p></div><div class="button-row"><button class="primary" id="v510-collocations">Collocations 10</button><button class="secondary" id="v510-constructions">Constructions 10</button></div></div><div class="v510-corpus-grid"><span><strong>'+h.defined+'</strong> defined verified records</span><span><strong>'+h.verified+'</strong> verified matches</span><span><strong>'+h.matchedWords+'</strong> covered words</span><span><strong>'+finiteNumber(h.kindCounts?.collocation)+'</strong> collocations</span><span><strong>'+finiteNumber(h.kindCounts?.construction)+'</strong> constructions</span><span><strong>'+h.reference+'</strong> inherited reference forms</span></div><details class="v510-sources"><summary>Corpus sources and matched records</summary><div>'+sourceRows+'</div></details></section>';
+    }
+    function v510DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v510-corpus-panel'))return;
+      const existing=main.querySelector('.v500-progress-card'),anchor=existing||main.querySelector('.v460-progress-shell')||main.firstElementChild;
+      if(!anchor)return;
+      if(existing)existing.insertAdjacentHTML('afterend',v510CorpusPanel());else anchor.insertAdjacentHTML('afterbegin',v510CorpusPanel());
+      $('#v510-collocations')?.addEventListener('click',function(){v510StartKind(state.cards,'collocation',10);});
+      $('#v510-constructions')?.addEventListener('click',function(){v510StartKind(state.cards,'construction',10);});
+    }
+    const v510RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v510RenderProgressBase();v510DecorateProgress();return result;};
+
+    function v510DecorateBrowse(){
+      if(state.view!=='browse')return;
+      const cards=typeof v470BrowseCards==='function'?v470BrowseCards():state.cards,actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v510-collocation-sprint')){
+        const button=document.createElement('button');button.type='button';button.className='secondary';button.id='v510-collocation-sprint';button.textContent='Collocations 10';button.disabled=!cards.some(function(card){return v510CorpusFor(card).some(function(record){return record.tier==='verified'&&record.kind==='collocation';});});
+        button.addEventListener('click',function(){v510StartKind(cards,'collocation',10);});actions.append(button);
+      }
+      const help=main.querySelector('.v470-search-help p');
+      if(help&&!help.querySelector('[data-v510-help]'))help.insertAdjacentHTML('beforeend','<code data-v510-help>corpus:verified</code><code data-v510-help>usage-kind:collocation</code>');
+    }
+    const v510RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v510RenderBrowseBase(focusSearch);v510DecorateBrowse();return result;};
+
+    const v510MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value),records=v510CorpusFor(card);
+      if(key==='corpus'){
+        if(normalized==='verified')return records.some(function(record){return record.tier==='verified';});
+        if(normalized==='reference'||normalized==='legacy')return records.some(function(record){return record.tier==='reference';});
+        return records.some(function(record){return normalizeTyped(record.sourceLabel).includes(normalized)||normalizeTyped(record.sourceKey).includes(normalized);});
+      }
+      if(key==='usage-kind'||key==='kind'){
+        return records.some(function(record){return normalizeTyped(record.kind)===normalized;});
+      }
+      return v510MatchFilterBase(card,key,value);
+    };
+
+    const v510CatalogSnapshotBase=catalogSnapshot;
+    catalogSnapshot=function(){
+      const snapshot=v510CatalogSnapshotBase();snapshot.version=V510_VERSION;
+      snapshot.cards=(snapshot.cards||[]).map(function(row){
+        const card=state.cardById?.get(row.id)||state.cards.find(function(item){return item.id===row.id;})||{};
+        return {...row,usageCorpus:(card.usageCorpus||[]).map(function(item){return {id:item.id,frame:item.frame,kind:item.kind,tier:item.tier,sourceKey:item.sourceKey,sourceLabel:item.sourceLabel};})};
+      });
+      snapshot.meta={...(snapshot.meta||{}),usageCorpus:'P10 provenance-tagged collocation and phrase corpus',usageCorpusHealth:state.v510CorpusHealth||{},usageCorpusSources:Object.fromEntries(Object.entries(V510_SOURCES).map(function(pair){return [pair[0],{label:pair[1].label,url:pair[1].url,tier:pair[1].tier}];}))};return snapshot;
+    };
+
+    function v510EnsureStyles(){
+      if(document.querySelector('#v510-corpus-style'))return;
+      const style=document.createElement('style');style.id='v510-corpus-style';
+      style.textContent='.v510-source{display:inline-flex;width:max-content;margin-bottom:.28rem;padding:.16rem .35rem;border-radius:999px;border:1px solid var(--line);font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.v510-source.verified{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,var(--line));background:color-mix(in srgb,var(--green) 8%,var(--surface))}.v510-source.reference{color:var(--muted)}.v510-corpus-panel{padding:.85rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v510-corpus-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}.v510-corpus-head h3{margin:.08rem 0 .2rem}.v510-corpus-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:76ch}.v510-corpus-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.42rem;margin-top:.7rem}.v510-corpus-grid span{padding:.55rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v510-corpus-grid strong{display:block;color:var(--navy);font-size:1rem}.v510-sources{margin-top:.6rem;border-top:1px solid var(--line);padding-top:.5rem}.v510-sources summary{cursor:pointer;color:var(--navy);font-size:.68rem;font-weight:850}.v510-sources>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.3rem;margin-top:.45rem}.v510-sources>div>div{display:flex;justify-content:space-between;gap:.5rem;padding:.42rem .5rem;border-radius:9px;background:var(--surface-muted);font-size:.62rem}.v510-sources span{color:var(--muted)}.v510-sources strong{color:var(--navy)}@media(max-width:760px){.v510-corpus-head{flex-direction:column}.v510-corpus-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v510-sources>div{grid-template-columns:1fr}}@media(max-width:480px){.v510-corpus-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}';
+      document.head.append(style);
+    }
+
+    const v510NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v510NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p10-verified-phrase-corpus';
+      document.documentElement.dataset.usageCorpus='v510';
+      document.documentElement.dataset.usageCorpusPolicy='verified-source-plus-labeled-legacy';
+    };
+    const v510InitBase=init;
+    init=async function(options){
+      v510EnsureStyles();
+      const result=await v510InitBase(options||{});
+      v420NormalizeSurface();
+      if(state.view==='browse')v510DecorateBrowse();
+      if(state.view==='progress')v510DecorateProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.1.0';
       return result;
     };
 
