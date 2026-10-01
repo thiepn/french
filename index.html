@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.7.0';
-    const APP_RELEASE = 'P6 Smart Words, Search & Vocabulary Discovery';
+    const APP_VERSION = '4.8.0';
+    const APP_RELEASE = 'P7 Context Mastery, Sentences & Phrase Intelligence';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -15799,6 +15799,227 @@ qui	who	A1	question word`;
       v470EnsureStyles();
       const result=await v470InitBase(options);
       v420NormalizeSurface();
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.8.0 CONTEXT MASTERY, SENTENCES & PHRASE INTELLIGENCE
+       Builds contextual recall on top of the verified example corpus.
+       Context evidence is derived from real cloze attempts in reviewLog;
+       no synthetic French examples or scheduler schema migration.
+       ================================================================ */
+    const V480_VERSION='4.8.0';
+    const V480_RELEASE='P7 Context Mastery, Sentences & Phrase Intelligence';
+    const V480_CONTEXT_SECURE_ATTEMPTS=3;
+    const V480_CONTEXT_SECURE_ACCURACY=.8;
+    const V480_CONTEXT_REFRESH_DAYS=45;
+
+    function v480BaseId(value){return depthBaseId(value);}
+    function v480ContextReady(card){return Boolean(card&&card.core!==false&&clozePrompt(card));}
+    function v480ContextEntries(card){
+      const id=v480BaseId(card),cutoff=now()-days(180);
+      return state.reviewLog.filter(function(entry){return entry.practice==='cloze'&&v480BaseId(entry.noteId||entry.id)===id&&entry.t>=cutoff;}).sort(function(a,b){return a.t-b.t;});
+    }
+    function v480ContextState(card){
+      if(!v480ContextReady(card))return {ready:false,status:'unavailable',attempts:0,correct:0,accuracy:0,lastAt:0,lastCorrect:false,secure:false,gap:false,refresh:false};
+      const entries=v480ContextEntries(card),attempts=entries.length,correct=entries.filter(function(entry){return entry.correct===true;}).length;
+      const last=entries[entries.length-1]||null,lastAt=last?finiteNumber(last.t):0,lastCorrect=Boolean(last&&last.correct===true),accuracy=attempts?correct/attempts:0;
+      const stale=Boolean(lastAt&&now()-lastAt>days(V480_CONTEXT_REFRESH_DAYS));
+      const secure=attempts>=V480_CONTEXT_SECURE_ATTEMPTS&&accuracy>=V480_CONTEXT_SECURE_ACCURACY&&lastCorrect&&!stale;
+      const recognition=v470SkillState(card,'recognition');
+      const gap=Boolean(recognition.eligible&&recognition.secure&&!secure);
+      let status='unseen';
+      if(secure)status='secure';
+      else if(stale&&attempts>=V480_CONTEXT_SECURE_ATTEMPTS&&accuracy>=V480_CONTEXT_SECURE_ACCURACY)status='refresh';
+      else if(attempts)status='building';
+      else if(gap)status='gap';
+      return {ready:true,status:status,attempts:attempts,correct:correct,accuracy:accuracy,lastAt:lastAt,lastCorrect:lastCorrect,secure:secure,gap:gap,refresh:status==='refresh'};
+    }
+    function v480ContextLabel(info){
+      if(!info.ready)return 'No context';
+      if(info.secure)return 'Context secure';
+      if(info.refresh)return 'Refresh context';
+      if(info.status==='building')return 'Context '+Math.round(info.accuracy*100)+'%';
+      if(info.gap)return 'Context gap';
+      return 'Context ready';
+    }
+    function v480ContextPriority(card){
+      const info=v480ContextState(card),risk=cardStatus(card)==='new'?0:v430WeaknessProfile(card).score,recognition=v470SkillState(card,'recognition');
+      return (info.gap?120:0)+(info.refresh?90:0)+(info.status==='building'?70:0)+(recognition.secure?20:0)+Math.min(60,risk)+(info.attempts?Math.max(0,10-info.correct):15);
+    }
+    function v480ContextPool(cards){
+      return (cards||state.cards).filter(function(card){return v480ContextReady(card)&&isAvailable(card);}).sort(function(a,b){return v480ContextPriority(b)-v480ContextPriority(a)||a.order-b.order;});
+    }
+    function v480ContextStats(cards){
+      const ready=v480ContextPool(cards||state.cards),states=ready.map(v480ContextState);
+      return {
+        ready:ready.length,
+        practiced:states.filter(function(item){return item.attempts>0;}).length,
+        secure:states.filter(function(item){return item.secure;}).length,
+        gaps:states.filter(function(item){return item.gap;}).length,
+        refresh:states.filter(function(item){return item.refresh;}).length
+      };
+    }
+    function v480ContextChunk(card){
+      const cloze=clozePrompt(card);if(!cloze)return '';
+      const full=String(cloze.full||''),answer=String(cloze.answer||card.fr||'');
+      const at=normalizeTyped(full).indexOf(normalizeTyped(answer));
+      if(at<0)return answer;
+      const words=full.trim().split(/\s+/),target=normalizeTyped(answer);
+      let hit=words.findIndex(function(word){return normalizeTyped(word).includes(target)||target.includes(normalizeTyped(word));});
+      if(hit<0)hit=Math.max(0,Math.floor(words.length/2));
+      return words.slice(Math.max(0,hit-2),Math.min(words.length,hit+3)).join(' ');
+    }
+
+    const v480MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value);
+      if(key==='example'||key==='context-ready'){
+        const yes=['1','true','yes','on','ready'].includes(normalized);
+        return yes?v480ContextReady(card):!v480ContextReady(card);
+      }
+      if(key==='context'){
+        const info=v480ContextState(card);
+        if(normalized==='ready')return info.ready;
+        if(normalized==='unseen')return info.ready&&info.attempts===0;
+        if(normalized==='building')return info.status==='building';
+        if(normalized==='secure')return info.secure;
+        if(normalized==='gap')return info.gap;
+        if(normalized==='refresh'||normalized==='due')return info.refresh;
+        return false;
+      }
+      return v480MatchFilterBase(card,key,value);
+    };
+
+    function v480ResetQueueAfterFilter(){
+      state.queueIndex=0;state.flipped=false;state.history=[];state.undoStack=[];state.typedAnswer='';state.choiceAnswer='';state.practiceResult=null;state.currentPractice='cloze';state.currentCardKey='';state.lastAutoSpeechKey='';state.combo=0;state.sessionStats=newSessionStats();state.sessionSeedIds=state.queue.map(function(card){return card.id;});
+      saveSessionSettings();saveSessionSnapshot();
+    }
+    function v480StartContext(cards,count){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting context practice.');return;}
+      depthIndexSkills();
+      const selected=v480ContextPool(cards&&cards.length?cards:state.cards).slice(0,Math.max(1,finiteNumber(count,10))),allowed=new Set(selected.map(function(card){return v480BaseId(card);}));
+      if(!selected.length){showToast('No verified example sentences are available for this selection.');return;}
+      state.session=normalizeSession(Object.assign({},state.session,{mode:'all',practice:'cloze',skillMode:'production',scheduleMode:'review',direction:'en-fr',order:'weak',size:0,typed:true,quality:'core'}));
+      buildQueue();
+      state.queue=state.queue.filter(function(card){return allowed.has(v480BaseId(card));}).sort(function(a,b){
+        const aa=depthNoteFor(a)||a,bb=depthNoteFor(b)||b;
+        return v480ContextPriority(bb)-v480ContextPriority(aa)||aa.order-bb.order;
+      }).slice(0,Math.max(1,finiteNumber(count,10)));
+      if(!state.queue.length){showToast('No context cards could be built from this selection.');return;}
+      v480ResetQueueAfterFilter();
+      setView('study');
+      announce('Context practice started');
+    }
+    function v480BrowseContext(query){
+      state.browse=Object.assign({},DEFAULT_BROWSE,{pageSize:50,query:query||'context:gap',page:1});
+      setView('browse');
+    }
+
+    function v480ContextChip(card){
+      const info=v480ContextState(card),label=v480ContextLabel(info),cls=info.secure?'secure':info.gap?'gap':info.refresh?'refresh':info.attempts?'building':'ready';
+      return '<span class="v480-context-chip '+cls+'" title="'+escapeHtml(info.attempts?(info.correct+' of '+info.attempts+' context answers correct'):'Verified example available')+'">'+escapeHtml(label)+'</span>';
+    }
+    function v480DecorateBrowse(){
+      if(state.view!=='browse'||!main.querySelector('.v470-shell'))return;
+      const cards=v470BrowseCards(),stats=v480ContextStats(state.cards),discovery=main.querySelector('.v470-discovery');
+      if(discovery&&!discovery.querySelector('[data-v480-context-gap]')){
+        const button=document.createElement('button');button.type='button';button.dataset.v480ContextGap='1';button.className=state.browse.query==='context:gap'?'active':'';
+        button.innerHTML='<span>Context gaps</span><small>'+stats.gaps.toLocaleString()+'</small>';
+        button.addEventListener('click',function(){v480BrowseContext('context:gap');});
+        discovery.append(button);
+      }
+      const actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v480-practice-context')){
+        const button=document.createElement('button');button.type='button';button.className='secondary';button.id='v480-practice-context';button.disabled=!cards.some(v480ContextReady);button.textContent='Context 10';
+        button.addEventListener('click',function(){v480StartContext(cards,10);});actions.append(button);
+      }
+      const help=main.querySelector('.v470-search-help p');
+      if(help&&!help.querySelector('[data-v480-help]'))help.insertAdjacentHTML('beforeend','<code data-v480-help>context:gap</code><code data-v480-help>context:secure</code><code data-v480-help>example:true</code>');
+      main.querySelectorAll('[data-v470-open]').forEach(function(row){
+        const card=state.cardById.get(row.dataset.v470Open),meta=row.querySelector('.v470-meta');
+        if(card&&meta&&!meta.querySelector('.v480-context-chip')&&v480ContextReady(card))meta.insertAdjacentHTML('beforeend',v480ContextChip(card));
+      });
+    }
+    const v480RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v480RenderBrowseBase(focusSearch);v480DecorateBrowse();return result;};
+
+    function v480ContextDetailHtml(card){
+      const cloze=clozePrompt(card),info=v480ContextState(card);if(!cloze)return '<p class="small-note">No verified example sentence contains this exact headword yet.</p>';
+      const chunk=v480ContextChunk(card);
+      return '<div class="v480-context-status">'+v480ContextChip(card)+'</div>'+
+        '<div class="v480-context-example"><span>Verified example</span><p lang="fr">'+escapeHtml(cloze.full)+'</p>'+(cloze.translation?'<p class="translation">'+escapeHtml(cloze.translation)+'</p>':'')+'</div>'+
+        '<div class="v480-context-cloze"><span>Recall in context</span><p lang="fr">'+escapeHtml(cloze.prompt)+'</p><small>Expected: '+escapeHtml(cloze.answer)+'</small></div>'+
+        (chunk?'<div class="v480-context-chunk"><span>Study chunk</span><strong lang="fr">'+escapeHtml(chunk)+'</strong><small>Extracted directly from the verified example; treat it as a memorisable phrase chunk, not a dictionary collocation claim.</small></div>':'')+
+        '<div class="button-row"><button type="button" class="secondary" id="v480-hear-context">Hear sentence</button><button type="button" class="primary" id="v480-practice-one">Practice this context</button></div>'+
+        (info.attempts?'<p class="small-note">'+info.correct+' / '+info.attempts+' correct context recalls · '+Math.round(info.accuracy*100)+'% accuracy</p>':'<p class="small-note">No context recall attempts yet.</p>');
+    }
+    const v480OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v480OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);
+      if(dialog&&card&&!dialog.querySelector('.v480-context-detail')){
+        const section=document.createElement('section');section.className='v381-detail-section v480-context-detail';
+        section.innerHTML='<h4>Context & phrase memory</h4>'+v480ContextDetailHtml(card);
+        const scroll=dialog.querySelector('.v381-detail-scroll');scroll&&scroll.append(section);
+        $('#v480-hear-context',dialog)?.addEventListener('click',function(){speakFrench(card.exampleFr);});
+        $('#v480-practice-one',dialog)?.addEventListener('click',function(){dialog.close();v480StartContext([card],1);});
+      }
+      return result;
+    };
+
+    function v480DecorateStudy(){
+      if(state.view!=='study')return;
+      const strip=main.querySelector('.study-preset-strip');
+      if(strip&&!strip.querySelector('#v480-context-preset')){
+        const button=document.createElement('button');button.type='button';button.className='tiny-button';button.id='v480-context-preset';button.textContent='Context 10';
+        button.addEventListener('click',function(){v480StartContext(state.cards,10);});strip.append(button);
+      }
+      if(state.session.practice==='cloze'){
+        const header=main.querySelector('.view-header');
+        if(header&&!main.querySelector('.v480-study-banner'))header.insertAdjacentHTML('afterend','<div class="v480-study-banner"><strong>Context recall</strong><span>Fill the missing French word inside a verified example sentence. These answers also provide context-mastery evidence.</span></div>');
+      }
+    }
+    const v480RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v480RenderStudyBase();v480DecorateStudy();return result;};
+
+    function v480ProgressPanel(){
+      const stats=v480ContextStats(state.cards),pct=stats.ready?Math.round(stats.secure/stats.ready*100):0;
+      return '<section class="v480-progress-panel"><div><p class="eyebrow">Context mastery</p><h3>Words you can retrieve inside real sentences</h3><p>Measured only from verified example sentences and your actual cloze answers.</p></div><div class="v480-context-metrics"><span><strong>'+stats.ready.toLocaleString()+'</strong> ready</span><span><strong>'+stats.practiced.toLocaleString()+'</strong> practiced</span><span><strong>'+stats.secure.toLocaleString()+'</strong> secure</span><span><strong>'+stats.gaps.toLocaleString()+'</strong> recognition gaps</span><span><strong>'+pct+'%</strong> secure coverage</span></div><div class="button-row"><button class="primary" id="v480-progress-practice">Practice context gaps</button><button class="secondary" id="v480-progress-browse">Browse gaps</button></div></section>';
+    }
+    function v480DecorateProgress(){
+      if(state.view!=='progress'||!main.querySelector('.v460-progress-shell')||main.querySelector('.v480-progress-panel'))return;
+      const kpis=main.querySelector('.v460-kpis');if(!kpis)return;
+      kpis.insertAdjacentHTML('afterend',v480ProgressPanel());
+      $('#v480-progress-practice')?.addEventListener('click',function(){v480StartContext(state.cards.filter(function(card){return v480ContextState(card).gap||v480ContextState(card).refresh;}),10);});
+      $('#v480-progress-browse')?.addEventListener('click',function(){v480BrowseContext('context:gap');});
+    }
+    const v480RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v480RenderProgressBase();v480DecorateProgress();return result;};
+
+    function v480EnsureStyles(){
+      if(document.querySelector('#v480-context-style'))return;
+      const style=document.createElement('style');style.id='v480-context-style';
+      style.textContent='.v480-context-chip{display:inline-flex;align-items:center;padding:.2rem .38rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-muted);color:var(--muted);font-size:.61rem;font-weight:850;white-space:nowrap}.v480-context-chip.secure{border-color:color-mix(in srgb,var(--green) 40%,var(--line));background:color-mix(in srgb,var(--green) 9%,var(--surface));color:var(--green)}.v480-context-chip.gap,.v480-context-chip.refresh{border-color:color-mix(in srgb,var(--red) 35%,var(--line));background:color-mix(in srgb,var(--red) 8%,var(--surface));color:var(--red)}.v480-context-chip.building{border-color:color-mix(in srgb,var(--blue) 38%,var(--line));color:var(--blue)}.v480-context-detail{display:grid;gap:.6rem}.v480-context-example,.v480-context-cloze,.v480-context-chunk{padding:.65rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v480-context-example>span,.v480-context-cloze>span,.v480-context-chunk>span{display:block;color:var(--muted);font-size:.62rem;font-weight:850;text-transform:uppercase;letter-spacing:.05em}.v480-context-example p,.v480-context-cloze p{margin:.28rem 0 0}.v480-context-example .translation{color:var(--muted);font-size:.78rem}.v480-context-cloze small,.v480-context-chunk small{display:block;margin-top:.3rem;color:var(--muted);font-size:.66rem}.v480-context-chunk strong{display:block;margin-top:.25rem;color:var(--navy)}.v480-study-banner{display:flex;align-items:center;gap:.55rem;margin:-.45rem 0 .8rem;padding:.6rem .7rem;border:1px solid color-mix(in srgb,var(--blue) 30%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface));font-size:.7rem}.v480-study-banner strong{color:var(--navy);white-space:nowrap}.v480-study-banner span{color:var(--muted)}.v480-progress-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.8rem;align-items:center;padding:.85rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid)}.v480-progress-panel h3{margin:.08rem 0 .22rem;font-size:1.05rem}.v480-progress-panel p:last-child{margin:0;color:var(--muted);font-size:.7rem}.v480-context-metrics{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.42rem}.v480-context-metrics span{padding:.55rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v480-context-metrics strong{display:block;color:var(--navy);font-size:1rem}.v480-progress-panel>.button-row{justify-content:flex-end}@media(max-width:760px){.v480-progress-panel{grid-template-columns:1fr}.v480-context-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v480-progress-panel>.button-row{justify-content:flex-start}.v480-study-banner{align-items:flex-start;flex-direction:column}}';
+      document.head.append(style);
+    }
+
+    const v480NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v480NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p7-context-mastery';
+      document.documentElement.dataset.contextMastery='v480';
+      document.documentElement.dataset.contextEvidence='verified-cloze-log';
+    };
+    const v480InitBase=init;
+    init=async function(options){
+      v480EnsureStyles();
+      const result=await v480InitBase(options||{});
+      v420NormalizeSurface();
+      if(state.view==='browse')v480DecorateBrowse();
+      if(state.view==='study')v480DecorateStudy();
+      if(state.view==='progress')v480DecorateProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v4.8.0';
       return result;
     };
 
