@@ -16231,7 +16231,7 @@ qui	who	A1	question word`;
         return at-bt||v490FocusBias(depthSkillOf(b),'retain',focus)-v490FocusBias(depthSkillOf(a),'retain',focus)||v430WeaknessProfile(b).score-v430WeaknessProfile(a).score||dueAge(b)-dueAge(a);
       });
       const reviewLimit=Math.max(0,state.settings.dailyReviewLimit-todayStats().existingReviews),duePressure=dueAll.length/Math.max(1,state.settings.dailyReviewLimit||1);
-      const dueShare=duePressure>=1?.82:duePressure>=.5?.68:.48,dueBudget=Math.min(dueAll.length,reviewLimit||dueAll.length,Math.max(0,Math.ceil(max*dueShare)));
+      const dueShare=duePressure>=1?.82:duePressure>=.5?.68:.48,dueCap=Math.min(dueAll.length,reviewLimit),dueBudget=Math.min(dueCap,Math.max(0,Math.ceil(max*dueShare)));
       const usedIds=new Set(),usedContexts=new Set(),retain=[],advance=[],context=[],repair=[];
       for(const card of dueAll.slice(0,dueBudget))v490UniquePush(retain,{card:card,category:'retain',reason:v490DueReason(card)},usedIds,usedContexts);
 
@@ -16257,10 +16257,10 @@ qui	who	A1	question word`;
         if(note.core===false||!isAvailable(note))return false;
         const c=v480ContextState(note);return c.ready&&(c.gap||c.refresh||c.status==='building');
       }).map(function(note){
-        const prod=depthCreateSkillCards(note,'production')[0]||v490SkillCard(note,'recognition');
+        const prod=depthCreateSkillCards(note,'production').filter(isAvailable)[0]||[v490SkillCard(note,'recognition')].filter(Boolean).filter(isAvailable)[0];if(!prod)return null;
         const c=v480ContextState(note),reason=c.refresh?'Refresh sentence retrieval before the context trace decays further.':c.gap?'Recognition is secure, but sentence retrieval is not yet secure.':'Build repeated successful retrieval inside the verified example.';
         const item={card:v490PracticeClone(prod,'context',reason,'cloze'),category:'context',reason:reason};return {...item,score:v490CandidateScore(item,frontier,focus)};
-      }).sort(function(a,b){return b.score-a.score;});
+      }).filter(Boolean).sort(function(a,b){return b.score-a.score;});
       const contextBudget=Math.min(focus==='context'?6:4,Math.max(1,Math.ceil(max*.16)));
       for(const item of contextCandidates){if(context.length>=contextBudget)break;v490UniquePush(context,item,usedIds,usedContexts);}
 
@@ -16278,7 +16278,7 @@ qui	who	A1	question word`;
 
       /* Fill unused room with more scheduled reviews first, then more
          prerequisite-safe advancement. New-note limits are never bypassed. */
-      for(const card of dueAll.slice(dueBudget)){
+      for(const card of dueAll.slice(dueBudget,dueCap)){
         if(retain.length+advance.length+context.length+repair.length>=max)break;
         v490UniquePush(retain,{card:card,category:'retain',reason:v490DueReason(card)},usedIds,usedContexts);
       }
