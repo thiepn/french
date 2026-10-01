@@ -15739,10 +15739,10 @@ qui	who	A1	question word`;
 
     function v470RenderBrowse(focusSearch=false){
       depthIndexSkills();
+      if(state.v381BrowseMode==='manage')return v470RenderBrowseBase(focusSearch);
       const noteCache=new Map(),skillCache=new Map(),noteStateBase=v470NoteState,skillStateBase=v470SkillState;
       v470NoteState=function(card){const id=depthBaseId(card);if(!noteCache.has(id))noteCache.set(id,noteStateBase(card));return noteCache.get(id);};
       v470SkillState=function(card,skill){const key=depthBaseId(card)+'|'+skill;if(!skillCache.has(key))skillCache.set(key,skillStateBase(card,skill));return skillCache.get(key);};
-      if(state.v381BrowseMode==='manage')return v470RenderBrowseBase(focusSearch);
       if(!state.browse.pageSize||state.browse.pageSize===100)state.browse.pageSize=50;
       const cards=v470BrowseCards(),pageSize=state.browse.pageSize,pages=Math.max(1,Math.ceil(cards.length/pageSize));
       state.browse.page=clamp(state.browse.page,1,pages);
