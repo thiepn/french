@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.1.0';
-    const APP_RELEASE = 'P10 Verified Collocation & Phrase Corpus Expansion';
+    const APP_VERSION = '5.2.0';
+    const APP_RELEASE = 'P11 Active Phrase Production, Transfer Drills & Usage Error Diagnosis';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -17156,6 +17156,466 @@ qui	who	A1	question word`;
       if(state.view==='progress')v510DecorateProgress();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.1.0';
       return result;
+    };
+
+
+    /* ================================================================
+       v5.2.0 ACTIVE PHRASE PRODUCTION, TRANSFER & ERROR DIAGNOSIS
+       Moves P10's verified phrase corpus from recognition/gap recall into
+       full typed production. Structural diagnosis is deterministic and
+       evidence-based: connector, collocate, neighboring verified pattern,
+       incompleteness, order and spelling are distinguished. All phrase work
+       remains practice-only while successful production contributes to P9
+       usage evidence.
+       ================================================================ */
+    const V520_VERSION='5.2.0';
+    const V520_RELEASE='P11 Active Phrase Production, Transfer Drills & Usage Error Diagnosis';
+    const V520_TRANSFER_SECURE_ATTEMPTS=2;
+    const V520_TRANSFER_SECURE_ACCURACY=.80;
+    const V520_ERROR_DAYS=120;
+    V490_PATH_FOCI.add('transfer');
+
+    const V520_DIAGNOSIS=Object.freeze({
+      exact:{label:'Exact phrase',detail:'You produced the complete verified frame.'},
+      orthography:{label:'Orthography',detail:'The structure is right, but accents, apostrophes, or spelling need correction.'},
+      connector:{label:'Wrong connector',detail:'The lexical frame needs a different French preposition or connector.'},
+      collocate:{label:'Wrong or missing collocate',detail:'The anchor is present, but its natural lexical partner is missing or different.'},
+      neighbor:{label:'Neighboring verified pattern',detail:'You produced another verified pattern for this anchor, but not the requested one.'},
+      incomplete:{label:'Incomplete frame',detail:'Part of the verified construction is present, but one or more required elements are missing.'},
+      order:{label:'Word order',detail:'The expected elements are present but arranged in the wrong order.'},
+      spelling:{label:'Spelling',detail:'The phrase is structurally close but contains a substantial spelling error.'},
+      anchor:{label:'Missing anchor',detail:'The target vocabulary item is missing from the produced phrase.'},
+      blank:{label:'No answer',detail:'No phrase was entered.'},
+      structure:{label:'Different structure',detail:'The answer does not match the requested verified lexical frame.'}
+    });
+
+    function v520Canon(value){
+      return String(value||'').toLocaleLowerCase('fr').normalize('NFC').replace(/[’]/g,"'").replace(/\s*\+\s*/g,' + ').replace(/[.,;:!?()[\]{}"]/g,' ').replace(/\s+/g,' ').trim();
+    }
+    function v520Fold(value){return normalizeTyped(String(value||'').replace(/\+/g,' '));}
+    function v520Tokens(value){return v520Fold(value).split(/\s+/).filter(Boolean);}
+    function v520Connectors(value){
+      const raw=' '+v520Canon(value)+' ',found=[];
+      for(const token of ['à','de','avec','pour','sur','en','par','sans'])if(raw.includes(' '+token+' ')||raw.includes(' '+token+' +'))found.push(token);
+      return [...new Set(found)];
+    }
+    function v520SlotCue(record){
+      const frame=String(record?.frame||''),slots=[];
+      if(/quelqu[’']un/i.test(frame))slots.push('a person');
+      if(/quelque chose/i.test(frame))slots.push('a thing');
+      if(/\binfinitif\b/i.test(frame))slots.push('an infinitive/action');
+      if(/\bnom\b/i.test(frame))slots.push('a noun');
+      if(/sport\s*\/\s*jeu/i.test(frame))slots.push('a sport or game');
+      if(/\binstrument\b/i.test(frame))slots.push('an instrument');
+      return [...new Set(slots)].join(' + ');
+    }
+    function v520Prompt(note,record,mode='production',repairCode=''){
+      const meaning=v393PrimaryMeaning(note)||note.en||'',kind=record.kind==='fixed phrase'?'fixed phrase':record.kind;
+      if(mode==='repair'){
+        const diag=V520_DIAGNOSIS[repairCode]||V520_DIAGNOSIS.structure;
+        return {eyebrow:'Repair phrase error',main:record.anchor,sub:diag.label+' · Rebuild the complete verified '+kind+'.'};
+      }
+      if(mode==='transfer'){
+        const slots=v520SlotCue(record);
+        return {eyebrow:'Transfer drill',main:record.anchor,sub:'Use this anchor in the requested '+kind+(slots?' with '+slots:'')+'. Type the complete French frame.'};
+      }
+      return {eyebrow:'Active phrase production',main:meaning||record.anchor,sub:'Anchor: '+record.anchor+' · Produce the complete verified '+kind+' from memory.'};
+    }
+    function v520RecordForTask(card){
+      if(card?.v520RecordId){
+        const direct=V510_CORPUS.find(function(record){return record.id===card.v520RecordId;});
+        if(direct)return direct;
+      }
+      return v510RecordForFrame(card?.v500UsagePattern||card?.v520Expected||'');
+    }
+    function v520NeighborMatch(note,answer,expectedRecord){
+      const folded=v520Fold(answer);if(!folded)return null;
+      return v510CorpusFor(note).find(function(record){return record.id!==expectedRecord?.id&&record.tier==='verified'&&v520Fold(record.frame)===folded;})||null;
+    }
+    function v520PartnerToken(record){
+      if(!record||!['collocation','fixed phrase'].includes(record.kind))return '';
+      const expected=v520Tokens(record.frame),anchor=v520Tokens(record.anchor);
+      for(const token of expected){
+        if(anchor.includes(token)||['un','une','des','du','de','la','le','les','a','à','avec','pour','sur','en','par','sans','quelqu','quelquun','quelque','chose','nom','infinitif'].includes(token))continue;
+        return token;
+      }
+      return '';
+    }
+    function v520Diagnose(answer,card){
+      const record=v520RecordForTask(card),note=v500BaseNote(card),expected=String(card?.v520Expected||record?.frame||card?.v500UsagePattern||'').trim(),typed=String(answer||'').trim();
+      if(!typed)return {...V520_DIAGNOSIS.blank,code:'blank',quality:'review',score:0,correct:false,expected:expected,neighbor:null};
+      const folded=v520Fold(typed),target=v520Fold(expected);
+      if(folded===target){
+        const exact=v520Canon(typed)===v520Canon(expected);
+        const code=exact?'exact':'orthography',meta=V520_DIAGNOSIS[code];
+        return {...meta,code:code,quality:exact?'exact':'close',score:exact?1:.94,correct:exact,expected:expected,neighbor:null};
+      }
+      const neighbor=v520NeighborMatch(note,typed,record);
+      if(neighbor)return {...V520_DIAGNOSIS.neighbor,code:'neighbor',quality:'review',score:.72,correct:false,expected:expected,neighbor:neighbor};
+
+      const expectedTokens=v520Tokens(expected),typedTokens=v520Tokens(typed),anchorTokens=v520Tokens(record?.anchor||note?.fr||'');
+      const expectedSet=new Set(expectedTokens),typedSet=new Set(typedTokens);
+      const overlap=expectedTokens.length?expectedTokens.filter(function(token){return typedSet.has(token);}).length/expectedTokens.length:0;
+      const anchorPresent=!anchorTokens.length||anchorTokens.every(function(token){return typedSet.has(token);});
+      if(!anchorPresent)return {...V520_DIAGNOSIS.anchor,code:'anchor',quality:'review',score:overlap,correct:false,expected:expected,neighbor:null};
+
+      const expectedConnectors=v520Connectors(expected),typedConnectors=v520Connectors(typed);
+      if(expectedConnectors.some(function(token){return !typedConnectors.includes(token);})&&typedConnectors.some(function(token){return !expectedConnectors.includes(token);})){
+        return {...V520_DIAGNOSIS.connector,code:'connector',quality:'review',score:Math.max(.35,overlap),correct:false,expected:expected,neighbor:null};
+      }
+      const partner=v520PartnerToken(record);
+      if(partner&&typedSet.has(v520Tokens(record.anchor)[0])&&!typedSet.has(partner)){
+        return {...V520_DIAGNOSIS.collocate,code:'collocate',quality:'review',score:Math.max(.4,overlap),correct:false,expected:expected,neighbor:null};
+      }
+      const sortedExpected=[...expectedTokens].sort().join('|'),sortedTyped=[...typedTokens].sort().join('|');
+      if(expectedTokens.length===typedTokens.length&&sortedExpected===sortedTyped){
+        return {...V520_DIAGNOSIS.order,code:'order',quality:'review',score:.82,correct:false,expected:expected,neighbor:null};
+      }
+      if(overlap>=.58&&typedTokens.length<expectedTokens.length){
+        return {...V520_DIAGNOSIS.incomplete,code:'incomplete',quality:'review',score:overlap,correct:false,expected:expected,neighbor:null};
+      }
+      const similarity=1-levenshtein(folded,target)/Math.max(folded.length,target.length,1);
+      if(similarity>=.80)return {...V520_DIAGNOSIS.spelling,code:'spelling',quality:'close',score:similarity,correct:false,expected:expected,neighbor:null};
+      return {...V520_DIAGNOSIS.structure,code:'structure',quality:'review',score:Math.max(0,similarity),correct:false,expected:expected,neighbor:null};
+    }
+
+    function v520TransferEntries(record,note){
+      const cutoff=now()-days(365),id=record.id,noteId=depthBaseId(note);
+      return state.reviewLog.filter(function(entry){return entry.transferPractice===true&&entry.transferRecordId===id&&depthBaseId(entry.noteId||entry.id)===noteId&&entry.t>=cutoff;}).sort(function(a,b){return a.t-b.t;});
+    }
+    function v520TransferState(record,note){
+      const entries=v520TransferEntries(record,note),attempts=entries.length,successes=entries.filter(function(entry){return entry.correct===true&&entry.transferDiagnosis==='exact';}).length;
+      const accuracy=attempts?successes/attempts:0,last=entries.at(-1)||null,secure=attempts>=V520_TRANSFER_SECURE_ATTEMPTS&&accuracy>=V520_TRANSFER_SECURE_ACCURACY&&last?.correct===true;
+      return {attempts:attempts,successes:successes,accuracy:accuracy,last:last,secure:secure,ready:v500UsageFormState(note,record.frame).secure||v470SkillState(note,'production').secure||v500UsageFormState(note,record.frame).attempts>=2};
+    }
+    function v520ErrorHistory(daysBack=V520_ERROR_DAYS){
+      const cutoff=now()-days(daysBack);
+      return state.reviewLog.filter(function(entry){return entry.transferPractice===true&&entry.t>=cutoff&&entry.transferDiagnosis&&entry.transferDiagnosis!=='exact';});
+    }
+    function v520ErrorStats(){
+      const errors=v520ErrorHistory(),counts={};
+      for(const entry of errors)counts[entry.transferDiagnosis]=(counts[entry.transferDiagnosis]||0)+1;
+      return {errors:errors.length,counts:counts,top:Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).slice(0,6)};
+    }
+    function v520TransferStats(cards){
+      const notes=(cards||state.cards).map(v500BaseNote).filter(Boolean),seen=new Set(),records=[];
+      for(const note of notes){
+        if(seen.has(note.id)||!isAvailable(note))continue;seen.add(note.id);
+        for(const record of v510CorpusFor(note).filter(function(item){return item.tier==='verified'&&item.drillable!==false;})){
+          records.push({note:note,record:record,state:v520TransferState(record,note)});
+        }
+      }
+      const ready=records.filter(function(item){return item.state.ready;}).length,practiced=records.filter(function(item){return item.state.attempts>0;}).length,secure=records.filter(function(item){return item.state.secure;}).length;
+      return {records:records.length,ready:ready,practiced:practiced,secure:secure,gaps:ready-secure,securePct:ready?Math.round(secure/ready*100):0,...v520ErrorStats()};
+    }
+
+    function v520TransferTask(note,record,mode='production',repairCode=''){
+      const base=v500UsageTask(note,record.frame),prompt=v520Prompt(note,record,mode,repairCode);
+      return {...base,v500UsagePractice:true,v500UsagePattern:record.frame,v520TransferPractice:true,v520RecordId:record.id,v520Mode:mode,v520RepairCode:repairCode,v520Expected:record.frame,v520Prompt:prompt,v490PracticeOnly:true,v490Category:mode==='repair'?'phrase-repair':'transfer',v490Reason:mode==='repair'?'Repair a diagnosed phrase-production error.':mode==='transfer'?'Apply a learned lexical frame from a new structural cue.':'Retrieve the complete verified phrase without seeing its connector or collocate.'};
+    }
+    function v520CandidateRows(cards){
+      const notes=(cards||state.cards).map(v500BaseNote).filter(Boolean),seen=new Set(),rows=[];
+      for(const note of notes){
+        if(seen.has(note.id)||note.core===false||!isAvailable(note))continue;seen.add(note.id);
+        const production=v470SkillState(note,'production'),recognition=v470SkillState(note,'recognition');
+        if(!production.started&&!recognition.secure)continue;
+        for(const record of v510CorpusFor(note)){
+          if(record.tier!=='verified'||record.drillable===false)continue;
+          const usage=v500UsageFormState(note,record.frame),transfer=v520TransferState(record,note);
+          rows.push({note:note,record:record,usage:usage,transfer:transfer,score:v500UsagePriority(note)+(usage.secure?18:0)+(transfer.attempts?0:12)+(record.kind==='collocation'?5:0)});
+        }
+      }
+      return rows;
+    }
+    function v520TasksForMode(cards,mode='production',count=10){
+      const limit=Math.max(1,Math.min(50,finiteNumber(count,10)||10));
+      if(mode==='repair'){
+        const rows=[],seen=new Set();
+        for(const entry of [...v520ErrorHistory()].reverse()){
+          const record=V510_CORPUS.find(function(item){return item.id===entry.transferRecordId;}),note=state.cardById.get(depthBaseId(entry.noteId||entry.id));
+          if(!record||!note||!isAvailable(note))continue;
+          const key=note.id+'|'+record.id;if(seen.has(key))continue;seen.add(key);
+          rows.push(v520TransferTask(note,record,'repair',entry.transferDiagnosis));if(rows.length>=limit)break;
+        }
+        return rows;
+      }
+      let rows=v520CandidateRows(cards);
+      if(mode==='transfer')rows=rows.filter(function(item){return item.transfer.ready;});
+      rows.sort(function(a,b){
+        if(mode==='transfer')return Number(a.transfer.secure)-Number(b.transfer.secure)||a.transfer.attempts-b.transfer.attempts||b.score-a.score;
+        return Number(a.usage.secure)-Number(b.usage.secure)||a.usage.attempts-b.usage.attempts||b.score-a.score;
+      });
+      return rows.slice(0,limit).map(function(item){return v520TransferTask(item.note,item.record,mode);});
+    }
+    function v520Start(cards,mode='production',count=10){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting phrase production.');return;}
+      const tasks=v520TasksForMode(cards,mode,count);
+      if(!tasks.length){
+        showToast(mode==='repair'?'No diagnosed phrase errors are waiting for repair.':mode==='transfer'?'No verified phrases are ready for transfer yet.':'No verified phrases are ready for active production in this selection.');return;
+      }
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'production',scheduleMode:'practice',practice:'classic',typed:false,size:tasks.length,quality:'core'});
+      state.queue=tasks;v490ResetSessionQueue();setView('study');announce(mode==='repair'?'Phrase error repair started':mode==='transfer'?'Phrase transfer practice started':'Active phrase production started');
+    }
+
+    const v520CurrentDirectionBase=currentDirection;
+    currentDirection=function(card){return card?.v520TransferPractice?'en-fr':v520CurrentDirectionBase(card);};
+    const v520CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v520TransferPractice?'classic':v520CurrentPracticeBase(card);};
+    const v520ExpectedTypedBase=expectedTyped;
+    expectedTyped=function(card,direction){
+      if(card?.v520TransferPractice)return {primary:card.v520Expected,alternatives:[card.v520Expected],articleExpected:false,articleForms:[]};
+      return v520ExpectedTypedBase(card,direction);
+    };
+    const v520AnswerResultBase=answerResultFor;
+    answerResultFor=function(card,direction,practice){
+      if(card?.v520TransferPractice){
+        const diagnosis=v520Diagnose(state.typedAnswer,card);
+        return {label:diagnosis.label,className:diagnosis.code==='exact'?'match-exact':diagnosis.code==='orthography'||diagnosis.code==='spelling'?'match-close':'match-review',quality:diagnosis.quality,score:diagnosis.score,correct:diagnosis.correct,diagnosis:diagnosis.code,diagnosisDetail:diagnosis.detail,neighbor:diagnosis.neighbor};
+      }
+      return v520AnswerResultBase(card,direction,practice);
+    };
+    const v520SuggestedRatingBase=suggestedRating;
+    suggestedRating=function(result,responseMs){
+      if(result?.diagnosis){
+        if(result.diagnosis==='exact')return responseMs&&responseMs<10000?'easy':'good';
+        if(['orthography','spelling','neighbor'].includes(result.diagnosis))return 'hard';
+        return 'again';
+      }
+      return v520SuggestedRatingBase(result,responseMs);
+    };
+
+    const v520CardPresentationBase=v366CardPresentation;
+    v366CardPresentation=function(card,practice,shown){
+      if(card?.v520TransferPractice){
+        const prompt=card.v520Prompt||v520Prompt(v500BaseNote(card),v520RecordForTask(card),card.v520Mode,card.v520RepairCode);
+        if(!shown)return {label:prompt.eyebrow,main:prompt.main,sub:prompt.sub,lang:'en'};
+        const record=v520RecordForTask(card);
+        return {label:'Verified French frame',main:card.v520Expected,sub:(record?.kind||'phrase')+' · '+(record?.sourceLabel||'verified source'),lang:'fr'};
+      }
+      return v520CardPresentationBase(card,practice,shown);
+    };
+
+    const v520RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v520RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v520TransferPractice){
+        const entry=state.reviewLog?.at(-1),diagnosis=v520Diagnose(state.typedAnswer,card);
+        if(entry&&entry.id===card.id){
+          entry.transferPractice=true;entry.transferRecordId=String(card.v520RecordId||'');entry.transferMode=String(card.v520Mode||'production');
+          entry.transferDiagnosis=diagnosis.code;entry.transferExpected=String(card.v520Expected||'').slice(0,220);entry.transferAnswer=String(state.typedAnswer||'').slice(0,220);
+          entry.transferCorrect=diagnosis.correct===true;saveReviewLog();
+        }
+      }
+      return result;
+    };
+    const v520NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){
+        if(!entry||typeof entry!=='object')continue;
+        lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);
+      }
+      return v520NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));
+        if(original?.transferPractice!==true)return entry;
+        return {...entry,transferPractice:true,transferRecordId:String(original.transferRecordId||'').slice(0,80),transferMode:['production','transfer','repair'].includes(original.transferMode)?original.transferMode:'production',transferDiagnosis:V520_DIAGNOSIS[original.transferDiagnosis]?original.transferDiagnosis:'structure',transferExpected:String(original.transferExpected||'').slice(0,220),transferAnswer:String(original.transferAnswer||'').slice(0,220),transferCorrect:original.transferCorrect===true};
+      });
+    };
+
+    const v520NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v520NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v520TransferTasks=Array.isArray(raw?.v520TransferTasks)?raw.v520TransferTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max&&typeof item.recordId==='string';}).slice(0,100).map(function(item){return {index:item.index,recordId:String(item.recordId).slice(0,80),mode:['production','transfer','repair'].includes(item.mode)?item.mode:'production',repairCode:V520_DIAGNOSIS[item.repairCode]?item.repairCode:''};}):[];
+      return result;
+    };
+    const v520SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v520SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v520TransferPractice)tasks.push({index:index,recordId:card.v520RecordId,mode:card.v520Mode,repairCode:card.v520RepairCode||''});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v520TransferTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v520ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v520TransferTasks)?[...state.resumeSnapshot.v520TransferTasks]:[];
+      const result=v520ResumeBase();
+      for(const item of tasks){
+        const base=state.queue?.[item.index],record=V510_CORPUS.find(function(row){return row.id===item.recordId;});if(!base||!record)continue;
+        const note=v500BaseNote(base);state.queue[item.index]={...base,...v520TransferTask(note,record,item.mode,item.repairCode)};
+      }
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
+    function v520FeedbackHtml(card){
+      const diagnosis=v520Diagnose(state.typedAnswer,card),record=v520RecordForTask(card),meta=V520_DIAGNOSIS[diagnosis.code]||V520_DIAGNOSIS.structure;
+      return '<section class="v520-feedback '+escapeHtml(diagnosis.code)+'"><div class="v520-feedback-head"><div><span>Usage diagnosis</span><strong>'+escapeHtml(meta.label)+'</strong></div><span class="v520-feedback-status">'+(diagnosis.code==='exact'?'Correct':diagnosis.code==='orthography'?'Nearly there':'Repair')+'</span></div><p>'+escapeHtml(meta.detail)+'</p><div class="v520-compare"><div><span>Your phrase</span><strong lang="fr">'+escapeHtml(state.typedAnswer||'—')+'</strong></div><div><span>Verified target</span><strong lang="fr">'+escapeHtml(card.v520Expected)+'</strong></div></div>'+
+        (diagnosis.neighbor?'<div class="v520-neighbor"><strong>What happened</strong><span>'+escapeHtml(diagnosis.neighbor.frame)+' is also verified for this anchor, but the drill requested '+escapeHtml(record?.frame||card.v520Expected)+'.</span></div>':'')+
+        '<small>'+escapeHtml(record?.sourceLabel||'Verified P10 corpus')+'</small></section>';
+    }
+    function v520ProductionBoxHtml(card){
+      return '<section class="v520-production-box"><label for="v520-answer">Type the complete French phrase or construction</label><div><input id="v520-answer" type="text" value="'+escapeHtml(state.typedAnswer||'')+'" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="French phrase answer"><button class="primary" id="v520-check">Reveal & diagnose</button></div><small>Produce the whole lexical frame, including its connector or collocate. Punctuation is not important; French structure and spelling are.</small></section>';
+    }
+    function v520DecorateCurrentCard(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v520TransferPractice||!stage)return;
+      const banner=main.querySelector('.v500-study-banner');
+      if(banner){const strong=banner.querySelector('strong'),span=banner.querySelector('span');if(strong)strong.textContent=card.v520Mode==='repair'?'Phrase repair':card.v520Mode==='transfer'?'Phrase transfer':'Active phrase production';if(span)span.textContent='Type the complete verified French frame. Your answer is diagnosed structurally and this extra practice does not move the vocabulary SRS interval.';}
+      if(!state.flipped&&!stage.querySelector('.v520-production-box')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v520ProductionBoxHtml(card));
+        const input=$('#v520-answer',stage);input?.addEventListener('input',function(event){state.typedAnswer=event.target.value;});input?.addEventListener('keydown',function(event){if(event.key==='Enter'){event.preventDefault();if(state.typedAnswer.trim())flipCard();}});
+        $('#v520-check',stage)?.addEventListener('click',function(){if(!state.typedAnswer.trim()){showToast('Type the complete French phrase first.');input?.focus();return;}flipCard();});setTimeout(function(){input?.focus();},0);
+      }
+      if(state.flipped&&!stage.querySelector('.v520-feedback')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v520FeedbackHtml(card));
+      }
+      const generic=stage.querySelector('.v500-usage-note');if(generic)generic.remove();
+    }
+    const v520RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v520RenderCurrentCardBase();v520DecorateCurrentCard();return result;};
+    const v520RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v520RenderStudyBase();v520DecorateCurrentCard();return result;};
+
+    const v520RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v520TransferPractice)return v520RateCardBase(rating);
+      const diagnosis=v520Diagnose(state.typedAnswer,card);
+      if(diagnosis.code!=='exact'&&rating==='easy')rating='hard';
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v520RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    function v520WordTransferHtml(card){
+      const records=v510CorpusFor(card).filter(function(record){return record.tier==='verified';});if(!records.length)return '';
+      const states=records.map(function(record){return {record:record,state:v520TransferState(record,card)};}),ready=states.filter(function(item){return item.state.ready;}).length,secure=states.filter(function(item){return item.state.secure;}).length;
+      return '<div class="v520-word-transfer"><div><span>Active production</span><strong>'+secure+'/'+ready+' transfer-ready phrases secure</strong><small>Full-frame production tests the connector, collocate, and word order together.</small></div><div class="button-row"><button type="button" class="primary" id="v520-word-produce">Produce phrases</button><button type="button" class="secondary" id="v520-word-transfer" '+(ready?'':'disabled')+'>Transfer</button></div></div>';
+    }
+    const v520OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v520OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const section=dialog.querySelector('.v500-usage-detail');if(section&&!section.querySelector('.v520-word-transfer')&&v510CorpusFor(card).some(function(record){return record.tier==='verified';})){
+        section.insertAdjacentHTML('beforeend',v520WordTransferHtml(card));
+        $('#v520-word-produce',dialog)?.addEventListener('click',function(){dialog.close();v520Start([card],'production',10);});
+        $('#v520-word-transfer',dialog)?.addEventListener('click',function(){dialog.close();v520Start([card],'transfer',10);});
+      }
+      return result;
+    };
+
+    const v520MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value),records=v510CorpusFor(card).filter(function(record){return record.tier==='verified';});
+      if(key==='transfer'){
+        if(normalized==='ready')return records.some(function(record){return v520TransferState(record,card).ready;});
+        if(normalized==='secure')return records.some(function(record){return v520TransferState(record,card).secure;});
+        if(normalized==='gap'||normalized==='weak')return records.some(function(record){const state=v520TransferState(record,card);return state.ready&&!state.secure;});
+        if(normalized==='unseen')return records.some(function(record){const state=v520TransferState(record,card);return state.ready&&!state.attempts;});
+      }
+      if(key==='phrase-error'||key==='usage-error'){
+        const noteId=depthBaseId(card),errors=v520ErrorHistory().filter(function(entry){return depthBaseId(entry.noteId||entry.id)===noteId;});
+        if(!normalized||normalized==='any')return errors.length>0;
+        return errors.some(function(entry){return normalizeTyped(entry.transferDiagnosis)===normalized;});
+      }
+      return v520MatchFilterBase(card,key,value);
+    };
+
+    function v520DecorateBrowse(){
+      if(state.view!=='browse')return;
+      const cards=typeof v470BrowseCards==='function'?v470BrowseCards():state.cards,actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v520-produce')){
+        const p=document.createElement('button');p.type='button';p.className='secondary';p.id='v520-produce';p.textContent='Phrase production 10';p.disabled=!v520TasksForMode(cards,'production',1).length;p.addEventListener('click',function(){v520Start(cards,'production',10);});actions.append(p);
+        const repair=document.createElement('button');repair.type='button';repair.className='secondary';repair.id='v520-repair';repair.textContent='Repair phrase errors';repair.disabled=!v520ErrorHistory().length;repair.addEventListener('click',function(){v520Start(cards,'repair',10);});actions.append(repair);
+      }
+      const help=main.querySelector('.v470-search-help p');if(help&&!help.querySelector('[data-v520-help]'))help.insertAdjacentHTML('beforeend','<code data-v520-help>transfer:gap</code><code data-v520-help>transfer:secure</code><code data-v520-help>phrase-error:connector</code>');
+    }
+    const v520RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v520RenderBrowseBase(focusSearch);v520DecorateBrowse();return result;};
+
+    function v520ProgressPanel(){
+      const stats=v520TransferStats(state.cards),errorRows=stats.top.map(function(pair){const meta=V520_DIAGNOSIS[pair[0]]||V520_DIAGNOSIS.structure;return '<div><span>'+escapeHtml(meta.label)+'</span><strong>'+pair[1]+'</strong></div>';}).join('');
+      return '<section class="v520-progress-panel"><div class="v520-progress-head"><div><p class="eyebrow">P11 active production</p><h3>Phrase transfer & error diagnosis</h3><p>Full-frame recall tests whether a phrase can be produced rather than merely recognized. Errors are classified locally and used to build focused repair queues.</p></div><div class="button-row"><button class="primary" id="v520-progress-produce">Produce 10</button><button class="secondary" id="v520-progress-transfer" '+(stats.ready?'':'disabled')+'>Transfer 10</button><button class="secondary" id="v520-progress-repair" '+(stats.errors?'':'disabled')+'>Repair '+stats.errors+'</button></div></div><div class="v520-progress-grid"><span><strong>'+stats.records+'</strong> verified frames</span><span><strong>'+stats.ready+'</strong> transfer-ready</span><span><strong>'+stats.practiced+'</strong> production-tested</span><span><strong>'+stats.secure+'</strong> transfer secure</span><span><strong>'+stats.gaps+'</strong> transfer gaps</span><span><strong>'+stats.securePct+'%</strong> secure transfer</span></div>'+(errorRows?'<details class="v520-errors"><summary>Recent usage-error profile</summary><div>'+errorRows+'</div></details>':'')+'</section>';
+    }
+    function v520DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v520-progress-panel'))return;
+      const anchor=main.querySelector('.v510-corpus-panel')||main.querySelector('.v500-progress-card')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v520ProgressPanel());
+      $('#v520-progress-produce')?.addEventListener('click',function(){v520Start(state.cards,'production',10);});
+      $('#v520-progress-transfer')?.addEventListener('click',function(){v520Start(state.cards,'transfer',10);});
+      $('#v520-progress-repair')?.addEventListener('click',function(){v520Start(state.cards,'repair',10);});
+    }
+    const v520RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v520RenderProgressBase();v520DecorateProgress();return result;};
+
+    function v520DecorateDashboard(){
+      if(state.view!=='dashboard')return;
+      const actions=main.querySelector('.v490-path-actions');if(actions&&!actions.querySelector('#v520-dashboard-produce')){
+        const button=document.createElement('button');button.type='button';button.className='secondary';button.id='v520-dashboard-produce';button.textContent='Produce phrases';button.addEventListener('click',function(){v520Start(state.cards,'production',10);});actions.insertBefore(button,actions.querySelector('span'));
+      }
+    }
+    const v520RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v520RenderDashboardBase();v520DecorateDashboard();return result;};
+
+    /* Adaptive path integration: phrase transfer is eligible only after
+       underlying usage/production evidence exists. Due SRS cards keep their
+       original priority and are never displaced when the queue is all due. */
+    const v520EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='transfer')return 'transfer';
+      const base=v520EffectiveFocusBase();if(configured!=='auto'||base==='usage')return base;
+      const stats=v520TransferStats(state.cards);if(stats.gaps>=8&&stats.gaps>stats.secure)return 'transfer';return base;
+    };
+    const v520FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='transfer'?'Phrase transfer':v520FocusLabelBase(value);};
+    const v520TaskLabelBase=v490TaskLabel;
+    v490TaskLabel=function(card){return card?.v490Category==='transfer'?'Phrase transfer':card?.v490Category==='phrase-repair'?'Phrase repair':v520TaskLabelBase(card);};
+    const v520PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v520PersonalPlanBase(limit),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30)),focus=v490EffectiveFocus();
+      if(focus!=='transfer')return plan;
+      const tasks=v520TasksForMode(state.cards,'transfer',3);let added=0;
+      for(const task of tasks){
+        if(added>=2)break;
+        if(plan.queue.some(function(card){return card.v520RecordId===task.v520RecordId;}))continue;
+        if(plan.queue.length>=max){
+          let remove=-1;for(let i=plan.queue.length-1;i>=0;i--){if(plan.queue[i].v490Category!=='retain'){remove=i;break;}}
+          if(remove<0)break;plan.queue.splice(remove,1);
+        }
+        plan.queue.splice(Math.min(plan.queue.length,5+added*7),0,task);added++;
+      }
+      plan.counts={...plan.counts,transfer:added};plan.focus=focus;if(added)plan.headline='Transfer verified phrases into active French production';
+      return plan;
+    };
+
+    function v520DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');if(select&&!select.querySelector('option[value="transfer"]')){select.insertAdjacentHTML('beforeend','<option value="transfer">Phrase transfer & production</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v520RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v520RenderSettingsBase();v520DecorateSettings();return result;};
+
+    function v520EnsureStyles(){
+      if(document.querySelector('#v520-transfer-style'))return;
+      const style=document.createElement('style');style.id='v520-transfer-style';
+      style.textContent='.v520-production-box{display:grid;gap:.45rem;padding:.75rem;border:1px solid color-mix(in srgb,var(--blue) 35%,var(--line));border-radius:14px;background:var(--surface-solid)}.v520-production-box label{font-size:.72rem;font-weight:850;color:var(--navy)}.v520-production-box>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem}.v520-production-box input{width:100%;min-height:46px}.v520-production-box small{color:var(--muted);font-size:.63rem}.v520-feedback{display:grid;gap:.48rem;padding:.72rem;border:1px solid var(--line);border-radius:14px;background:var(--surface-solid)}.v520-feedback.exact{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}.v520-feedback.connector,.v520-feedback.collocate,.v520-feedback.structure,.v520-feedback.anchor{border-color:color-mix(in srgb,var(--red) 42%,var(--line))}.v520-feedback-head{display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start}.v520-feedback-head span:first-child{display:block;color:var(--muted);font-size:.58rem;text-transform:uppercase;letter-spacing:.05em}.v520-feedback-head strong{display:block;color:var(--navy);margin-top:.08rem}.v520-feedback-status{padding:.2rem .4rem;border-radius:999px;background:var(--surface-muted);font-size:.62rem;font-weight:850}.v520-feedback p{margin:0;color:var(--muted);font-size:.72rem}.v520-compare{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}.v520-compare>div{padding:.55rem;border-radius:10px;background:var(--surface-muted)}.v520-compare span{display:block;color:var(--muted);font-size:.58rem;text-transform:uppercase}.v520-compare strong{display:block;margin-top:.12rem;color:var(--navy);overflow-wrap:anywhere}.v520-neighbor{padding:.55rem;border-radius:10px;background:color-mix(in srgb,var(--blue) 7%,var(--surface));font-size:.68rem}.v520-neighbor strong,.v520-neighbor span{display:block}.v520-neighbor span{color:var(--muted);margin-top:.1rem}.v520-feedback>small{color:var(--muted);font-size:.6rem}.v520-word-transfer{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.62rem .7rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v520-word-transfer span,.v520-word-transfer small{display:block;color:var(--muted);font-size:.62rem}.v520-word-transfer strong{display:block;color:var(--navy);font-size:.78rem}.v520-progress-panel{padding:.85rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v520-progress-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem}.v520-progress-head h3{margin:.08rem 0 .2rem}.v520-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:72ch}.v520-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.42rem;margin-top:.7rem}.v520-progress-grid span{padding:.55rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v520-progress-grid strong{display:block;color:var(--navy);font-size:1rem}.v520-errors{margin-top:.6rem;border-top:1px solid var(--line);padding-top:.5rem}.v520-errors summary{cursor:pointer;font-weight:850;font-size:.68rem;color:var(--navy)}.v520-errors>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;margin-top:.45rem}.v520-errors>div>div{display:flex;justify-content:space-between;gap:.4rem;padding:.45rem .5rem;border-radius:9px;background:var(--surface-muted);font-size:.62rem}.v520-errors span{color:var(--muted)}.v520-errors strong{color:var(--navy)}@media(max-width:760px){.v520-production-box>div{grid-template-columns:1fr}.v520-production-box button{width:100%}.v520-compare{grid-template-columns:1fr}.v520-word-transfer,.v520-progress-head{align-items:stretch;flex-direction:column}.v520-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v520-errors>div{grid-template-columns:1fr}}@media(max-width:480px){.v520-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}';
+      document.head.append(style);
+    }
+
+    const v520NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v520NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p11-phrase-transfer';
+      document.documentElement.dataset.phraseProduction='v520';
+      document.documentElement.dataset.usageDiagnosis='deterministic-structural';
+    };
+    const v520InitBase=init;
+    init=async function(options){
+      v520EnsureStyles();const result=await v520InitBase(options||{});v420NormalizeSurface();
+      if(state.view==='dashboard')v520DecorateDashboard();
+      if(state.view==='browse')v520DecorateBrowse();
+      if(state.view==='study')v520DecorateCurrentCard();
+      if(state.view==='progress')v520DecorateProgress();
+      if(state.view==='settings')v520DecorateSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.2.0';return result;
     };
 
     function v380BootAudit(){
