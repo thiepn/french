@@ -17190,7 +17190,7 @@ qui	who	A1	question word`;
     });
 
     function v520Canon(value){
-      return String(value||'').toLocaleLowerCase('fr').normalize('NFC').replace(/[’]/g,"'").replace(/\s*\+\s*/g,' + ').replace(/[.,;:!?()[\]{}"]/g,' ').replace(/\s+/g,' ').trim();
+      return String(value||'').toLocaleLowerCase('fr').normalize('NFC').replace(/[’]/g,"'").replace(/\s*\+\s*/g,' ').replace(/[.,;:!?()[\]{}"]/g,' ').replace(/\s+/g,' ').trim();
     }
     function v520Fold(value){return normalizeTyped(String(value||'').replace(/\+/g,' '));}
     function v520Tokens(value){return v520Fold(value).split(/\s+/).filter(Boolean);}
@@ -17330,10 +17330,10 @@ qui	who	A1	question word`;
     function v520TasksForMode(cards,mode='production',count=10){
       const limit=Math.max(1,Math.min(50,finiteNumber(count,10)||10));
       if(mode==='repair'){
-        const rows=[],seen=new Set();
+        const rows=[],seen=new Set(),allowed=new Set((cards||[]).map(function(card){return depthBaseId(card);}));
         for(const entry of [...v520ErrorHistory()].reverse()){
           const record=V510_CORPUS.find(function(item){return item.id===entry.transferRecordId;}),note=state.cardById.get(depthBaseId(entry.noteId||entry.id));
-          if(!record||!note||!isAvailable(note))continue;
+          if(!record||!note||!isAvailable(note)||(allowed.size&&!allowed.has(note.id)))continue;
           const key=note.id+'|'+record.id;if(seen.has(key))continue;seen.add(key);
           rows.push(v520TransferTask(note,record,'repair',entry.transferDiagnosis));if(rows.length>=limit)break;
         }
