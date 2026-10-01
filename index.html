@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '4.8.0';
-    const APP_RELEASE = 'P7 Context Mastery, Sentences & Phrase Intelligence';
+    const APP_VERSION = '4.9.0';
+    const APP_RELEASE = 'P8 Adaptive Vocabulary Curriculum & Personalized Learning Path';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -16020,6 +16020,441 @@ qui	who	A1	question word`;
       if(state.view==='study')v480DecorateStudy();
       if(state.view==='progress')v480DecorateProgress();
       const badge=$('.version-badge');if(badge)badge.textContent='v4.8.0';
+      return result;
+    };
+
+
+    /* ================================================================
+       v4.9.0 ADAPTIVE VOCABULARY CURRICULUM & PERSONALIZED LEARNING PATH
+       One planner now decides what comes next across due SRS reviews,
+       weakness repair, skill prerequisites, course/CEFR progression and
+       verified context practice. Scheduled reviews remain authoritative;
+       extra repair/context work is practice-only.
+       ================================================================ */
+    const V490_VERSION='4.9.0';
+    const V490_RELEASE='P8 Adaptive Vocabulary Curriculum & Personalized Learning Path';
+    const V490_PATH_FOCI=new Set(['auto','balanced','active','listening','context']);
+    const V490_LEVEL_UNLOCK=68;
+    const V490_LESSON_UNLOCK=64;
+    const V490_LESSON_COMPLETE=84;
+    VALID_MODES.add('path');
+
+    function v490ProgressStarted(progress){
+      const p=normalizeProgressEntry(progress||{});
+      return p.status!=='new'||p.seen>0||p.successes>0||p.manualKnown;
+    }
+    function v490SkillCard(note,skill){
+      const cards=depthCreateSkillCards(note,skill).filter(function(card){return depthSkillOf(card)===skill;});
+      return cards[0]||null;
+    }
+    function v490SkillStrength(note,skill){
+      const cards=depthCreateSkillCards(note,skill).filter(function(card){return depthSkillOf(card)===skill;});
+      if(!cards.length)return 0;
+      return Math.min.apply(null,cards.map(function(card){return v430SkillStrength(card);}));
+    }
+    function v490LevelSnapshot(level){
+      const notes=state.cards.filter(function(note){return note.level===level&&note.core!==false;});
+      let introduced=0,receptive=0,productive=0,balanced=0,contextReady=0,contextSecure=0;
+      for(const note of notes){
+        const info=v470NoteState(note);
+        if(info.started)introduced++;
+        if(info.receptiveSecure)receptive++;
+        if(info.productiveSecure)productive++;
+        if(info.balancedSecure)balanced++;
+        const context=v480ContextState(note);
+        if(context.ready)contextReady++;
+        if(context.secure)contextSecure++;
+      }
+      const total=notes.length||1,receptivePct=Math.round(receptive/total*100),productivePct=Math.round(productive/total*100),balancedPct=Math.round(balanced/total*100);
+      const contextPct=contextReady?Math.round(contextSecure/contextReady*100):0;
+      const readiness=Math.round(receptivePct*.32+productivePct*.32+balancedPct*.26+contextPct*.10);
+      return {level:level,notes:notes,total:notes.length,introduced:introduced,receptive:receptive,productive:productive,balanced:balanced,contextReady:contextReady,contextSecure:contextSecure,receptivePct:receptivePct,productivePct:productivePct,balancedPct:balancedPct,contextPct:contextPct,readiness:readiness};
+    }
+    function v490LevelPath(){
+      const snapshots=LEVELS.map(v490LevelSnapshot);
+      let index=0;
+      for(let i=0;i<snapshots.length;i++){
+        index=i;
+        if(snapshots[i].readiness<V490_LEVEL_UNLOCK||snapshots[i].balancedPct<60)break;
+        if(i===snapshots.length-1)index=i;
+        else index=i+1;
+      }
+      return {snapshots:snapshots,current:snapshots[Math.min(index,snapshots.length-1)]};
+    }
+    function v490LessonSnapshot(lesson){
+      const notes=v32LessonNotes(lesson.id).filter(function(note){return note.core!==false;});
+      if(!notes.length)return {...lesson,notes:[],total:0,introduced:0,balanced:0,contextSecure:0,pct:0,readiness:0};
+      let introduced=0,balanced=0,contextSecure=0,receptive=0,productive=0;
+      for(const note of notes){
+        const info=v470NoteState(note);
+        if(info.started)introduced++;
+        if(info.receptiveSecure)receptive++;
+        if(info.productiveSecure)productive++;
+        if(info.balancedSecure)balanced++;
+        if(v480ContextState(note).secure)contextSecure++;
+      }
+      const total=notes.length,pct=Math.round(balanced/total*100),readiness=Math.round((receptive/total*100)*.35+(productive/total*100)*.35+pct*.30);
+      return {...lesson,notes:notes,total:total,introduced:introduced,balanced:balanced,contextSecure:contextSecure,pct:pct,readiness:Math.round(readiness)};
+    }
+    function v490LessonFrontier(){
+      const lessons=V32_LESSONS.map(v490LessonSnapshot).filter(function(item){return item.total>0;});
+      if(!lessons.length)return null;
+      let chosen=lessons[0];
+      for(let i=0;i<lessons.length;i++){
+        const item=lessons[i],previous=i?lessons[i-1]:null;
+        const unlocked=!previous||previous.readiness>=V490_LESSON_UNLOCK||previous.pct>=V490_LESSON_COMPLETE;
+        if(!unlocked)break;
+        chosen=item;
+        if(item.pct<V490_LESSON_COMPLETE)break;
+      }
+      return chosen;
+    }
+    function v490EffectiveFocus(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured!=='auto')return configured;
+      let production=0,listening=0,context=0;
+      for(const note of state.cards){
+        if(note.core===false)continue;
+        const info=v470NoteState(note);
+        if(info.modes?.recognition?.secure&&!info.productiveSecure)production++;
+        if(info.modes?.recognition?.secure&&info.modes?.listening?.eligible&&!info.modes.listening.secure)listening++;
+        const c=v480ContextState(note);if(c.gap||c.refresh)context++;
+      }
+      const max=Math.max(production,listening,context);
+      if(max<5)return 'balanced';
+      if(context===max)return 'context';
+      if(listening===max)return 'listening';
+      return 'active';
+    }
+    function v490FocusLabel(value){return {auto:'Automatic',balanced:'Balanced',active:'Active use',listening:'Listening',context:'Context'}[value]||'Balanced';}
+    function v490FocusBias(skill,category,focus){
+      if(focus==='active')return ['production','spelling','article'].includes(skill)?24:category==='context'?10:0;
+      if(focus==='listening')return skill==='listening'?30:skill==='production'?8:0;
+      if(focus==='context')return category==='context'?34:skill==='production'?10:0;
+      return 0;
+    }
+    function v490Frontier(){
+      const levelPath=v490LevelPath(),lesson=state.settings?.courseTrack==='coursebook'?v490LessonFrontier():null;
+      if(lesson)return {kind:'lesson',title:'Lesson '+lesson.id+': '+lesson.title,subtitle:lesson.goal,lesson:lesson,level:levelPath.current};
+      return {kind:'level',title:levelPath.current.level+' vocabulary',subtitle:'Advance the highest-priority core vocabulary at your current CEFR frontier.',lesson:null,level:levelPath.current};
+    }
+    function v490FrontierNotes(frontier){
+      const primary=frontier.lesson?.notes?.length?frontier.lesson.notes:state.cards.filter(function(note){return note.level===frontier.level.level&&note.core!==false;});
+      const primaryIds=new Set(primary.map(function(note){return note.id;}));
+      const supplement=state.cards.filter(function(note){return note.core!==false&&note.level===frontier.level.level&&!primaryIds.has(note.id);});
+      return [...primary,...supplement].sort(function(a,b){return a.order-b.order;});
+    }
+    function v490NextStage(note){
+      const recognition=v490SkillCard(note,'recognition');if(!recognition)return null;
+      const rp=normalizeProgressEntry(getProgress(recognition.id)),rStrength=v430SkillStrength(recognition);
+      if(!v490ProgressStarted(rp))return {card:recognition,category:'new',reason:'Introduce this '+note.level+' word through recognition before adding harder recall.'};
+
+      if(note.posGroup==='noun'&&note.article){
+        const article=v490SkillCard(note,'article'),ap=article?normalizeProgressEntry(getProgress(article.id)):null;
+        if(article&&!v490ProgressStarted(ap)&&rStrength>=.34)return {card:article,category:'skill',reason:'Recognition is established enough to attach the noun’s article and gender.'};
+      }
+
+      const production=depthCreateSkillCards(note,'production').filter(function(card){return depthSkillOf(card)==='production';});
+      const nextProduction=production.find(function(card){return !v490ProgressStarted(getProgress(card.id));});
+      if(nextProduction&&rStrength>=.48)return {card:nextProduction,category:'skill',reason:'Recognition is ahead of active recall, so English → French production is the next prerequisite.'};
+
+      const prodStrength=production.length?Math.max.apply(null,production.map(v430SkillStrength)):0,prodStarted=production.some(function(card){return v490ProgressStarted(getProgress(card.id));});
+      const context=v480ContextState(note);
+      if(context.ready&&prodStarted&&rStrength>=.68&&!context.secure){
+        const base=production[0]||recognition;
+        return {card:{...base,v490PracticeOnly:true,v490Practice:'cloze'},category:'context',reason:context.refresh?'Context recall was previously strong but is now stale.':'You recognize this word; now retrieve it inside a verified sentence.'};
+      }
+
+      const spelling=v490SkillCard(note,'spelling'),sp=spelling?normalizeProgressEntry(getProgress(spelling.id)):null;
+      if(spelling&&!v490ProgressStarted(sp)&&prodStrength>=.50)return {card:spelling,category:'skill',reason:'Active recall is developing; exact French spelling is the next useful layer.'};
+
+      const listening=v490SkillCard(note,'listening'),lp=listening?normalizeProgressEntry(getProgress(listening.id)):null;
+      if(listening&&!v490ProgressStarted(lp)&&prodStrength>=.56)return {card:listening,category:'skill',reason:'Production is established enough to connect the written word to French audio.'};
+
+      if(context.ready&&!context.secure&&rStrength>=.72){
+        const base=production[0]||recognition;
+        return {card:{...base,v490PracticeOnly:true,v490Practice:'cloze'},category:'context',reason:'Move from isolated recall to retrieval in a verified sentence.'};
+      }
+      return null;
+    }
+    function v490DueReason(card){
+      const p=normalizeProgressEntry(getProgress(card.id)),w=v430WeaknessProfile(card),skill=DEPTH_SKILLS[depthSkillOf(card)]?.label||'Vocabulary';
+      if(p.status==='learning'||p.relearning||p.fsrsState==='learning'||p.fsrsState==='relearning')return skill+' is in an active learning step and is due now.';
+      if(w.score>=28)return skill+' is due and has elevated forgetting risk.';
+      return skill+' is scheduled for review now.';
+    }
+    function v490PracticeClone(card,category,reason,practice){
+      return {...card,v490PracticeOnly:true,v490Category:category,v490Reason:reason,...(practice?{v490Practice:practice}:{})};
+    }
+    function v490CandidateScore(item,frontier,focus){
+      const card=item.card,note=depthNoteFor(card)||card,skill=depthSkillOf(card),w=cardStatus(card)==='new'?{score:0}:v430WeaknessProfile(card);
+      let score=finiteNumber(w.score,0)+v490FocusBias(skill,item.category,focus);
+      if(note.level===frontier.level.level)score+=22;
+      if(frontier.lesson&&note.coursebookLessons?.includes(frontier.lesson.id))score+=36;
+      score+=Math.max(0,22-Math.min(22,(finiteNumber(note.order,3000)/3000)*22));
+      if(item.category==='context')score+=v480ContextState(note).gap?24:10;
+      if(item.category==='new')score+=8;
+      return score;
+    }
+    function v490UniquePush(target,item,usedIds,usedContexts){
+      if(!item?.card)return false;
+      const card=item.card,id=card.id,noteId=depthBaseId(card);
+      if(item.category==='context'){
+        if(usedContexts.has(noteId)||usedIds.has(id))return false;
+        usedContexts.add(noteId);
+      }else if(usedIds.has(id))return false;
+      usedIds.add(id);
+      target.push({...card,v490Category:item.category,v490Reason:item.reason});
+      return true;
+    }
+    function v490InterleaveLanes(lanes,limit){
+      const output=[],patterns=['retain','retain','advance','retain','context','repair','advance'],indexes={retain:0,advance:0,context:0,repair:0};
+      let guard=0;
+      while(output.length<limit&&guard<limit*20){
+        const key=patterns[guard%patterns.length],lane=lanes[key]||[],index=indexes[key]||0;
+        if(index<lane.length){output.push(lane[index]);indexes[key]=index+1;}
+        else{
+          const fallback=['retain','advance','context','repair'].find(function(name){return (indexes[name]||0)<(lanes[name]?.length||0);});
+          if(fallback){output.push(lanes[fallback][indexes[fallback]||0]);indexes[fallback]=(indexes[fallback]||0)+1;}
+          else break;
+        }
+        guard++;
+      }
+      return output;
+    }
+    function v490PersonalPlan(limit=30){
+      depthIndexSkills();
+      const max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30)),frontier=v490Frontier(),focus=v490EffectiveFocus();
+      const allSkills=state.cards.filter(function(note){return note.core!==false;}).flatMap(function(note){return depthCreateSkillCards(note,'all');}).filter(isAvailable);
+      const dueAll=allSkills.filter(isDue).sort(function(a,b){
+        const at=typeof v394DueTier==='function'?v394DueTier(a):1,bt=typeof v394DueTier==='function'?v394DueTier(b):1;
+        return at-bt||v490FocusBias(depthSkillOf(b),'retain',focus)-v490FocusBias(depthSkillOf(a),'retain',focus)||v430WeaknessProfile(b).score-v430WeaknessProfile(a).score||dueAge(b)-dueAge(a);
+      });
+      const reviewLimit=Math.max(0,state.settings.dailyReviewLimit-todayStats().existingReviews),duePressure=dueAll.length/Math.max(1,state.settings.dailyReviewLimit||1);
+      const dueShare=duePressure>=1?.82:duePressure>=.5?.68:.48,dueBudget=Math.min(dueAll.length,reviewLimit||dueAll.length,Math.max(0,Math.ceil(max*dueShare)));
+      const usedIds=new Set(),usedContexts=new Set(),retain=[],advance=[],context=[],repair=[];
+      for(const card of dueAll.slice(0,dueBudget))v490UniquePush(retain,{card:card,category:'retain',reason:v490DueReason(card)},usedIds,usedContexts);
+
+      const frontierNotes=v490FrontierNotes(frontier),introduced=v32TodayIntroducedNotes(),remainingNew=Math.max(0,state.settings.dailyNewLimit-introduced.size);
+      let newUsed=0;
+      const stageCandidates=[];
+      for(const note of frontierNotes){
+        if(!isAvailable(note))continue;
+        const stage=v490NextStage(note);if(!stage)continue;
+        if(stage.category==='new'&&newUsed>=remainingNew)continue;
+        stageCandidates.push({...stage,score:v490CandidateScore(stage,frontier,focus)});
+      }
+      stageCandidates.sort(function(a,b){return b.score-a.score||(depthNoteFor(a.card)||a.card).order-(depthNoteFor(b.card)||b.card).order;});
+      const advanceBudget=Math.max(2,max-dueBudget-Math.min(4,Math.ceil(max*.14))-Math.min(4,Math.ceil(max*.12)));
+      for(const item of stageCandidates){
+        if(advance.length>=advanceBudget)break;
+        if(item.category==='context')continue;
+        if(item.category==='new'&&newUsed>=remainingNew)continue;
+        if(v490UniquePush(advance,item,usedIds,usedContexts)&&item.category==='new')newUsed++;
+      }
+
+      const contextCandidates=state.cards.filter(function(note){
+        if(note.core===false||!isAvailable(note))return false;
+        const c=v480ContextState(note);return c.ready&&(c.gap||c.refresh||c.status==='building');
+      }).map(function(note){
+        const prod=depthCreateSkillCards(note,'production')[0]||v490SkillCard(note,'recognition');
+        const c=v480ContextState(note),reason=c.refresh?'Refresh sentence retrieval before the context trace decays further.':c.gap?'Recognition is secure, but sentence retrieval is not yet secure.':'Build repeated successful retrieval inside the verified example.';
+        const item={card:v490PracticeClone(prod,'context',reason,'cloze'),category:'context',reason:reason};return {...item,score:v490CandidateScore(item,frontier,focus)};
+      }).sort(function(a,b){return b.score-a.score;});
+      const contextBudget=Math.min(focus==='context'?6:4,Math.max(1,Math.ceil(max*.16)));
+      for(const item of contextCandidates){if(context.length>=contextBudget)break;v490UniquePush(context,item,usedIds,usedContexts);}
+
+      const repairCandidates=allSkills.filter(function(card){
+        if(isDue(card)||usedIds.has(card.id))return false;
+        const p=normalizeProgressEntry(getProgress(card.id));if(!v490ProgressStarted(p))return false;
+        const w=v430WeaknessProfile(card);return isLeech(card)||w.score>=32||(w.reviews>=3&&w.failureRate>=.34);
+      }).map(function(card){
+        const focusInfo=v430RepairFocus(card),reason=focusInfo.label+': '+focusInfo.detail;
+        const clone=v490PracticeClone(card,'repair',reason);
+        const item={card:clone,category:'repair',reason:reason};return {...item,score:v490CandidateScore(item,frontier,focus)+20};
+      }).sort(function(a,b){return b.score-a.score;});
+      const repairBudget=Math.min(duePressure>=1?2:4,Math.max(1,Math.ceil(max*.14)));
+      for(const item of repairCandidates){if(repair.length>=repairBudget)break;v490UniquePush(repair,item,usedIds,usedContexts);}
+
+      /* Fill unused room with more scheduled reviews first, then more
+         prerequisite-safe advancement. New-note limits are never bypassed. */
+      for(const card of dueAll.slice(dueBudget)){
+        if(retain.length+advance.length+context.length+repair.length>=max)break;
+        v490UniquePush(retain,{card:card,category:'retain',reason:v490DueReason(card)},usedIds,usedContexts);
+      }
+      for(const item of stageCandidates){
+        if(retain.length+advance.length+context.length+repair.length>=max)break;
+        if(item.category==='context')continue;
+        const note=depthNoteFor(item.card)||item.card;
+        if(item.category==='new'&&newUsed>=remainingNew)continue;
+        if(v490UniquePush(advance,item,usedIds,usedContexts)&&item.category==='new')newUsed++;
+      }
+
+      let queue=v490InterleaveLanes({retain:retain,advance:advance,context:context,repair:repair},max);
+      queue=spaceSiblingFamilies(queue);
+      const counts={retain:retain.length,advance:advance.length,context:context.length,repair:repair.length,newNotes:newUsed};
+      const next=queue[0]||null,minutes=Math.max(1,Math.round(queue.length*.65)),levelPath=v490LevelPath();
+      let headline='Advance '+frontier.title;
+      if(duePressure>=1)headline='Stabilize due vocabulary, then advance '+frontier.title;
+      else if(repair.length>=3)headline='Repair weak recall while advancing '+frontier.title;
+      else if(focus==='context')headline='Turn recognition into sentence-level recall';
+      else if(focus==='listening')headline='Strengthen listening while keeping the SRS current';
+      return {queue:queue,counts:counts,frontier:frontier,focus:focus,configuredFocus:state.settings.pathFocus||'auto',headline:headline,minutes:minutes,dueTotal:dueAll.length,duePressure:duePressure,remainingNew:remainingNew,levels:levelPath.snapshots,next:next};
+    }
+
+    const v490NormalizeSettingsBase=normalizeSettings;
+    normalizeSettings=function(raw={}){
+      const base=v490NormalizeSettingsBase(raw);
+      return {...base,pathFocus:V490_PATH_FOCI.has(raw.pathFocus)?raw.pathFocus:'auto'};
+    };
+
+    function v490ResetSessionQueue(){
+      state.sessionSeedIds=state.queue.map(function(card){return card.id;});state.queueIndex=0;state.flipped=false;state.history=[];state.undoStack=[];state.typedAnswer='';state.choiceAnswer='';state.practiceResult=null;state.currentPractice='classic';state.currentCardKey='';state.lastAutoSpeechKey='';state.combo=0;state.sessionStats=newSessionStats();saveSessionSettings();saveSessionSnapshot();
+    }
+    const v490BuildQueueBase=buildQueue;
+    buildQueue=function(){
+      if(state.session.mode!=='path')return v490BuildQueueBase();
+      stopSpeech();const size=finiteNumber(state.session.size)>0?finiteNumber(state.session.size):30,plan=v490PersonalPlan(size);
+      state.v490LastPlan=plan;state.queue=plan.queue;v490ResetSessionQueue();return state.queue;
+    };
+    function v490StartPath(){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting your learning path.');return;}
+      state.session=normalizeSession({...state.session,mode:'path',skillMode:'adaptive',scheduleMode:'review',practice:'classic',typed:true,size:30,lessonId:0,quality:'core',order:'smart'});
+      buildQueue();
+      if(!state.queue.length){showToast('Your personalized path is clear for now.');return;}
+      setView('study');announce('Personalized learning path started');
+    }
+
+    const v490CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v490Practice||v490CurrentPracticeBase(card);};
+    const v490RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v490PracticeOnly)return v490RateCardBase(rating);
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;
+      state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v490RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    const v490NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v490NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v490Tasks=Array.isArray(raw?.v490Tasks)?raw.v490Tasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max;}).slice(0,100).map(function(item){
+        return {index:item.index,category:['retain','advance','context','repair','new','skill'].includes(item.category)?item.category:'advance',reason:String(item.reason||'').slice(0,500),practice:item.practice==='cloze'?'cloze':'',practiceOnly:item.practiceOnly===true};
+      }):[];
+      return result;
+    };
+    const v490SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v490SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v490Category||card?.v490PracticeOnly||card?.v490Practice)tasks.push({index:index,category:card.v490Category||'advance',reason:card.v490Reason||'',practice:card.v490Practice||'',practiceOnly:card.v490PracticeOnly===true});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v490Tasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v490ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v490Tasks)?[...state.resumeSnapshot.v490Tasks]:[];
+      const result=v490ResumeBase();
+      for(const item of tasks){const card=state.queue?.[item.index];if(!card)continue;state.queue[item.index]={...card,v490Category:item.category,v490Reason:item.reason,...(item.practice?{v490Practice:item.practice}:{}),v490PracticeOnly:item.practiceOnly};}
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
+    function v490TaskLabel(card){
+      return {retain:'Due review',advance:'Next skill',new:'New word',skill:'Next skill',context:'Context',repair:'Repair'}[card?.v490Category]||'Personalized path';
+    }
+    const v490RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){
+      const result=v490RenderCurrentCardBase(),card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card||!stage)return result;
+      if(card.v490Category){
+        const left=stage.querySelector('.v366-session-left');
+        if(left&&!left.querySelector('.v490-path-chip'))left.insertAdjacentHTML('beforeend','<span class="v490-path-chip">'+escapeHtml(v490TaskLabel(card))+'</span>');
+        const cardNode=stage.querySelector('.flashcard,.v366-flashcard');
+        if(cardNode&&card.v490Reason&&!stage.querySelector('.v490-path-reason'))cardNode.insertAdjacentHTML('afterend','<div class="v490-path-reason"><strong>Why now</strong><span>'+escapeHtml(card.v490Reason)+'</span>'+(card.v490PracticeOnly?'<small>Practice-only: this extra task does not move the scheduled SRS review.</small>':'')+'</div>');
+      }
+      return result;
+    };
+
+    function v490NextStepsHtml(plan){
+      if(!plan.queue.length)return '<div class="v490-empty">Nothing needs attention right now.</div>';
+      return plan.queue.slice(0,6).map(function(card,index){
+        const note=depthNoteFor(card)||card,skill=card.v490Category==='context'?'Sentence context':(DEPTH_SKILLS[depthSkillOf(card)]?.label||'Vocabulary');
+        return '<article class="v490-step"><span class="v490-step-number">'+(index+1)+'</span><div><strong>'+escapeHtml(note.fr)+'</strong><small>'+escapeHtml(skill)+' · '+escapeHtml(card.v490Reason||'Adaptive priority')+'</small></div><span class="v490-step-type">'+escapeHtml(v490TaskLabel(card))+'</span></article>';
+      }).join('');
+    }
+    function v490DashboardHtml(plan){
+      const level=plan.frontier.level,focusLabel=v490FocusLabel(plan.focus);
+      return '<section class="v490-path-card"><div class="v490-path-head"><div><p class="eyebrow">Personalized learning path</p><h2>'+escapeHtml(plan.headline)+'</h2><p>'+escapeHtml(plan.frontier.subtitle)+'</p></div><div class="v490-path-focus"><span>Current focus</span><strong>'+escapeHtml(focusLabel)+'</strong><small>'+escapeHtml(level.level)+' readiness '+level.readiness+'%</small></div></div>'+
+        '<div class="v490-path-metrics"><span><strong>'+plan.queue.length+'</strong> next tasks</span><span><strong>'+plan.minutes+'</strong> min</span><span><strong>'+plan.dueTotal+'</strong> due total</span><span><strong>'+plan.counts.repair+'</strong> repairs</span><span><strong>'+plan.counts.context+'</strong> context</span><span><strong>'+plan.counts.newNotes+'</strong> new words</span></div>'+
+        '<div class="v490-path-actions"><button class="primary" id="v490-start-path" '+(plan.queue.length?'':'disabled')+'>Continue my path</button><button class="secondary" id="v490-open-frontier">'+(plan.frontier.lesson?'Open recommended lesson':'Browse '+escapeHtml(level.level))+'</button><span>'+escapeHtml(plan.frontier.title)+'</span></div>'+
+        '<details class="v490-next"><summary>Why these tasks? · Preview next steps</summary><div class="v490-step-list">'+v490NextStepsHtml(plan)+'</div></details></section>';
+    }
+    function v490BindDashboard(plan){
+      $('#v490-start-path')?.addEventListener('click',v490StartPath);
+      $('#v490-open-frontier')?.addEventListener('click',function(){
+        if(plan.frontier.lesson){state.v32LessonSelection=plan.frontier.lesson.id;setView('lessons');}
+        else{state.browse={...DEFAULT_BROWSE,pageSize:50,level:plan.frontier.level.level,page:1};setView('browse');}
+      });
+      const old=$('#v32-study-now');
+      if(old){
+        const fresh=old.cloneNode(true);fresh.textContent='Continue personalized path';fresh.disabled=!plan.queue.length;old.replaceWith(fresh);fresh.addEventListener('click',v490StartPath);
+      }
+    }
+    function v490DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v490-path-card'))return;
+      const plan=v490PersonalPlan(30),wrap=document.createElement('div');wrap.innerHTML=v490DashboardHtml(plan);main.prepend(wrap.firstElementChild);v490BindDashboard(plan);
+    }
+    const v490RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v490RenderDashboardBase();v490DecorateDashboard();return result;};
+
+    function v490PathProgressHtml(){
+      const path=v490LevelPath(),frontier=v490Frontier();
+      return '<section class="v490-progress-card"><div class="v490-progress-head"><div><p class="eyebrow">Curriculum path</p><h3>'+escapeHtml(frontier.title)+'</h3><p>Readiness combines secure recognition, production, balanced recall, and verified context retrieval. Levels unlock softly; due reviews are never blocked.</p></div><button class="primary" id="v490-progress-start">Continue path</button></div><div class="v490-level-grid">'+path.snapshots.map(function(item){
+        return '<article class="'+(item.level===path.current.level?'current':'')+'"><div><strong>'+item.level+'</strong><span>'+item.readiness+'% ready</span></div><div class="v490-mini-track"><i style="width:'+item.readiness+'%"></i></div><small>'+item.balancedPct+'% balanced · '+item.contextPct+'% context</small></article>';
+      }).join('')+'</div></section>';
+    }
+    function v490DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v490-progress-card'))return;
+      const anchor=main.querySelector('.v460-progress-shell')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterbegin',v490PathProgressHtml());$('#v490-progress-start')?.addEventListener('click',v490StartPath);
+    }
+    const v490RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v490RenderProgressBase();v490DecorateProgress();return result;};
+
+    function v490SettingsHtml(){
+      const selected=V490_PATH_FOCI.has(state.settings.pathFocus)?state.settings.pathFocus:'auto';
+      return '<section class="panel v490-settings"><div><p class="eyebrow">Personalized path</p><h3>Learning priority</h3><p>Automatic follows your largest evidence-based skill gap. A manual priority only biases eligible tasks; it never skips prerequisites or overdue SRS reviews.</p></div><div class="control-group"><label for="v490-path-focus">Priority</label><select id="v490-path-focus">'+[['auto','Automatic'],['balanced','Balanced'],['active','Active use'],['listening','Listening'],['context','Sentence context']].map(function(pair){return '<option value="'+pair[0]+'" '+(selected===pair[0]?'selected':'')+'>'+pair[1]+'</option>';}).join('')+'</select></div></section>';
+    }
+    function v490DecorateSettings(){
+      if(state.view!=='settings'||main.querySelector('.v490-settings'))return;
+      main.insertAdjacentHTML('afterbegin',v490SettingsHtml());
+      $('#v490-path-focus')?.addEventListener('change',function(event){state.settings=normalizeSettings({...state.settings,pathFocus:event.target.value});saveSettings();showToast('Personalized path priority updated.');});
+    }
+    const v490RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v490RenderSettingsBase();v490DecorateSettings();return result;};
+
+    function v490EnsureStyles(){
+      if(document.querySelector('#v490-path-style'))return;
+      const style=document.createElement('style');style.id='v490-path-style';
+      style.textContent='.v490-path-card{max-width:1120px;margin:0 auto 1rem;padding:1rem;border:1px solid color-mix(in srgb,var(--blue) 32%,var(--line));border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--blue) 5%,var(--surface-solid)),var(--surface-solid));box-shadow:var(--shadow)}.v490-path-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:end}.v490-path-head h2{margin:.08rem 0 .28rem;font-size:clamp(1.35rem,2.8vw,2rem)}.v490-path-head p:last-child{margin:0;color:var(--muted);max-width:72ch}.v490-path-focus{min-width:150px;padding:.65rem .75rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted);text-align:right}.v490-path-focus span,.v490-path-focus small{display:block;color:var(--muted);font-size:.62rem}.v490-path-focus strong{display:block;color:var(--navy);font-size:.95rem}.v490-path-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem;margin:.75rem 0}.v490-path-metrics span{padding:.52rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v490-path-metrics strong{display:block;color:var(--navy);font-size:1rem}.v490-path-actions{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}.v490-path-actions>span{margin-left:auto;color:var(--muted);font-size:.68rem}.v490-next{margin-top:.7rem;border-top:1px solid var(--line);padding-top:.55rem}.v490-next summary{cursor:pointer;color:var(--navy);font-size:.7rem;font-weight:850}.v490-step-list{display:grid;gap:.35rem;margin-top:.55rem}.v490-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.55rem;align-items:center;padding:.5rem .55rem;border-radius:11px;background:var(--surface-muted)}.v490-step-number{width:25px;height:25px;display:grid;place-items:center;border-radius:8px;background:var(--surface-solid);color:var(--muted);font-size:.62rem;font-weight:900}.v490-step strong,.v490-step small{display:block}.v490-step strong{color:var(--navy);font-size:.76rem}.v490-step small{color:var(--muted);font-size:.62rem;margin-top:.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v490-step-type{color:var(--blue);font-size:.61rem;font-weight:850}.v490-path-chip{display:inline-flex;padding:.2rem .4rem;border-radius:999px;background:color-mix(in srgb,var(--blue) 9%,var(--surface));color:var(--blue);font-size:.62rem;font-weight:900}.v490-path-reason{display:grid;gap:.12rem;margin:.45rem 0;padding:.55rem .65rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-muted);font-size:.68rem}.v490-path-reason strong{color:var(--navy)}.v490-path-reason span,.v490-path-reason small{color:var(--muted)}.v490-progress-card{padding:.85rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v490-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.7rem}.v490-progress-head h3{margin:.08rem 0 .2rem}.v490-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem}.v490-level-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;margin-top:.7rem}.v490-level-grid article{padding:.58rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-muted)}.v490-level-grid article.current{border-color:color-mix(in srgb,var(--blue) 46%,var(--line));background:color-mix(in srgb,var(--blue) 7%,var(--surface))}.v490-level-grid article>div:first-child{display:flex;justify-content:space-between;gap:.4rem;font-size:.68rem}.v490-level-grid strong{color:var(--navy)}.v490-level-grid span,.v490-level-grid small{color:var(--muted)}.v490-level-grid small{display:block;font-size:.6rem;margin-top:.25rem}.v490-mini-track{height:6px;margin-top:.35rem;border-radius:99px;background:var(--surface-solid);overflow:hidden}.v490-mini-track i{display:block;height:100%;border-radius:inherit;background:var(--blue)}.v490-settings{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.35fr);gap:1rem;align-items:end;margin-bottom:1rem}.v490-settings p:last-child{margin:.25rem 0 0;color:var(--muted);font-size:.76rem}.v490-settings .control-group{margin:0}.v490-empty{padding:.8rem;color:var(--muted);text-align:center}@media(max-width:780px){.v490-path-head,.v490-settings{grid-template-columns:1fr}.v490-path-focus{text-align:left}.v490-path-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.v490-level-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v490-path-actions>span{width:100%;margin:0}.v490-step{grid-template-columns:auto minmax(0,1fr)}.v490-step-type{grid-column:2}}@media(max-width:480px){.v490-path-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v490-progress-head{flex-direction:column}.v490-progress-head button{width:100%}}';
+      document.head.append(style);
+    }
+
+    const v490NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v490NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p8-personalized-path';
+      document.documentElement.dataset.personalizedCurriculum='v490';
+      document.documentElement.dataset.pathPolicy='retain-repair-prerequisite-advance-context';
+    };
+    const v490InitBase=init;
+    init=async function(options){
+      v490EnsureStyles();
+      const result=await v490InitBase(options||{});
+      state.settings=normalizeSettings(state.settings||{});saveSettings();v420NormalizeSurface();
+      if(state.view==='dashboard')v490DecorateDashboard();
+      if(state.view==='progress')v490DecorateProgress();
+      if(state.view==='settings')v490DecorateSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v4.9.0';
       return result;
     };
 
