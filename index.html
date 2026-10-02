@@ -18333,16 +18333,17 @@ qui	who	A1	question word`;
       else if(dimension==='listening')memory=v540SkillStrength(note,'listening');
       else if(dimension==='phrase'){
         eligible=v510CorpusFor(note).some(function(record){return record.tier==='verified';});
-        const records=v510CorpusFor(note).filter(function(record){return record.tier==='verified';});
-        if(records.length)memory=Math.max(...records.map(function(record){const stateInfo=v520TransferState(record,note);return stateInfo.secure?1:stateInfo.attempts?clamp(stateInfo.accuracy*.75+Math.min(1,stateInfo.attempts/3)*.25,0,1):0;}));
+        memory=evidence.score;
       }else if(dimension==='sentence'){
-        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return Boolean(v530RecordForExercise(exercise)&&v510CorpusFor(note).some(function(record){return record.frame===exercise.frame;}));});
-        const info=v530WordSentenceState(note);memory=info.secure?clamp(info.secure/Math.max(1,info.records),0,1):evidence.score;
+        const frames=new Set(v510CorpusFor(note).filter(function(record){return record.tier==='verified';}).map(function(record){return record.frame;}));
+        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return exercise.type!=='transfer'&&frames.has(exercise.frame);});
+        memory=evidence.score;
       }else if(dimension==='transfer'){
-        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return exercise.type==='transfer'&&v510CorpusFor(note).some(function(record){return record.frame===exercise.frame;});})||v510CorpusFor(note).some(function(record){return record.tier==='verified';});
-        const info=v530WordSentenceState(note);memory=info.transferSecure?clamp(info.transferSecure/Math.max(1,info.records),0,1):evidence.score;
+        const frames=new Set(v510CorpusFor(note).filter(function(record){return record.tier==='verified';}).map(function(record){return record.frame;}));
+        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return exercise.type==='transfer'&&frames.has(exercise.frame);})||frames.size>0;
+        memory=evidence.score;
       }
-      const score=!eligible?null:(['recognition','recall','listening'].includes(dimension)?clamp(memory*.62+evidence.score*.38,0,1):clamp(Math.max(memory*.7,evidence.score),0,1));
+      const score=!eligible?null:(['recognition','recall','listening'].includes(dimension)?clamp(memory*.62+evidence.score*.38,0,1):clamp(evidence.score,0,1));
       return {dimension:dimension,label:V540_DIMENSION_LABELS[dimension],eligible:eligible,score:score,evidence:evidence,memory:memory};
     }
     function v540MasteryProfile(note){
@@ -18358,8 +18359,9 @@ qui	who	A1	question word`;
       const accuracy=allEntries.length?successEntries.length/allEntries.length:0,spacing=clamp(daysSeen/5,0,1),span=clamp(spanDays/30,0,1),breadth=clamp(modalities.size/5,0,1),independence=successEntries.length?independent/successEntries.length:0,speed=!avgMs?0.55:avgMs<=9000?1:avgMs<=18000?.8:avgMs<=30000?.6:.4;
       const durability=allEntries.length?clamp(accuracy*.28+spacing*.2+span*.18+breadth*.18+independence*.1+speed*.06,0,1):0;
       const weakest=eligible.slice().sort(function(a,b){return (a.score??1)-(b.score??1);})[0]||null,totalAttempts=allEntries.length,totalSuccesses=successEntries.length;
+      const hasMemory=dimensions.recognition.memory>0||dimensions.recall.memory>0||dimensions.listening.memory>0;
       let mastery='NEW';
-      if(totalAttempts>0)mastery='LEARNING';
+      if(totalAttempts>0||hasMemory)mastery='LEARNING';
       if(dimensions.recognition.score>=.45&&totalSuccesses>=2)mastery='FAMILIAR';
       if(active>=.35&&dimensions.recall.evidence.successes>=1)mastery='RECALLABLE';
       if(active>=.45&&modalities.size>=2&&(dimensions.phrase.evidence.successes+dimensions.sentence.evidence.successes+dimensions.transfer.evidence.successes)>=1)mastery='USABLE';
@@ -18488,7 +18490,7 @@ qui	who	A1	question word`;
       if(last2.length===2&&last2.every(function(item){return v540TaskMeta(item).modality===meta.modality;}))penalty+=450;
       if(meta.hardProduction&&last3.length===3&&last3.every(function(item){return v540TaskMeta(item).hardProduction;}))penalty+=450;
       if(output.at(-1)&&v540TaskMeta(output.at(-1)).theme===meta.theme)penalty+=12;
-      if(meta.exposureKeys.some(function(key){return recentExposure.has(key);}))penalty+=meta.modality==='overdue'?45:180;
+      if(meta.exposureKeys.some(function(key){return recentExposure.has(key);}))penalty+=card.v540Lane==='overdue'?45:180;
       const age=v540TaskAge(card),lastAge=output.at(-1)?v540TaskAge(output.at(-1)):'';
       if(age===lastAge&&['recent','old'].includes(age))penalty+=8;
       if(card.v540Lane==='repair'&&index>6)penalty-=12;
