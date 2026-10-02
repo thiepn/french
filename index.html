@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.2.0';
-    const APP_RELEASE = 'P11 Active Phrase Production, Transfer Drills & Usage Error Diagnosis';
+    const APP_VERSION = '5.3.0';
+    const APP_RELEASE = 'P12 Real Sentence Production, Controlled Composition & Contextual Usage Transfer';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -17616,6 +17616,585 @@ qui	who	A1	question word`;
       if(state.view==='progress')v520DecorateProgress();
       if(state.view==='settings')v520DecorateSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.2.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.3.0 SENTENCE PRODUCTION, CONTROLLED COMPOSITION & CONTEXT TRANSFER
+       P12 promotes verified P10/P11 lexical frames into complete-sentence
+       production. Sentence work is practice-only, keeps vocabulary SRS
+       untouched, records its own evidence, separates deterministic errors
+       from ambiguous but potentially valid French, and schedules delayed
+       transfer after repair.
+       ================================================================ */
+    const V530_VERSION='5.3.0';
+    const V530_RELEASE='P12 Real Sentence Production, Controlled Composition & Contextual Usage Transfer';
+    const V530_WINDOW_DAYS=180;
+    const V530_SECURE_ATTEMPTS=3;
+    const V530_SECURE_ACCURACY=.75;
+    const V530_TRANSFER_SECURE_ATTEMPTS=2;
+    const V530_TRANSFER_SECURE_ACCURACY=.75;
+    V490_PATH_FOCI.add('sentence');
+
+    const V530_TYPE_LABELS=Object.freeze({
+      complete:'Complete the thought',
+      cue:'Cue to sentence',
+      translate:'Constrained translation',
+      transform:'Sentence transformation',
+      transfer:'Context transfer'
+    });
+    const V530_DIAGNOSIS=Object.freeze({
+      exact:{label:'Exact reference sentence',detail:'Your sentence matches the verified reference wording.'},
+      accepted:{label:'Accepted sentence family',detail:'Your answer matches another explicitly accepted sentence in this exercise.'},
+      orthography:{label:'Orthography / small form issue',detail:'The sentence is very close to the reference, but spelling, accents, apostrophes, or a small form need attention.'},
+      contraction:{label:'Article contraction',detail:'Check contractions such as du, des, au, or aux instead of an uncontracted preposition + article.'},
+      preposition:{label:'Construction / preposition',detail:'The lexical target is present, but its connector or preposition does not match the requested construction.'},
+      order:{label:'Word order',detail:'The expected sentence elements are largely present but arranged differently from the controlled target.'},
+      incomplete:{label:'Missing element',detail:'The target construction is present, but the controlled sentence is incomplete.'},
+      target:{label:'Target construction missing',detail:'The requested lexical construction was not detected in the sentence.'},
+      manual:{label:'Needs your judgment',detail:'The requested construction is present, but French allows many valid sentences. Compare meaning and grammar with the reference.'},
+      blank:{label:'No answer',detail:'Write a complete French sentence before checking it.'}
+    });
+
+    const V530_SENTENCE_EXERCISES=Object.freeze([
+      {id:'p12-001',frame:'tenir compte de + nom',type:'complete',context:'planning',prompt:'Complete the sentence: Nous devons ______ la météo.',expected:'Nous devons tenir compte de la météo.',alternatives:['On doit tenir compte de la météo.'],required:['tenir compte'],connector:'de'},
+      {id:'p12-002',frame:'avoir besoin',type:'complete',context:'study',prompt:'Complete the thought: Je ______ plus de temps pour finir.',expected:"J'ai besoin de plus de temps pour finir.",alternatives:["J’ai besoin de plus de temps pour finir."],required:['besoin']},
+      {id:'p12-003',frame:'prendre une décision',type:'complete',context:'daily life',prompt:'Complete the sentence: Nous devons ______ aujourd’hui.',expected:"Nous devons prendre une décision aujourd'hui.",alternatives:['Nous devons prendre une décision aujourd’hui.'],required:['prendre une décision']},
+      {id:'p12-004',frame:'avoir du mal à + infinitif',type:'complete',context:'study',prompt:'Complete the sentence: J’______ comprendre cette phrase.',expected:"J'ai du mal à comprendre cette phrase.",alternatives:["J’ai du mal à comprendre cette phrase."],required:['du mal à'],connector:'à'},
+      {id:'p12-005',frame:'poser une question à quelqu’un',type:'complete',context:'university',prompt:'Complete the sentence: Je voudrais ______ au professeur.',expected:'Je voudrais poser une question au professeur.',alternatives:['Je veux poser une question au professeur.'],required:['poser une question']},
+      {id:'p12-006',frame:'faire partie de + nom',type:'complete',context:'social',prompt:'Complete the sentence: Elle ______ notre équipe.',expected:'Elle fait partie de notre équipe.',alternatives:['Elle fait partie de l’équipe.'],required:['fait partie']},
+
+      {id:'p12-007',frame:'apprendre à + infinitif',type:'cue',context:'skills',prompt:'Situation: you are learning to drive. Write one sentence using apprendre à.',expected:"J'apprends à conduire.",alternatives:["J’apprends à conduire."],required:['apprends à'],connector:'à'},
+      {id:'p12-008',frame:'décider de + infinitif',type:'cue',context:'plans',prompt:'Situation: you decided to leave tomorrow. Use décider de.',expected:"J'ai décidé de partir demain.",alternatives:["J’ai décidé de partir demain."],required:['décidé de'],connector:'de'},
+      {id:'p12-009',frame:'essayer de + infinitif',type:'cue',context:'language learning',prompt:'Situation: you try to speak French every day. Use essayer de.',expected:"J'essaie de parler français tous les jours.",alternatives:["J’essaye de parler français tous les jours.","J'essaye de parler français tous les jours."],required:['essaie de'],connector:'de'},
+      {id:'p12-010',frame:'rêver de + infinitif',type:'cue',context:'travel',prompt:'Situation: you dream of visiting Canada. Use rêver de.',expected:'Je rêve de visiter le Canada.',alternatives:['Je rêve de visiter le Canada un jour.'],required:['rêve de'],connector:'de'},
+      {id:'p12-011',frame:'prendre rendez-vous avec quelqu’un',type:'cue',context:'appointments',prompt:'Situation: you need an appointment with the doctor. Use prendre rendez-vous avec.',expected:'Je dois prendre rendez-vous avec le médecin.',alternatives:["J'ai besoin de prendre rendez-vous avec le médecin."],required:['prendre rendez vous avec'],connector:'avec'},
+      {id:'p12-012',frame:'faire face à + nom',type:'cue',context:'problems',prompt:'Situation: your team must deal with a problem. Use faire face à.',expected:'Nous devons faire face à ce problème.',alternatives:["On doit faire face à ce problème."],required:['faire face'],connector:'à'},
+
+      {id:'p12-013',frame:'permettre à quelqu’un de + infinitif',type:'translate',context:'travel',prompt:'Translate using permettre à quelqu’un de: This ticket allows my brother to travel for free.',expected:'Ce billet permet à mon frère de voyager gratuitement.',alternatives:['Ce billet permet à mon frère de voyager sans payer.'],required:['permet à','de voyager'],connector:'de'},
+      {id:'p12-014',frame:'demander à quelqu’un de + infinitif',type:'translate',context:'daily life',prompt:'Translate using demander à quelqu’un de: I ask Paul to help me.',expected:"Je demande à Paul de m'aider.",alternatives:["Je demande à Paul de m’aider."],required:['demande à','de m aider'],connector:'de'},
+      {id:'p12-015',frame:'expliquer quelque chose à quelqu’un',type:'translate',context:'university',prompt:'Translate using expliquer quelque chose à quelqu’un: I explain the problem to my professor.',expected:"J'explique le problème à mon professeur.",alternatives:["J’explique le problème à mon professeur."],required:['explique','à mon professeur'],connector:'à'},
+      {id:'p12-016',frame:'faire plaisir à quelqu’un',type:'translate',context:'relationships',prompt:'Translate using faire plaisir à: This gift will please my mother.',expected:'Ce cadeau va faire plaisir à ma mère.',alternatives:'Ce cadeau fera plaisir à ma mère.'.split('||'),required:['faire plaisir','à ma mère'],connector:'à'},
+      {id:'p12-017',frame:'mettre fin à + nom',type:'translate',context:'problem solving',prompt:'Translate using mettre fin à: They want to put an end to the discussion.',expected:'Ils veulent mettre fin à la discussion.',alternatives:['Ils souhaitent mettre fin à la discussion.'],required:['mettre fin'],connector:'à'},
+      {id:'p12-018',frame:'avoir de la chance',type:'translate',context:'daily life',prompt:'Translate using avoir de la chance: We are lucky today.',expected:"Nous avons de la chance aujourd'hui.",alternatives:['Nous avons de la chance aujourd’hui.'],required:['avons de la chance']},
+
+      {id:'p12-019',frame:'prendre des notes',type:'transform',context:'study',prompt:'Transform: Je prends des notes pendant le cours. → subject nous, passé composé.',expected:'Nous avons pris des notes pendant le cours.',alternatives:['Nous avons pris des notes en cours.'],required:['pris des notes']},
+      {id:'p12-020',frame:'faire un effort',type:'transform',context:'self improvement',prompt:'Transform: Je fais un effort. → subject nous, futur proche.',expected:'Nous allons faire un effort.',alternatives:['Nous allons faire un effort maintenant.'],required:['faire un effort']},
+      {id:'p12-021',frame:'faire des progrès',type:'transform',context:'language learning',prompt:'Transform: Tu fais des progrès en français. → subject il, passé composé.',expected:'Il a fait des progrès en français.',alternatives:['Il a fait beaucoup de progrès en français.'],required:['fait des progrès']},
+      {id:'p12-022',frame:'avoir raison',type:'transform',context:'discussion',prompt:'Transform: J’ai raison. → subject nous, imparfait.',expected:'Nous avions raison.',alternatives:[],required:['avions raison']},
+      {id:'p12-023',frame:'avoir tort',type:'transform',context:'discussion',prompt:'Transform: Tu as tort. → passé composé.',expected:'Tu as eu tort.',alternatives:[],required:['eu tort']},
+      {id:'p12-024',frame:'finir de + infinitif',type:'transform',context:'work',prompt:'Transform: Je finis de travailler. → subject nous, passé composé.',expected:'Nous avons fini de travailler.',alternatives:[],required:['fini de travailler'],connector:'de'},
+
+      {id:'p12-025',frame:'tenir compte de + nom',type:'transfer',context:'hotel',prompt:'You are choosing a hotel. Say that you also have to take location into account.',expected:"Il faut aussi tenir compte de l'emplacement.",alternatives:["Il faut également tenir compte de l'emplacement.","On doit aussi tenir compte de l'emplacement."],required:['tenir compte'],connector:'de'},
+      {id:'p12-026',frame:'avoir besoin',type:'transfer',context:'information',prompt:'You cannot decide yet. Say that you need more information.',expected:"J'ai besoin de plus d'informations.",alternatives:["J’ai besoin de plus d’informations.","Nous avons besoin de plus d'informations."],required:['besoin']},
+      {id:'p12-027',frame:'décider de + infinitif',type:'transfer',context:'study abroad',prompt:'Your friend has made the choice to study abroad. Say that they decided to study abroad.',expected:"Il a décidé d'étudier à l'étranger.",alternatives:["Elle a décidé d'étudier à l'étranger.","Il a décidé d’étudier à l’étranger."],required:['décidé d'],connector:'de'},
+      {id:'p12-028',frame:'prendre une décision',type:'transfer',context:'restaurant',prompt:'Your friends cannot agree where to eat. Say that you need to make a decision.',expected:'Nous devons prendre une décision.',alternatives:['Il faut prendre une décision.','On doit prendre une décision.'],required:['prendre une décision']},
+      {id:'p12-029',frame:'faire attention à + nom',type:'transfer',context:'street',prompt:'You are crossing a busy street. Tell someone to pay attention to the traffic.',expected:'Fais attention à la circulation.',alternatives:['Faites attention à la circulation.'],required:['attention à'],connector:'à'},
+      {id:'p12-030',frame:'faire attention à + infinitif',type:'transfer',context:'travel',prompt:'Your friend is leaving for the station. Tell them to be careful not to forget the ticket.',expected:"Fais attention à ne pas oublier ton billet.",alternatives:["Faites attention à ne pas oublier votre billet."],required:['attention à','oublier'],connector:'à'},
+      {id:'p12-031',frame:'aider quelqu’un à + infinitif',type:'transfer',context:'study',prompt:'Say that you help your friend prepare for the exam.',expected:"J'aide mon ami à préparer l'examen.",alternatives:["J’aide mon ami à préparer l’examen.","J'aide une amie à préparer l'examen."],required:['aide','à préparer'],connector:'à'},
+      {id:'p12-032',frame:'proposer de + infinitif',type:'transfer',context:'plans',prompt:'Your group is running late. Suggest leaving earlier.',expected:'Je propose de partir plus tôt.',alternatives:['Nous proposons de partir plus tôt.'],required:['propose de'],connector:'de'},
+      {id:'p12-033',frame:'refuser de + infinitif',type:'transfer',context:'discussion',prompt:'Say that he refuses to change his mind.',expected:"Il refuse de changer d'avis.",alternatives:["Il refuse de changer d’avis."],required:['refuse de'],connector:'de'},
+      {id:'p12-034',frame:'avoir peur',type:'transfer',context:'speaking',prompt:'Say that she is afraid to speak in public.',expected:'Elle a peur de parler en public.',alternatives:['Elle a peur de parler devant tout le monde.'],required:['a peur']},
+      {id:'p12-035',frame:'avoir envie',type:'transfer',context:'weekend',prompt:'Say that you want to travel this weekend.',expected:'Nous avons envie de voyager ce week-end.',alternatives:["J'ai envie de voyager ce week-end."],required:['envie']},
+      {id:'p12-036',frame:'faire le ménage',type:'transfer',context:'home',prompt:'Guests are coming. Say that you have to clean before they arrive.',expected:"Je dois faire le ménage avant l'arrivée des invités.",alternatives:["Nous devons faire le ménage avant l'arrivée des invités."],required:['faire le ménage']}
+    ]);
+    const V530_BY_ID=new Map(V530_SENTENCE_EXERCISES.map(function(item){return [item.id,item];}));
+
+    function v530RecordForExercise(exercise){return exercise?v510RecordForFrame(exercise.frame):null;}
+    function v530ExerciseNote(exercise,cards){
+      const pool=(cards||state.cards).map(v500BaseNote).filter(Boolean),record=v530RecordForExercise(exercise);
+      if(!record)return null;
+      for(const note of pool){
+        if(!isAvailable(note))continue;
+        if(v510CorpusFor(note).some(function(item){return item.id===record.id;}))return note;
+      }
+      return null;
+    }
+    function v530SentenceReady(note,exercise){
+      const record=v530RecordForExercise(exercise);if(!note||!record)return false;
+      const transfer=v520TransferState(record,note),usage=v500UsageFormState(note,record.frame),production=v470SkillState(note,'production'),recognition=v470SkillState(note,'recognition');
+      return transfer.ready||usage.attempts>0||production.started||recognition.secure;
+    }
+    function v530SentenceEntries(note,frame){
+      const noteId=depthBaseId(note),record=v510RecordForFrame(frame),cutoff=now()-days(V530_WINDOW_DAYS);
+      return state.reviewLog.filter(function(entry){
+        return entry.sentencePractice===true&&entry.t>=cutoff&&depthBaseId(entry.noteId||entry.id)===noteId&&(!record||entry.sentenceRecordId===record.id);
+      }).sort(function(a,b){return a.t-b.t;});
+    }
+    function v530SentenceState(note,frame){
+      const entries=v530SentenceEntries(note,frame),attempts=entries.length,successes=entries.filter(function(entry){return entry.sentenceCorrect===true;}).length;
+      const transferEntries=entries.filter(function(entry){return entry.sentenceExerciseType==='transfer';}),transferSuccesses=transferEntries.filter(function(entry){return entry.sentenceCorrect===true;}).length;
+      const accuracy=attempts?successes/attempts:0,transferAccuracy=transferEntries.length?transferSuccesses/transferEntries.length:0,daysSeen=new Set(entries.map(function(entry){return dayKey(entry.t);})).size,last=entries.at(-1)||null;
+      const transferSecure=transferEntries.length>=V530_TRANSFER_SECURE_ATTEMPTS&&transferAccuracy>=V530_TRANSFER_SECURE_ACCURACY&&transferEntries.at(-1)?.sentenceCorrect===true;
+      const secure=attempts>=V530_SECURE_ATTEMPTS&&accuracy>=V530_SECURE_ACCURACY&&daysSeen>=2&&transferSuccesses>=1&&last?.sentenceCorrect===true;
+      let stage='not_started';
+      if(attempts)stage='sentence_guided';
+      if(entries.some(function(entry){return ['cue','translate','transform'].includes(entry.sentenceExerciseType)&&entry.sentenceCorrect===true;}))stage='sentence_controlled';
+      if(transferSuccesses)stage='sentence_transfer';
+      if(secure)stage='sentence_secure';
+      return {attempts:attempts,successes:successes,accuracy:accuracy,transferAttempts:transferEntries.length,transferSuccesses:transferSuccesses,transferAccuracy:transferAccuracy,transferSecure:transferSecure,secure:secure,stage:stage,last:last,daysSeen:daysSeen};
+    }
+    function v530WordSentenceState(note){
+      const records=v510CorpusFor(note).filter(function(record){return record.tier==='verified';}),states=records.map(function(record){return v530SentenceState(note,record.frame);});
+      const attempted=states.reduce(function(sum,item){return sum+item.attempts;},0),secure=states.filter(function(item){return item.secure;}).length,transferSecure=states.filter(function(item){return item.transferSecure;}).length;
+      return {records:records.length,attempted:attempted,secure:secure,transferSecure:transferSecure,states:states};
+    }
+    function v530SentenceErrors(){
+      const cutoff=now()-days(V530_WINDOW_DAYS);
+      return state.reviewLog.filter(function(entry){return entry.sentencePractice===true&&entry.t>=cutoff&&entry.sentenceDiagnosis&&!['exact','accepted','manual'].includes(entry.sentenceDiagnosis);});
+    }
+    function v530ErrorStats(){
+      const errors=v530SentenceErrors(),counts={};
+      for(const entry of errors)counts[entry.sentenceDiagnosis]=(counts[entry.sentenceDiagnosis]||0)+1;
+      return {errors:errors.length,top:Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).slice(0,6),counts:counts};
+    }
+
+    function v530Canon(value){
+      return String(value||'').toLocaleLowerCase('fr').normalize('NFC').replace(/[’]/g,"'").replace(/\s+/g,' ').replace(/\s+([,.;!?])/g,'$1').trim();
+    }
+    function v530Fold(value){return normalizeTyped(String(value||'').replace(/[’]/g,"'"));}
+    function v530Tokens(value){return v530Fold(value).split(/\s+/).filter(Boolean);}
+    function v530RequiredPresent(answer,exercise){
+      const folded=v530Fold(answer);
+      return (exercise.required||[]).every(function(part){return folded.includes(v530Fold(part));});
+    }
+    function v530AnchorPresent(answer,exercise){
+      const record=v530RecordForExercise(exercise);if(!record)return false;
+      const anchor=v530Fold(record.anchor),folded=v530Fold(answer);
+      if(anchor&&folded.includes(anchor))return true;
+      const root=v530Fold(record.anchor).slice(0,Math.max(3,v530Fold(record.anchor).length-2));
+      return root.length>=3&&folded.includes(root);
+    }
+    function v530WrongContraction(answer,expected){
+      const typed=' '+v530Fold(answer)+' ',target=' '+v530Fold(expected)+' ';
+      return (target.includes(' du ')&&typed.includes(' de le '))||(target.includes(' des ')&&typed.includes(' de les '))||(target.includes(' au ')&&typed.includes(' a le '))||(target.includes(' aux ')&&typed.includes(' a les '));
+    }
+    function v530WrongConnector(answer,exercise){
+      if(!exercise.connector)return false;
+      const typed=' '+v530Fold(answer)+' ',connector=v530Fold(exercise.connector);
+      if(connector==='de'&&(typed.includes(' du ')||typed.includes(' des ')||typed.includes(' d ')))return false;
+      if(connector==='à'&&(typed.includes(' au ')||typed.includes(' aux ')))return false;
+      if(typed.includes(' '+connector+' '))return false;
+      return v530AnchorPresent(answer,exercise);
+    }
+    function v530Diagnose(answer,card){
+      const exercise=V530_BY_ID.get(card?.v530ExerciseId),typed=String(answer||'').trim();
+      if(!exercise||!typed)return {...V530_DIAGNOSIS.blank,code:'blank',quality:'review',score:0,correct:false,expected:exercise?.expected||'',exercise:exercise};
+      const candidates=[exercise.expected,...(exercise.alternatives||[])].filter(Boolean),canon=v530Canon(typed),folded=v530Fold(typed);
+      for(let index=0;index<candidates.length;index++){
+        if(canon===v530Canon(candidates[index])){
+          const code=index===0?'exact':'accepted',meta=V530_DIAGNOSIS[code];
+          return {...meta,code:code,quality:'exact',score:1,correct:true,expected:exercise.expected,exercise:exercise};
+        }
+      }
+      const foldedCandidates=candidates.map(v530Fold);
+      if(foldedCandidates.includes(folded)){
+        return {...V530_DIAGNOSIS.orthography,code:'orthography',quality:'close',score:.97,correct:true,expected:exercise.expected,exercise:exercise};
+      }
+      if(v530WrongContraction(typed,exercise.expected)){
+        return {...V530_DIAGNOSIS.contraction,code:'contraction',quality:'review',score:.7,correct:false,expected:exercise.expected,exercise:exercise};
+      }
+      const expectedTokens=v530Tokens(exercise.expected),typedTokens=v530Tokens(typed),typedSet=new Set(typedTokens),overlap=expectedTokens.length?expectedTokens.filter(function(token){return typedSet.has(token);}).length/expectedTokens.length:0;
+      if(v530WrongConnector(typed,exercise)){
+        return {...V530_DIAGNOSIS.preposition,code:'preposition',quality:'review',score:Math.max(.45,overlap),correct:false,expected:exercise.expected,exercise:exercise};
+      }
+      const sortedExpected=[...expectedTokens].sort().join('|'),sortedTyped=[...typedTokens].sort().join('|');
+      if(expectedTokens.length===typedTokens.length&&sortedExpected===sortedTyped){
+        return {...V530_DIAGNOSIS.order,code:'order',quality:'review',score:.82,correct:false,expected:exercise.expected,exercise:exercise};
+      }
+      const similarity=Math.max(...foldedCandidates.map(function(candidate){return 1-levenshtein(folded,candidate)/Math.max(folded.length,candidate.length,1);}));
+      if(similarity>=.88){
+        return {...V530_DIAGNOSIS.orthography,code:'orthography',quality:'close',score:similarity,correct:true,expected:exercise.expected,exercise:exercise};
+      }
+      if(!v530RequiredPresent(typed,exercise)){
+        if(overlap>=.48&&typedTokens.length<expectedTokens.length)return {...V530_DIAGNOSIS.incomplete,code:'incomplete',quality:'review',score:overlap,correct:false,expected:exercise.expected,exercise:exercise};
+        return {...V530_DIAGNOSIS.target,code:'target',quality:'review',score:Math.max(0,overlap),correct:false,expected:exercise.expected,exercise:exercise};
+      }
+      return {...V530_DIAGNOSIS.manual,code:'manual',quality:'none',score:Math.max(.55,overlap),correct:null,expected:exercise.expected,exercise:exercise};
+    }
+
+    function v530Prompt(exercise,mode){
+      const label=mode==='repair'?'Sentence repair':V530_TYPE_LABELS[exercise.type]||'Sentence production';
+      const help=mode==='repair'?'Rebuild the sentence after a recent error.':exercise.type==='transfer'?'Reuse the verified construction in a different real-life context.':'Produce a complete sentence while keeping the target lexical frame intact.';
+      return {eyebrow:label,main:exercise.prompt,sub:help+' Required construction: '+exercise.frame+'.'};
+    }
+    function v530SentenceTask(note,exercise,mode='sentence'){
+      const base=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note,prompt=v530Prompt(exercise,mode),record=v530RecordForExercise(exercise);
+      return {...base,v530SentencePractice:true,v530ExerciseId:exercise.id,v530SentenceMode:mode,v530ExerciseType:exercise.type,v530RecordId:record?.id||'',v530Frame:exercise.frame,v530Expected:exercise.expected,v530Prompt:prompt,v490PracticeOnly:true,v490Category:mode==='repair'?'sentence-repair':'sentence',v490Reason:mode==='repair'?'Repair a diagnosed sentence-production error without changing the word SRS.':exercise.type==='transfer'?'Transfer a verified phrase into a new sentence context.':'Turn verified lexical knowledge into controlled sentence production.'};
+    }
+    function v530Rows(cards){
+      const pool=(cards||state.cards).map(v500BaseNote).filter(Boolean),rows=[];
+      for(const exercise of V530_SENTENCE_EXERCISES){
+        const note=v530ExerciseNote(exercise,pool),record=v530RecordForExercise(exercise);if(!note||!record||!v530SentenceReady(note,exercise))continue;
+        const sentence=v530SentenceState(note,exercise.frame),transfer=v520TransferState(record,note),usage=v500UsageFormState(note,exercise.frame);
+        rows.push({exercise:exercise,note:note,record:record,sentence:sentence,transfer:transfer,usage:usage,score:(sentence.attempts?0:24)+(sentence.secure?-20:15)+(exercise.type==='transfer'&&!sentence.transferSecure?18:0)+(usage.secure?8:0)+(transfer.ready?8:0)});
+      }
+      return rows;
+    }
+    function v530RepairRows(cards){
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v500BaseNote(card)||card);})),rows=[],seen=new Set();
+      for(const entry of [...v530SentenceErrors()].reverse()){
+        const exercise=V530_BY_ID.get(entry.sentenceExerciseId);if(!exercise||seen.has(exercise.id))continue;
+        const note=v530ExerciseNote(exercise,state.cards);if(!note||!allowed.has(depthBaseId(note))||!isAvailable(note))continue;
+        seen.add(exercise.id);rows.push({exercise:exercise,note:note});
+      }
+      return rows;
+    }
+    function v530TasksForMode(cards,mode='sentence',count=10){
+      const limit=Math.max(1,Math.min(50,finiteNumber(count,10)||10));
+      if(mode==='repair')return v530RepairRows(cards).slice(0,limit).map(function(item){return v530SentenceTask(item.note,item.exercise,'repair');});
+      let rows=v530Rows(cards);
+      if(mode==='transfer')rows=rows.filter(function(item){return item.exercise.type==='transfer';});
+      rows.sort(function(a,b){
+        return Number(a.sentence.secure)-Number(b.sentence.secure)||Number(a.sentence.transferSecure)-Number(b.sentence.transferSecure)||a.sentence.attempts-b.sentence.attempts||b.score-a.score||a.exercise.id.localeCompare(b.exercise.id);
+      });
+      const picked=[],typeCounts={};
+      for(const row of rows){
+        if(picked.length>=limit)break;
+        if(mode==='sentence'){
+          const used=typeCounts[row.exercise.type]||0;
+          if(used>=Math.ceil(limit/3)&&rows.some(function(other){return (typeCounts[other.exercise.type]||0)<used&& !picked.includes(other);})){continue;}
+          typeCounts[row.exercise.type]=used+1;
+        }
+        picked.push(row);
+      }
+      if(picked.length<limit)for(const row of rows){if(picked.length>=limit)break;if(!picked.includes(row))picked.push(row);}
+      return picked.slice(0,limit).map(function(item){return v530SentenceTask(item.note,item.exercise,mode);});
+    }
+    function v530Start(cards,mode='sentence',count=10){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting sentence practice.');return;}
+      const tasks=v530TasksForMode(cards,mode,count);
+      if(!tasks.length){showToast(mode==='repair'?'No sentence errors are waiting for repair in this selection.':mode==='transfer'?'No sentence-transfer tasks are ready yet.':'No sentence-production tasks are ready yet. Build phrase production first.');return;}
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'production',scheduleMode:'practice',practice:'classic',typed:false,size:tasks.length,quality:'core'});
+      state.queue=tasks;v490ResetSessionQueue();setView('study');announce(mode==='repair'?'Sentence repair started':mode==='transfer'?'Sentence transfer started':'Sentence 10 started');
+    }
+
+    const v530CurrentDirectionBase=currentDirection;
+    currentDirection=function(card){return card?.v530SentencePractice?'en-fr':v530CurrentDirectionBase(card);};
+    const v530CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v530SentencePractice?'classic':v530CurrentPracticeBase(card);};
+    const v530ExpectedTypedBase=expectedTyped;
+    expectedTyped=function(card,direction){
+      if(card?.v530SentencePractice){
+        const exercise=V530_BY_ID.get(card.v530ExerciseId);
+        return {primary:exercise?.expected||card.v530Expected,alternatives:[exercise?.expected,...(exercise?.alternatives||[])].filter(Boolean),articleExpected:false,articleForms:[]};
+      }
+      return v530ExpectedTypedBase(card,direction);
+    };
+    const v530AnswerResultBase=answerResultFor;
+    answerResultFor=function(card,direction,practice){
+      if(card?.v530SentencePractice){
+        const diagnosis=v530Diagnose(state.typedAnswer,card);
+        return {label:diagnosis.label,className:diagnosis.code==='exact'||diagnosis.code==='accepted'?'match-exact':diagnosis.code==='orthography'?'match-close':'match-review',quality:diagnosis.quality,score:diagnosis.score,correct:diagnosis.correct,diagnosis:diagnosis.code,diagnosisDetail:diagnosis.detail};
+      }
+      return v530AnswerResultBase(card,direction,practice);
+    };
+    const v530SuggestedRatingBase=suggestedRating;
+    suggestedRating=function(result,responseMs){
+      if(result?.diagnosis){
+        if(['exact','accepted'].includes(result.diagnosis))return responseMs&&responseMs<12000?'easy':'good';
+        if(result.diagnosis==='orthography')return 'hard';
+        if(result.diagnosis==='manual')return '';
+        return 'again';
+      }
+      return v530SuggestedRatingBase(result,responseMs);
+    };
+
+    const v530CardPresentationBase=v366CardPresentation;
+    v366CardPresentation=function(card,practice,shown){
+      if(card?.v530SentencePractice){
+        const exercise=V530_BY_ID.get(card.v530ExerciseId),prompt=card.v530Prompt||v530Prompt(exercise,card.v530SentenceMode);
+        if(!shown)return {label:prompt.eyebrow,main:prompt.main,sub:prompt.sub,lang:'en'};
+        return {label:'Reference sentence',main:exercise?.expected||card.v530Expected,sub:'Use the reference to diagnose the lexical construction, not to memorize one rigid wording.',lang:'fr'};
+      }
+      return v530CardPresentationBase(card,practice,shown);
+    };
+
+    const v530RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v530RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v530SentencePractice){
+        const entry=state.reviewLog?.at(-1),diagnosis=v530Diagnose(state.typedAnswer,card),exercise=V530_BY_ID.get(card.v530ExerciseId);
+        if(entry&&entry.id===card.id&&exercise){
+          const manualCorrect=diagnosis.code==='manual'&&['good','easy'].includes(rating),manualAlmost=diagnosis.code==='manual'&&rating==='hard';
+          entry.sentencePractice=true;
+          entry.sentenceExerciseId=exercise.id;
+          entry.sentenceExerciseType=exercise.type;
+          entry.sentenceMode=String(card.v530SentenceMode||'sentence');
+          entry.sentenceRecordId=String(card.v530RecordId||'');
+          entry.sentenceDiagnosis=diagnosis.code;
+          entry.sentenceExpected=String(exercise.expected||'').slice(0,320);
+          entry.sentenceAnswer=String(state.typedAnswer||'').slice(0,320);
+          entry.sentenceCorrect=diagnosis.code==='exact'||diagnosis.code==='accepted'||manualCorrect;
+          entry.sentenceAlmost=diagnosis.code==='orthography'||manualAlmost;
+          entry.sentenceContext=String(exercise.context||'').slice(0,80);
+          saveReviewLog();
+        }
+      }
+      return result;
+    };
+
+    const v530NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){
+        if(!entry||typeof entry!=='object')continue;
+        lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);
+      }
+      return v530NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));
+        if(original?.sentencePractice!==true)return entry;
+        return {...entry,sentencePractice:true,sentenceExerciseId:V530_BY_ID.has(original.sentenceExerciseId)?original.sentenceExerciseId:'',sentenceExerciseType:V530_TYPE_LABELS[original.sentenceExerciseType]?original.sentenceExerciseType:'cue',sentenceMode:['sentence','transfer','repair'].includes(original.sentenceMode)?original.sentenceMode:'sentence',sentenceRecordId:String(original.sentenceRecordId||'').slice(0,80),sentenceDiagnosis:V530_DIAGNOSIS[original.sentenceDiagnosis]?original.sentenceDiagnosis:'manual',sentenceExpected:String(original.sentenceExpected||'').slice(0,320),sentenceAnswer:String(original.sentenceAnswer||'').slice(0,320),sentenceCorrect:original.sentenceCorrect===true,sentenceAlmost:original.sentenceAlmost===true,sentenceContext:String(original.sentenceContext||'').slice(0,80)};
+      });
+    };
+
+    const v530NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v530NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v530SentenceTasks=Array.isArray(raw?.v530SentenceTasks)?raw.v530SentenceTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max&&V530_BY_ID.has(item.exerciseId);}).slice(0,100).map(function(item){return {index:item.index,exerciseId:item.exerciseId,mode:['sentence','transfer','repair'].includes(item.mode)?item.mode:'sentence'};}):[];
+      return result;
+    };
+    const v530SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v530SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v530SentencePractice)tasks.push({index:index,exerciseId:card.v530ExerciseId,mode:card.v530SentenceMode||'sentence'});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v530SentenceTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v530ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v530SentenceTasks)?[...state.resumeSnapshot.v530SentenceTasks]:[];
+      const result=v530ResumeBase();
+      for(const item of tasks){
+        const base=state.queue?.[item.index],exercise=V530_BY_ID.get(item.exerciseId);if(!base||!exercise)continue;
+        const note=v530ExerciseNote(exercise,state.cards)||v500BaseNote(base);if(!note)continue;
+        state.queue[item.index]={...base,...v530SentenceTask(note,exercise,item.mode)};
+      }
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
+    function v530FeedbackHtml(card){
+      const diagnosis=v530Diagnose(state.typedAnswer,card),exercise=V530_BY_ID.get(card.v530ExerciseId),meta=V530_DIAGNOSIS[diagnosis.code]||V530_DIAGNOSIS.manual;
+      const manual=diagnosis.code==='manual';
+      return '<section class="v530-feedback '+escapeHtml(diagnosis.code)+'"><div class="v530-feedback-head"><div><span>Sentence diagnosis</span><strong>'+escapeHtml(meta.label)+'</strong></div><span class="v530-feedback-status">'+(diagnosis.correct===true?'Accepted':manual?'Self-check':'Repair')+'</span></div><p>'+escapeHtml(meta.detail)+'</p><div class="v530-compare"><div><span>Your sentence</span><strong lang="fr">'+escapeHtml(state.typedAnswer||'—')+'</strong></div><div><span>Reference</span><strong lang="fr">'+escapeHtml(exercise?.expected||card.v530Expected)+'</strong></div></div><div class="v530-target"><span>Target construction</span><strong>'+escapeHtml(exercise?.frame||card.v530Frame)+'</strong><small>'+escapeHtml(exercise?.context||'context')+'</small></div>'+
+        (manual?'<div class="v530-manual"><strong>Judge the whole sentence</strong><span>If the meaning is right and the French is grammatical, mark Correct. Use Almost for a small issue or Wrong if the construction/meaning fails.</span><div class="button-row"><button type="button" class="secondary" data-v530-judge="again">Wrong</button><button type="button" class="secondary" data-v530-judge="hard">Almost</button><button type="button" class="primary" data-v530-judge="good">Correct</button></div></div>':'')+
+        (!diagnosis.correct?'<button type="button" class="secondary v530-retry" id="v530-retry">Retry before rating</button>':'')+
+        '<small>Sentence evidence is stored separately and never resets a mature vocabulary card.</small></section>';
+    }
+    function v530ProductionBoxHtml(){
+      return '<section class="v530-production-box"><label for="v530-answer">Write one complete French sentence</label><div><textarea id="v530-answer" rows="2" maxlength="320" autocomplete="off" autocapitalize="sentences" spellcheck="true" aria-label="French sentence answer">'+escapeHtml(state.typedAnswer||'')+'</textarea><button class="primary" id="v530-check">Reveal & diagnose</button></div><small>Use the requested construction. Natural alternatives are allowed; uncertain variants are sent to self-judgment instead of being falsely marked wrong.</small></section>';
+    }
+    function v530DecorateCurrentCard(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v530SentencePractice||!stage)return;
+      const banner=main.querySelector('.v500-study-banner');
+      if(banner){const strong=banner.querySelector('strong'),span=banner.querySelector('span');if(strong)strong.textContent=card.v530SentenceMode==='repair'?'Sentence repair':'Sentence production';if(span)span.textContent='Compose a complete sentence. This practice has its own evidence and leaves vocabulary SRS intervals unchanged.';}
+      if(!state.flipped&&!stage.querySelector('.v530-production-box')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v530ProductionBoxHtml());
+        const input=$('#v530-answer',stage);
+        input?.addEventListener('input',function(event){state.typedAnswer=event.target.value;});
+        input?.addEventListener('keydown',function(event){if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(state.typedAnswer.trim())flipCard();}});
+        $('#v530-check',stage)?.addEventListener('click',function(){if(!state.typedAnswer.trim()){showToast('Write a complete French sentence first.');input?.focus();return;}flipCard();});
+        setTimeout(function(){input?.focus();},0);
+      }
+      if(state.flipped&&!stage.querySelector('.v530-feedback')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v530FeedbackHtml(card));
+        $('#v530-retry',stage)?.addEventListener('click',function(){state.flipped=false;state.typedAnswer='';state.cardShownAt=now();renderCurrentCard();});
+        stage.querySelectorAll('[data-v530-judge]').forEach(function(button){button.addEventListener('click',function(){rateCard(button.dataset.v530Judge);});});
+      }
+      stage.querySelector('.v520-production-box')?.remove();
+      stage.querySelector('.v520-feedback')?.remove();
+      stage.querySelector('.v500-usage-note')?.remove();
+    }
+    const v530RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v530RenderCurrentCardBase();v530DecorateCurrentCard();return result;};
+    const v530RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v530RenderStudyBase();v530DecorateCurrentCard();return result;};
+
+    function v530DelayedTransfer(card){
+      const exercise=V530_BY_ID.get(card?.v530ExerciseId);if(!exercise)return null;
+      const candidates=V530_SENTENCE_EXERCISES.filter(function(item){return item.frame===exercise.frame&&item.type==='transfer'&&item.id!==exercise.id;});
+      const target=candidates[0]||V530_SENTENCE_EXERCISES.find(function(item){return item.frame===exercise.frame&&item.id!==exercise.id;});
+      if(!target)return null;
+      const note=v530ExerciseNote(target,state.cards)||v500BaseNote(card);return note?v530SentenceTask(note,target,'transfer'):null;
+    }
+    const v530RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v530SentencePractice)return v530RateCardBase(rating);
+      const diagnosis=v530Diagnose(state.typedAnswer,card);
+      if(['blank','contraction','preposition','order','incomplete','target'].includes(diagnosis.code))rating='again';
+      else if(diagnosis.code==='orthography'&&['good','easy'].includes(rating))rating='hard';
+      else if(diagnosis.code==='manual'&&rating==='easy')rating='good';
+      if(['again','hard'].includes(rating)){
+        const delayed=v530DelayedTransfer(card);
+        if(delayed&&!state.queue.slice(state.queueIndex+1).some(function(item){return item.v530ExerciseId===delayed.v530ExerciseId;})){
+          const target=Math.min(state.queue.length,state.queueIndex+5);state.queue.splice(target,0,delayed);
+        }
+      }
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v530RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    function v530SentenceStats(cards){
+      const rows=v530Rows(cards),frameKeys=new Set(),frameStates=[];
+      for(const row of rows){
+        const key=depthBaseId(row.note)+'|'+row.record.id;if(frameKeys.has(key))continue;frameKeys.add(key);
+        frameStates.push({note:row.note,record:row.record,state:v530SentenceState(row.note,row.record.frame)});
+      }
+      const ready=frameStates.length,attempted=frameStates.filter(function(item){return item.state.attempts>0;}).length,secure=frameStates.filter(function(item){return item.state.secure;}).length,transferSecure=frameStates.filter(function(item){return item.state.transferSecure;}).length;
+      const controlledStrong=frameStates.filter(function(item){return item.state.attempts>=2&&item.state.accuracy>=V530_SECURE_ACCURACY;}).length;
+      return {exercises:rows.length,frames:frameStates.length,ready:ready,attempted:attempted,secure:secure,transferSecure:transferSecure,controlledStrong:controlledStrong,gaps:Math.max(0,controlledStrong-transferSecure),securePct:ready?Math.round(secure/ready*100):0,...v530ErrorStats()};
+    }
+    function v530LadderHtml(card){
+      const recognition=v470SkillState(card,'recognition'),production=v470SkillState(card,'production'),listening=v470SkillState(card,'listening'),records=v510CorpusFor(card).filter(function(item){return item.tier==='verified';}),phraseSecure=records.some(function(record){return v520TransferState(record,card).secure||v500UsageFormState(card,record.frame).secure;}),sentence=v530WordSentenceState(card),sentenceSecure=sentence.secure>0,transferSecure=sentence.transferSecure>0;
+      const rows=[
+        ['Recognize',recognition.secure],
+        ['Recall',production.secure],
+        ['Listen',listening.secure],
+        ['Phrase',phraseSecure],
+        ['Sentence',sentenceSecure],
+        ['Transfer',transferSecure]
+      ];
+      return '<div class="v530-ladder" aria-label="Production ladder">'+rows.map(function(row,index){const active=row[1],prior=index===0||rows[index-1][1];const cls=active?'done':prior?'current':'future';return '<span class="'+cls+'"><b>'+(active?'✓':cls==='current'?'◐':'○')+'</b>'+escapeHtml(row[0])+'</span>';}).join('')+'</div>';
+    }
+    function v530WordSentenceHtml(card){
+      const records=v510CorpusFor(card).filter(function(item){return item.tier==='verified';});if(!records.length)return '';
+      const stateInfo=v530WordSentenceState(card),ready=V530_SENTENCE_EXERCISES.filter(function(exercise){return records.some(function(record){return record.frame===exercise.frame;});}).length;
+      return '<div class="v530-word-sentence"><div><span>Sentence production</span><strong>'+stateInfo.secure+'/'+records.length+' phrase families sentence-secure</strong><small>'+ready+' controlled/context tasks available · '+stateInfo.transferSecure+' transfer-secure</small>'+v530LadderHtml(card)+'</div><div class="button-row"><button type="button" class="primary" id="v530-word-sentence">Sentence 10</button><button type="button" class="secondary" id="v530-word-transfer">Context transfer</button></div></div>';
+    }
+    const v530OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v530OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const section=dialog.querySelector('.v520-word-transfer')||dialog.querySelector('.v500-usage-detail');
+      if(section&&!dialog.querySelector('.v530-word-sentence')&&v510CorpusFor(card).some(function(record){return record.tier==='verified';})){
+        section.insertAdjacentHTML('afterend',v530WordSentenceHtml(card));
+        $('#v530-word-sentence',dialog)?.addEventListener('click',function(){dialog.close();v530Start([card],'sentence',10);});
+        $('#v530-word-transfer',dialog)?.addEventListener('click',function(){dialog.close();v530Start([card],'transfer',10);});
+      }
+      return result;
+    };
+
+    const v530MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value),records=v510CorpusFor(card).filter(function(record){return record.tier==='verified';}),states=records.map(function(record){return v530SentenceState(card,record.frame);});
+      if(key==='sentence'){
+        if(normalized==='ready')return V530_SENTENCE_EXERCISES.some(function(exercise){return records.some(function(record){return record.frame===exercise.frame;})&&v530SentenceReady(card,exercise);});
+        if(normalized==='secure')return states.some(function(item){return item.secure;});
+        if(normalized==='transfer')return states.some(function(item){return item.transferSecure;});
+        if(normalized==='gap'||normalized==='weak')return states.some(function(item){return item.attempts>0&&!item.secure;});
+        if(normalized==='unseen')return records.some(function(record){return v530SentenceState(card,record.frame).attempts===0;});
+      }
+      if(key==='sentence-error'){
+        const noteId=depthBaseId(card),errors=v530SentenceErrors().filter(function(entry){return depthBaseId(entry.noteId||entry.id)===noteId;});
+        if(!normalized||normalized==='any')return errors.length>0;
+        return errors.some(function(entry){return normalizeTyped(entry.sentenceDiagnosis)===normalized;});
+      }
+      return v530MatchFilterBase(card,key,value);
+    };
+
+    function v530DecorateBrowse(){
+      if(state.view!=='browse')return;
+      const cards=typeof v470BrowseCards==='function'?v470BrowseCards():state.cards,actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v530-sentence')){
+        const sentence=document.createElement('button');sentence.type='button';sentence.className='secondary';sentence.id='v530-sentence';sentence.textContent='Sentence 10';sentence.disabled=!v530TasksForMode(cards,'sentence',1).length;sentence.addEventListener('click',function(){v530Start(cards,'sentence',10);});actions.append(sentence);
+        const transfer=document.createElement('button');transfer.type='button';transfer.className='secondary';transfer.id='v530-sentence-transfer';transfer.textContent='Sentence transfer';transfer.disabled=!v530TasksForMode(cards,'transfer',1).length;transfer.addEventListener('click',function(){v530Start(cards,'transfer',10);});actions.append(transfer);
+        const repair=document.createElement('button');repair.type='button';repair.className='secondary';repair.id='v530-sentence-repair';repair.textContent='Repair sentence errors';repair.disabled=!v530TasksForMode(cards,'repair',1).length;repair.addEventListener('click',function(){v530Start(cards,'repair',10);});actions.append(repair);
+      }
+      const help=main.querySelector('.v470-search-help p');
+      if(help&&!help.querySelector('[data-v530-help]'))help.insertAdjacentHTML('beforeend','<code data-v530-help>sentence:gap</code><code data-v530-help>sentence:secure</code><code data-v530-help>sentence:transfer</code><code data-v530-help>sentence-error:preposition</code>');
+    }
+    const v530RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v530RenderBrowseBase(focusSearch);v530DecorateBrowse();return result;};
+
+    function v530ProgressPanel(){
+      const stats=v530SentenceStats(state.cards),errors=stats.top.map(function(pair){const meta=V530_DIAGNOSIS[pair[0]]||V530_DIAGNOSIS.manual;return '<div><span>'+escapeHtml(meta.label)+'</span><strong>'+pair[1]+'</strong></div>';}).join('');
+      return '<section class="v530-progress-panel"><div class="v530-progress-head"><div><p class="eyebrow">P12 real sentence production</p><h3>Controlled composition & context transfer</h3><p>Sentence evidence stays separate from vocabulary retention. Exact families are auto-checked; structurally plausible alternatives are explicitly self-judged instead of being falsely rejected.</p></div><div class="button-row"><button class="primary" id="v530-progress-sentence">Sentence 10</button><button class="secondary" id="v530-progress-transfer" '+(v530TasksForMode(state.cards,'transfer',1).length?'':'disabled')+'>Transfer 10</button><button class="secondary" id="v530-progress-repair" '+(stats.errors?'':'disabled')+'>Repair '+stats.errors+'</button></div></div><div class="v530-progress-grid"><span><strong>'+stats.exercises+'</strong> curated tasks</span><span><strong>'+stats.frames+'</strong> ready phrase families</span><span><strong>'+stats.attempted+'</strong> sentence-tested</span><span><strong>'+stats.secure+'</strong> sentence secure</span><span><strong>'+stats.transferSecure+'</strong> transfer secure</span><span><strong>'+stats.gaps+'</strong> transfer gaps</span></div>'+(errors?'<details class="v530-errors"><summary>Recent sentence-error profile</summary><div>'+errors+'</div></details>':'')+'</section>';
+    }
+    function v530DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v530-progress-panel'))return;
+      const anchor=main.querySelector('.v520-progress-panel')||main.querySelector('.v510-corpus-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v530ProgressPanel());
+      $('#v530-progress-sentence')?.addEventListener('click',function(){v530Start(state.cards,'sentence',10);});
+      $('#v530-progress-transfer')?.addEventListener('click',function(){v530Start(state.cards,'transfer',10);});
+      $('#v530-progress-repair')?.addEventListener('click',function(){v530Start(state.cards,'repair',10);});
+    }
+    const v530RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v530RenderProgressBase();v530DecorateProgress();return result;};
+
+    function v530DecorateDashboard(){
+      if(state.view!=='dashboard')return;
+      const actions=main.querySelector('.v490-path-actions');
+      if(actions&&!actions.querySelector('#v530-dashboard-sentence')){
+        const sentence=document.createElement('button');sentence.type='button';sentence.className='secondary';sentence.id='v530-dashboard-sentence';sentence.textContent='Sentence 10';sentence.disabled=!v530TasksForMode(state.cards,'sentence',1).length;sentence.addEventListener('click',function(){v530Start(state.cards,'sentence',10);});actions.insertBefore(sentence,actions.querySelector('span'));
+      }
+    }
+    const v530RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v530RenderDashboardBase();v530DecorateDashboard();return result;};
+
+    const v530EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='sentence')return 'sentence';
+      const base=v530EffectiveFocusBase();if(configured!=='auto'||['usage','transfer'].includes(base))return base;
+      const stats=v530SentenceStats(state.cards);
+      if(stats.attempted>=5&&stats.gaps>=4)return 'sentence';
+      return base;
+    };
+    const v530FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='sentence'?'Sentence production':v530FocusLabelBase(value);};
+    const v530TaskLabelBase=v490TaskLabel;
+    v490TaskLabel=function(card){return card?.v490Category==='sentence'?'Sentence production':card?.v490Category==='sentence-repair'?'Sentence repair':v530TaskLabelBase(card);};
+    const v530PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v530PersonalPlanBase(limit),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30)),focus=v490EffectiveFocus();
+      if(focus!=='sentence')return plan;
+      const tasks=v530TasksForMode(state.cards,'sentence',3);let added=0;
+      for(const task of tasks){
+        if(added>=2)break;
+        if(plan.queue.some(function(card){return card.v530ExerciseId===task.v530ExerciseId;}))continue;
+        if(plan.queue.length>=max){
+          let remove=-1;for(let index=plan.queue.length-1;index>=0;index--){if(plan.queue[index].v490Category!=='retain'){remove=index;break;}}
+          if(remove<0)break;plan.queue.splice(remove,1);
+        }
+        plan.queue.splice(Math.min(plan.queue.length,5+added*7),0,task);added++;
+      }
+      plan.counts={...plan.counts,sentence:added};plan.focus=focus;if(added)plan.headline='Turn verified phrases into transferable French sentences';
+      return plan;
+    };
+
+    function v530DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');
+      if(select&&!select.querySelector('option[value="sentence"]')){select.insertAdjacentHTML('beforeend','<option value="sentence">Sentence production & transfer</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v530RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v530RenderSettingsBase();v530DecorateSettings();return result;};
+
+    function v530EnsureStyles(){
+      if(document.querySelector('#v530-sentence-style'))return;
+      const style=document.createElement('style');style.id='v530-sentence-style';
+      style.textContent='.v530-production-box{display:grid;gap:.5rem;padding:.78rem;border:1px solid color-mix(in srgb,var(--blue) 35%,var(--line));border-radius:14px;background:var(--surface-solid)}.v530-production-box label{font-size:.72rem;font-weight:850;color:var(--navy)}.v530-production-box>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.48rem;align-items:stretch}.v530-production-box textarea{width:100%;min-height:64px;resize:vertical}.v530-production-box small{color:var(--muted);font-size:.63rem}.v530-feedback{display:grid;gap:.5rem;padding:.75rem;border:1px solid var(--line);border-radius:14px;background:var(--surface-solid)}.v530-feedback.exact,.v530-feedback.accepted{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}.v530-feedback.preposition,.v530-feedback.contraction,.v530-feedback.target{border-color:color-mix(in srgb,var(--red) 42%,var(--line))}.v530-feedback-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}.v530-feedback-head span:first-child,.v530-target span{display:block;color:var(--muted);font-size:.58rem;text-transform:uppercase;letter-spacing:.05em}.v530-feedback-head strong,.v530-target strong{display:block;color:var(--navy);margin-top:.08rem}.v530-feedback-status{padding:.2rem .4rem;border-radius:999px;background:var(--surface-muted);font-size:.62rem;font-weight:850}.v530-feedback p{margin:0;color:var(--muted);font-size:.72rem}.v530-compare{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}.v530-compare>div,.v530-target,.v530-manual{padding:.56rem;border-radius:10px;background:var(--surface-muted)}.v530-compare span{display:block;color:var(--muted);font-size:.58rem;text-transform:uppercase}.v530-compare strong{display:block;margin-top:.12rem;color:var(--navy);overflow-wrap:anywhere}.v530-target small{display:block;color:var(--muted);margin-top:.1rem}.v530-manual{display:grid;gap:.35rem}.v530-manual span{color:var(--muted);font-size:.68rem}.v530-retry{justify-self:start}.v530-word-sentence{display:flex;align-items:center;justify-content:space-between;gap:.7rem;padding:.66rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);margin-top:.55rem}.v530-word-sentence>div>span,.v530-word-sentence>div>small{display:block;color:var(--muted);font-size:.62rem}.v530-word-sentence>div>strong{display:block;color:var(--navy);font-size:.78rem}.v530-ladder{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.42rem}.v530-ladder span{display:inline-flex;align-items:center;gap:.22rem;padding:.22rem .38rem;border-radius:999px;background:var(--surface-solid);border:1px solid var(--line);font-size:.58rem;color:var(--muted)}.v530-ladder .done{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--line))}.v530-ladder .current{color:var(--blue);border-color:color-mix(in srgb,var(--blue) 35%,var(--line))}.v530-progress-panel{padding:.86rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v530-progress-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem}.v530-progress-head h3{margin:.08rem 0 .2rem}.v530-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:72ch}.v530-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.42rem;margin-top:.7rem}.v530-progress-grid span{padding:.55rem;border-radius:11px;background:var(--surface-muted);color:var(--muted);font-size:.62rem}.v530-progress-grid strong{display:block;color:var(--navy);font-size:1rem}.v530-errors{margin-top:.6rem;border-top:1px solid var(--line);padding-top:.5rem}.v530-errors summary{cursor:pointer;font-weight:850;font-size:.68rem;color:var(--navy)}.v530-errors>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;margin-top:.45rem}.v530-errors>div>div{display:flex;justify-content:space-between;gap:.4rem;padding:.45rem .5rem;border-radius:9px;background:var(--surface-muted);font-size:.62rem}.v530-errors span{color:var(--muted)}.v530-errors strong{color:var(--navy)}@media(max-width:760px){.v530-production-box>div{grid-template-columns:1fr}.v530-production-box button{width:100%}.v530-compare{grid-template-columns:1fr}.v530-word-sentence,.v530-progress-head{align-items:stretch;flex-direction:column}.v530-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v530-errors>div{grid-template-columns:1fr}}@media(max-width:480px){.v530-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}';
+      document.head.append(style);
+    }
+
+    const v530NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v530NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p12-sentence-production';
+      document.documentElement.dataset.sentenceProduction='v530';
+      document.documentElement.dataset.sentenceGrading='answer-family-plus-manual';
+    };
+    const v530InitBase=init;
+    init=async function(options){
+      v530EnsureStyles();const result=await v530InitBase(options||{});v420NormalizeSurface();
+      if(state.view==='dashboard')v530DecorateDashboard();
+      if(state.view==='browse')v530DecorateBrowse();
+      if(state.view==='study')v530DecorateCurrentCard();
+      if(state.view==='progress')v530DecorateProgress();
+      if(state.view==='settings')v530DecorateSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.3.0';return result;
     };
 
     function v380BootAudit(){
