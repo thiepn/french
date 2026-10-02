@@ -19199,6 +19199,7 @@ qui	who	A1	question word`;
     state.v550Reading=null;
     state.v550ReadUi={selectedId:'',mode:'extensive',level:'ALL',type:'ALL',targetNoteId:'',showUnknown:true,showLearning:false,review:false,answers:Object.create(null)};
     state.v550LexiconCache=null;
+    state.v550ScrollHandler=null;
     state.v550CoverageCache=new Map();
     state.v550ProfileCache={signature:'',map:new Map()};
 
@@ -19395,7 +19396,8 @@ qui	who	A1	question word`;
       state.v550Reading.history[id]={...h,startedAt:h.startedAt||now(),lastOpenedAt:now(),mode:state.v550ReadUi.mode};
       state.v550ReadUi.selectedId=id;state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);v550SaveReading();renderRead();
     }
-    function v550CloseReading(){state.v550ReadUi.selectedId='';state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);renderRead();}
+    function v550ClearReadingPosition(){if(state.v550ScrollHandler){window.removeEventListener('scroll',state.v550ScrollHandler);state.v550ScrollHandler=null;}}
+    function v550CloseReading(){v550ClearReadingPosition();state.v550ReadUi.selectedId='';state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);renderRead();}
     function v550RecordExposures(reading){
       const unique=new Map();
       for(const sentence of reading.sentences)for(const token of v550WordTokens(sentence.fr)){const note=v550ResolveNote(token);if(note)unique.set(note.id,note);}
@@ -19434,6 +19436,7 @@ qui	who	A1	question word`;
       v550BindReview(reading);v550BindReadingPosition(reading);bindCommonActions();
     }
     function v550BindReadingPosition(reading){
+      v550ClearReadingPosition();
       if(state.v550ReadUi.review)return;
       const rows=[...main.querySelectorAll('[data-v550-sentence-row]')];if(!rows.length)return;
       const saved=clamp(Math.floor(finiteNumber(state.v550Reading.history?.[reading.id]?.position)),0,rows.length-1);
@@ -19447,7 +19450,7 @@ qui	who	A1	question word`;
           if(history.position!==current){state.v550Reading.history[reading.id]={...history,position:current,lastOpenedAt:now()};v550SaveReading();}
         },180);
       };
-      window.addEventListener('scroll',capture,{passive:true,once:false});
+      state.v550ScrollHandler=capture;window.addEventListener('scroll',state.v550ScrollHandler,{passive:true});
       const originalClose=$('#v550-reader-back');
       originalClose?.addEventListener('click',capture,{once:true});
     }
@@ -19588,7 +19591,7 @@ qui	who	A1	question word`;
 
     const v550SetViewBase=setView;
     setView=function(view,{focus=true}={}){
-      if(view!=='read'){const result=v550SetViewBase(view,{focus});v366ApplyNavigation();return result;}
+      if(view!=='read'){v550ClearReadingPosition();const result=v550SetViewBase(view,{focus});v366ApplyNavigation();return result;}
       stopSpeech();state.view='read';v366ApplyNavigation();renderRead();window.scrollTo({top:0,behavior:'auto'});if(focus){main.focus({preventScroll:true});announce('Read view');}
     };
 
