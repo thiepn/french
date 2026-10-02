@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.4.0';
-    const APP_RELEASE = 'P13 Mixed Retrieval, Interleaving & Durable Active-Vocabulary Mastery';
+    const APP_VERSION = '5.5.0';
+    const APP_RELEASE = 'P14 Authentic Input, Comprehensible Reading & Vocabulary-in-the-Wild Transfer';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -18857,6 +18857,740 @@ qui	who	A1	question word`;
       if(state.view==='progress')v540DecorateProgress();
       if(state.view==='settings')v540DecorateSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.4.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.5.0 AUTHENTIC INPUT, COMPREHENSIBLE READING & IN-THE-WILD TRANSFER
+       P14 adds a first-class reading surface. Bundled texts are original,
+       graded content with explicit provenance; user-specific coverage is
+       calculated from the live mastery model. Passive exposure never counts
+       as successful retrieval. Only explicit context questions create weak,
+       practice-only retrieval evidence.
+       ================================================================ */
+    const V550_VERSION='5.5.0';
+    const V550_RELEASE='P14 Authentic Input, Comprehensible Reading & Vocabulary-in-the-Wild Transfer';
+    const V550_STORAGE_KEY='french3000-reading-v1';
+    const V550_SCHEMA=1;
+    const V550_MODES=Object.freeze(['extensive','intensive','targeted']);
+    const V550_LEVELS=Object.freeze(['ALL','A1','A2','B1']);
+    const V550_TYPES=Object.freeze(['ALL','story','dialogue','practical','message','informational']);
+    const V550_MORPH=Object.freeze({
+      suis:'être',es:'être',est:'être',sommes:'être','êtes':'être',sont:'être','été':'être',
+      ai:'avoir',as:'avoir',a:'avoir',avons:'avoir',avez:'avoir',ont:'avoir','eu':'avoir',
+      vais:'aller',vas:'aller',va:'aller',allons:'aller',allez:'aller',vont:'aller',
+      fais:'faire',fait:'faire',faisons:'faire',faites:'faire',font:'faire',
+      prends:'prendre',prend:'prendre',prenons:'prendre',prenez:'prendre',prennent:'prendre',pris:'prendre',
+      dois:'devoir',doit:'devoir',devons:'devoir',devez:'devoir',doivent:'devoir',
+      peux:'pouvoir',peut:'pouvoir',pouvons:'pouvoir',pouvez:'pouvoir',peuvent:'pouvoir',
+      veux:'vouloir',veut:'vouloir',voulons:'vouloir',voulez:'vouloir',veulent:'vouloir',
+      viens:'venir',vient:'venir',venons:'venir',venez:'venir',viennent:'venir',
+      pars:'partir',part:'partir',partons:'partir',partez:'partir',partent:'partir',
+      arrive:'arriver',arrives:'arriver',arrivons:'arriver',arrivez:'arriver',arrivent:'arriver',
+      décide:'décider',décides:'décider',décidons:'décider',décidez:'décider',décident:'décider','décidé':'décider',
+      préfère:'préférer',préfères:'préférer',préférons:'préférer',préférez:'préférer',préfèrent:'préférer',
+      travaille:'travailler',travailles:'travailler',travaillons:'travailler',travaillez:'travailler',travaillent:'travailler',
+      mange:'manger',manges:'manger',mangeons:'manger',mangez:'manger',mangent:'manger',
+      cherche:'chercher',cherches:'chercher',cherchons:'chercher',cherchez:'chercher',cherchent:'chercher',
+      réserve:'réserver',réserves:'réserver',réservons:'réserver',réservez:'réserver',réservent:'réserver','réservé':'réserver',
+      change:'changer',changes:'changer',changeons:'changer',changez:'changer',changent:'changer','changé':'changer',
+      continue:'continuer',continues:'continuer',continuons:'continuer',continuez:'continuer',continuent:'continuer','continué':'continuer',
+      apprend:'apprendre',apprends:'apprendre',apprenons:'apprendre',apprenez:'apprendre',apprennent:'apprendre',
+      comprend:'comprendre',comprends:'comprendre',comprenons:'comprendre',comprenez:'comprendre',comprennent:'comprendre','compris':'comprendre',
+      finit:'finir',finis:'finir',finissons:'finir',finissez:'finir',finissent:'finir','fini':'finir',
+      écrit:'écrire',écris:'écrire',écrivons:'écrire',écrivez:'écrire',écrivent:'écrire',
+      sort:'sortir',sors:'sortir',sortons:'sortir',sortez:'sortir',sortent:'sortir','sorti':'sortir',
+      reste:'rester',restes:'rester',restons:'rester',restez:'rester',restent:'rester','resté':'rester'
+    });
+
+    const V550_READINGS=Object.freeze([
+      {
+        id:'read-a1-matin',title:'Un matin simple',level:'A1',type:'story',minutes:2,topic:'time-routine',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded text',license:'Bundled original content',
+        targets:['se lever','prendre','avoir besoin'],
+        phrases:[{text:'prendre le bus',frame:'prendre + transport'},{text:"avoir besoin d'un café",frame:'avoir besoin'}],
+        sentences:[
+          {fr:"Lina se lève à sept heures et ouvre la fenêtre.",en:'Lina gets up at seven and opens the window.'},
+          {fr:"Elle prend une douche, prépare son sac et regarde l'heure.",en:'She takes a shower, prepares her bag and checks the time.'},
+          {fr:"Avant de partir, elle a besoin d'un café et d'un peu de calme.",en:'Before leaving, she needs a coffee and a little calm.',grammar:'avoir besoin de + nom expresses need.'},
+          {fr:"À sept heures quarante-cinq, elle prend le bus pour aller au travail.",en:'At 7:45, she takes the bus to go to work.'},
+          {fr:"Le trajet est court, alors elle arrive avant huit heures et demie.",en:'The journey is short, so she arrives before 8:30.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi Lina boit-elle un café ?",options:["Parce qu'elle en a besoin.","Parce que le bus est en retard.","Parce qu'elle rentre chez elle."],answer:0,target:'avoir besoin'},
+          {id:'q2',prompt:"Comment va-t-elle au travail ?",options:['À pied.','En bus.','En train.'],answer:1,target:'prendre'}
+        ]
+      },
+      {
+        id:'read-a1-cafe',title:'Au café',level:'A1',type:'dialogue',minutes:2,topic:'food',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',
+        targets:['vouloir','prendre','addition'],phrases:[{text:'Je voudrais',frame:'je voudrais + nom / infinitif'}],
+        sentences:[
+          {fr:"— Bonjour, vous avez choisi ?",en:'— Hello, have you chosen?'},
+          {fr:"— Oui, je voudrais un café et un croissant, s'il vous plaît.",en:'— Yes, I would like a coffee and a croissant, please.',grammar:'Je voudrais is a polite way to make a request.'},
+          {fr:"— Très bien. Vous prenez quelque chose d'autre ?",en:'— Very good. Are you having anything else?'},
+          {fr:"— Non merci. Je voudrais aussi un verre d'eau.",en:'— No thank you. I would also like a glass of water.'},
+          {fr:"Après le petit-déjeuner, le client demande l'addition et paie.",en:'After breakfast, the customer asks for the bill and pays.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que commande le client ?",options:['Un café et un croissant.','Un thé et une salade.','Deux cafés.'],answer:0,target:'prendre'},
+          {id:'q2',prompt:"Quelle expression sert à demander poliment ?",options:["J'ai besoin de","Je voudrais","Je refuse de"],answer:1,target:'vouloir'}
+        ]
+      },
+      {
+        id:'read-a1-train',title:'Le train pour Lille',level:'A1',type:'practical',minutes:2,topic:'travel',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 practical text',license:'Bundled original content',targets:['partir','arriver','retard'],phrases:[],
+        sentences:[
+          {fr:"Le train pour Lille part à neuf heures vingt de la voie six.",en:'The train to Lille leaves at 9:20 from platform six.'},
+          {fr:"Il arrive normalement à dix heures trente-cinq.",en:'It normally arrives at 10:35.'},
+          {fr:"Aujourd'hui, le train a quinze minutes de retard.",en:'Today, the train is fifteen minutes late.'},
+          {fr:"Les voyageurs attendent près de la voie et regardent le panneau.",en:'The travelers wait near the platform and look at the board.'},
+          {fr:"Une annonce confirme la nouvelle heure de départ.",en:'An announcement confirms the new departure time.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"De quelle voie part le train ?",options:['Voie 5.','Voie 6.','Voie 9.'],answer:1,target:'partir'},
+          {id:'q2',prompt:"Quel est le problème aujourd'hui ?",options:["Le train est complet.","Le train a du retard.","Le train est annulé."],answer:1,target:'retard'}
+        ]
+      },
+      {
+        id:'read-a1-weekend',title:'Des plans pour samedi',level:'A1',type:'message',minutes:2,topic:'communication',register:'informal',authenticity:'graded',
+        sourceLabel:'Original French3000 message exchange',license:'Bundled original content',targets:['avoir envie','préférer','décider'],phrases:[{text:"J'ai envie de",frame:'avoir envie'},{text:'on peut décider',frame:'prendre une décision'}],
+        sentences:[
+          {fr:"Maya : Tu fais quoi samedi ?",en:'Maya: What are you doing Saturday?'},
+          {fr:"Noah : Rien de spécial. J'ai envie de sortir.",en:'Noah: Nothing special. I feel like going out.'},
+          {fr:"Maya : On peut aller au cinéma ou au parc. Tu préfères quoi ?",en:'Maya: We can go to the cinema or the park. What do you prefer?'},
+          {fr:"Noah : Je préfère le parc s'il fait beau.",en:'Noah: I prefer the park if the weather is nice.'},
+          {fr:"Maya : D'accord. On peut décider demain matin.",en:'Maya: Okay. We can decide tomorrow morning.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Qu'est-ce que Noah préfère ?",options:['Le cinéma.','Le parc.','Le restaurant.'],answer:1,target:'préférer'},
+          {id:'q2',prompt:"Quand vont-ils décider ?",options:['Ce soir.','Demain matin.','Samedi soir.'],answer:1,target:'décider'}
+        ]
+      },
+      {
+        id:'read-a1-marche',title:'Au marché',level:'A1',type:'dialogue',minutes:2,topic:'shopping',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['chercher','prendre','combien'],phrases:[],
+        sentences:[
+          {fr:"— Bonjour, je cherche des tomates et des pommes.",en:'— Hello, I am looking for tomatoes and apples.'},
+          {fr:"— Les tomates sont ici. Vous en voulez combien ?",en:'— The tomatoes are here. How many do you want?'},
+          {fr:"— Je prends un kilo de tomates et quatre pommes.",en:'— I will take one kilo of tomatoes and four apples.'},
+          {fr:"— Très bien. Ça fait six euros cinquante.",en:'— Very good. That comes to €6.50.'},
+          {fr:"— Merci, bonne journée !",en:'— Thank you, have a good day!'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que cherche le client ?",options:['Des vêtements.','Des fruits et des tomates.','Un billet.'],answer:1,target:'chercher'},
+          {id:'q2',prompt:"Combien de pommes prend-il ?",options:['Deux.','Quatre.','Six.'],answer:1,target:'prendre'}
+        ]
+      },
+      {
+        id:'read-a1-message',title:'Un message à un ami',level:'A1',type:'message',minutes:2,topic:'communication',register:'informal',authenticity:'graded',
+        sourceLabel:'Original French3000 message',license:'Bundled original content',targets:['avoir besoin','aider','rendez-vous'],phrases:[{text:"J'ai besoin de",frame:'avoir besoin'},{text:"m'aider à",frame:'aider quelqu’un à + infinitif'}],
+        sentences:[
+          {fr:"Salut Karim ! J'ai besoin de ton aide pour demain.",en:'Hi Karim! I need your help for tomorrow.'},
+          {fr:"J'ai un rendez-vous important à dix heures.",en:'I have an important appointment at ten.'},
+          {fr:"Est-ce que tu peux m'aider à préparer mes documents ce soir ?",en:'Can you help me prepare my documents tonight?',grammar:'aider quelqu’un à + infinitif links the person helped to the action.'},
+          {fr:"Je suis libre après dix-huit heures.",en:'I am free after six p.m.'},
+          {fr:"Merci et à bientôt !",en:'Thanks and see you soon!'}
+        ],
+        questions:[
+          {id:'q1',prompt:"De quoi la personne a-t-elle besoin ?",options:["D'un billet.","D'aide.","D'un café."],answer:1,target:'avoir besoin'},
+          {id:'q2',prompt:"À quelle heure est le rendez-vous ?",options:['À 8 h.','À 10 h.','À 18 h.'],answer:1,target:'rendez-vous'}
+        ]
+      },
+      {
+        id:'read-a2-hotel',title:'Choisir un hôtel',level:'A2',type:'practical',minutes:3,topic:'travel',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded text',license:'Bundled original content',targets:['tenir compte','réserver','préférer'],phrases:[{text:'tenir compte du prix',frame:'tenir compte de + nom'},{text:"tenir compte de l'emplacement",frame:'tenir compte de + nom'}],
+        sentences:[
+          {fr:"Sofia prépare un week-end à Strasbourg et compare trois hôtels.",en:'Sofia is preparing a weekend in Strasbourg and compares three hotels.'},
+          {fr:"Le premier est très central, mais il coûte cher.",en:'The first is very central, but it is expensive.'},
+          {fr:"Le deuxième est moins cher, mais il se trouve loin de la gare.",en:'The second is cheaper, but it is far from the station.'},
+          {fr:"Sofia veut tenir compte du prix, mais aussi tenir compte de l'emplacement.",en:'Sofia wants to take the price into account, but also the location.',grammar:'tenir compte de contracts with le: de + le → du.'},
+          {fr:"Finalement, elle préfère le troisième hôtel et réserve une chambre pour deux nuits.",en:'In the end, she prefers the third hotel and books a room for two nights.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quels éléments Sofia veut-elle considérer ?",options:["Le prix et l'emplacement.","Le petit-déjeuner seulement.","La météo et le train."],answer:0,target:'tenir compte'},
+          {id:'q2',prompt:"Que fait-elle finalement ?",options:['Elle annule le voyage.','Elle réserve le troisième hôtel.','Elle choisit le premier hôtel.'],answer:1,target:'réserver'}
+        ]
+      },
+      {
+        id:'read-a2-universite',title:'Une question après le cours',level:'A2',type:'dialogue',minutes:3,topic:'work-study',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['poser une question','expliquer','avoir du mal'],phrases:[{text:'poser une question',frame:'poser une question à quelqu’un'},{text:"J'ai du mal à comprendre",frame:'avoir du mal à + infinitif'}],
+        sentences:[
+          {fr:"Après le cours, Émilie reste quelques minutes dans la salle.",en:'After class, Émilie stays a few minutes in the room.'},
+          {fr:"Elle veut poser une question au professeur.",en:'She wants to ask the professor a question.'},
+          {fr:"— J'ai du mal à comprendre la dernière partie du chapitre.",en:'— I have trouble understanding the last part of the chapter.'},
+          {fr:"Le professeur explique l'idée avec un exemple plus simple.",en:'The professor explains the idea with a simpler example.'},
+          {fr:"Émilie prend des notes et décide de relire le chapitre le soir.",en:'Émilie takes notes and decides to reread the chapter in the evening.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi Émilie reste-t-elle ?",options:['Pour parler à une amie.','Pour poser une question.','Pour attendre le bus.'],answer:1,target:'poser une question'},
+          {id:'q2',prompt:"Que fait-elle pendant l'explication ?",options:['Elle prend des notes.','Elle téléphone.','Elle part.'],answer:0,target:'prendre des notes'}
+        ]
+      },
+      {
+        id:'read-a2-restaurant',title:'Une réservation à changer',level:'A2',type:'dialogue',minutes:3,topic:'food',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['changer','réservation','proposer'],phrases:[{text:'changer ma réservation',frame:'changer + nom'},{text:'propose une table',frame:'proposer + nom'}],
+        sentences:[
+          {fr:"— Bonjour, je voudrais changer ma réservation de ce soir.",en:'— Hello, I would like to change my reservation for tonight.'},
+          {fr:"— Bien sûr. Elle est à quel nom ?",en:'— Of course. What name is it under?'},
+          {fr:"— Martin, pour quatre personnes à dix-neuf heures.",en:'— Martin, for four people at 7 p.m.'},
+          {fr:"— Nous n'avons plus de table à vingt heures, mais je vous propose une table à vingt heures trente.",en:'— We no longer have a table at 8 p.m., but I can offer you one at 8:30.'},
+          {fr:"— D'accord, vingt heures trente me convient.",en:'— Okay, 8:30 works for me.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que veut faire le client ?",options:['Changer sa réservation.','Commander immédiatement.','Annuler son voyage.'],answer:0,target:'changer'},
+          {id:'q2',prompt:"Quelle heure accepte-t-il ?",options:['19 h.','20 h.','20 h 30.'],answer:2,target:'proposer'}
+        ]
+      },
+      {
+        id:'read-a2-medecin',title:'Prendre rendez-vous',level:'A2',type:'practical',minutes:3,topic:'health',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 practical text',license:'Bundled original content',targets:['prendre rendez-vous','avoir besoin','disponible'],phrases:[{text:'prendre rendez-vous',frame:'prendre rendez-vous avec quelqu’un'},{text:"a besoin de",frame:'avoir besoin'}],
+        sentences:[
+          {fr:"Nora téléphone au cabinet médical pour prendre rendez-vous.",en:'Nora calls the medical office to make an appointment.'},
+          {fr:"Elle explique qu'elle a besoin de parler au médecin cette semaine.",en:'She explains that she needs to speak to the doctor this week.'},
+          {fr:"La secrétaire propose jeudi matin, mais Nora travaille à cette heure-là.",en:'The receptionist suggests Thursday morning, but Nora works at that time.'},
+          {fr:"Un rendez-vous est aussi disponible vendredi à seize heures.",en:'An appointment is also available Friday at 4 p.m.'},
+          {fr:"Nora accepte cette heure et note l'adresse du cabinet.",en:'Nora accepts that time and writes down the office address.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi Nora téléphone-t-elle ?",options:['Pour acheter un médicament.','Pour prendre rendez-vous.','Pour demander une adresse de restaurant.'],answer:1,target:'prendre rendez-vous'},
+          {id:'q2',prompt:"Quel rendez-vous accepte-t-elle ?",options:['Jeudi matin.','Vendredi à 16 h.','Vendredi matin.'],answer:1,target:'disponible'}
+        ]
+      },
+      {
+        id:'read-a2-appartement',title:"Un problème dans l'appartement",level:'A2',type:'message',minutes:3,topic:'home',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 message exchange',license:'Bundled original content',targets:['faire face','aider','problème'],phrases:[{text:'faire face à un problème',frame:'faire face à + nom'}],
+        sentences:[
+          {fr:"Bonjour Madame Leroy, je vous écris parce que nous devons faire face à un problème dans la cuisine.",en:'Hello Ms Leroy, I am writing because we have to deal with a problem in the kitchen.'},
+          {fr:"Depuis hier, l'eau chaude ne fonctionne plus.",en:'Since yesterday, the hot water no longer works.'},
+          {fr:"J'ai vérifié le robinet, mais le problème continue.",en:'I checked the tap, but the problem continues.'},
+          {fr:"Pouvez-vous nous aider ou envoyer quelqu'un demain ?",en:'Can you help us or send someone tomorrow?'},
+          {fr:"Nous sommes disponibles toute la matinée.",en:'We are available all morning.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quel est le problème ?",options:["Il n'y a plus d'eau chaude.","La fenêtre est cassée.","La porte est fermée."],answer:0,target:'problème'},
+          {id:'q2',prompt:"Quand les habitants sont-ils disponibles ?",options:['Toute la matinée.','Seulement le soir.','Samedi.'],answer:0,target:'disponible'}
+        ]
+      },
+      {
+        id:'read-a2-voyage',title:'Un week-end à Lyon',level:'A2',type:'story',minutes:4,topic:'travel',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded story',license:'Bundled original content',targets:['prévoir','pourtant','finalement','décider'],phrases:[{text:'a décidé de partir',frame:'décider de + infinitif'}],
+        sentences:[
+          {fr:"Thomas avait prévu de passer le week-end à Lyon avec deux amis.",en:'Thomas had planned to spend the weekend in Lyon with two friends.'},
+          {fr:"Vendredi soir, la météo annonçait beaucoup de pluie.",en:'Friday evening, the weather forecast a lot of rain.'},
+          {fr:"Pourtant, le groupe a décidé de partir comme prévu.",en:'Nevertheless, the group decided to leave as planned.',grammar:'pourtant introduces a contrast with the preceding idea.'},
+          {fr:"Samedi matin, ils ont visité le centre-ville puis ils ont déjeuné dans un petit restaurant.",en:'Saturday morning, they visited the city center and then had lunch in a small restaurant.'},
+          {fr:"Finalement, il n'a presque pas plu et tout le monde était content du voyage.",en:'In the end, it hardly rained and everyone was happy with the trip.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi le voyage semblait-il difficile vendredi ?",options:['À cause de la pluie annoncée.','Parce que les hôtels étaient complets.','Parce que Thomas travaillait.'],answer:0,target:'pourtant'},
+          {id:'q2',prompt:"Que décide le groupe ?",options:['De rester chez lui.','De partir quand même.','De changer de ville.'],answer:1,target:'décider'}
+        ]
+      },
+      {
+        id:'read-b1-travail',title:'Choisir entre deux offres',level:'B1',type:'story',minutes:4,topic:'work-study',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded text',license:'Bundled original content',targets:['prendre une décision','tenir compte','pourtant'],phrases:[{text:'prendre une décision',frame:'prendre une décision'},{text:'tenir compte du salaire',frame:'tenir compte de + nom'},{text:'tenir compte du temps',frame:'tenir compte de + nom'}],
+        sentences:[
+          {fr:"Amélie a reçu deux offres de travail et doit prendre une décision avant lundi.",en:'Amélie has received two job offers and must make a decision before Monday.'},
+          {fr:"Le premier poste offre un meilleur salaire, pourtant le trajet est très long.",en:'The first position offers a better salary, yet the commute is very long.'},
+          {fr:"Le deuxième poste paie un peu moins, mais l'équipe semble agréable et le bureau est près de chez elle.",en:'The second position pays a little less, but the team seems pleasant and the office is close to her home.'},
+          {fr:"Amélie veut tenir compte du salaire, mais aussi tenir compte du temps qu'elle passera dans les transports.",en:'Amélie wants to consider the salary, but also the time she will spend commuting.'},
+          {fr:"Elle écrit les avantages et les inconvénients de chaque offre avant de choisir.",en:'She writes down the advantages and disadvantages of each offer before choosing.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quel avantage a le premier poste ?",options:['Un meilleur salaire.','Un trajet plus court.','Une semaine plus courte.'],answer:0,target:'tenir compte'},
+          {id:'q2',prompt:"Pourquoi Amélie compare-t-elle plusieurs éléments ?",options:["Parce qu'elle doit prendre une décision.","Parce qu'elle refuse de travailler.","Parce qu'elle cherche un hôtel."],answer:0,target:'prendre une décision'}
+        ]
+      },
+      {
+        id:'read-b1-benevolat',title:'Une journée de bénévolat',level:'B1',type:'story',minutes:4,topic:'people',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 graded story',license:'Bundled original content',targets:['faire partie','aider','faire face'],phrases:[{text:"fait partie d'une association",frame:'faire partie de + nom'},{text:'faire face à des difficultés',frame:'faire face à + nom'}],
+        sentences:[
+          {fr:"Depuis six mois, Hugo fait partie d'une association qui distribue des repas.",en:'For six months, Hugo has been part of an association that distributes meals.'},
+          {fr:"Deux samedis par mois, il aide l'équipe à préparer les sacs et à accueillir les visiteurs.",en:'Two Saturdays a month, he helps the team prepare bags and welcome visitors.'},
+          {fr:"Certaines personnes viennent simplement chercher un repas, tandis que d'autres ont besoin de parler.",en:'Some people simply come to get a meal, while others need to talk.'},
+          {fr:"L'équipe doit parfois faire face à des difficultés imprévues, mais personne ne travaille seul.",en:'The team sometimes has to face unexpected difficulties, but nobody works alone.'},
+          {fr:"Pour Hugo, cette activité lui permet de rencontrer des gens très différents et de se rendre utile.",en:'For Hugo, this activity allows him to meet very different people and be useful.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que fait l'association ?",options:['Elle vend des billets.','Elle distribue des repas.','Elle organise des voyages.'],answer:1,target:'faire partie'},
+          {id:'q2',prompt:"Comment l'équipe gère-t-elle les difficultés ?",options:['Chacun travaille seul.','Elle les ignore.','Les membres travaillent ensemble.'],answer:2,target:'faire face'}
+        ]
+      },
+      {
+        id:'read-b1-environnement',title:'Changer une habitude',level:'B1',type:'informational',minutes:4,topic:'nature',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['éviter','faire attention','essayer'],phrases:[{text:"essaie d'éviter",frame:'essayer de + infinitif'},{text:'fait attention à',frame:'faire attention à + nom'}],
+        sentences:[
+          {fr:"Réduire ses déchets ne demande pas de changer toute sa vie en une journée.",en:'Reducing waste does not require changing your whole life in one day.'},
+          {fr:"Claire commence par observer ce qu'elle jette le plus souvent.",en:'Claire starts by observing what she throws away most often.'},
+          {fr:"Elle essaie d'éviter les bouteilles jetables et emporte une gourde au travail.",en:'She tries to avoid disposable bottles and takes a reusable bottle to work.'},
+          {fr:"Au supermarché, elle fait attention à la quantité d'emballage et choisit parfois des produits en vrac.",en:'At the supermarket, she pays attention to the amount of packaging and sometimes chooses unpackaged products.'},
+          {fr:"Ces changements sont modestes, mais ils deviennent plus faciles quand ils font partie de la routine.",en:'These changes are modest, but they become easier when they become part of the routine.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quel changement Claire fait-elle au travail ?",options:['Elle apporte une gourde.','Elle achète plus de bouteilles.','Elle ne boit plus.'],answer:0,target:'éviter'},
+          {id:'q2',prompt:"À quoi fait-elle attention au supermarché ?",options:["À l'emballage.","À la musique.","À la météo."],answer:0,target:'faire attention'}
+        ]
+      },
+      {
+        id:'read-b1-langue',title:'Apprendre sans tout comprendre',level:'B1',type:'informational',minutes:4,topic:'communication',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['avoir du mal','continuer','se rendre compte'],phrases:[{text:"d'avoir du mal à comprendre",frame:'avoir du mal à + infinitif'}],
+        sentences:[
+          {fr:"Quand on apprend une langue, il est normal d'avoir du mal à comprendre certains textes ou certaines conversations.",en:'When learning a language, it is normal to have trouble understanding some texts or conversations.'},
+          {fr:"Beaucoup d'apprenants s'arrêtent dès qu'ils rencontrent plusieurs mots inconnus.",en:'Many learners stop as soon as they encounter several unknown words.'},
+          {fr:"Pourtant, il est souvent possible de continuer en utilisant le contexte.",en:'However, it is often possible to continue by using context.'},
+          {fr:"Après quelques mois, on se rend compte que des expressions autrefois difficiles deviennent familières.",en:'After a few months, one realizes that expressions that were once difficult become familiar.'},
+          {fr:"Le but n'est donc pas de tout traduire, mais de comprendre suffisamment pour avancer.",en:'The goal is therefore not to translate everything, but to understand enough to move forward.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que font certains apprenants devant plusieurs mots inconnus ?",options:["Ils continuent toujours.","Ils s'arrêtent.","Ils changent de langue."],answer:1,target:'avoir du mal'},
+          {id:'q2',prompt:"Quelle stratégie le texte recommande-t-il ?",options:['Tout traduire immédiatement.','Utiliser le contexte pour continuer.','Ignorer tous les mots.'],answer:1,target:'continuer'}
+        ]
+      },
+      {
+        id:'read-b1-retard',title:'Un trajet qui change',level:'B1',type:'practical',minutes:4,topic:'travel',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 practical scenario',license:'Bundled original content',targets:['retard','proposer','tenir compte'],phrases:[{text:'tenir compte du retard',frame:'tenir compte de + nom'}],
+        sentences:[
+          {fr:"Le train de Marc doit arriver à Paris à dix-sept heures quinze, mais une annonce signale trente minutes de retard.",en:'Marc’s train is supposed to arrive in Paris at 5:15 p.m., but an announcement reports a thirty-minute delay.'},
+          {fr:"Marc a ensuite un rendez-vous important à dix-huit heures.",en:'Marc then has an important appointment at 6 p.m.'},
+          {fr:"Il doit donc tenir compte du retard et chercher une solution.",en:'He therefore has to take the delay into account and look for a solution.'},
+          {fr:"Une employée lui propose un autre train qui part dans dix minutes et arrive plus tôt.",en:'An employee offers him another train that leaves in ten minutes and arrives earlier.'},
+          {fr:"Marc accepte le changement et envoie un message pour confirmer sa nouvelle heure d'arrivée.",en:'Marc accepts the change and sends a message to confirm his new arrival time.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi Marc doit-il changer son plan ?",options:["À cause d'un retard.","Parce qu'il a perdu son billet.","Parce que son rendez-vous est annulé."],answer:0,target:'retard'},
+          {id:'q2',prompt:"Quelle solution reçoit-il ?",options:['Un hôtel.','Un autre train.','Un taxi gratuit.'],answer:1,target:'proposer'}
+        ]
+      },
+      {
+        id:'read-b1-plan',title:'Quand le plan change',level:'B1',type:'dialogue',minutes:4,topic:'communication',register:'informal',authenticity:'graded',
+        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['pourtant','refuser','proposer'],phrases:[{text:'propose de partir',frame:'proposer de + infinitif'},{text:'refuse de conduire',frame:'refuser de + infinitif'}],
+        sentences:[
+          {fr:"— On devait partir à huit heures, mais Paul n'est toujours pas prêt.",en:'— We were supposed to leave at eight, but Paul still is not ready.'},
+          {fr:"— Pourtant, il a dit hier qu'il serait à l'heure.",en:'— Yet he said yesterday that he would be on time.'},
+          {fr:"— Je propose de partir sans lui et de le retrouver plus tard.",en:'— I suggest leaving without him and meeting him later.'},
+          {fr:"— Je préfère attendre encore dix minutes. Léa refuse de conduire seule.",en:'— I prefer to wait another ten minutes. Léa refuses to drive alone.'},
+          {fr:"— D'accord. S'il n'arrive pas, on change de plan.",en:'— Okay. If he does not arrive, we will change the plan.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que propose la première personne ?",options:["De partir sans Paul.","D'annuler le voyage.","De conduire seule."],answer:0,target:'proposer'},
+          {id:'q2',prompt:"Que refuse Léa ?",options:["D'attendre.","De conduire seule.","De changer de plan."],answer:1,target:'refuser'}
+        ]
+      },
+      {
+        id:'read-b1-budget',title:'Préparer un petit budget',level:'B1',type:'informational',minutes:4,topic:'shopping',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['tenir compte','prévoir','éviter'],phrases:[{text:'tenir compte des dépenses',frame:'tenir compte de + nom'},{text:"éviter d'utiliser",frame:'éviter de + infinitif'}],
+        sentences:[
+          {fr:"Un budget simple peut aider à comprendre où part son argent chaque mois.",en:'A simple budget can help you understand where your money goes each month.'},
+          {fr:"Il faut d'abord prévoir les dépenses fixes, comme le loyer, les transports et les abonnements.",en:'First you need to plan for fixed expenses such as rent, transport and subscriptions.'},
+          {fr:"Ensuite, il est utile de tenir compte des dépenses moins régulières.",en:'Then it is useful to take less regular expenses into account.'},
+          {fr:"Certaines personnes mettent une petite somme de côté au début du mois pour éviter d'utiliser tout leur argent disponible.",en:'Some people set a small amount aside at the beginning of the month to avoid using all their available money.'},
+          {fr:"L'objectif n'est pas de contrôler chaque euro, mais de prendre des décisions plus conscientes.",en:'The goal is not to control every euro, but to make more conscious decisions.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Que faut-il prévoir d'abord ?",options:['Les dépenses fixes.','Les vacances de dix ans.','Les cadeaux uniquement.'],answer:0,target:'prévoir'},
+          {id:'q2',prompt:"Pourquoi certaines personnes mettent-elles de l'argent de côté ?",options:["Pour éviter de tout dépenser.","Pour payer plus cher.","Pour arrêter de travailler."],answer:0,target:'éviter'}
+        ]
+      }
+    ]);
+    const V550_READING_BY_ID=new Map(V550_READINGS.map(function(item){return [item.id,item];}));
+
+    state.v550Reading=null;
+    state.v550ReadUi={selectedId:'',mode:'extensive',level:'ALL',type:'ALL',targetNoteId:'',showUnknown:true,showLearning:false,review:false,answers:Object.create(null)};
+    state.v550LexiconCache=null;
+    state.v550CoverageCache=new Map();
+    state.v550ProfileCache={signature:'',map:new Map()};
+
+    function v550NormalizeReading(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history={},saved={},exposures={};
+      for(const [id,value] of Object.entries(source.history||{})){
+        if(!V550_READING_BY_ID.has(id)||!value||typeof value!=='object')continue;
+        history[id]={startedAt:Math.max(0,finiteNumber(value.startedAt)),lastOpenedAt:Math.max(0,finiteNumber(value.lastOpenedAt)),completedAt:Math.max(0,finiteNumber(value.completedAt)),completionCount:clamp(Math.floor(finiteNumber(value.completionCount)),0,10000),mode:V550_MODES.includes(value.mode)?value.mode:'extensive',feel:['easy','comfortable','challenging','hard'].includes(value.feel)?value.feel:'',questionAttempts:clamp(Math.floor(finiteNumber(value.questionAttempts)),0,10000),questionCorrect:clamp(Math.floor(finiteNumber(value.questionCorrect)),0,10000)};
+      }
+      for(const [key,value] of Object.entries(source.saved||{})){
+        if(!value||typeof value!=='object')continue;
+        const clean=String(key||'').slice(0,120);if(!clean)continue;
+        saved[clean]={surface:String(value.surface||clean).slice(0,120),coreId:String(value.coreId||'').slice(0,220),count:clamp(Math.floor(finiteNumber(value.count,1)),1,100000),lastSeenAt:Math.max(0,finiteNumber(value.lastSeenAt)),textIds:Array.isArray(value.textIds)?value.textIds.filter(function(id){return V550_READING_BY_ID.has(id);}).slice(-30):[]};
+      }
+      for(const [id,value] of Object.entries(source.exposures||{})){
+        if(!value||typeof value!=='object')continue;
+        exposures[String(id).slice(0,220)]={count:clamp(Math.floor(finiteNumber(value.count)),0,100000),lastSeenAt:Math.max(0,finiteNumber(value.lastSeenAt)),textIds:Array.isArray(value.textIds)?value.textIds.filter(function(textId){return V550_READING_BY_ID.has(textId);}).slice(-30):[]};
+      }
+      return {schema:V550_SCHEMA,history:history,saved:saved,exposures:exposures,lookupCounts:source.lookupCounts&&typeof source.lookupCounts==='object'?Object.fromEntries(Object.entries(source.lookupCounts).slice(0,1000).map(function(pair){return [String(pair[0]).slice(0,120),clamp(Math.floor(finiteNumber(pair[1])),0,100000)];})):{}};
+    }
+    function v550LoadReading(){
+      const local=safeStorageRead(V550_STORAGE_KEY);
+      state.v550Reading=v550NormalizeReading(state.v550Reading||local||{});
+      return state.v550Reading;
+    }
+    function v550SaveReading(){
+      state.v550Reading=v550NormalizeReading(state.v550Reading||{});
+      safeStorageSet(V550_STORAGE_KEY,state.v550Reading);
+      depthSchedulePersist?.();
+    }
+
+    const v550DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v550DepthStateSnapshotBase(),v550Reading:v550NormalizeReading(state.v550Reading||{})};};
+    const v550DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v550DepthApplyImportedStateBase(saved);
+      state.v550Reading=v550NormalizeReading(saved?.v550Reading||safeStorageRead(V550_STORAGE_KEY)||{});
+      v550SaveReading();return result;
+    };
+    const v550DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v550DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v550Reading)state.v550Reading=v550NormalizeReading(saved.v550Reading);}catch{}
+      return result;
+    };
+
+    function v550Lexicon(){
+      const signature=String(state.cards.length)+'|'+String(state.cards.at(-1)?.id||'');
+      if(state.v550LexiconCache?.signature===signature)return state.v550LexiconCache.map;
+      const map=new Map();
+      for(const note of state.cards){
+        const forms=[note.fr,note.lemma,...(note.aliases||[])];
+        if(note.article)forms.push(...String(note.article).split('/').map(function(article){return /['’]$/.test(article)?article+note.fr:article+' '+note.fr;}));
+        for(const form of forms){
+          const key=depthLoose(form);if(key&&!map.has(key))map.set(key,note);
+        }
+      }
+      state.v550LexiconCache={signature:signature,map:map};return map;
+    }
+    function v550ResolveNote(surface){
+      const lex=v550Lexicon(),raw=String(surface||'').replace(/[’]/g,"'"),direct=depthLoose(raw);
+      if(lex.has(direct))return lex.get(direct);
+      const apostrophe=raw.indexOf("'");
+      if(apostrophe>=0&&apostrophe<4){
+        const tail=depthLoose(raw.slice(apostrophe+1)),mapped=V550_MORPH[tail]||tail;
+        if(lex.has(mapped))return lex.get(mapped);
+      }
+      const morph=V550_MORPH[direct];
+      if(morph&&lex.has(depthLoose(morph)))return lex.get(depthLoose(morph));
+      if(direct.endsWith('s')&&lex.has(direct.slice(0,-1)))return lex.get(direct.slice(0,-1));
+      return null;
+    }
+    function v550MasteryCached(note){
+      if(!note)return null;
+      const last=state.reviewLog?.at(-1),signature=state.reviewLog.length+'|'+String(last?.t||0)+'|'+String(last?.rating||'');
+      if(state.v550ProfileCache.signature!==signature)state.v550ProfileCache={signature:signature,map:new Map()};
+      if(!state.v550ProfileCache.map.has(note.id))state.v550ProfileCache.map.set(note.id,v540MasteryProfile(note));
+      return state.v550ProfileCache.map.get(note.id);
+    }
+    function v550WordState(note){
+      if(!note)return 'unknown';
+      const p=getProgress(note.id),profile=v550MasteryCached(note),recognition=profile?.dimensions?.recognition;
+      if(p?.manualKnown||profile?.passive>=.58||recognition?.score>=.62||['FAMILIAR','RECALLABLE','USABLE','DURABLE','ROBUST'].includes(profile?.mastery))return 'known';
+      if(profile?.totalAttempts>0||recognition?.memory>0||cardStatus(note)!=='new')return 'learning';
+      return 'unknown';
+    }
+    function v550Tokenize(text){
+      return String(text||'').match(/(\s+|[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)?|\d+(?:[.,]\d+)?|[^\s\p{L}\p{M}\d]+)/gu)||[];
+    }
+    function v550WordTokens(text){return v550Tokenize(text).filter(function(token){return /[\p{L}]/u.test(token);});}
+    function v550TextWords(reading){return reading.sentences.reduce(function(sum,sentence){return sum+v550WordTokens(sentence.fr).length;},0);}
+    function v550Coverage(reading){
+      const last=state.reviewLog?.at(-1),stamp=state.reviewLog.length+'|'+String(last?.t||0)+'|'+String(last?.rating||'')+'|'+Object.keys(state.progress||{}).length,key=reading.id+'|'+stamp;
+      if(state.v550CoverageCache.has(key))return state.v550CoverageCache.get(key);
+      const tokens=reading.sentences.flatMap(function(sentence){return v550WordTokens(sentence.fr);}),counts={known:0,learning:0,unknown:0},notes=new Map();
+      for(const token of tokens){
+        const note=v550ResolveNote(token),status=v550WordState(note);counts[status]++;
+        if(note)notes.set(note.id,note);
+      }
+      const total=tokens.length||1,knownPct=Math.round(counts.known/total*100),learningPct=Math.round(counts.learning/total*100),unknownPct=Math.max(0,100-knownPct-learningPct);
+      const band=knownPct>=97?'Very easy':knownPct>=94?'Comfortable':knownPct>=90?'Challenging':'High support';
+      const result={...counts,total:tokens.length,knownPct:knownPct,learningPct:learningPct,unknownPct:unknownPct,band:band,notes:[...notes.values()]};
+      if(state.v550CoverageCache.size>120)state.v550CoverageCache.clear();
+      state.v550CoverageCache.set(key,result);return result;
+    }
+    function v550TargetNotes(reading){
+      const result=[];
+      for(const target of reading.targets||[]){const note=v550ResolveNote(target);if(note&&!result.some(function(item){return item.id===note.id;}))result.push(note);}
+      return result;
+    }
+    function v550ReadingScore(reading){
+      const coverage=v550Coverage(reading),history=state.v550Reading?.history?.[reading.id],targets=v550TargetNotes(reading),weakTargets=targets.filter(function(note){const p=v550MasteryCached(note);return p&&p.active<.58;}).length;
+      let score=100-Math.abs(96-coverage.knownPct)*3+weakTargets*7+(history?.completedAt?0:18);
+      if(state.v550ReadUi.targetNoteId&&targets.some(function(note){return note.id===state.v550ReadUi.targetNoteId;}))score+=50;
+      if(coverage.knownPct<86)score-=30;
+      return score;
+    }
+    function v550Recommended(limit=6){
+      return V550_READINGS.filter(function(reading){return (state.v550ReadUi.level==='ALL'||reading.level===state.v550ReadUi.level)&&(state.v550ReadUi.type==='ALL'||reading.type===state.v550ReadUi.type);}).slice().sort(function(a,b){return v550ReadingScore(b)-v550ReadingScore(a)||a.level.localeCompare(b.level)||a.title.localeCompare(b.title,'fr');}).slice(0,limit);
+    }
+
+    function v550PhraseRanges(sentence,reading){
+      const source=String(sentence||''),lower=source.toLocaleLowerCase('fr'),ranges=[];
+      for(const item of reading.phrases||[]){
+        const phrase=String(item.text||''),needle=phrase.toLocaleLowerCase('fr');let from=0,index;
+        while(needle&&(index=lower.indexOf(needle,from))>=0){ranges.push({start:index,end:index+phrase.length,text:source.slice(index,index+phrase.length),frame:item.frame});from=index+phrase.length;}
+      }
+      return ranges.sort(function(a,b){return a.start-b.start||(b.end-b.start)-(a.end-a.start);}).filter(function(range,index,all){return !all.slice(0,index).some(function(other){return range.start<other.end&&range.end>other.start;});});
+    }
+    function v550RenderWordChunk(text,reading){
+      const targets=new Set((reading.targets||[]).map(depthLoose));
+      return v550Tokenize(text).map(function(token){
+        if(!/[\p{L}]/u.test(token))return escapeHtml(token);
+        const note=v550ResolveNote(token),status=v550WordState(note),target=note&&targets.has(depthLoose(note.fr)),classes=['v550-word','v550-'+status];
+        if(target&&state.v550ReadUi.mode==='targeted')classes.push('v550-target-word');
+        const title=note?note.fr:'Unknown / outside mapped core';
+        return '<button type="button" class="'+classes.join(' ')+'" data-v550-word="'+escapeHtml(token)+'" title="'+escapeHtml(title)+'">'+escapeHtml(token)+'</button>';
+      }).join('');
+    }
+    function v550RenderSentence(sentence,reading,index){
+      const text=sentence.fr,ranges=v550PhraseRanges(text,reading);let cursor=0,html='';
+      for(const range of ranges){
+        if(range.start>cursor)html+=v550RenderWordChunk(text.slice(cursor,range.start),reading);
+        html+='<button type="button" class="v550-phrase '+(state.v550ReadUi.mode==='targeted'?'v550-target-phrase':'')+'" data-v550-phrase="'+escapeHtml(range.frame)+'" data-v550-phrase-text="'+escapeHtml(range.text)+'">'+escapeHtml(range.text)+'</button>';
+        cursor=range.end;
+      }
+      if(cursor<text.length)html+=v550RenderWordChunk(text.slice(cursor),reading);
+      const explain=state.v550ReadUi.mode==='intensive'?(sentence.grammar?'<button type="button" class="v550-sentence-help" data-v550-sentence="'+index+'">Explain</button>':'<button type="button" class="v550-sentence-help" data-v550-sentence="'+index+'">Meaning</button>'):'';
+      return '<div class="v550-sentence" data-v550-sentence-row="'+index+'"><p lang="fr">'+html+'</p>'+explain+'</div>';
+    }
+    function v550ModeDescription(mode){
+      if(mode==='intensive')return 'Inspect vocabulary, sentence meaning, and useful grammar while preserving the reading flow.';
+      if(mode==='targeted')return 'Reinforce weak or selected vocabulary inside a complete text.';
+      return 'Read for meaning with minimal interruption. Tap only when you genuinely need help.';
+    }
+    function v550ReadingCard(reading){
+      const coverage=v550Coverage(reading),history=state.v550Reading.history[reading.id],targets=v550TargetNotes(reading).slice(0,4);
+      return '<article class="v550-reading-card"><div class="v550-reading-card-top"><span class="level-chip level-'+reading.level.toLowerCase()+'">'+reading.level+'</span><span>'+escapeHtml(reading.type)+'</span><span>'+reading.minutes+' min</span></div><h3>'+escapeHtml(reading.title)+'</h3><p><strong>'+coverage.knownPct+'%</strong> known vocabulary · '+escapeHtml(coverage.band)+'</p><div class="v550-coverage-mini"><i style="width:'+coverage.knownPct+'%"></i><b style="width:'+coverage.learningPct+'%"></b></div><small>'+coverage.known+' known · '+coverage.learning+' learning · '+coverage.unknown+' unmapped/unknown</small>'+(targets.length?'<div class="v550-targets">'+targets.map(function(note){return '<span>'+escapeHtml(note.fr)+'</span>';}).join('')+'</div>':'')+'<button class="'+(history?.completedAt?'secondary':'primary')+'" data-v550-open="'+reading.id+'">'+(history?.completedAt?'Read again':'Read')+'</button></article>';
+    }
+    function v550HistoryStats(){
+      const entries=Object.entries(state.v550Reading.history||{}).filter(function(pair){return V550_READING_BY_ID.has(pair[0])&&pair[1].completedAt;});
+      let completions=0,words=0,questions=0,correct=0;
+      for(const [id,h] of entries){const reading=V550_READING_BY_ID.get(id),count=Math.max(1,h.completionCount||1);completions+=count;words+=v550TextWords(reading)*count;questions+=h.questionAttempts||0;correct+=h.questionCorrect||0;}
+      return {texts:entries.length,completions:completions,words:words,questions:questions,correct:correct};
+    }
+    function v550SavedHtml(){
+      const items=Object.entries(state.v550Reading.saved||{}).sort(function(a,b){return b[1].lastSeenAt-a[1].lastSeenAt;}).slice(0,12);
+      if(!items.length)return '';
+      return '<section class="v550-saved"><div class="section-heading"><div><p class="eyebrow">Discovered vocabulary</p><h3>Saved from reading</h3></div></div><div>'+items.map(function(pair){const item=pair[1],note=item.coreId?state.cardById.get(item.coreId):null;return '<button type="button" data-v550-saved="'+escapeHtml(pair[0])+'"><strong lang="fr">'+escapeHtml(item.surface)+'</strong><span>'+(note?escapeHtml(note.en):'Outside mapped core')+' · '+item.count+' encounter'+(item.count===1?'':'s')+'</span></button>';}).join('')+'</div></section>';
+    }
+    function renderRead(){
+      v550LoadReading();
+      const selected=state.v550ReadUi.selectedId?V550_READING_BY_ID.get(state.v550ReadUi.selectedId):null;
+      if(selected){v550RenderReader(selected);return;}
+      const stats=v550HistoryStats(),recommended=v550Recommended(6),all=V550_READINGS.filter(function(reading){return (state.v550ReadUi.level==='ALL'||reading.level===state.v550ReadUi.level)&&(state.v550ReadUi.type==='ALL'||reading.type===state.v550ReadUi.type);});
+      main.innerHTML='<div class="view-header v550-read-header"><div><p class="eyebrow">P14 comprehensible reading</p><h2>Read French in context</h2><p>Texts are ranked by what you actually know. Passive reading records exposure only; explicit retrieval is assessed separately.</p></div><div class="v550-read-stats"><span><strong>'+stats.texts+'</strong> texts</span><span><strong>'+stats.words.toLocaleString()+'</strong> words read</span><span><strong>'+Object.keys(state.v550Reading.saved||{}).length+'</strong> saved</span></div></div>'+
+        '<section class="v550-controls panel"><div class="v550-mode-tabs" role="group" aria-label="Reading mode">'+V550_MODES.map(function(mode){return '<button type="button" data-v550-mode="'+mode+'" class="'+(state.v550ReadUi.mode===mode?'active':'')+'">'+mode[0].toUpperCase()+mode.slice(1)+'</button>';}).join('')+'</div><p>'+escapeHtml(v550ModeDescription(state.v550ReadUi.mode))+'</p><div class="v550-filter-row">'+selectControl('Level','v550-level',[['ALL','All levels'],['A1','A1'],['A2','A2'],['B1','B1']],state.v550ReadUi.level)+selectControl('Type','v550-type',[['ALL','All types'],['story','Stories'],['dialogue','Dialogues'],['practical','Practical'],['message','Messages'],['informational','Informational']],state.v550ReadUi.type)+'</div></section>'+
+        '<section class="v550-section"><div class="section-heading"><div><p class="eyebrow">Recommended for you</p><h3>Comfortable input with useful reinforcement</h3></div></div><div class="v550-reading-grid">'+recommended.map(v550ReadingCard).join('')+'</div></section>'+
+        '<section class="v550-section"><div class="section-heading"><div><p class="eyebrow">Library</p><h3>'+all.length+' bundled graded texts</h3><p>Original learner content with tracked provenance; no scraped copyrighted articles.</p></div></div><div class="v550-reading-grid">'+all.map(v550ReadingCard).join('')+'</div></section>'+v550SavedHtml();
+      main.querySelectorAll('[data-v550-mode]').forEach(function(button){button.addEventListener('click',function(){state.v550ReadUi.mode=button.dataset.v550Mode;renderRead();});});
+      $('#v550-level')?.addEventListener('change',function(event){state.v550ReadUi.level=V550_LEVELS.includes(event.target.value)?event.target.value:'ALL';renderRead();});
+      $('#v550-type')?.addEventListener('change',function(event){state.v550ReadUi.type=V550_TYPES.includes(event.target.value)?event.target.value:'ALL';renderRead();});
+      main.querySelectorAll('[data-v550-open]').forEach(function(button){button.addEventListener('click',function(){v550OpenReading(button.dataset.v550Open);});});
+      main.querySelectorAll('[data-v550-saved]').forEach(function(button){button.addEventListener('click',function(){const item=state.v550Reading.saved[button.dataset.v550Saved];if(item?.coreId&&state.cardById.get(item.coreId))v381OpenWord(item.coreId);else showToast('Saved discovery: '+(item?.surface||button.dataset.v550Saved));});});
+      bindCommonActions();
+    }
+    function v550OpenReading(id){
+      const reading=V550_READING_BY_ID.get(id);if(!reading)return;
+      const h=state.v550Reading.history[id]||{startedAt:now(),completionCount:0,questionAttempts:0,questionCorrect:0};
+      state.v550Reading.history[id]={...h,startedAt:h.startedAt||now(),lastOpenedAt:now(),mode:state.v550ReadUi.mode};
+      state.v550ReadUi.selectedId=id;state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);v550SaveReading();renderRead();
+    }
+    function v550CloseReading(){state.v550ReadUi.selectedId='';state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);renderRead();}
+    function v550RecordExposures(reading){
+      const unique=new Map();
+      for(const sentence of reading.sentences)for(const token of v550WordTokens(sentence.fr)){const note=v550ResolveNote(token);if(note)unique.set(note.id,note);}
+      for(const note of unique.values()){
+        const current=state.v550Reading.exposures[note.id]||{count:0,lastSeenAt:0,textIds:[]};
+        state.v550Reading.exposures[note.id]={count:current.count+1,lastSeenAt:now(),textIds:[...new Set([...(current.textIds||[]),reading.id])].slice(-30)};
+      }
+    }
+    function v550FinishReading(reading){
+      const current=state.v550Reading.history[reading.id]||{},firstCompletion=!current.completedAt;
+      state.v550Reading.history[reading.id]={...current,completedAt:current.completedAt||now(),lastOpenedAt:now(),completionCount:(current.completionCount||0)+1,mode:state.v550ReadUi.mode};
+      v550RecordExposures(reading);v550SaveReading();state.v550ReadUi.review=true;state.v550ReadUi.answers=Object.create(null);renderRead();
+      announce(firstCompletion?'Reading completed. Quick review available.':'Reading completed again. Quick review available.');
+    }
+    function v550ReadingWarning(coverage){
+      if(coverage.knownPct>=90)return '';
+      return '<div class="v550-overload"><strong>High support needed</strong><span>Only '+coverage.knownPct+'% of mapped word occurrences currently look familiar. You can continue, or return to the library for easier input.</span><button type="button" class="secondary" id="v550-easier">Find easier text</button></div>';
+    }
+    function v550RenderReader(reading){
+      const coverage=v550Coverage(reading),history=state.v550Reading.history[reading.id]||{},targets=v550TargetNotes(reading);
+      main.innerHTML='<div class="v550-reader-shell"><header class="v550-reader-bar"><button type="button" class="secondary" id="v550-reader-back">← Read</button><div><span>'+reading.level+' · '+escapeHtml(reading.type)+' · '+reading.minutes+' min</span><strong>'+escapeHtml(reading.title)+'</strong></div><button type="button" class="secondary" id="v550-reader-mode">'+escapeHtml(state.v550ReadUi.mode)+'</button></header>'+
+        '<section class="v550-reader-meta"><div><strong>'+coverage.knownPct+'%</strong><span>known vocabulary</span></div><div><strong>'+coverage.learningPct+'%</strong><span>learning</span></div><div><strong>'+coverage.unknownPct+'%</strong><span>unknown / unmapped</span></div><div><strong>'+escapeHtml(coverage.band)+'</strong><span>personal reading band</span></div></section>'+v550ReadingWarning(coverage)+
+        '<div class="v550-reader-options"><label><input type="checkbox" id="v550-show-unknown" '+(state.v550ReadUi.showUnknown?'checked':'')+'> Mark unknown</label><label><input type="checkbox" id="v550-show-learning" '+(state.v550ReadUi.showLearning?'checked':'')+'> Mark learning</label><span>'+escapeHtml(reading.authenticity.toUpperCase())+' · '+escapeHtml(reading.sourceLabel)+'</span></div>'+
+        (state.v550ReadUi.review?v550ReviewHtml(reading):'<article class="v550-reading-text">'+reading.sentences.map(function(sentence,index){return v550RenderSentence(sentence,reading,index);}).join('')+'</article><footer class="v550-reader-footer"><div><span>'+v550TextWords(reading)+' words</span><span>'+targets.length+' mapped targets</span><span>'+escapeHtml(reading.register)+' register</span></div><button class="primary" id="v550-finish">Finish & review</button></footer>')+
+        '<aside class="v550-lookup" id="v550-lookup" hidden></aside></div>';
+      $('#v550-reader-back')?.addEventListener('click',v550CloseReading);
+      $('#v550-reader-mode')?.addEventListener('click',function(){const index=V550_MODES.indexOf(state.v550ReadUi.mode);state.v550ReadUi.mode=V550_MODES[(index+1)%V550_MODES.length];state.v550Reading.history[reading.id]={...history,mode:state.v550ReadUi.mode,lastOpenedAt:now()};v550SaveReading();renderRead();});
+      $('#v550-show-unknown')?.addEventListener('change',function(event){state.v550ReadUi.showUnknown=event.target.checked;document.querySelector('.v550-reader-shell')?.classList.toggle('hide-unknown',!event.target.checked);});
+      $('#v550-show-learning')?.addEventListener('change',function(event){state.v550ReadUi.showLearning=event.target.checked;document.querySelector('.v550-reader-shell')?.classList.toggle('show-learning',event.target.checked);});
+      const shell=main.querySelector('.v550-reader-shell');shell?.classList.toggle('hide-unknown',!state.v550ReadUi.showUnknown);shell?.classList.toggle('show-learning',state.v550ReadUi.showLearning);
+      main.querySelectorAll('[data-v550-word]').forEach(function(button){button.addEventListener('click',function(){v550OpenLookup(button.dataset.v550Word,reading.id);});});
+      main.querySelectorAll('[data-v550-phrase]').forEach(function(button){button.addEventListener('click',function(){v550OpenPhraseLookup(button.dataset.v550Phrase,button.dataset.v550PhraseText,reading.id);});});
+      main.querySelectorAll('[data-v550-sentence]').forEach(function(button){button.addEventListener('click',function(){v550OpenSentenceHelp(reading,Number(button.dataset.v550Sentence));});});
+      $('#v550-finish')?.addEventListener('click',function(){v550FinishReading(reading);});
+      $('#v550-easier')?.addEventListener('click',function(){state.v550ReadUi.selectedId='';state.v550ReadUi.level=reading.level;renderRead();});
+      v550BindReview(reading);bindCommonActions();
+    }
+
+    function v550LookupCount(surface){const key=depthLoose(surface);return finiteNumber(state.v550Reading.lookupCounts[key]);}
+    function v550TouchLookup(surface,textId,note){
+      const key=depthLoose(surface),count=v550LookupCount(surface)+1;state.v550Reading.lookupCounts[key]=count;
+      const saved=state.v550Reading.saved[key];
+      if(saved)state.v550Reading.saved[key]={...saved,count:Math.max(saved.count,count),lastSeenAt:now(),textIds:[...new Set([...(saved.textIds||[]),textId])].slice(-30),coreId:note?.id||saved.coreId};
+      v550SaveReading();return count;
+    }
+    function v550OpenLookup(surface,textId){
+      const note=v550ResolveNote(surface),count=v550TouchLookup(surface,textId,note),panel=$('#v550-lookup');if(!panel)return;
+      const profile=note?v550MasteryCached(note):null,exposure=note?state.v550Reading.exposures[note.id]:null,key=depthLoose(surface),saved=Boolean(state.v550Reading.saved[key]);
+      panel.hidden=false;panel.innerHTML='<div class="v550-lookup-head"><div><span>'+escapeHtml(note?.posGroup||'word')+'</span><strong lang="fr">'+escapeHtml(note?.fr||surface)+'</strong></div><button type="button" id="v550-close-lookup">×</button></div><p class="v550-gloss">'+escapeHtml(note?.en||'Not mapped to the French3000 core catalog.')+'</p>'+
+        (note?'<div class="v550-lookup-facts"><span>'+escapeHtml(note.level)+'</span><span>'+escapeHtml(v540MasteryLabel(profile.mastery))+'</span><span>'+Math.round(profile.passive*100)+'% passive</span>'+(note.ipa?'<span>'+escapeHtml(note.ipa)+'</span>':'')+'</div>':'')+
+        '<p class="v550-lookup-note">'+(count>=3?'You have looked up this form '+count+' times. Repeated encounters are a useful signal that it may deserve deliberate study.':'Lookup gives enough information to continue reading; it does not count as successful recall.')+(exposure?' Seen in '+exposure.textIds.length+' completed text'+(exposure.textIds.length===1?'':'s')+'.':'')+'</p><div class="button-row"><button class="'+(saved?'secondary':'primary')+'" id="v550-save-word">'+(saved?'Saved':'Save')+'</button>'+(note?'<button class="secondary" id="v550-word-details">Word details</button><button class="secondary" id="v550-practice-word">Practice</button>':'')+'</div>';
+      $('#v550-close-lookup')?.addEventListener('click',function(){panel.hidden=true;});
+      $('#v550-save-word')?.addEventListener('click',function(){
+        if(saved){delete state.v550Reading.saved[key];showToast('Removed from saved reading words.');}
+        else{state.v550Reading.saved[key]={surface:note?.fr||surface,coreId:note?.id||'',count:count,lastSeenAt:now(),textIds:[textId]};showToast('Saved from reading.');}
+        v550SaveReading();panel.hidden=true;
+      });
+      $('#v550-word-details')?.addEventListener('click',function(){panel.hidden=true;v381OpenWord(note.id);});
+      $('#v550-practice-word')?.addEventListener('click',function(){panel.hidden=true;const card=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note;startSingleCard(card.id);});
+    }
+    function v550OpenPhraseLookup(frame,text,textId){
+      const panel=$('#v550-lookup');if(!panel)return;
+      const record=v510RecordForFrame(frame);panel.hidden=false;
+      panel.innerHTML='<div class="v550-lookup-head"><div><span>verified phrase</span><strong lang="fr">'+escapeHtml(text||frame)+'</strong></div><button type="button" id="v550-close-lookup">×</button></div><p class="v550-gloss">'+escapeHtml(frame)+'</p><p class="v550-lookup-note">'+escapeHtml(record?.note||record?.meaning||'This phrase is mapped to the verified usage corpus. Reading exposure itself does not advance phrase mastery.')+'</p>';
+      $('#v550-close-lookup')?.addEventListener('click',function(){panel.hidden=true;});
+    }
+    function v550OpenSentenceHelp(reading,index){
+      const sentence=reading.sentences[index],panel=$('#v550-lookup');if(!sentence||!panel)return;
+      panel.hidden=false;panel.innerHTML='<div class="v550-lookup-head"><div><span>sentence '+(index+1)+'</span><strong lang="fr">'+escapeHtml(sentence.fr)+'</strong></div><button type="button" id="v550-close-lookup">×</button></div><p class="v550-gloss">'+escapeHtml(sentence.en)+'</p>'+(sentence.grammar?'<div class="v550-grammar-help"><strong>Structure</strong><span>'+escapeHtml(sentence.grammar)+'</span></div>':'<p class="v550-lookup-note">Use the translation only when needed; the default reading flow keeps French primary.</p>');
+      $('#v550-close-lookup')?.addEventListener('click',function(){panel.hidden=true;});
+    }
+
+    function v550ReviewHtml(reading){
+      const answered=Object.keys(state.v550ReadUi.answers||{}).length,done=answered>=reading.questions.length;
+      return '<section class="v550-review"><div class="section-heading"><div><p class="eyebrow">Post-reading retrieval</p><h3>Quick review</h3><p>'+reading.questions.length+' checks. These are stronger evidence than exposure because you must retrieve meaning from context.</p></div></div>'+reading.questions.map(function(question,index){
+        const stateAnswer=state.v550ReadUi.answers[question.id],answeredQuestion=stateAnswer!==undefined;
+        return '<article class="v550-question"><span>'+(index+1)+'/'+reading.questions.length+'</span><strong>'+escapeHtml(question.prompt)+'</strong><div>'+question.options.map(function(option,optionIndex){let cls='';if(answeredQuestion&&optionIndex===question.answer)cls='correct';else if(answeredQuestion&&optionIndex===stateAnswer)cls='wrong';return '<button type="button" class="'+cls+'" data-v550-question="'+question.id+'" data-v550-option="'+optionIndex+'" '+(answeredQuestion?'disabled':'')+'>'+escapeHtml(option)+'</button>';}).join('')+'</div>'+(answeredQuestion?'<small>'+(stateAnswer===question.answer?'Correct.':'Reference answer: '+escapeHtml(question.options[question.answer]))+'</small>':'')+'</article>';
+      }).join('')+'<div class="v550-review-actions"><button class="secondary" id="v550-reread">Read again</button><button class="primary" id="v550-review-done" '+(done?'':'disabled')+'>Finish review</button></div></section>';
+    }
+    function v550RecordContextRetrieval(reading,question,correct,responseMs){
+      const note=v550ResolveNote(question.target);if(!note)return;
+      const card=v490SkillCard(note,'recognition')||note,p=normalizeProgressEntry(getProgress(card.id)),timestamp=now();
+      state.reviewLog.push({t:timestamp,id:card.id,noteId:note.id,skill:'recognition',rating:correct?'good':'again',responseMs:clamp(responseMs,0,3600000),wasNew:false,interval:p.interval||0,direction:'fr-en',typed:false,typedQuality:'none',level:note.level,pos:posGroup(note.pos),theme:note.theme||'general',practice:'choice',correct:correct,xp:0,practiceOnly:true,readingContextRetrieval:true,readingTextId:reading.id,readingQuestionId:question.id,readingTarget:String(question.target||'').slice(0,120),mixedExposureKeys:['word:'+note.id,'meaning:'+note.id],mixedFirstAttempt:true,mixedSupportLevel:2});
+      if(state.reviewLog.length>DEPTH_MAX_REVIEW_LOG)state.reviewLog=state.reviewLog.slice(-DEPTH_MAX_REVIEW_LOG);
+      saveReviewLog();state.v540EvidenceCache=null;state.v550ProfileCache={signature:'',map:new Map()};state.v550CoverageCache.clear();
+    }
+    const v550NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){if(!entry||typeof entry!=='object')continue;lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);}
+      return v550NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));if(original?.readingContextRetrieval!==true)return entry;
+        return {...entry,readingContextRetrieval:true,readingTextId:V550_READING_BY_ID.has(original.readingTextId)?original.readingTextId:'',readingQuestionId:String(original.readingQuestionId||'').slice(0,80),readingTarget:String(original.readingTarget||'').slice(0,120)};
+      });
+    };
+    const v550EntrySupportBase=v540EntrySupport;
+    v540EntrySupport=function(entry){return entry?.readingContextRetrieval===true?2:v550EntrySupportBase(entry);};
+
+    function v550BindReview(reading){
+      if(!state.v550ReadUi.review)return;
+      main.querySelectorAll('[data-v550-question]').forEach(function(button){button.addEventListener('click',function(){
+        const question=reading.questions.find(function(item){return item.id===button.dataset.v550Question;});if(!question||state.v550ReadUi.answers[question.id]!==undefined)return;
+        const answer=Number(button.dataset.v550Option),correct=answer===question.answer;state.v550ReadUi.answers[question.id]=answer;
+        const history=state.v550Reading.history[reading.id]||{};state.v550Reading.history[reading.id]={...history,questionAttempts:(history.questionAttempts||0)+1,questionCorrect:(history.questionCorrect||0)+(correct?1:0),lastOpenedAt:now()};
+        v550RecordContextRetrieval(reading,question,correct,8000);v550SaveReading();renderRead();
+      });});
+      $('#v550-reread')?.addEventListener('click',function(){state.v550ReadUi.review=false;state.v550ReadUi.answers=Object.create(null);renderRead();});
+      $('#v550-review-done')?.addEventListener('click',function(){state.v550ReadUi.review=false;v550OpenDifficultyFeedback(reading);});
+    }
+    function v550OpenDifficultyFeedback(reading){
+      const panel=$('#v550-lookup');if(!panel)return;panel.hidden=false;
+      panel.innerHTML='<div class="v550-lookup-head"><div><span>Reading feedback</span><strong>How did this feel?</strong></div><button type="button" id="v550-close-lookup">×</button></div><div class="v550-feel-grid">'+[['easy','Too easy'],['comfortable','Comfortable'],['challenging','Challenging'],['hard','Too hard']].map(function(pair){return '<button type="button" data-v550-feel="'+pair[0]+'">'+pair[1]+'</button>';}).join('')+'</div><p class="v550-lookup-note">This subjective signal helps future recommendations. It does not change vocabulary mastery directly.</p>';
+      $('#v550-close-lookup')?.addEventListener('click',function(){panel.hidden=true;v550CloseReading();});
+      panel.querySelectorAll('[data-v550-feel]').forEach(function(button){button.addEventListener('click',function(){const h=state.v550Reading.history[reading.id]||{};state.v550Reading.history[reading.id]={...h,feel:button.dataset.v550Feel,lastOpenedAt:now()};v550SaveReading();panel.hidden=true;v550CloseReading();});});
+    }
+
+    function v550ReadingExposure(note){return state.v550Reading?.exposures?.[depthBaseId(note)]||{count:0,lastSeenAt:0,textIds:[]};}
+    function v550WordReadingHtml(card){
+      const exposure=v550ReadingExposure(card),matches=V550_READINGS.filter(function(reading){
+        return v550TargetNotes(reading).some(function(note){return note.id===card.id;})||reading.sentences.some(function(sentence){return depthLoose(sentence.fr).includes(depthLoose(card.fr));});
+      }).slice(0,5);
+      return '<section class="v550-word-reading"><div><span>Reading context</span><strong>'+exposure.count+' completed-text exposure'+(exposure.count===1?'':'s')+'</strong><small>'+exposure.textIds.length+' distinct text'+(exposure.textIds.length===1?'':'s')+' · exposure is not recall evidence</small></div>'+(matches.length?'<div class="v550-word-reading-links">'+matches.map(function(reading){return '<button type="button" data-v550-reading-link="'+reading.id+'">'+escapeHtml(reading.title)+'</button>';}).join('')+'</div>':'')+'<button type="button" class="secondary" id="v550-read-this-word">Read in context</button></section>';
+    }
+    const v550OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v550OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const anchor=dialog.querySelector('.v540-word-mastery')||dialog.querySelector('.v530-word-sentence')||dialog.lastElementChild;
+      if(anchor&&!dialog.querySelector('.v550-word-reading')){
+        anchor.insertAdjacentHTML('afterend',v550WordReadingHtml(card));
+        $('#v550-read-this-word',dialog)?.addEventListener('click',function(){dialog.close();state.v550ReadUi.targetNoteId=card.id;state.v550ReadUi.mode='targeted';state.v550ReadUi.selectedId='';setView('read');});
+        dialog.querySelectorAll('[data-v550-reading-link]').forEach(function(button){button.addEventListener('click',function(){dialog.close();state.v550ReadUi.mode='targeted';state.v550ReadUi.targetNoteId=card.id;setView('read',{focus:false});v550OpenReading(button.dataset.v550ReadingLink);});});
+      }
+      return result;
+    };
+
+    function v550ProgressPanel(){
+      const stats=v550HistoryStats(),completed=Object.entries(state.v550Reading.history||{}).filter(function(pair){return pair[1].completedAt;}).sort(function(a,b){return b[1].lastOpenedAt-a[1].lastOpenedAt;}).slice(0,5);
+      return '<section class="v550-progress-panel"><div class="v550-progress-head"><div><p class="eyebrow">P14 authentic-input bridge</p><h3>Reading in real context</h3><p>Track meaningful exposure without confusing it with recall. Explicit post-reading retrieval is recorded separately as supported contextual evidence.</p></div><button class="primary" id="v550-progress-read">Open Read</button></div><div class="v550-progress-grid"><span><strong>'+stats.texts+'</strong> distinct texts</span><span><strong>'+stats.completions+'</strong> completions</span><span><strong>'+stats.words.toLocaleString()+'</strong> words read</span><span><strong>'+Object.keys(state.v550Reading.saved||{}).length+'</strong> saved discoveries</span><span><strong>'+stats.correct+'/'+stats.questions+'</strong> context checks</span><span><strong>'+Object.keys(state.v550Reading.exposures||{}).length+'</strong> core words encountered</span></div>'+(completed.length?'<div class="v550-recent-reading">'+completed.map(function(pair){const reading=V550_READING_BY_ID.get(pair[0]);return '<button type="button" data-v550-progress-open="'+pair[0]+'"><strong>'+escapeHtml(reading.title)+'</strong><span>'+reading.level+' · '+escapeHtml(pair[1].feel||'not rated')+'</span></button>';}).join('')+'</div>':'')+'</section>';
+    }
+    function v550DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v550-progress-panel'))return;
+      const anchor=main.querySelector('.v540-progress-panel')||main.querySelector('.v530-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v550ProgressPanel());
+      $('#v550-progress-read')?.addEventListener('click',function(){setView('read');});
+      main.querySelectorAll('[data-v550-progress-open]').forEach(function(button){button.addEventListener('click',function(){setView('read',{focus:false});v550OpenReading(button.dataset.v550ProgressOpen);});});
+    }
+    const v550RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v550RenderProgressBase();v550DecorateProgress();return result;};
+
+    function v550DashboardPanel(){
+      const recommended=v550Recommended(1)[0],coverage=recommended?v550Coverage(recommended):null,stats=v550HistoryStats();
+      return '<section class="v550-dashboard-card"><div><p class="eyebrow">Read in context</p><h3>'+(recommended?escapeHtml(recommended.title):'Comprehensible French')+'</h3><p>'+(recommended?coverage.knownPct+'% familiar vocabulary · '+escapeHtml(coverage.band)+' · '+recommended.minutes+' min':'Use your vocabulary inside complete French texts.')+'</p><span>'+stats.words.toLocaleString()+' words read so far</span></div><button class="primary" id="v550-dashboard-read">'+(recommended?'Read recommendation':'Open Read')+'</button></section>';
+    }
+    function v550DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v550-dashboard-card'))return;
+      const anchor=main.querySelector('.v540-dashboard-card')||main.querySelector('.v490-path-card')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v550DashboardPanel());$('#v550-dashboard-read')?.addEventListener('click',function(){setView('read');});
+    }
+    const v550RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v550RenderDashboardBase();v550DecorateDashboard();return result;};
+
+    const v550NavigationBase=v366ApplyNavigation;
+    v366ApplyNavigation=function(){
+      v550NavigationBase();
+      const desktop=$('.topbar .nav'),mobile=$('.mobile-nav');
+      const desktopItems=[['dashboard','Today'],['study','Study'],['read','Read'],['browse','Words'],['progress','Progress'],['settings','Settings']];
+      const mobileItems=[['dashboard','Today'],['study','Study'],['read','Read'],['browse','Words'],['progress','More']];
+      if(desktop)desktop.innerHTML=desktopItems.map(function(pair){return '<button class="nav-button '+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');
+      if(mobile){mobile.classList.remove('v36-four','v36-five');mobile.classList.add('v550-five');mobile.innerHTML=mobileItems.map(function(pair){return '<button class="'+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');}
+    };
+    v36ApplyNavigation=v366ApplyNavigation;
+
+    const v550SetViewBase=setView;
+    setView=function(view,{focus=true}={}){
+      if(view!=='read'){const result=v550SetViewBase(view,{focus});v366ApplyNavigation();return result;}
+      stopSpeech();state.view='read';v366ApplyNavigation();renderRead();window.scrollTo({top:0,behavior:'auto'});if(focus){main.focus({preventScroll:true});announce('Read view');}
+    };
+
+    function v550EnsureStyles(){
+      if(document.querySelector('#v550-reading-style'))return;
+      const style=document.createElement('style');style.id='v550-reading-style';
+      style.textContent='.v550-read-header{align-items:flex-end}.v550-read-stats{display:flex;gap:.4rem;flex-wrap:wrap}.v550-read-stats span{padding:.42rem .52rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);color:var(--muted);font-size:.62rem}.v550-read-stats strong{display:block;color:var(--navy);font-size:.92rem}.v550-controls{display:grid;gap:.6rem;margin-bottom:.8rem}.v550-mode-tabs{display:flex;gap:.35rem;flex-wrap:wrap}.v550-mode-tabs button{border:1px solid var(--line);background:var(--surface-solid);border-radius:999px;padding:.42rem .68rem;font-weight:800}.v550-mode-tabs button.active{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,var(--surface-solid));color:var(--blue)}.v550-controls>p{margin:0;color:var(--muted);font-size:.7rem}.v550-filter-row{display:flex;gap:.5rem;flex-wrap:wrap}.v550-section{margin-bottom:1rem}.v550-reading-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.62rem}.v550-reading-card{display:grid;gap:.46rem;padding:.78rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid)}.v550-reading-card-top{display:flex;align-items:center;gap:.35rem;color:var(--muted);font-size:.58rem;text-transform:capitalize}.v550-reading-card h3{margin:0;color:var(--navy);font-size:1rem}.v550-reading-card p{margin:0;color:var(--muted);font-size:.68rem}.v550-reading-card small{color:var(--muted);font-size:.58rem}.v550-coverage-mini{display:flex;height:5px;background:var(--line);border-radius:999px;overflow:hidden}.v550-coverage-mini i{display:block;background:var(--green)}.v550-coverage-mini b{display:block;background:color-mix(in srgb,var(--blue) 70%,var(--surface))}.v550-targets{display:flex;gap:.25rem;flex-wrap:wrap}.v550-targets span{padding:.18rem .35rem;border-radius:999px;background:var(--surface-muted);font-size:.56rem;color:var(--muted)}.v550-saved{margin-top:1rem}.v550-saved>div:last-child{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem}.v550-saved button,.v550-recent-reading button{display:flex;justify-content:space-between;gap:.5rem;text-align:left;padding:.5rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid)}.v550-saved button span,.v550-recent-reading button span{font-size:.58rem;color:var(--muted)}.v550-reader-shell{max-width:900px;margin:0 auto;position:relative}.v550-reader-bar{position:sticky;top:0;z-index:8;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.65rem;padding:.6rem 0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px)}.v550-reader-bar>div span,.v550-reader-bar>div strong{display:block}.v550-reader-bar>div span{font-size:.58rem;color:var(--muted);text-transform:capitalize}.v550-reader-bar>div strong{color:var(--navy)}.v550-reader-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;margin:.4rem 0}.v550-reader-meta>div{padding:.55rem;border-radius:11px;background:var(--surface-muted)}.v550-reader-meta strong,.v550-reader-meta span{display:block}.v550-reader-meta strong{color:var(--navy)}.v550-reader-meta span{font-size:.57rem;color:var(--muted)}.v550-reader-options{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;font-size:.61rem;color:var(--muted);padding:.45rem 0}.v550-reading-text{font-family:Georgia,"Times New Roman",serif;font-size:1.17rem;line-height:1.95;padding:clamp(1rem,4vw,2.5rem);border:1px solid var(--line);border-radius:17px;background:var(--surface-solid)}.v550-sentence{display:grid;grid-template-columns:1fr auto;gap:.4rem;align-items:start}.v550-sentence p{margin:.42rem 0;color:var(--navy)}.v550-sentence-help{border:0;background:transparent;color:var(--muted);font:inherit;font-family:var(--font,system-ui);font-size:.56rem;padding:.6rem .2rem;cursor:pointer}.v550-word,.v550-phrase{border:0;padding:0;background:transparent;color:inherit;font:inherit;line-height:inherit;border-radius:3px;cursor:pointer;text-align:inherit}.v550-word:hover,.v550-phrase:hover{background:color-mix(in srgb,var(--blue) 10%,transparent)}.v550-word.v550-unknown{border-bottom:1px dotted color-mix(in srgb,var(--red) 65%,transparent)}.v550-reader-shell.hide-unknown .v550-word.v550-unknown{border-bottom-color:transparent}.v550-word.v550-learning{border-bottom:1px solid transparent}.v550-reader-shell.show-learning .v550-word.v550-learning{background:color-mix(in srgb,var(--blue) 8%,transparent);border-bottom-color:color-mix(in srgb,var(--blue) 30%,transparent)}.v550-target-word,.v550-target-phrase{background:color-mix(in srgb,var(--amber,#dca43a) 16%,transparent)!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--amber,#dca43a) 28%,transparent)}.v550-reader-footer{display:flex;justify-content:space-between;gap:.7rem;align-items:center;padding:.65rem 0}.v550-reader-footer>div{display:flex;gap:.5rem;flex-wrap:wrap;color:var(--muted);font-size:.6rem}.v550-overload{display:flex;align-items:center;gap:.6rem;padding:.6rem;border:1px solid color-mix(in srgb,var(--red) 35%,var(--line));border-radius:11px;background:color-mix(in srgb,var(--red) 6%,var(--surface-solid));font-size:.64rem}.v550-overload span{color:var(--muted);flex:1}.v550-lookup{position:fixed;z-index:60;left:50%;bottom:max(1rem,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(620px,calc(100vw - 1rem));max-height:min(65vh,560px);overflow:auto;padding:.8rem;border:1px solid var(--line);border-radius:16px;background:var(--surface-solid);box-shadow:0 22px 70px rgba(0,0,0,.2)}.v550-lookup[hidden]{display:none}.v550-lookup-head{display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start}.v550-lookup-head span,.v550-lookup-head strong{display:block}.v550-lookup-head span{font-size:.56rem;color:var(--muted);text-transform:uppercase}.v550-lookup-head strong{font-size:1rem;color:var(--navy)}.v550-lookup-head button{border:0;background:transparent;font-size:1.4rem;color:var(--muted);cursor:pointer}.v550-gloss{font-size:.84rem;color:var(--navy)}.v550-lookup-facts{display:flex;gap:.3rem;flex-wrap:wrap}.v550-lookup-facts span{padding:.22rem .38rem;border-radius:999px;background:var(--surface-muted);font-size:.57rem;color:var(--muted)}.v550-lookup-note{font-size:.65rem;color:var(--muted)}.v550-grammar-help{display:grid;gap:.2rem;padding:.55rem;border-radius:10px;background:var(--surface-muted)}.v550-grammar-help span{font-size:.67rem;color:var(--muted)}.v550-review{display:grid;gap:.6rem}.v550-question{display:grid;gap:.45rem;padding:.7rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-solid)}.v550-question>span{font-size:.55rem;color:var(--muted)}.v550-question>div{display:grid;gap:.3rem}.v550-question button{text-align:left;padding:.48rem .55rem;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted)}.v550-question button.correct{border-color:color-mix(in srgb,var(--green) 55%,var(--line));background:color-mix(in srgb,var(--green) 8%,var(--surface-solid))}.v550-question button.wrong{border-color:color-mix(in srgb,var(--red) 55%,var(--line));background:color-mix(in srgb,var(--red) 7%,var(--surface-solid))}.v550-question small{color:var(--muted)}.v550-review-actions{display:flex;justify-content:flex-end;gap:.4rem}.v550-feel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.35rem}.v550-feel-grid button{padding:.55rem;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted)}.v550-word-reading{display:grid;gap:.45rem;padding:.66rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);margin-top:.55rem}.v550-word-reading>div:first-child span,.v550-word-reading>div:first-child small{display:block;color:var(--muted);font-size:.6rem}.v550-word-reading>div:first-child strong{display:block;color:var(--navy);font-size:.78rem}.v550-word-reading-links{display:flex;gap:.3rem;flex-wrap:wrap}.v550-word-reading-links button{padding:.25rem .4rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-solid);font-size:.57rem}.v550-progress-panel{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v550-progress-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v550-progress-head h3{margin:.08rem 0 .2rem}.v550-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:75ch}.v550-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.35rem;margin-top:.7rem}.v550-progress-grid span{padding:.5rem;border-radius:10px;background:var(--surface-muted);font-size:.6rem;color:var(--muted)}.v550-progress-grid strong{display:block;color:var(--navy);font-size:.95rem}.v550-recent-reading{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem;margin-top:.5rem}.v550-dashboard-card{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:.75rem .9rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid);margin-bottom:.75rem}.v550-dashboard-card h3{margin:.08rem 0}.v550-dashboard-card p{margin:0;color:var(--muted);font-size:.68rem}.v550-dashboard-card span{display:block;color:var(--muted);font-size:.58rem;margin-top:.3rem}.mobile-nav.v550-five{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:860px){.v550-reading-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v550-reader-meta{grid-template-columns:repeat(2,minmax(0,1fr))}.v550-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:600px){.v550-reading-grid,.v550-saved>div:last-child,.v550-recent-reading{grid-template-columns:1fr}.v550-reader-bar{grid-template-columns:auto 1fr}.v550-reader-bar>#v550-reader-mode{grid-column:1/-1;width:100%}.v550-reading-text{font-size:1.08rem;padding:1rem}.v550-sentence{grid-template-columns:1fr}.v550-sentence-help{justify-self:start;padding:.05rem 0 .25rem}.v550-reader-footer,.v550-dashboard-card,.v550-progress-head{align-items:stretch;flex-direction:column}.v550-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v550-overload{align-items:flex-start;flex-direction:column}}';
+      document.head.append(style);
+    }
+
+    const v550NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v550NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p14-authentic-input';
+      document.documentElement.dataset.reading='v550';
+      document.documentElement.dataset.contextEvidence='exposure-separated-from-retrieval';
+    };
+    const v550InitBase=init;
+    init=async function(options){
+      v550EnsureStyles();const result=await v550InitBase(options||{});v550LoadReading();v420NormalizeSurface();v366ApplyNavigation();
+      if(state.view==='dashboard')renderDashboard();
+      else if(state.view==='progress')renderProgress();
+      else if(state.view==='read')renderRead();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.5.0';return result;
     };
 
     function v380BootAudit(){
