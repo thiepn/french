@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.3.0';
-    const APP_RELEASE = 'P12 Real Sentence Production, Controlled Composition & Contextual Usage Transfer';
+    const APP_VERSION = '5.4.0';
+    const APP_RELEASE = 'P13 Mixed Retrieval, Interleaving & Durable Active-Vocabulary Mastery';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -18195,6 +18195,666 @@ qui	who	A1	question word`;
       if(state.view==='progress')v530DecorateProgress();
       if(state.view==='settings')v530DecorateSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.3.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.4.0 MIXED RETRIEVAL, INTERLEAVING & DURABLE ACTIVE MASTERY
+       P13 composes the independent P1-P12 evidence streams into one mixed
+       retrieval system. Due reviews keep their real schedules; supplemental
+       repair, phrase, sentence, transfer and reinforcement tasks remain
+       practice-only. Mastery is multidimensional and durability requires
+       spacing, breadth and independent retrieval rather than raw accuracy.
+       ================================================================ */
+    const V540_VERSION='5.4.0';
+    const V540_RELEASE='P13 Mixed Retrieval, Interleaving & Durable Active-Vocabulary Mastery';
+    const V540_EVIDENCE_DAYS=180;
+    const V540_EXPOSURE_MS=15*60*1000;
+    const V540_WORD_GAP=4;
+    const V540_MAX_SAME_MODALITY=2;
+    const V540_MAX_HARD_PRODUCTION=3;
+    const V540_MASTERY_STATES=Object.freeze(['NEW','LEARNING','FAMILIAR','RECALLABLE','USABLE','DURABLE','ROBUST']);
+    const V540_DIMENSION_LABELS=Object.freeze({
+      recognition:'Recognition',
+      recall:'Meaning / form recall',
+      listening:'Listening',
+      phrase:'Phrase production',
+      sentence:'Sentence production',
+      transfer:'Context transfer'
+    });
+    const V540_LANE_LABELS=Object.freeze({
+      overdue:'Overdue review',
+      weak:'Weak retrieval',
+      repair:'Error repair',
+      listening:'Listening',
+      phrase:'Phrase production',
+      sentence:'Sentence production',
+      transfer:'Context transfer',
+      recent:'Recent reinforcement',
+      confirmation:'Sparse confirmation'
+    });
+    V490_PATH_FOCI.add('mixed');
+
+    function v540BaseNote(card){return v500BaseNote(card)||depthNoteFor(card)||state.cardById.get(depthBaseId(card))||card;}
+    function v540NoteId(card){return depthBaseId(v540BaseNote(card)?.id||card?.noteId||card?.id||'');}
+    function v540TaskKey(card){
+      if(card?.v530ExerciseId)return 'sentence|'+card.v530ExerciseId+'|'+String(card.v530SentenceMode||'');
+      if(card?.v520RecordId)return 'phrase|'+card.v520RecordId+'|'+String(card.v520Mode||'');
+      if(card?.v500UsagePattern)return 'usage|'+v540NoteId(card)+'|'+normalizeTyped(card.v500UsagePattern);
+      return 'skill|'+String(card?.id||'')+'|'+String(card?.v540Lane||'');
+    }
+    function v540ExposureKeys(card){
+      const noteId=v540NoteId(card),keys=new Set();
+      if(noteId)keys.add('word:'+noteId);
+      if(card?.v530Frame)keys.add('frame:'+normalizeTyped(card.v530Frame));
+      if(card?.v520Expected)keys.add('frame:'+normalizeTyped(card.v520Expected));
+      if(card?.v500UsagePattern)keys.add('frame:'+normalizeTyped(card.v500UsagePattern));
+      const skill=depthSkillOf(card);
+      if(skill==='recognition')keys.add('meaning:'+noteId);
+      if(['production','spelling','article'].includes(skill))keys.add('form:'+noteId);
+      if(skill==='listening')keys.add('sound:'+noteId);
+      return [...keys].filter(Boolean);
+    }
+    function v540TaskMeta(card){
+      if(card?.v540Modality)return {modality:card.v540Modality,kind:card.v540Kind||card.v540Modality,difficulty:finiteNumber(card.v540Difficulty,2),hardProduction:card.v540HardProduction===true,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:Array.isArray(card.v540ExposureKeys)?card.v540ExposureKeys:v540ExposureKeys(card)};
+      if(card?.v530SentencePractice){
+        const exercise=V530_BY_ID.get(card.v530ExerciseId),transfer=exercise?.type==='transfer',difficulty=['translate','transform','transfer'].includes(exercise?.type)?3:2;
+        return {modality:transfer?'transfer':'sentence',kind:'sentence-'+String(exercise?.type||'production'),difficulty:difficulty,hardProduction:difficulty>=3,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:v540ExposureKeys(card)};
+      }
+      if(card?.v520TransferPractice){
+        const transfer=card.v520Mode==='transfer',repair=card.v520Mode==='repair';
+        return {modality:transfer?'transfer':'phrase',kind:'phrase-'+String(card.v520Mode||'production'),difficulty:transfer?3:repair?1:2,hardProduction:transfer,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:v540ExposureKeys(card)};
+      }
+      if(card?.v500UsagePractice)return {modality:'phrase',kind:'phrase-context',difficulty:2,hardProduction:false,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:v540ExposureKeys(card)};
+      const skill=depthSkillOf(card),modality=skill==='recognition'?'recognition':skill==='listening'?'listening':['production','spelling','article'].includes(skill)?'recall':'recognition';
+      return {modality:modality,kind:'skill-'+skill,difficulty:skill==='recognition'?1:skill==='listening'?2:2,hardProduction:false,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:v540ExposureKeys(card)};
+    }
+    function v540DecorateTask(card,lane,overrides={}){
+      const base={...card,v540MixedReview:true,v540Lane:lane},meta={...v540TaskMeta(card),...overrides};
+      return {...base,v540Modality:meta.modality,v540Kind:meta.kind,v540Difficulty:clamp(finiteNumber(meta.difficulty,2),1,3),v540HardProduction:meta.hardProduction===true,v540ExposureKeys:Array.isArray(meta.exposureKeys)?meta.exposureKeys:v540ExposureKeys(base)};
+    }
+
+    function v540EvidenceIndex(){
+      const last=state.reviewLog?.at(-1),signature=String(state.reviewLog.length)+'|'+String(last?.t||0)+'|'+String(last?.rating||'')+'|'+String(last?.sentenceDiagnosis||last?.transferDiagnosis||'');
+      if(state.v540EvidenceCache?.signature===signature)return state.v540EvidenceCache.map;
+      const map=new Map();
+      for(const entry of state.reviewLog){
+        const noteId=depthBaseId(entry.noteId||entry.id);if(!noteId)continue;
+        if(!map.has(noteId))map.set(noteId,[]);
+        map.get(noteId).push(entry);
+      }
+      state.v540EvidenceCache={signature:signature,map:map};return map;
+    }
+    function v540Entries(note){return v540EvidenceIndex().get(depthBaseId(note))||[];}
+    function v540EntryModality(entry){
+      if(entry.sentencePractice===true)return entry.sentenceExerciseType==='transfer'?'transfer':'sentence';
+      if(entry.transferPractice===true)return entry.transferMode==='transfer'?'transfer':'phrase';
+      if(entry.usagePractice===true)return 'phrase';
+      const skill=String(entry.skill||depthParseId(entry.id||'').skill||'');
+      if(skill==='recognition')return 'recognition';
+      if(skill==='listening'||entry.practice==='listening')return 'listening';
+      if(['production','spelling','article'].includes(skill))return 'recall';
+      return entry.direction==='en-fr'?'recall':'recognition';
+    }
+    function v540EntrySuccess(entry){
+      if(entry.sentencePractice===true)return entry.sentenceCorrect===true;
+      if(entry.transferPractice===true)return entry.transferCorrect===true||entry.correct===true;
+      return entry.correct===true;
+    }
+    function v540EntrySupport(entry){
+      if(Number.isFinite(Number(entry.mixedSupportLevel)))return clamp(Number(entry.mixedSupportLevel),0,3);
+      if(entry.sentenceMode==='repair'||entry.transferMode==='repair')return 2;
+      if(entry.practice==='cloze'||entry.v490Category==='context')return 1;
+      return 0;
+    }
+    function v540DimensionEvidence(note,dimension){
+      const cutoff=now()-days(V540_EVIDENCE_DAYS),entries=v540Entries(note).filter(function(entry){return entry.t>=cutoff&&v540EntryModality(entry)===dimension;});
+      const attempts=entries.length,successes=entries.filter(v540EntrySuccess).length,failures=attempts-successes,daysSeen=new Set(entries.map(function(entry){return dayKey(entry.t);})).size;
+      const times=entries.map(function(entry){return entry.t;}).sort(function(a,b){return a-b;}),spanDays=times.length>1?(times.at(-1)-times[0])/days(1):0;
+      const independent=entries.filter(function(entry){return v540EntrySuccess(entry)&&v540EntrySupport(entry)===0&&entry.mixedFirstAttempt!==false;}).length;
+      const successfulTimes=entries.filter(v540EntrySuccess).map(function(entry){return finiteNumber(entry.responseMs);}).filter(function(value){return value>0;}),avgMs=successfulTimes.length?successfulTimes.reduce(function(sum,value){return sum+value;},0)/successfulTimes.length:0;
+      const accuracy=attempts?successes/attempts:0,spacing=clamp(daysSeen/4,0,1),span=clamp(spanDays/21,0,1),speed=!avgMs?0.55:avgMs<=9000?1:avgMs<=16000?.82:avgMs<=28000?.62:.42,independence=successes?independent/successes:0;
+      const recent=entries.at(-1)&&now()-entries.at(-1).t<=days(21)?1:entries.length?.55:0;
+      const empirical=attempts?clamp(accuracy*.44+spacing*.16+span*.12+speed*.08+independence*.12+recent*.08-(failures/Math.max(1,attempts))*.08,0,1):0;
+      const confidence=attempts?clamp(Math.min(1,attempts/6)*.5+spacing*.25+span*.15+Math.min(1,independent/3)*.1,0,1):0;
+      return {entries:entries,attempts:attempts,successes:successes,failures:failures,accuracy:accuracy,daysSeen:daysSeen,spanDays:spanDays,independent:independent,avgMs:avgMs,score:empirical,confidence:confidence,last:entries.at(-1)||null};
+    }
+    function v540SkillStrength(note,skill){
+      const cards=depthCreateSkillCards(note,skill).filter(isAvailable);if(!cards.length)return 0;
+      const started=cards.filter(function(card){const p=normalizeProgressEntry(getProgress(card.id));return p.seen>0||p.status!=='new';});
+      if(!started.length)return 0;
+      return Math.min(...started.map(v430SkillStrength));
+    }
+    function v540Dimension(note,dimension){
+      const evidence=v540DimensionEvidence(note,dimension);let memory=0,eligible=true;
+      if(dimension==='recognition')memory=v540SkillStrength(note,'recognition');
+      else if(dimension==='recall')memory=v540SkillStrength(note,'production');
+      else if(dimension==='listening')memory=v540SkillStrength(note,'listening');
+      else if(dimension==='phrase'){
+        eligible=v510CorpusFor(note).some(function(record){return record.tier==='verified';});
+        const records=v510CorpusFor(note).filter(function(record){return record.tier==='verified';});
+        if(records.length)memory=Math.max(...records.map(function(record){const stateInfo=v520TransferState(record,note);return stateInfo.secure?1:stateInfo.attempts?clamp(stateInfo.accuracy*.75+Math.min(1,stateInfo.attempts/3)*.25,0,1):0;}));
+      }else if(dimension==='sentence'){
+        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return Boolean(v530RecordForExercise(exercise)&&v510CorpusFor(note).some(function(record){return record.frame===exercise.frame;}));});
+        const info=v530WordSentenceState(note);memory=info.secure?clamp(info.secure/Math.max(1,info.records),0,1):evidence.score;
+      }else if(dimension==='transfer'){
+        eligible=V530_SENTENCE_EXERCISES.some(function(exercise){return exercise.type==='transfer'&&v510CorpusFor(note).some(function(record){return record.frame===exercise.frame;});})||v510CorpusFor(note).some(function(record){return record.tier==='verified';});
+        const info=v530WordSentenceState(note);memory=info.transferSecure?clamp(info.transferSecure/Math.max(1,info.records),0,1):evidence.score;
+      }
+      const score=!eligible?null:(['recognition','recall','listening'].includes(dimension)?clamp(memory*.62+evidence.score*.38,0,1):clamp(Math.max(memory*.7,evidence.score),0,1));
+      return {dimension:dimension,label:V540_DIMENSION_LABELS[dimension],eligible:eligible,score:score,evidence:evidence,memory:memory};
+    }
+    function v540MasteryProfile(note){
+      const dimensions={};
+      for(const key of Object.keys(V540_DIMENSION_LABELS))dimensions[key]=v540Dimension(note,key);
+      const eligible=Object.values(dimensions).filter(function(item){return item.eligible;});
+      const passiveDims=[dimensions.recognition,dimensions.listening].filter(function(item){return item.eligible;});
+      const activeDims=[dimensions.recall,dimensions.phrase,dimensions.sentence,dimensions.transfer].filter(function(item){return item.eligible;});
+      const passive=passiveDims.length?Math.min(...passiveDims.map(function(item){return item.score||0;})):0,active=activeDims.length?Math.min(...activeDims.map(function(item){return item.score||0;})):0;
+      const allEntries=v540Entries(note).filter(function(entry){return entry.t>=now()-days(V540_EVIDENCE_DAYS);}),successEntries=allEntries.filter(v540EntrySuccess),modalities=new Set(allEntries.map(v540EntryModality)),daysSeen=new Set(allEntries.map(function(entry){return dayKey(entry.t);})).size;
+      const times=allEntries.map(function(entry){return entry.t;}).sort(function(a,b){return a-b;}),spanDays=times.length>1?(times.at(-1)-times[0])/days(1):0,independent=successEntries.filter(function(entry){return v540EntrySupport(entry)===0&&entry.mixedFirstAttempt!==false;}).length;
+      const avgMs=successEntries.length?successEntries.reduce(function(sum,entry){return sum+finiteNumber(entry.responseMs);},0)/successEntries.length:0;
+      const accuracy=allEntries.length?successEntries.length/allEntries.length:0,spacing=clamp(daysSeen/5,0,1),span=clamp(spanDays/30,0,1),breadth=clamp(modalities.size/5,0,1),independence=successEntries.length?independent/successEntries.length:0,speed=!avgMs?0.55:avgMs<=9000?1:avgMs<=18000?.8:avgMs<=30000?.6:.4;
+      const durability=allEntries.length?clamp(accuracy*.28+spacing*.2+span*.18+breadth*.18+independence*.1+speed*.06,0,1):0;
+      const weakest=eligible.slice().sort(function(a,b){return (a.score??1)-(b.score??1);})[0]||null,totalAttempts=allEntries.length,totalSuccesses=successEntries.length;
+      let mastery='NEW';
+      if(totalAttempts>0)mastery='LEARNING';
+      if(dimensions.recognition.score>=.45&&totalSuccesses>=2)mastery='FAMILIAR';
+      if(active>=.35&&dimensions.recall.evidence.successes>=1)mastery='RECALLABLE';
+      if(active>=.45&&modalities.size>=2&&(dimensions.phrase.evidence.successes+dimensions.sentence.evidence.successes+dimensions.transfer.evidence.successes)>=1)mastery='USABLE';
+      if(durability>=.62&&active>=.55&&daysSeen>=3&&spanDays>=7)mastery='DURABLE';
+      const transferGate=!dimensions.transfer.eligible||dimensions.transfer.score>=.6;
+      if(durability>=.8&&active>=.7&&passive>=.7&&transferGate&&modalities.size>=4&&daysSeen>=4&&spanDays>=21)mastery='ROBUST';
+      const confidence=allEntries.length?clamp(Math.min(1,totalAttempts/12)*.45+spacing*.2+span*.2+breadth*.15,0,1):0;
+      return {note:note,dimensions:dimensions,passive:passive,active:active,durability:durability,mastery:mastery,confidence:confidence,weakest:weakest,totalAttempts:totalAttempts,totalSuccesses:totalSuccesses,daysSeen:daysSeen,spanDays:spanDays,modalities:modalities.size};
+    }
+    function v540MasteryLabel(value){return String(value||'NEW').toLowerCase().replace(/^\w/,function(letter){return letter.toUpperCase();});}
+    function v540AggregateStats(cards){
+      const notes=(cards||state.cards).map(v540BaseNote).filter(Boolean),seen=new Set(),profiles=[];
+      for(const note of notes){if(seen.has(note.id)||note.core===false)continue;seen.add(note.id);const profile=v540MasteryProfile(note);if(profile.totalAttempts)profiles.push(profile);}
+      const states={};for(const key of V540_MASTERY_STATES)states[key]=profiles.filter(function(profile){return profile.mastery===key;}).length;
+      return {profiles:profiles,started:profiles.length,states:states,passiveStrong:profiles.filter(function(profile){return profile.passive>=.65;}).length,activeStrong:profiles.filter(function(profile){return profile.active>=.6;}).length,durable:profiles.filter(function(profile){return ['DURABLE','ROBUST'].includes(profile.mastery);}).length,robust:states.ROBUST||0,avgDurability:profiles.length?Math.round(profiles.reduce(function(sum,profile){return sum+profile.durability;},0)/profiles.length*100):0};
+    }
+
+    function v540RecentExposureKeys(){
+      const cutoff=now()-V540_EXPOSURE_MS,keys=new Set();
+      for(const entry of state.reviewLog){
+        if(entry.t<cutoff)continue;
+        const noteId=depthBaseId(entry.noteId||entry.id);if(noteId)keys.add('word:'+noteId);
+        for(const key of Array.isArray(entry.mixedExposureKeys)?entry.mixedExposureKeys:[])keys.add(key);
+      }
+      return keys;
+    }
+    function v540FirstSeen(note){
+      const entries=v540Entries(note);return entries.length?Math.min(...entries.map(function(entry){return entry.t;})):0;
+    }
+    function v540TaskAge(card){
+      const first=v540FirstSeen(v540BaseNote(card));if(!first)return 'new';
+      const age=(now()-first)/days(1);return age<=7?'recent':age>=30?'old':'middle';
+    }
+    function v540Dedupe(cards){
+      const out=[],seen=new Set();
+      for(const card of cards||[]){const key=v540TaskKey(card);if(seen.has(key))continue;seen.add(key);out.push(card);}
+      return out;
+    }
+    function v540DueCandidates(cards,limit=80){
+      depthIndexSkills();
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));}));
+      return [...state.depthSkillIndex.values()].filter(function(card){return allowed.has(v540NoteId(card))&&isAvailable(card)&&isDue(card);}).sort(function(a,b){return (typeof v394DueTier==='function'?v394DueTier(a):1)-(typeof v394DueTier==='function'?v394DueTier(b):1)||v430WeaknessProfile(b).score-v430WeaknessProfile(a).score||dueAge(b)-dueAge(a);}).slice(0,limit).map(function(card){return v540DecorateTask(card,'overdue',{difficulty:v430WeaknessProfile(card).score>=30?3:2,hardProduction:depthSkillOf(card)==='production'&&v430WeaknessProfile(card).score>=30});});
+    }
+    function v540RepairCandidates(cards,limit=50){
+      const output=[],phrase=v520TasksForMode(cards,'repair',limit),sentence=v530TasksForMode(cards,'repair',limit);
+      for(const card of [...sentence,...phrase]){
+        const errors=v540Entries(v540BaseNote(card)).filter(function(entry){return (entry.sentencePractice===true&&!entry.sentenceCorrect)||(entry.transferPractice===true&&entry.transferCorrect!==true);}).length;
+        output.push(v540DecorateTask(card,'repair',{difficulty:1,hardProduction:false,v540RecurringErrors:errors}));
+      }
+      return output.sort(function(a,b){return finiteNumber(b.v540RecurringErrors)-finiteNumber(a.v540RecurringErrors);}).slice(0,limit);
+    }
+    function v540WeakCandidates(cards,limit=80){
+      depthIndexSkills();const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),rows=[];
+      for(const card of state.depthSkillIndex.values()){
+        if(!allowed.has(v540NoteId(card))||!isAvailable(card)||isDue(card))continue;
+        const p=normalizeProgressEntry(getProgress(card.id));if(p.status==='new'&&!p.seen)continue;
+        const weakness=v430WeaknessProfile(card);if(weakness.score<16&&weakness.failureRate<.25&&weakness.avgMs<16000)continue;
+        const reason=v430RepairFocus(card),clone=v490PracticeClone(card,'repair',reason.label+': '+reason.detail,currentPractice(card));
+        rows.push({score:weakness.score+(weakness.failureRate*20),card:v540DecorateTask(clone,'weak',{difficulty:weakness.score>=30?3:2,hardProduction:depthSkillOf(card)==='production'&&weakness.score>=30})});
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.card;});
+    }
+    function v540ListeningCandidates(cards,limit=80){
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),rows=[];
+      for(const note of state.cards){
+        if(note.core===false||!allowed.has(note.id)||!isAvailable(note))continue;
+        const recognition=v470SkillState(note,'recognition'),listening=v490SkillCard(note,'listening');if(!listening||!recognition.started)continue;
+        const strength=v540SkillStrength(note,'listening'),clone=v490PracticeClone(listening,'skill','Cross-modal listening retrieval without changing the scheduled listening interval.','listening');
+        rows.push({score:(1-strength)*100+(recognition.secure?15:0),card:v540DecorateTask(clone,'listening',{modality:'listening',kind:'skill-listening',difficulty:strength<.35?3:2,hardProduction:false})});
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.card;});
+    }
+    function v540PhraseSentenceCandidates(cards,limit=80){
+      const phrase=v520TasksForMode(cards,'production',Math.ceil(limit/2)).map(function(card){return v540DecorateTask(card,'phrase',{difficulty:2});});
+      const sentence=v530TasksForMode(cards,'sentence',Math.ceil(limit/2)).map(function(card){const meta=v540TaskMeta(card);return v540DecorateTask(card,'sentence',meta);});
+      return v540Dedupe([...sentence,...phrase]).slice(0,limit);
+    }
+    function v540TransferCandidates(cards,limit=60){
+      const sentence=v530TasksForMode(cards,'transfer',Math.ceil(limit*.65)).map(function(card){return v540DecorateTask(card,'transfer',{modality:'transfer',kind:'sentence-transfer',difficulty:3,hardProduction:true});});
+      const phrase=v520TasksForMode(cards,'transfer',Math.ceil(limit*.5)).map(function(card){return v540DecorateTask(card,'transfer',{modality:'transfer',kind:'phrase-transfer',difficulty:3,hardProduction:true});});
+      return v540Dedupe([...sentence,...phrase]).slice(0,limit);
+    }
+    function v540RecentCandidates(cards,limit=80){
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),cutoff=now()-days(7),rows=[],seen=new Set();
+      for(const entry of [...state.reviewLog].reverse()){
+        if(entry.t<cutoff)break;
+        const noteId=depthBaseId(entry.noteId||entry.id);if(seen.has(noteId)||!allowed.has(noteId))continue;
+        const note=state.cardById.get(noteId);if(!note||note.core===false||!isAvailable(note))continue;seen.add(noteId);
+        const prod=v490SkillCard(note,'production'),rec=v490SkillCard(note,'recognition'),base=prod&&v470SkillState(note,'production').started?prod:rec;if(!base)continue;
+        const clone=v490PracticeClone(base,'skill','Recent reinforcement after initial exposure; practice-only so the real schedule remains intact.',depthSkillOf(base)==='production'?'classic':currentPractice(base));
+        rows.push(v540DecorateTask(clone,'recent',{difficulty:1,hardProduction:false}));
+        if(rows.length>=limit)break;
+      }
+      return rows;
+    }
+    function v540ConfirmationCandidates(cards,limit=20){
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),rows=[];
+      for(const note of state.cards){
+        if(note.core===false||!allowed.has(note.id)||!isAvailable(note))continue;
+        const profile=v540MasteryProfile(note);if(!['DURABLE','ROBUST'].includes(profile.mastery))continue;
+        const rec=v490SkillCard(note,'recognition');if(!rec)continue;
+        const clone=v490PracticeClone(rec,'skill','Sparse confirmation of durable vocabulary without increasing routine drill volume.',currentPractice(rec));
+        rows.push(v540DecorateTask(clone,'confirmation',{difficulty:2,hardProduction:false}));
+        if(rows.length>=limit)break;
+      }
+      return rows;
+    }
+    function v540SelectLane(source,count,used,recentExposure,allowLeaked=false){
+      const chosen=[];
+      for(const card of source){
+        if(chosen.length>=count)break;
+        const key=v540TaskKey(card),meta=v540TaskMeta(card);if(used.has(key))continue;
+        const leaked=meta.exposureKeys.some(function(value){return recentExposure.has(value);});
+        if(leaked&&!allowLeaked)continue;
+        used.add(key);chosen.push(card);
+      }
+      if(chosen.length<count&&!allowLeaked){
+        const more=v540SelectLane(source,count-chosen.length,used,recentExposure,true);chosen.push(...more);
+      }
+      return chosen;
+    }
+    function v540CandidatePenalty(card,output,recentExposure,index){
+      const meta=v540TaskMeta(card),previous=output.slice(-V540_WORD_GAP),last2=output.slice(-2),last3=output.slice(-3),wave=[1,2,2,3,2,1,2,3][index%8];
+      let penalty=Math.abs(meta.difficulty-wave)*7;
+      if(previous.some(function(item){return v540TaskMeta(item).noteId===meta.noteId;}))penalty+=600;
+      if(last2.length===2&&last2.every(function(item){return v540TaskMeta(item).modality===meta.modality;}))penalty+=450;
+      if(meta.hardProduction&&last3.length===3&&last3.every(function(item){return v540TaskMeta(item).hardProduction;}))penalty+=450;
+      if(output.at(-1)&&v540TaskMeta(output.at(-1)).theme===meta.theme)penalty+=12;
+      if(meta.exposureKeys.some(function(key){return recentExposure.has(key);}))penalty+=meta.modality==='overdue'?45:180;
+      const age=v540TaskAge(card),lastAge=output.at(-1)?v540TaskAge(output.at(-1)):'';
+      if(age===lastAge&&['recent','old'].includes(age))penalty+=8;
+      if(card.v540Lane==='repair'&&index>6)penalty-=12;
+      if(card.v540Lane==='overdue'&&index<8)penalty-=10;
+      return penalty;
+    }
+    function v540Arrange(candidates,count,recentExposure){
+      const pool=v540Dedupe(candidates).slice(),output=[];
+      while(pool.length&&output.length<count){
+        let bestIndex=0,bestPenalty=Infinity;
+        for(let index=0;index<pool.length;index++){
+          const penalty=v540CandidatePenalty(pool[index],output,recentExposure,output.length)+(index*.01);
+          if(penalty<bestPenalty){bestPenalty=penalty;bestIndex=index;}
+        }
+        output.push(pool.splice(bestIndex,1)[0]);
+      }
+      return output;
+    }
+    function v540ValidateQueue(queue){
+      const violations=[];
+      for(let index=0;index<queue.length;index++){
+        const meta=v540TaskMeta(queue[index]),previous=queue.slice(Math.max(0,index-V540_WORD_GAP),index);
+        if(previous.some(function(item){return v540TaskMeta(item).noteId===meta.noteId;}))violations.push({type:'word-gap',index:index});
+        if(index>=2&&queue.slice(index-2,index).every(function(item){return v540TaskMeta(item).modality===meta.modality;}))violations.push({type:'modality-run',index:index});
+        if(meta.hardProduction&&index>=3&&queue.slice(index-3,index).every(function(item){return v540TaskMeta(item).hardProduction;}))violations.push({type:'hard-run',index:index});
+      }
+      return violations;
+    }
+    function v540MixedPlan(cards=state.cards,count=20){
+      const limit=Math.max(5,Math.min(50,finiteNumber(count,20)||20)),recentExposure=v540RecentExposureKeys(),used=new Set(),targets={
+        overdue:Math.round(limit*.30),
+        weak:Math.round(limit*.20),
+        listening:Math.round(limit*.15),
+        phraseSentence:Math.round(limit*.15),
+        transfer:Math.round(limit*.10)
+      };
+      targets.recent=Math.max(0,limit-targets.overdue-targets.weak-targets.listening-targets.phraseSentence-targets.transfer);
+      const due=v540DueCandidates(cards),repairs=v540RepairCandidates(cards),weak=v540WeakCandidates(cards),listening=v540ListeningCandidates(cards),phraseSentence=v540PhraseSentenceCandidates(cards),transfer=v540TransferCandidates(cards),recent=v540RecentCandidates(cards);
+      const selected=[];
+      selected.push(...v540SelectLane(due,targets.overdue,used,recentExposure));
+      const repairTarget=Math.min(Math.ceil(targets.weak/2),repairs.length);
+      selected.push(...v540SelectLane(repairs,repairTarget,used,recentExposure));
+      selected.push(...v540SelectLane(weak,Math.max(0,targets.weak-repairTarget),used,recentExposure));
+      selected.push(...v540SelectLane(listening,targets.listening,used,recentExposure));
+      selected.push(...v540SelectLane(phraseSentence,targets.phraseSentence,used,recentExposure));
+      selected.push(...v540SelectLane(transfer,targets.transfer,used,recentExposure));
+      selected.push(...v540SelectLane(recent,targets.recent,used,recentExposure));
+      if(selected.length<limit){
+        const confirmation=v540ConfirmationCandidates(cards),fill=[...due,...repairs,...weak,...listening,...phraseSentence,...transfer,...recent,...confirmation];
+        selected.push(...v540SelectLane(fill,limit-selected.length,used,recentExposure));
+      }
+      const queue=v540Arrange(selected,limit,recentExposure),composition={};
+      for(const card of queue)composition[card.v540Lane]=(composition[card.v540Lane]||0)+1;
+      return {queue:queue,composition:composition,violations:v540ValidateQueue(queue),estimatedMinutes:Math.max(1,Math.round(queue.length*.7)),recentExposure:recentExposure.size};
+    }
+    function v540StartMixed(cards=state.cards,count=20){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting Mixed Review.');return;}
+      const plan=v540MixedPlan(cards,count);if(!plan.queue.length){showToast('No eligible mixed-review work is available yet.');return;}
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'all',scheduleMode:'review',practice:'mixed',typed:false,size:plan.queue.length,quality:'core'});
+      state.queue=plan.queue;state.v540LastPlan=plan;v490ResetSessionQueue();setView('study');announce('Mixed Review started with '+plan.queue.length+' interleaved tasks.');
+    }
+
+    function v540SafeUpcomingIndex(start){
+      const previous=state.queue.slice(Math.max(0,start-V540_WORD_GAP),start).filter(function(card){return card?.v540MixedReview;}),last2=previous.slice(-2),last3=previous.slice(-3);
+      for(let index=start;index<state.queue.length;index++){
+        const card=state.queue[index];if(!card?.v540MixedReview)continue;
+        const meta=v540TaskMeta(card);
+        if(previous.some(function(item){return v540TaskMeta(item).noteId===meta.noteId;}))continue;
+        if(last2.length===2&&last2.every(function(item){return v540TaskMeta(item).modality===meta.modality;}))continue;
+        if(meta.hardProduction&&last3.length===3&&last3.every(function(item){return v540TaskMeta(item).hardProduction;}))continue;
+        return index;
+      }
+      return -1;
+    }
+    function v540EnforceUpcoming(){
+      const index=state.queueIndex,card=state.queue?.[index];if(!card?.v540MixedReview)return;
+      const previous=state.queue.slice(Math.max(0,index-V540_WORD_GAP),index),meta=v540TaskMeta(card);
+      const wordConflict=previous.some(function(item){return item?.v540MixedReview&&v540TaskMeta(item).noteId===meta.noteId;});
+      const modalityConflict=previous.slice(-2).length===2&&previous.slice(-2).every(function(item){return item?.v540MixedReview&&v540TaskMeta(item).modality===meta.modality;});
+      const hardConflict=meta.hardProduction&&previous.slice(-3).length===3&&previous.slice(-3).every(function(item){return item?.v540MixedReview&&v540TaskMeta(item).hardProduction;});
+      if(!(wordConflict||modalityConflict||hardConflict))return;
+      const safe=v540SafeUpcomingIndex(index+1);if(safe>index){const tmp=state.queue[index];state.queue[index]=state.queue[safe];state.queue[safe]=tmp;}
+    }
+    function v540RecoveryInsert(card,items){
+      let offset=3;
+      for(const item of items.filter(Boolean)){
+        const decorated=v540DecorateTask({...item,v540RecoveryStep:item.v540RecoveryStep||'retest'},item.v540Lane||'repair',{difficulty:item.v540Difficulty||1,hardProduction:item.v540HardProduction===true});
+        if(state.queue.slice(state.queueIndex+1).some(function(existing){return v540TaskKey(existing)===v540TaskKey(decorated)&&existing.v540RecoveryStep;}))continue;
+        const target=Math.min(state.queue.length,state.queueIndex+offset);state.queue.splice(target,0,decorated);offset+=3;
+      }
+    }
+    function v540TransferForNote(note){
+      const sentence=v530TasksForMode([note],'transfer',1)[0];if(sentence)return {...sentence,v540RecoveryStep:'transfer',v540Lane:'transfer'};
+      const phrase=v520TasksForMode([note],'transfer',1)[0];return phrase?{...phrase,v540RecoveryStep:'transfer',v540Lane:'transfer'}:null;
+    }
+    function v540ScheduleRecovery(card,rating,result){
+      if(!card?.v540MixedReview||card.v540RecoveryStep||!['again','hard'].includes(rating))return;
+      const note=v540BaseNote(card);if(!note)return;
+      if(card.v530SentencePractice)return;
+      if(card.v520TransferPractice){
+        const record=v520RecordForTask(card),diagnosis=v520Diagnose(state.typedAnswer,card),repair=record?v520TransferTask(note,record,'repair',diagnosis.code):null,transfer=record?v520TransferTask(note,record,'transfer'):null;
+        v540RecoveryInsert(card,[repair?{...repair,v540RecoveryStep:'scaffold',v540Lane:'repair'}:null,transfer?{...transfer,v540RecoveryStep:'transfer',v540Lane:'transfer'}:null]);return;
+      }
+      const skill=depthSkillOf(card),recognition=v490SkillCard(note,'recognition'),items=[];
+      if(skill!=='recognition'&&recognition){
+        items.push({...v490PracticeClone(recognition,'repair','Scaffold the failed retrieval through a lower-load recognition check.',currentPractice(recognition)),v540RecoveryStep:'scaffold',v540Lane:'repair'});
+      }else if(note.exampleFr){
+        const production=v490SkillCard(note,'production')||recognition;
+        if(production)items.push({...v490PracticeClone(production,'context','Rebuild the target inside a known sentence before retesting it.','cloze'),v540RecoveryStep:'scaffold',v540Lane:'repair'});
+      }
+      if(card.v490PracticeOnly){
+        items.push({...card,v540RecoveryStep:'retest',v540Lane:'weak',v490PracticeOnly:true});
+      }
+      const transfer=v540TransferForNote(note);if(transfer)items.push(transfer);
+      v540RecoveryInsert(card,items.slice(0,3));
+    }
+
+    const v540RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v540RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v540MixedReview){
+        const entry=state.reviewLog?.at(-1),meta=v540TaskMeta(card);
+        if(entry&&entry.id===card.id){
+          entry.mixedReview=true;
+          entry.mixedLane=String(card.v540Lane||'').slice(0,32);
+          entry.mixedModality=String(meta.modality||'').slice(0,32);
+          entry.mixedKind=String(meta.kind||'').slice(0,64);
+          entry.mixedDifficulty=clamp(finiteNumber(meta.difficulty,2),1,3);
+          entry.mixedExposureKeys=meta.exposureKeys.slice(0,8).map(function(key){return String(key).slice(0,160);});
+          entry.mixedFirstAttempt=!card.v540RecoveryStep;
+          entry.mixedRecoveryStep=String(card.v540RecoveryStep||'').slice(0,32);
+          entry.mixedSupportLevel=card.v540RecoveryStep==='scaffold'||card.v540Lane==='repair'?2:practice==='cloze'?1:0;
+          saveReviewLog();
+        }
+        state.v540EvidenceCache=null;
+      }
+      return result;
+    };
+    const v540NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){
+        if(!entry||typeof entry!=='object')continue;
+        lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);
+      }
+      return v540NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));
+        if(original?.mixedReview!==true)return entry;
+        return {...entry,mixedReview:true,mixedLane:String(original.mixedLane||'').slice(0,32),mixedModality:String(original.mixedModality||'').slice(0,32),mixedKind:String(original.mixedKind||'').slice(0,64),mixedDifficulty:clamp(finiteNumber(original.mixedDifficulty,2),1,3),mixedExposureKeys:Array.isArray(original.mixedExposureKeys)?original.mixedExposureKeys.slice(0,8).map(function(key){return String(key).slice(0,160);}):[],mixedFirstAttempt:original.mixedFirstAttempt!==false,mixedRecoveryStep:String(original.mixedRecoveryStep||'').slice(0,32),mixedSupportLevel:clamp(finiteNumber(original.mixedSupportLevel),0,3)};
+      });
+    };
+
+    const v540NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v540NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v540MixedTasks=Array.isArray(raw?.v540MixedTasks)?raw.v540MixedTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max;}).slice(0,120).map(function(item){return {index:item.index,lane:String(item.lane||'').slice(0,32),modality:String(item.modality||'').slice(0,32),kind:String(item.kind||'').slice(0,64),difficulty:clamp(finiteNumber(item.difficulty,2),1,3),hardProduction:item.hardProduction===true,exposureKeys:Array.isArray(item.exposureKeys)?item.exposureKeys.slice(0,8).map(function(key){return String(key).slice(0,160);}):[],recoveryStep:String(item.recoveryStep||'').slice(0,32)};}):[];
+      return result;
+    };
+    const v540SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v540SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v540MixedReview)tasks.push({index:index,lane:card.v540Lane||'',modality:card.v540Modality||'',kind:card.v540Kind||'',difficulty:card.v540Difficulty||2,hardProduction:card.v540HardProduction===true,exposureKeys:card.v540ExposureKeys||[],recoveryStep:card.v540RecoveryStep||''});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v540MixedTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v540ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v540MixedTasks)?[...state.resumeSnapshot.v540MixedTasks]:[];
+      const result=v540ResumeBase();
+      for(const item of tasks){
+        const card=state.queue?.[item.index];if(!card)continue;
+        state.queue[item.index]={...card,v540MixedReview:true,v540Lane:item.lane,v540Modality:item.modality,v540Kind:item.kind,v540Difficulty:item.difficulty,v540HardProduction:item.hardProduction,v540ExposureKeys:item.exposureKeys,v540RecoveryStep:item.recoveryStep};
+      }
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
+    const v540RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v540MixedReview)return v540RateCardBase(rating);
+      const result=answerResultFor(card,currentDirection(card),currentPractice(card));
+      let effective=rating;
+      if(result?.correct===false)effective='again';
+      else if(result?.diagnosis==='orthography'&&['good','easy'].includes(effective))effective='hard';
+      v540ScheduleRecovery(card,effective,result);
+      const noteId=v540NoteId(card),beforeLength=state.queue.length,response=v540RateCardBase(effective);
+      if(card.v530SentencePractice&&state.queue.length>beforeLength){
+        for(let index=Math.max(0,state.queueIndex);index<Math.min(state.queue.length,state.queueIndex+10);index++){
+          const candidate=state.queue[index];if(candidate?.v530SentencePractice&&!candidate.v540MixedReview&&v540NoteId(candidate)===noteId)state.queue[index]=v540DecorateTask({...candidate,v540RecoveryStep:'transfer'},'transfer',{difficulty:3,hardProduction:true});
+        }
+      }
+      return response;
+    };
+
+    function v540StudyContextHtml(card){
+      const note=v540BaseNote(card),profile=v540MasteryProfile(note),meta=v540TaskMeta(card),weak=profile.weakest;
+      return '<div class="v540-study-context"><span><strong>'+escapeHtml(V540_LANE_LABELS[card.v540Lane]||'Mixed review')+'</strong> · '+escapeHtml(V540_DIMENSION_LABELS[meta.modality]||meta.modality)+'</span><span>'+escapeHtml(v540MasteryLabel(profile.mastery))+' · durability '+Math.round(profile.durability*100)+'%'+(weak?' · weakest: '+escapeHtml(weak.label):'')+'</span></div>';
+    }
+    function v540DecorateCurrentCard(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v540MixedReview||!stage)return;
+      const left=stage.querySelector('.v366-session-left');
+      if(left&&!left.querySelector('.v540-mixed-chip'))left.insertAdjacentHTML('beforeend','<span class="v540-mixed-chip">Mixed Review</span>');
+      const cardNode=stage.querySelector('.flashcard,.v366-flashcard');
+      if(cardNode&&!stage.querySelector('.v540-study-context'))cardNode.insertAdjacentHTML('beforebegin',v540StudyContextHtml(card));
+    }
+    const v540RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){v540EnforceUpcoming();const result=v540RenderCurrentCardBase();v540DecorateCurrentCard();return result;};
+    const v540RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v540RenderStudyBase();v540DecorateCurrentCard();return result;};
+
+    function v540MasteryBars(profile){
+      return Object.values(profile.dimensions).filter(function(item){return item.eligible;}).map(function(item){const pct=Math.round((item.score||0)*100);return '<div class="v540-dimension"><div><span>'+escapeHtml(item.label)+'</span><strong>'+pct+'%</strong></div><i><b style="width:'+pct+'%"></b></i><small>'+item.evidence.attempts+' evidence · '+Math.round(item.evidence.confidence*100)+'% confidence</small></div>';}).join('');
+    }
+    function v540WordMasteryHtml(card){
+      const profile=v540MasteryProfile(card),weak=profile.weakest;
+      return '<section class="v540-word-mastery"><div class="v540-word-head"><div><span>Durable active vocabulary</span><strong>'+escapeHtml(v540MasteryLabel(profile.mastery))+'</strong><small>'+profile.totalAttempts+' evidence · '+profile.daysSeen+' study day'+(profile.daysSeen===1?'':'s')+' · '+Math.round(profile.confidence*100)+'% confidence</small></div><div class="v540-word-scores"><span><b>'+Math.round(profile.passive*100)+'%</b> passive</span><span><b>'+Math.round(profile.active*100)+'%</b> active</span><span><b>'+Math.round(profile.durability*100)+'%</b> durable</span></div></div>'+v540MasteryBars(profile)+(weak?'<p class="v540-weakest"><strong>Weakest link:</strong> '+escapeHtml(weak.label)+' · '+Math.round((weak.score||0)*100)+'%. Mixed Review prioritizes this dimension without resetting stronger skills.</p>':'')+'</section>';
+    }
+    const v540OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v540OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const anchor=dialog.querySelector('.v530-word-sentence')||dialog.querySelector('.v520-word-transfer')||dialog.querySelector('.v500-usage-detail')||dialog.lastElementChild;
+      if(anchor&&!dialog.querySelector('.v540-word-mastery'))anchor.insertAdjacentHTML('afterend',v540WordMasteryHtml(card));
+      return result;
+    };
+
+    const v540MatchFilterBase=v3MatchFilter;
+    v3MatchFilter=function(card,key,value){
+      const normalized=normalizeTyped(value);
+      if(key==='mastery'){
+        const profile=v540MasteryProfile(card);return normalizeTyped(profile.mastery)===normalized;
+      }
+      if(key==='active'){
+        const score=v540MasteryProfile(card).active;
+        if(['strong','secure'].includes(normalized))return score>=.6;
+        if(['weak','gap'].includes(normalized))return score<.45;
+        const threshold=Number(normalized);return Number.isFinite(threshold)?score>=threshold/100:false;
+      }
+      if(key==='passive'){
+        const score=v540MasteryProfile(card).passive;
+        if(['strong','secure'].includes(normalized))return score>=.65;
+        if(['weak','gap'].includes(normalized))return score<.45;
+        const threshold=Number(normalized);return Number.isFinite(threshold)?score>=threshold/100:false;
+      }
+      if(key==='durability'){
+        const score=v540MasteryProfile(card).durability;
+        if(normalized==='robust')return score>=.8;
+        if(normalized==='durable')return score>=.62;
+        if(['weak','low'].includes(normalized))return score<.45;
+        const threshold=Number(normalized);return Number.isFinite(threshold)?score>=threshold/100:false;
+      }
+      return v540MatchFilterBase(card,key,value);
+    };
+
+    function v540DecorateBrowse(){
+      if(state.view!=='browse')return;
+      const cards=typeof v470BrowseCards==='function'?v470BrowseCards():state.cards,actions=main.querySelector('.v470-result-actions');
+      if(actions&&!actions.querySelector('#v540-mixed-review')){
+        const button=document.createElement('button');button.type='button';button.className='primary';button.id='v540-mixed-review';button.textContent='Mixed Review 20';button.disabled=!v540MixedPlan(cards,20).queue.length;button.addEventListener('click',function(){v540StartMixed(cards,20);});actions.prepend(button);
+      }
+      const help=main.querySelector('.v470-search-help p');
+      if(help&&!help.querySelector('[data-v540-help]'))help.insertAdjacentHTML('beforeend','<code data-v540-help>mastery:durable</code><code data-v540-help>mastery:robust</code><code data-v540-help>active:weak</code><code data-v540-help>durability:60</code>');
+    }
+    const v540RenderBrowseBase=renderBrowse;
+    renderBrowse=function(focusSearch){const result=v540RenderBrowseBase(focusSearch);v540DecorateBrowse();return result;};
+
+    function v540CompositionText(plan){
+      const c=plan.composition||{},parts=[];
+      for(const key of ['overdue','repair','weak','listening','phrase','sentence','transfer','recent','confirmation'])if(c[key])parts.push(c[key]+' '+String(V540_LANE_LABELS[key]||key).toLowerCase());
+      return parts.join(' · ');
+    }
+    function v540DashboardPanel(){
+      const plan=v540MixedPlan(state.cards,20),stats=v540AggregateStats(state.cards);
+      return '<section class="v540-dashboard-card"><div><p class="eyebrow">P13 Mixed Review</p><h2>Interleave what your active vocabulary actually needs</h2><p>'+escapeHtml(v540CompositionText(plan)||'No mixed-review tasks are ready yet.')+'</p><div class="v540-dashboard-metrics"><span><strong>'+plan.queue.length+'</strong> tasks</span><span><strong>~'+plan.estimatedMinutes+'</strong> min</span><span><strong>'+stats.activeStrong+'</strong> active strong</span><span><strong>'+stats.durable+'</strong> durable</span><span><strong>'+stats.robust+'</strong> robust</span></div></div><div class="v540-dashboard-actions"><button class="primary" id="v540-dashboard-start" '+(plan.queue.length?'':'disabled')+'>Continue with Mixed Review</button><small>Due reviews keep their real schedule. Extra repair and transfer work is practice-only.</small></div></section>';
+    }
+    function v540DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v540-dashboard-card'))return;
+      const anchor=main.querySelector('.v490-path-card')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v540DashboardPanel());
+      $('#v540-dashboard-start')?.addEventListener('click',function(){v540StartMixed(state.cards,20);});
+    }
+    const v540RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v540RenderDashboardBase();v540DecorateDashboard();return result;};
+
+    function v540ProgressPanel(){
+      const stats=v540AggregateStats(state.cards),plan=v540MixedPlan(state.cards,20),states=V540_MASTERY_STATES.map(function(key){return '<span><strong>'+finiteNumber(stats.states[key])+'</strong>'+escapeHtml(v540MasteryLabel(key))+'</span>';}).join('');
+      const weak=stats.profiles.slice().sort(function(a,b){return a.active-b.active||a.durability-b.durability;}).slice(0,5);
+      return '<section class="v540-progress-panel"><div class="v540-progress-head"><div><p class="eyebrow">P13 durable active mastery</p><h3>Mixed retrieval & weakest-link mastery</h3><p>Accuracy alone cannot create durable mastery. P13 combines spacing, modality breadth, independent retrieval, response latency and transfer while preserving each underlying skill schedule.</p></div><div class="button-row"><button class="primary" id="v540-progress-start" '+(plan.queue.length?'':'disabled')+'>Mixed Review 20</button></div></div><div class="v540-state-grid">'+states+'</div><div class="v540-summary-grid"><span><strong>'+stats.started+'</strong> introduced</span><span><strong>'+stats.passiveStrong+'</strong> passive strong</span><span><strong>'+stats.activeStrong+'</strong> active strong</span><span><strong>'+stats.durable+'</strong> durable</span><span><strong>'+stats.robust+'</strong> robust</span><span><strong>'+stats.avgDurability+'%</strong> avg durability</span></div>'+(weak.length?'<details class="v540-weak-list"><summary>Weakest active vocabulary</summary>'+weak.map(function(profile){return '<button type="button" data-v540-word="'+escapeHtml(profile.note.id)+'"><strong lang="fr">'+escapeHtml(profile.note.fr)+'</strong><span>'+escapeHtml(v540MasteryLabel(profile.mastery))+' · active '+Math.round(profile.active*100)+'% · '+escapeHtml(profile.weakest?.label||'insufficient evidence')+'</span></button>';}).join('')+'</details>':'')+'<p class="v540-constraints">Mixed Review enforces a four-item same-word gap when alternatives exist, avoids more than two identical modalities in sequence, limits hard-production runs, alternates difficulty, and suppresses recently exposed answers.</p></section>';
+    }
+    function v540DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v540-progress-panel'))return;
+      const anchor=main.querySelector('.v530-progress-panel')||main.querySelector('.v520-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v540ProgressPanel());
+      $('#v540-progress-start')?.addEventListener('click',function(){v540StartMixed(state.cards,20);});
+      main.querySelectorAll('[data-v540-word]').forEach(function(button){button.addEventListener('click',function(){v381OpenWord(button.dataset.v540Word);});});
+    }
+    const v540RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v540RenderProgressBase();v540DecorateProgress();return result;};
+
+    const v540RenderSessionCompleteBase=renderSessionComplete;
+    renderSessionComplete=function(stage){
+      const mixed=state.queue?.some(function(card){return card?.v540MixedReview;}),startedAt=state.sessionStats?.startedAt||0,result=v540RenderSessionCompleteBase(stage);
+      if(!mixed||!stage)return result;
+      const entries=state.reviewLog.filter(function(entry){return entry.mixedReview===true&&entry.t>=startedAt;}),modalities=new Set(entries.map(function(entry){return entry.mixedModality;})),first=entries.filter(function(entry){return entry.mixedFirstAttempt!==false;}),successful=entries.filter(v540EntrySuccess);
+      const summary=stage.querySelector('.session-summary');
+      if(summary&&!summary.querySelector('.v540-complete'))summary.insertAdjacentHTML('afterbegin','<div class="v540-complete"><strong>Mixed Review</strong><span>'+modalities.size+' modalities · '+first.length+' first-attempt retrievals · '+successful.length+'/'+entries.length+' successful evidence events</span></div>');
+      return result;
+    };
+
+    const v540EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='mixed')return 'mixed';
+      const base=v540EffectiveFocusBase();if(configured!=='auto')return base;
+      const stats=v540AggregateStats(state.cards);
+      if(stats.started>=20&&stats.activeStrong<Math.max(8,Math.round(stats.started*.45)))return 'mixed';
+      return base;
+    };
+    const v540FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='mixed'?'Mixed durability':v540FocusLabelBase(value);};
+    const v540TaskLabelBase=v490TaskLabel;
+    v490TaskLabel=function(card){return card?.v540MixedReview?(V540_LANE_LABELS[card.v540Lane]||'Mixed review'):v540TaskLabelBase(card);};
+    const v540PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v540PersonalPlanBase(limit),focus=v490EffectiveFocus();if(focus!=='mixed')return plan;
+      const mixed=v540MixedPlan(state.cards,Math.min(6,Math.max(3,Math.round(limit*.2)))),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30));let added=0;
+      for(const task of mixed.queue){
+        if(added>=4)break;
+        if(plan.queue.some(function(card){return v540TaskKey(card)===v540TaskKey(task);}))continue;
+        if(plan.queue.length>=max){let remove=-1;for(let index=plan.queue.length-1;index>=0;index--){if(plan.queue[index].v490Category!=='retain'){remove=index;break;}}if(remove<0)break;plan.queue.splice(remove,1);}
+        plan.queue.splice(Math.min(plan.queue.length,4+added*5),0,task);added++;
+      }
+      plan.counts={...plan.counts,mixed:added};plan.focus='mixed';if(added)plan.headline='Strengthen the weakest link across mixed retrieval modes';return plan;
+    };
+
+    function v540DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');
+      if(select&&!select.querySelector('option[value="mixed"]')){select.insertAdjacentHTML('beforeend','<option value="mixed">Mixed retrieval & durability</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v540RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v540RenderSettingsBase();v540DecorateSettings();return result;};
+
+    function v540EnsureStyles(){
+      if(document.querySelector('#v540-mixed-style'))return;
+      const style=document.createElement('style');style.id='v540-mixed-style';
+      style.textContent='.v540-dashboard-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center;padding:1rem 1.1rem;border:1px solid color-mix(in srgb,var(--blue) 32%,var(--line));border-radius:18px;background:linear-gradient(135deg,color-mix(in srgb,var(--blue) 7%,var(--surface-solid)),var(--surface-solid));margin-bottom:.8rem}.v540-dashboard-card h2{margin:.08rem 0 .3rem;font-size:1.35rem}.v540-dashboard-card p:not(.eyebrow){margin:0;color:var(--muted);font-size:.75rem}.v540-dashboard-metrics{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.65rem}.v540-dashboard-metrics span{padding:.35rem .48rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);font-size:.62rem;color:var(--muted)}.v540-dashboard-metrics strong{color:var(--navy);font-size:.8rem}.v540-dashboard-actions{display:grid;gap:.35rem;min-width:210px}.v540-dashboard-actions small{color:var(--muted);font-size:.61rem;max-width:30ch}.v540-mixed-chip{display:inline-flex;padding:.2rem .4rem;border-radius:999px;background:color-mix(in srgb,var(--blue) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--blue) 32%,var(--line));font-size:.6rem;font-weight:850;color:var(--blue)}.v540-study-context{display:flex;justify-content:space-between;gap:.55rem;padding:.42rem .55rem;margin-bottom:.45rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-muted);font-size:.62rem;color:var(--muted)}.v540-study-context strong{color:var(--navy)}.v540-word-mastery{display:grid;gap:.65rem;padding:.72rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted);margin-top:.55rem}.v540-word-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v540-word-head>div>span,.v540-word-head>div>small{display:block;color:var(--muted);font-size:.61rem}.v540-word-head>div>strong{display:block;color:var(--navy);font-size:1rem}.v540-word-scores{display:flex;gap:.35rem;flex-wrap:wrap}.v540-word-scores span{padding:.3rem .4rem;border-radius:9px;background:var(--surface-solid);color:var(--muted);font-size:.58rem}.v540-word-scores b{display:block;color:var(--navy);font-size:.78rem}.v540-dimension{display:grid;gap:.18rem}.v540-dimension>div{display:flex;justify-content:space-between;gap:.5rem;font-size:.62rem}.v540-dimension>div span{color:var(--muted)}.v540-dimension i{display:block;height:5px;border-radius:999px;background:color-mix(in srgb,var(--line) 65%,transparent);overflow:hidden}.v540-dimension i b{display:block;height:100%;background:var(--blue);border-radius:999px}.v540-dimension small{color:var(--muted);font-size:.56rem}.v540-weakest{margin:0;font-size:.64rem;color:var(--muted)}.v540-progress-panel{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v540-progress-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v540-progress-head h3{margin:.08rem 0 .2rem}.v540-progress-head p:last-child{margin:0;max-width:75ch;color:var(--muted);font-size:.7rem}.v540-state-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem;margin-top:.7rem}.v540-state-grid span,.v540-summary-grid span{padding:.5rem;border-radius:10px;background:var(--surface-muted);font-size:.6rem;color:var(--muted)}.v540-state-grid strong,.v540-summary-grid strong{display:block;color:var(--navy);font-size:.95rem}.v540-summary-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.35rem;margin-top:.35rem}.v540-weak-list{margin-top:.6rem;border-top:1px solid var(--line);padding-top:.5rem}.v540-weak-list summary{cursor:pointer;font-weight:850;font-size:.67rem;color:var(--navy)}.v540-weak-list button{display:flex;width:100%;justify-content:space-between;gap:.6rem;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:.48rem 0}.v540-weak-list button span{color:var(--muted);font-size:.61rem}.v540-constraints{margin:.55rem 0 0;color:var(--muted);font-size:.61rem}.v540-complete{display:grid;gap:.12rem;padding:.55rem .65rem;border-radius:11px;background:var(--surface-muted);margin-bottom:.65rem}.v540-complete strong{color:var(--navy)}.v540-complete span{color:var(--muted);font-size:.67rem}@media(max-width:760px){.v540-dashboard-card{grid-template-columns:1fr}.v540-dashboard-actions{min-width:0}.v540-study-context,.v540-word-head,.v540-progress-head{flex-direction:column}.v540-state-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.v540-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:480px){.v540-state-grid,.v540-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v540-weak-list button{flex-direction:column}}';
+      document.head.append(style);
+    }
+
+    const v540NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v540NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p13-mixed-durability';
+      document.documentElement.dataset.mixedReview='v540';
+      document.documentElement.dataset.masteryModel='multidimensional-durable';
+    };
+    const v540InitBase=init;
+    init=async function(options){
+      v540EnsureStyles();const result=await v540InitBase(options||{});v420NormalizeSurface();
+      if(state.view==='dashboard')v540DecorateDashboard();
+      if(state.view==='browse')v540DecorateBrowse();
+      if(state.view==='study')v540DecorateCurrentCard();
+      if(state.view==='progress')v540DecorateProgress();
+      if(state.view==='settings')v540DecorateSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.4.0';return result;
     };
 
     function v380BootAudit(){
