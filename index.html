@@ -19206,7 +19206,7 @@ qui	who	A1	question word`;
       const source=raw&&typeof raw==='object'?raw:{},history={},saved={},exposures={};
       for(const [id,value] of Object.entries(source.history||{})){
         if(!V550_READING_BY_ID.has(id)||!value||typeof value!=='object')continue;
-        history[id]={startedAt:Math.max(0,finiteNumber(value.startedAt)),lastOpenedAt:Math.max(0,finiteNumber(value.lastOpenedAt)),completedAt:Math.max(0,finiteNumber(value.completedAt)),completionCount:clamp(Math.floor(finiteNumber(value.completionCount)),0,10000),mode:V550_MODES.includes(value.mode)?value.mode:'extensive',feel:['easy','comfortable','challenging','hard'].includes(value.feel)?value.feel:'',questionAttempts:clamp(Math.floor(finiteNumber(value.questionAttempts)),0,10000),questionCorrect:clamp(Math.floor(finiteNumber(value.questionCorrect)),0,10000)};
+        history[id]={startedAt:Math.max(0,finiteNumber(value.startedAt)),lastOpenedAt:Math.max(0,finiteNumber(value.lastOpenedAt)),completedAt:Math.max(0,finiteNumber(value.completedAt)),completionCount:clamp(Math.floor(finiteNumber(value.completionCount)),0,10000),position:clamp(Math.floor(finiteNumber(value.position)),0,999),mode:V550_MODES.includes(value.mode)?value.mode:'extensive',feel:['easy','comfortable','challenging','hard'].includes(value.feel)?value.feel:'',questionAttempts:clamp(Math.floor(finiteNumber(value.questionAttempts)),0,10000),questionCorrect:clamp(Math.floor(finiteNumber(value.questionCorrect)),0,10000)};
       }
       for(const [key,value] of Object.entries(source.saved||{})){
         if(!value||typeof value!=='object')continue;
@@ -19229,6 +19229,10 @@ qui	who	A1	question word`;
       safeStorageSet(V550_STORAGE_KEY,state.v550Reading);
       depthSchedulePersist?.();
     }
+
+    /* Initialize before inherited init/render wrappers can call the P14
+       dashboard/progress decorators. */
+    v550LoadReading();
 
     const v550DepthStateSnapshotBase=depthStateSnapshot;
     depthStateSnapshot=function(){return {...v550DepthStateSnapshotBase(),v550Reading:v550NormalizeReading(state.v550Reading||{})};};
@@ -19402,7 +19406,7 @@ qui	who	A1	question word`;
     }
     function v550FinishReading(reading){
       const current=state.v550Reading.history[reading.id]||{},firstCompletion=!current.completedAt;
-      state.v550Reading.history[reading.id]={...current,completedAt:current.completedAt||now(),lastOpenedAt:now(),completionCount:(current.completionCount||0)+1,mode:state.v550ReadUi.mode};
+      state.v550Reading.history[reading.id]={...current,completedAt:current.completedAt||now(),lastOpenedAt:now(),completionCount:(current.completionCount||0)+1,position:0,mode:state.v550ReadUi.mode};
       v550RecordExposures(reading);v550SaveReading();state.v550ReadUi.review=true;state.v550ReadUi.answers=Object.create(null);renderRead();
       announce(firstCompletion?'Reading completed. Quick review available.':'Reading completed again. Quick review available.');
     }
@@ -19427,7 +19431,25 @@ qui	who	A1	question word`;
       main.querySelectorAll('[data-v550-sentence]').forEach(function(button){button.addEventListener('click',function(){v550OpenSentenceHelp(reading,Number(button.dataset.v550Sentence));});});
       $('#v550-finish')?.addEventListener('click',function(){v550FinishReading(reading);});
       $('#v550-easier')?.addEventListener('click',function(){state.v550ReadUi.selectedId='';state.v550ReadUi.level=reading.level;renderRead();});
-      v550BindReview(reading);bindCommonActions();
+      v550BindReview(reading);v550BindReadingPosition(reading);bindCommonActions();
+    }
+    function v550BindReadingPosition(reading){
+      if(state.v550ReadUi.review)return;
+      const rows=[...main.querySelectorAll('[data-v550-sentence-row]')];if(!rows.length)return;
+      const saved=clamp(Math.floor(finiteNumber(state.v550Reading.history?.[reading.id]?.position)),0,rows.length-1);
+      if(saved>0)setTimeout(function(){rows[saved]?.scrollIntoView({block:'center',behavior:'auto'});},0);
+      let timer=null;
+      const capture=function(){
+        clearTimeout(timer);timer=setTimeout(function(){
+          let current=0;
+          for(let index=0;index<rows.length;index++){if(rows[index].getBoundingClientRect().top<=Math.max(140,window.innerHeight*.32))current=index;else break;}
+          const history=state.v550Reading.history[reading.id]||{};
+          if(history.position!==current){state.v550Reading.history[reading.id]={...history,position:current,lastOpenedAt:now()};v550SaveReading();}
+        },180);
+      };
+      window.addEventListener('scroll',capture,{passive:true,once:false});
+      const originalClose=$('#v550-reader-back');
+      originalClose?.addEventListener('click',capture,{once:true});
     }
 
     function v550LookupCount(surface){const key=depthLoose(surface);return finiteNumber(state.v550Reading.lookupCounts[key]);}
