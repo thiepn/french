@@ -37,6 +37,8 @@ Calibrated dimension confidence now incorporates:
 
 This prevents a run of highly scaffolded successes in one context from appearing equivalent to durable independent transfer.
 
+Progress now exposes the calibrated evidence mix directly: communicative attempts, independent successes, supported successes, manual continuations, average success credit, and context diversity.
+
 ## Scenario and mission security
 
 P17's **secure scenario** count is stricter in P19. A scenario now needs:
@@ -137,6 +139,6 @@ The report can be rerun and copied for real-device testing.
 
 P19 uses shell cache:
 
-- `french3000-shell-v24`
+- `french3000-shell-v25`
 
 The web-app manifest description now includes calibrated progress evidence and device QA.
