@@ -19870,8 +19870,10 @@ qui	who	A1	question word`;
       state.v560AudioSupport={plays:0,slow:false,transcript:false,translation:false,segmentReplays:0};
       v560SaveListening();renderListen();
     }
-    function v560CloseItem(){
-      stopSpeech();state.v560PlaybackToken++;state.v560ListenUi.selectedId='';state.v560ListenUi.phase='listen';renderListen();
+    function v560CloseItem({keepSession=false}={}){
+      stopSpeech();state.v560PlaybackToken++;state.v560ListenUi.selectedId='';state.v560ListenUi.phase='listen';
+      if(!keepSession){state.v560ListenUi.sessionIds=[];state.v560ListenUi.sessionIndex=0;}
+      renderListen();
     }
     function v560TranscriptHtml(item){
       return '<section class="v560-transcript '+(state.v560ListenUi.translations?'show-translations':'')+'">'+item.segments.map(function(segment,index){
@@ -19890,7 +19892,7 @@ qui	who	A1	question word`;
         (state.v560ListenUi.transcript?v560TranscriptHtml(annotated):'<section class="v560-hidden-transcript"><strong>Transcript hidden</strong><span>Keep it hidden for the strongest first-listen evidence. Replays and slower speed are available without revealing text.</span></section>')+
         (state.v560ListenUi.phase==='review'?v560ReviewHtml(annotated):'')+
         '<footer class="v560-source-note">Audio source: device/browser French speech synthesis · '+escapeHtml(item.provenance)+' · '+escapeHtml(item.license)+'. Connected-speech cues describe common French listening environments; exact realization varies by voice.</footer></div>';
-      $('#v560-back')?.addEventListener('click',v560CloseItem);
+      $('#v560-back')?.addEventListener('click',function(){v560CloseItem();});
       $('#v560-paired-read')?.addEventListener('click',function(){const readingId=item.readingId;v560CloseItem();setView('read',{focus:false});v550OpenReading(readingId);});
       $('#v560-play-all')?.addEventListener('click',function(){v560PlayItem(item,state.v560ListenUi.speed);});
       main.querySelectorAll('[data-v560-speed]').forEach(function(button){button.addEventListener('click',function(){state.v560ListenUi.speed=Number(button.dataset.v560Speed);if(state.v560ListenUi.speed<.95)state.v560AudioSupport.slow=true;renderListen();});});
@@ -19915,7 +19917,8 @@ qui	who	A1	question word`;
         if(pool.length>=3)break;
       }
       while(pool.length<3)pool.push(['prendre une décision','avoir besoin','faire attention'][pool.length-1]);
-      const options=[...pool.slice(0,3)],answer=options.indexOf(phrase);
+      const base=pool.slice(0,3),hash=[...item.id].reduce(function(sum,char){return (sum+char.charCodeAt(0))%997;},0),shift=hash%base.length;
+      const options=base.slice(shift).concat(base.slice(0,shift)),answer=options.indexOf(phrase);
       return {phrase:phrase,options:options,answer:answer};
     }
     function v560DictationSegment(item){
@@ -19998,8 +20001,8 @@ qui	who	A1	question word`;
     function v560FinishItem(item){
       const h=state.v560Listening.history[item.id]||{};
       state.v560Listening.history[item.id]={...h,completedAt:h.completedAt||now(),completionCount:(h.completionCount||0)+1,lastOpenedAt:now(),mode:state.v560ListenUi.mode,lastSpeed:state.v560ListenUi.speed};
-      v560SaveListening();v560CloseItem();
-      if(state.v560ListenUi.sessionIds.length){v560AdvanceListen10();}
+      v560SaveListening();const inSession=state.v560ListenUi.sessionIds.length>0;v560CloseItem({keepSession:inSession});
+      if(inSession){v560AdvanceListen10();}
     }
     function v560StartListen10(){
       const ids=v560Recommended(10).map(function(item){return item.id;});if(!ids.length){showToast('No contextual listening items are available.');return;}
@@ -20159,6 +20162,25 @@ qui	who	A1	question word`;
     }
     const v560RenderDashboardBase=renderDashboard;
     renderDashboard=function(){const result=v560RenderDashboardBase();v560DecorateDashboard();return result;};
+
+    const v560ReadingCardBase=v550ReadingCard;
+    v550ReadingCard=function(reading){
+      const html=v560ReadingCardBase(reading),item=V560_LISTENING_ITEMS.find(function(row){return row.readingId===reading.id;});
+      if(!item)return html;
+      return html.replace('</article>','<button class="secondary" data-v560-reading-listen="'+item.id+'">Listen pair</button></article>');
+    };
+    const v560RenderReadBase=renderRead;
+    renderRead=function(){
+      const result=v560RenderReadBase();
+      main.querySelectorAll('[data-v560-reading-listen]').forEach(function(button){button.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();setView('listen',{focus:false});v560OpenItem(button.dataset.v560ReadingListen);});});
+      if(state.v550ReadUi.selectedId){
+        const item=V560_LISTENING_ITEMS.find(function(row){return row.readingId===state.v550ReadUi.selectedId;}),bar=main.querySelector('.v550-reader-bar');
+        if(item&&bar&&!bar.querySelector('[data-v560-reader-listen]')){
+          const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.v560ReaderListen=item.id;button.textContent='Listen pair';button.addEventListener('click',function(){setView('listen',{focus:false});v560OpenItem(item.id);});bar.append(button);
+        }
+      }
+      return result;
+    };
 
     const v560NavigationBase=v366ApplyNavigation;
     v366ApplyNavigation=function(){
