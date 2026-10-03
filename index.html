@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.6.0';
-    const APP_RELEASE = 'P15 Listening in Context, Connected Speech & Real-World Aural Vocabulary Transfer';
+    const APP_VERSION = '5.7.0';
+    const APP_RELEASE = 'P16 Pronunciation, Shadowing & Spoken Production Transfer';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -20265,6 +20265,654 @@ qui	who	A1	question word`;
       else if(state.view==='progress')renderProgress();
       else if(state.view==='listen')renderListen();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.6.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.7.0 PRONUNCIATION, SHADOWING & SPOKEN PRODUCTION TRANSFER
+       P16 promotes the P4 microphone/STT foundations into a first-class
+       speaking workflow. Automated feedback is conservative: speech
+       recognition measures intelligibility/lexical recovery, never accent
+       quality. Recognition failure or uncertainty is never learner failure.
+       Recordings are temporary unless an older explicit P4 word-recording
+       action is used; P16 attempts themselves persist only metadata.
+       ================================================================ */
+    const V570_VERSION='5.7.0';
+    const V570_RELEASE='P16 Pronunciation, Shadowing & Spoken Production Transfer';
+    const V570_STORAGE_KEY='french3000-speaking-v1';
+    const V570_SCHEMA=1;
+    const V570_MAX_ATTEMPTS=2400;
+    const V570_MODES=Object.freeze(['pronunciation','shadow','recall','transfer']);
+    const V570_MODE_LABELS=Object.freeze({
+      pronunciation:'Pronunciation',
+      shadow:'Shadowing',
+      recall:'Spoken recall',
+      transfer:'Spoken transfer'
+    });
+    const V570_VERDICTS=Object.freeze({
+      recognized:'Recognized clearly',
+      close:'Mostly recognized',
+      mismatch:'Recognition mismatch',
+      unscored:'Unscored',
+      manual_correct:'Self-assessed correct',
+      manual_almost:'Self-assessed almost',
+      manual_retry:'Self-assessed retry'
+    });
+    V490_PATH_FOCI.add('spoken');
+
+    state.v570Speaking=null;
+    state.v570SpeakUi={mode:'shadow',selectedTaskId:'',revealed:false,result:null,sessionIds:[],sessionIndex:0};
+    state.v570TempRecording={url:'',blob:null,durationMs:0,startedAt:0,targetId:'',modelDurationMs:0};
+    state.v570Recorder=null;
+    state.v570RecorderStream=null;
+    state.v570Recognition=null;
+    state.v570StudyRecognition=null;
+
+    function v570NormalizeSpeaking(raw){
+      const source=raw&&typeof raw==='object'?raw:{},attempts=[];
+      for(const row of (Array.isArray(source.attempts)?source.attempts:[]).slice(-V570_MAX_ATTEMPTS)){
+        if(!row||!V570_MODES.includes(row.kind))continue;
+        attempts.push({
+          t:Math.max(0,finiteNumber(row.t)),
+          kind:row.kind,
+          taskId:String(row.taskId||'').slice(0,180),
+          noteId:String(row.noteId||'').slice(0,220),
+          itemId:String(row.itemId||'').slice(0,160),
+          exerciseId:String(row.exerciseId||'').slice(0,80),
+          expected:String(row.expected||'').slice(0,360),
+          transcript:String(row.transcript||'').slice(0,360),
+          similarity:clamp(finiteNumber(row.similarity),0,1),
+          recognitionConfidence:clamp(finiteNumber(row.recognitionConfidence),0,1),
+          verdict:V570_VERDICTS[row.verdict]?row.verdict:'unscored',
+          correct:row.correct===true,
+          almost:row.almost===true,
+          reliable:row.reliable===true,
+          manual:row.manual===true,
+          support:clamp(Math.floor(finiteNumber(row.support)),0,3),
+          modelUsed:row.modelUsed===true,
+          slowModel:row.slowModel===true,
+          targetVisible:row.targetVisible===true,
+          responseMs:clamp(finiteNumber(row.responseMs),0,3600000),
+          learnerDurationMs:clamp(finiteNumber(row.learnerDurationMs),0,3600000),
+          modelDurationMs:clamp(finiteNumber(row.modelDurationMs),0,3600000),
+          paceRatio:clamp(finiteNumber(row.paceRatio),0,5)
+        });
+      }
+      return {schema:V570_SCHEMA,attempts:attempts};
+    }
+    function v570LoadSpeaking(){state.v570Speaking=v570NormalizeSpeaking(state.v570Speaking||safeStorageRead(V570_STORAGE_KEY)||{});return state.v570Speaking;}
+    function v570SaveSpeaking(){
+      state.v570Speaking=v570NormalizeSpeaking(state.v570Speaking||{});
+      safeStorageSet(V570_STORAGE_KEY,state.v570Speaking);depthSchedulePersist?.();
+    }
+    v570LoadSpeaking();
+
+    const v570DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v570DepthStateSnapshotBase(),v570Speaking:v570NormalizeSpeaking(state.v570Speaking||{})};};
+    const v570DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v570DepthApplyImportedStateBase(saved);
+      state.v570Speaking=v570NormalizeSpeaking(saved?.v570Speaking||safeStorageRead(V570_STORAGE_KEY)||{});
+      v570SaveSpeaking();return result;
+    };
+    const v570DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v570DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v570Speaking)state.v570Speaking=v570NormalizeSpeaking(saved.v570Speaking);}catch{}
+      return result;
+    };
+
+    function v570CanRecord(){return Boolean(navigator.mediaDevices?.getUserMedia&&window.MediaRecorder);}
+    function v570RecognitionCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null;}
+    function v570CanRecognize(){return Boolean(v570RecognitionCtor());}
+    function v570ClearTempRecording(){
+      if(state.v570TempRecording.url){try{URL.revokeObjectURL(state.v570TempRecording.url);}catch{}}
+      state.v570TempRecording={url:'',blob:null,durationMs:0,startedAt:0,targetId:'',modelDurationMs:0};
+    }
+    function v570StopCapture(){
+      try{if(state.v570Recorder&&state.v570Recorder.state==='recording')state.v570Recorder.stop();}catch{}
+      try{state.v570RecorderStream?.getTracks?.().forEach(function(track){track.stop();});}catch{}
+      state.v570RecorderStream=null;
+    }
+    async function v570StartTempRecording(task,{modelDurationMs=0}={}){
+      if(!v570CanRecord()){showToast('Microphone recording is unavailable in this browser.');return false;}
+      v570StopCapture();v570ClearTempRecording();
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+        const chunks=[],recorder=new MediaRecorder(stream);state.v570Recorder=recorder;state.v570RecorderStream=stream;
+        state.v570TempRecording.startedAt=performance.now();state.v570TempRecording.targetId=task.id;state.v570TempRecording.modelDurationMs=modelDurationMs;
+        recorder.ondataavailable=function(event){if(event.data?.size)chunks.push(event.data);};
+        recorder.onstop=function(){
+          const duration=Math.max(0,performance.now()-state.v570TempRecording.startedAt),blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});
+          stream.getTracks().forEach(function(track){track.stop();});state.v570RecorderStream=null;state.v570Recorder=null;
+          if(state.v570TempRecording.url)try{URL.revokeObjectURL(state.v570TempRecording.url);}catch{}
+          state.v570TempRecording={...state.v570TempRecording,blob:blob,url:URL.createObjectURL(blob),durationMs:duration,startedAt:0};
+          v570RefreshSpeakControls();
+        };
+        recorder.start();v570RefreshSpeakControls();return true;
+      }catch(error){
+        state.v570Recorder=null;state.v570RecorderStream=null;
+        showToast(error?.name==='NotAllowedError'?'Microphone permission was not granted.':'Microphone recording could not start.');
+        return false;
+      }
+    }
+    function v570StopTempRecording(){
+      if(state.v570Recorder?.state==='recording'){state.v570Recorder.stop();return true;}
+      return false;
+    }
+    async function v570PlayMine(){
+      const url=state.v570TempRecording.url;if(!url){showToast('Record an attempt first.');return;}
+      try{stopSpeech();const audio=new Audio(url);state.cardAudio=audio;audio.onended=function(){if(state.cardAudio===audio)state.cardAudio=null;};await audio.play();}catch{showToast('The temporary recording could not be played.');}
+    }
+
+    function v570SpeakModel(task,{slow=false,onend=null}={}){
+      if(!state.speechAvailable){showToast('French speech synthesis is unavailable in this browser.');return false;}
+      stopSpeech();const utterance=new SpeechSynthesisUtterance(task.expected);utterance.lang='fr-FR';utterance.rate=slow?.76:1;
+      const voice=v560VoiceForSpeaker(task.speaker||0);if(voice)utterance.voice=voice;
+      const started=performance.now();
+      utterance.onstart=function(){state.speechState='playing';state.currentUtterance=utterance;updateSpeechButtons();};
+      utterance.onend=function(){const duration=Math.max(0,performance.now()-started);state.speechState='idle';state.currentUtterance=null;state.v570TempRecording.modelDurationMs=duration;updateSpeechButtons();if(typeof onend==='function')onend(duration);};
+      utterance.onerror=function(){state.speechState='idle';state.currentUtterance=null;updateSpeechButtons();showToast('The French model voice could not play this prompt.');};
+      speechSynthesis.speak(utterance);return true;
+    }
+    function v570ShadowNow(task){
+      if(!v570CanRecord()){showToast('Shadowing recording is unavailable in this browser.');return;}
+      v570SpeakModel(task,{onend:function(duration){setTimeout(function(){v570StartTempRecording(task,{modelDurationMs:duration});},180);}});
+    }
+
+    function v570CanonicalCandidates(task){
+      const list=[task.expected,...(task.alternatives||[])].filter(Boolean);return [...new Set(list.map(function(value){return String(value).trim();}).filter(Boolean))];
+    }
+    function v570TextComparison(transcript,task){
+      const candidates=v570CanonicalCandidates(task),heard=v530Fold(transcript);if(!heard||!candidates.length)return {similarity:0,diagnosis:'blank',correct:false,almost:false};
+      if(task.exerciseId&&V530_BY_ID.has(task.exerciseId)){
+        const diagnosis=v530Diagnose(transcript,{v530ExerciseId:task.exerciseId});
+        return {similarity:clamp(finiteNumber(diagnosis.score),0,1),diagnosis:diagnosis.code,correct:diagnosis.correct===true,almost:diagnosis.code==='orthography'||diagnosis.correct===null};
+      }
+      let similarity=0;
+      for(const expected of candidates){
+        const target=v530Fold(expected),lev=1-levenshtein(heard,target)/Math.max(heard.length,target.length,1),targetTokens=v530Tokens(expected),heardSet=new Set(v530Tokens(transcript)),overlap=targetTokens.length?targetTokens.filter(function(token){return heardSet.has(token);}).length/targetTokens.length:0;
+        similarity=Math.max(similarity,lev*.68+overlap*.32);
+      }
+      return {similarity:clamp(similarity,0,1),diagnosis:similarity>=.88?'exact':similarity>=.72?'close':'mismatch',correct:similarity>=.88,almost:similarity>=.72&&similarity<.88};
+    }
+    function v570RecognitionVerdict(comparison,confidence){
+      const conf=clamp(finiteNumber(confidence),0,1),sim=comparison.similarity;
+      if(comparison.correct||sim>=.9)return {verdict:'recognized',correct:true,almost:false,reliable:conf===0||conf>=.45};
+      if(comparison.almost||sim>=.74)return {verdict:'close',correct:false,almost:true,reliable:conf===0||conf>=.45};
+      if(sim<.55&&conf>=.68)return {verdict:'mismatch',correct:false,almost:false,reliable:true};
+      return {verdict:'unscored',correct:false,almost:false,reliable:false};
+    }
+    function v570RunRecognition(task,onResult){
+      const Recognition=v570RecognitionCtor();if(!Recognition){onResult?.({status:'unavailable'});return;}
+      try{state.v570Recognition?.abort?.();}catch{}
+      const recognition=new Recognition();state.v570Recognition=recognition;recognition.lang='fr-FR';recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
+      recognition.onresult=function(event){
+        const alternatives=Array.from(event.results?.[0]||[]).map(function(row){return {text:String(row.transcript||'').trim(),confidence:finiteNumber(row.confidence)};}).filter(function(row){return row.text;});
+        let best=null;
+        for(const alt of alternatives){const comparison=v570TextComparison(alt.text,task),rank=comparison.similarity+(alt.confidence||0)*.05;if(!best||rank>best.rank)best={...alt,comparison:comparison,rank:rank};}
+        if(!best){onResult?.({status:'uncertain'});return;}
+        const verdict=v570RecognitionVerdict(best.comparison,best.confidence);
+        onResult?.({status:'result',transcript:best.text,confidence:best.confidence,comparison:best.comparison,...verdict});
+      };
+      recognition.onerror=function(event){
+        const benign=['no-speech','aborted','audio-capture','network','not-allowed','service-not-allowed'].includes(event.error);
+        onResult?.({status:'error',error:event.error||'recognition-error',benign:benign});
+      };
+      recognition.onend=function(){if(state.v570Recognition===recognition)state.v570Recognition=null;};
+      try{recognition.start();}catch{state.v570Recognition=null;onResult?.({status:'error',error:'start-failed',benign:true});}
+    }
+
+    function v570NoteForTask(task){return task.noteId?state.cardById.get(task.noteId):null;}
+    function v570PronunciationTasks(limit=40){
+      const seen=new Set(),rows=[];
+      for(const item of V560_LISTENING_ITEMS){
+        for(const note of v560TargetNotes(item)){
+          if(seen.has(note.id)||!isAvailable(note))continue;seen.add(note.id);
+          const profile=v570SpokenProfile(note),listening=v540Dimension(note,'listening');
+          rows.push({score:(1-profile.intelligibility)*75+(1-(listening.score||0))*20+(profile.attempts?0:15),task:{id:'speak-word-'+note.id,kind:'pronunciation',noteId:note.id,itemId:item.id,expected:note.fr,alternatives:note.aliases||[],prompt:note.en||'Say the French word',sub:'Say the target naturally. Automated checking only tests whether speech recognition recovers the intended French.',speaker:0,targetVisible:true}});
+        }
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
+    }
+    function v570ShadowTasks(limit=60){
+      const rows=[];
+      for(const item of V560_LISTENING_ITEMS){
+        item.segments.forEach(function(segment,index){
+          const phenomena=v560ConnectedPhenomena(segment.text),notes=v550WordTokens(segment.text).map(v550ResolveNote).filter(Boolean),weak=notes.length?notes.reduce(function(sum,note){return sum+(1-v570SpokenProfile(note).shadowing);},0)/notes.length:0;
+          rows.push({score:phenomena.length*12+weak*50+(segment.text.length<=110?10:0),task:{id:'shadow-'+item.id+'-'+segment.id,kind:'shadow',itemId:item.id,expected:segment.text,alternatives:[],prompt:segment.text,sub:'Listen, then repeat immediately while preserving the phrase rhythm. Text stays visible because this is shadowing, not recall.',speaker:segment.speaker||0,targetVisible:true,phenomena:phenomena}});
+        });
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
+    }
+    function v570RecallTasks(limit=60){
+      const rows=[];
+      for(const item of V560_LISTENING_ITEMS){
+        item.segments.forEach(function(segment){
+          if(segment.text.length>150)return;
+          const notes=v550WordTokens(segment.text).map(v550ResolveNote).filter(Boolean),note=notes.find(function(row){return (item.targets||[]).some(function(target){return v550ResolveNote(target)?.id===row.id;});})||notes[0],profile=note?v570SpokenProfile(note):null;
+          rows.push({score:(profile?1-profile.recall:1)*60+(segment.text.length<=100?12:0),task:{id:'recall-'+item.id+'-'+segment.id,kind:'recall',itemId:item.id,noteId:note?.id||'',expected:segment.text,alternatives:[],prompt:segment.translation,sub:'Say the French sentence from meaning. No model is required before your attempt.',speaker:segment.speaker||0,targetVisible:false}});
+        });
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
+    }
+    function v570TransferTasks(limit=60){
+      const rows=[];
+      for(const exercise of V530_SENTENCE_EXERCISES.filter(function(row){return row.type==='transfer'||row.type==='cue'||row.type==='translate';})){
+        const note=v530ExerciseNote(exercise,state.cards);if(!note||!isAvailable(note)||!v530SentenceReady(note,exercise))continue;
+        const profile=v570SpokenProfile(note),priority=exercise.type==='transfer'?24:0;
+        rows.push({score:(1-profile.transfer)*65+priority,task:{id:'transfer-'+exercise.id,kind:'transfer',noteId:note.id,exerciseId:exercise.id,expected:exercise.expected,alternatives:exercise.alternatives||[],prompt:exercise.prompt,sub:'Respond aloud in French. Keep the required lexical construction while adapting it to the situation.',speaker:0,targetVisible:false}});
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
+    }
+    function v570Tasks(mode=state.v570SpeakUi.mode,limit=40){
+      if(mode==='pronunciation')return v570PronunciationTasks(limit);
+      if(mode==='recall')return v570RecallTasks(limit);
+      if(mode==='transfer')return v570TransferTasks(limit);
+      return v570ShadowTasks(limit);
+    }
+    function v570TaskById(id){
+      for(const mode of V570_MODES){const task=v570Tasks(mode,120).find(function(row){return row.id===id;});if(task)return task;}return null;
+    }
+
+    function v570TaskSupport(task){
+      let support=0;
+      if(task.kind==='shadow')support=1;
+      if(state.v570SpeakUi.revealed&&!task.targetVisible)support=Math.max(support,2);
+      return support;
+    }
+    function v570AttemptResultHtml(result){
+      if(!result)return '<span>No automated check yet.</span>';
+      if(result.status==='unavailable')return '<strong>Speech recognition unavailable</strong><span>Use Record → Play mine → Reveal → self-assess. This attempt is not marked wrong.</span>';
+      if(result.status==='error'||result.status==='uncertain')return '<strong>Could not evaluate this attempt</strong><span>Speech recognition was unavailable or uncertain. No failure is recorded; use self-assessment.</span>';
+      const pct=Math.round((result.comparison?.similarity||0)*100),confidence=result.confidence?Math.round(result.confidence*100)+'% recognizer confidence':'confidence not reported';
+      return '<strong>'+escapeHtml(V570_VERDICTS[result.verdict]||'Unscored')+'</strong><span>Recognizer heard: <em lang="fr">'+escapeHtml(result.transcript||'—')+'</em> · '+pct+'% text/structure match · '+escapeHtml(confidence)+'</span><small>This is an intelligibility signal, not an accent or native-likeness score.</small>';
+    }
+    function v570PaceHtml(){
+      const rec=state.v570TempRecording;if(!rec.durationMs)return '';
+      const ratio=rec.modelDurationMs?rec.durationMs/rec.modelDurationMs:0;
+      if(!ratio)return '<span>Recorded '+Math.round(rec.durationMs/100)/10+' s</span>';
+      const label=ratio>=.7&&ratio<=1.35?'Near model pace':ratio<.7?'Much faster than model':'Slower than model';
+      return '<span>'+escapeHtml(label)+' · '+ratio.toFixed(2)+'× model duration</span>';
+    }
+    function v570TaskCard(task){
+      const note=v570NoteForTask(task),phenomena=task.phenomena||v560ConnectedPhenomena(task.expected),profile=note?v570SpokenProfile(note):null;
+      return '<article class="v570-task-card"><div class="v570-card-meta"><span>'+escapeHtml(V570_MODE_LABELS[task.kind])+'</span>'+(note?'<span>'+escapeHtml(note.level)+'</span>':'')+(profile?'<span>'+Math.round(profile.overall*100)+'% spoken evidence</span>':'')+'</div><h3>'+escapeHtml(task.kind==='pronunciation'?task.expected:task.prompt)+'</h3><p>'+escapeHtml(task.sub)+'</p>'+(phenomena.length?'<div class="v570-cue-row">'+phenomena.map(function(row){return '<span title="'+escapeHtml(row.detail)+'">'+escapeHtml(row.label)+'</span>';}).join('')+'</div>':'')+'<button class="primary" data-v570-open="'+escapeHtml(task.id)+'">Practice</button></article>';
+    }
+    function v570Stats(){
+      const attempts=state.v570Speaking.attempts||[],scored=attempts.filter(function(row){return row.verdict!=='unscored';}),reliable=scored.filter(function(row){return row.reliable||row.manual;}),correct=reliable.filter(function(row){return row.correct;});
+      return {
+        attempts:attempts.length,
+        reliable:reliable.length,
+        correct:correct.length,
+        firstIndependent:attempts.filter(function(row){return row.correct&&row.support===0&&!row.modelUsed;}).length,
+        shadow:attempts.filter(function(row){return row.kind==='shadow';}).length,
+        transfer:attempts.filter(function(row){return row.kind==='transfer';}).length,
+        notes:new Set(attempts.map(function(row){return row.noteId;}).filter(Boolean)).size
+      };
+    }
+    function renderSpeak(){
+      v570LoadSpeaking();
+      const task=state.v570SpeakUi.selectedTaskId?v570TaskById(state.v570SpeakUi.selectedTaskId):null;
+      if(task){v570RenderPractice(task);return;}
+      const tasks=v570Tasks(state.v570SpeakUi.mode,18),stats=v570Stats(),recognition=v570CanRecognize(),recording=v570CanRecord();
+      main.innerHTML='<div class="view-header v570-header"><div><p class="eyebrow">P16 spoken production</p><h2>Turn known French into speech</h2><p>Practice pronunciation, shadow connected speech, retrieve sentences aloud, and transfer lexical constructions. Automated feedback is deliberately conservative.</p></div><div class="v570-header-stats"><span><strong>'+stats.attempts+'</strong> attempts</span><span><strong>'+stats.firstIndependent+'</strong> independent successes</span><span><strong>'+stats.notes+'</strong> words spoken</span></div></div>'+
+        '<section class="panel v570-capability"><div><strong>Microphone</strong><span>'+(recording?'record/play available':'recording unavailable')+'</span></div><div><strong>Speech recognition</strong><span>'+(recognition?'optional intelligibility check available':'self-assessment fallback active')+'</span></div><p>Speech recognition may be provided by the browser/OS and can require network service. Recognition errors are never treated as learner errors.</p></section>'+
+        '<section class="panel v570-mode-panel"><div class="v570-mode-tabs">'+V570_MODES.map(function(mode){return '<button type="button" data-v570-mode="'+mode+'" class="'+(state.v570SpeakUi.mode===mode?'active':'')+'">'+escapeHtml(V570_MODE_LABELS[mode])+'</button>';}).join('')+'</div><div class="button-row"><button class="primary" id="v570-speak10">Speak 10</button><button class="secondary" id="v570-listen-bridge">Listen first</button></div></section>'+
+        '<section class="v570-section"><div class="section-heading"><div><p class="eyebrow">'+escapeHtml(V570_MODE_LABELS[state.v570SpeakUi.mode])+'</p><h3>'+tasks.length+' recommended speaking tasks</h3></div></div><div class="v570-grid">'+tasks.map(v570TaskCard).join('')+'</div></section>';
+      main.querySelectorAll('[data-v570-mode]').forEach(function(button){button.addEventListener('click',function(){v570ClearTempRecording();state.v570SpeakUi.mode=button.dataset.v570Mode;state.v570SpeakUi.result=null;renderSpeak();});});
+      main.querySelectorAll('[data-v570-open]').forEach(function(button){button.addEventListener('click',function(){v570OpenTask(button.dataset.v570Open);});});
+      $('#v570-speak10')?.addEventListener('click',function(){v570StartSpeak10();});
+      $('#v570-listen-bridge')?.addEventListener('click',function(){setView('listen');});
+      bindCommonActions();
+    }
+    function v570OpenTask(id){
+      const task=v570TaskById(id);if(!task)return;
+      v570StopCapture();v570ClearTempRecording();state.v570SpeakUi.selectedTaskId=id;state.v570SpeakUi.revealed=task.targetVisible;state.v570SpeakUi.result=null;renderSpeak();
+    }
+    function v570CloseTask({keepSession=false}={}){
+      v570StopCapture();v570ClearTempRecording();try{state.v570Recognition?.abort?.();}catch{}state.v570Recognition=null;state.v570SpeakUi.selectedTaskId='';state.v570SpeakUi.revealed=false;state.v570SpeakUi.result=null;
+      if(!keepSession){state.v570SpeakUi.sessionIds=[];state.v570SpeakUi.sessionIndex=0;}
+      renderSpeak();
+    }
+    function v570RenderPractice(task){
+      const note=v570NoteForTask(task),result=state.v570SpeakUi.result,recording=state.v570Recorder?.state==='recording',hasRecording=Boolean(state.v570TempRecording.url),canRecognize=v570CanRecognize(),support=v570TaskSupport(task);
+      const targetVisible=task.targetVisible||state.v570SpeakUi.revealed;
+      main.innerHTML='<div class="v570-practice-shell"><header class="v570-practice-head"><button class="secondary" id="v570-back">← Speak</button><div><span>'+escapeHtml(V570_MODE_LABELS[task.kind])+'</span><strong>'+escapeHtml(task.kind==='pronunciation'?task.expected:task.prompt)+'</strong></div><span class="v570-support-pill">Support '+support+'</span></header>'+
+        '<section class="v570-prompt"><p>'+escapeHtml(task.sub)+'</p>'+(targetVisible?'<div class="v570-target"><span>French target</span><strong lang="fr">'+escapeHtml(task.expected)+'</strong>'+(note?.ipa?'<small>'+escapeHtml(note.ipa)+'</small>':'')+'</div>':'<div class="v570-target hidden"><span>French target hidden</span><strong>Speak before revealing</strong></div>')+'</section>'+
+        '<section class="v570-controls"><div class="v570-model-row"><button class="secondary" id="v570-model">Hear model</button><button class="secondary" id="v570-model-slow">Slow model</button>'+(task.kind==='shadow'?'<button class="primary" id="v570-shadow-now">Shadow now</button>':'')+'</div><div class="v570-record-row"><button class="'+(recording?'danger':'primary')+'" id="v570-record">'+(recording?'Stop recording':'Record me')+'</button><button class="secondary" id="v570-play-mine" '+(hasRecording?'':'disabled')+'>Play mine</button><span id="v570-pace">'+v570PaceHtml()+'</span></div><div class="v570-check-row"><button class="primary" id="v570-check" '+(canRecognize?'':'disabled')+'>Check intelligibility</button>'+(!targetVisible?'<button class="secondary" id="v570-reveal">Reveal target</button>':'')+'</div></section>'+
+        '<section class="v570-result" id="v570-result">'+v570AttemptResultHtml(result)+'</section>'+
+        (result||state.v570SpeakUi.revealed?'<section class="v570-self-check"><strong>Final judgment</strong><span>Use self-assessment when recognition is unavailable, uncertain, or clearly wrong about what you said.</span><div><button class="secondary" data-v570-self="manual_retry">Retry</button><button class="secondary" data-v570-self="manual_almost">Almost</button><button class="primary" data-v570-self="manual_correct">Correct</button></div></section>':'')+
+        '<footer class="v570-privacy">P16 recordings are temporary and remain in this page session. Attempt metadata can be backed up; raw P16 microphone audio is not added to backup/export.</footer></div>';
+      $('#v570-back')?.addEventListener('click',function(){v570CloseTask();});
+      $('#v570-model')?.addEventListener('click',function(){task._modelUsed=true;v570SpeakModel(task);});
+      $('#v570-model-slow')?.addEventListener('click',function(){task._modelUsed=true;task._slowModel=true;v570SpeakModel(task,{slow:true});});
+      $('#v570-shadow-now')?.addEventListener('click',function(){task._modelUsed=true;v570ShadowNow(task);});
+      $('#v570-record')?.addEventListener('click',async function(){if(state.v570Recorder?.state==='recording'){v570StopTempRecording();return;}await v570StartTempRecording(task,{modelDurationMs:state.v570TempRecording.modelDurationMs});});
+      $('#v570-play-mine')?.addEventListener('click',v570PlayMine);
+      $('#v570-reveal')?.addEventListener('click',function(){state.v570SpeakUi.revealed=true;renderSpeak();});
+      $('#v570-check')?.addEventListener('click',function(){
+        const button=$('#v570-check');if(button){button.disabled=true;button.textContent='Listening…';}
+        const started=now();v570RunRecognition(task,function(res){
+          const current=$('#v570-check');if(current){current.disabled=false;current.textContent='Check intelligibility';}
+          if(res.status==='result'){
+            state.v570SpeakUi.result=res;v570CommitAutomatedAttempt(task,res,now()-started);renderSpeak();
+          }else{
+            state.v570SpeakUi.result=res;renderSpeak();
+          }
+        });
+      });
+      main.querySelectorAll('[data-v570-self]').forEach(function(button){button.addEventListener('click',function(){v570CommitManualAttempt(task,button.dataset.v570Self);});});
+      bindCommonActions();
+    }
+    function v570RefreshSpeakControls(){
+      if(state.view!=='speak'||!state.v570SpeakUi.selectedTaskId)return;
+      const record=$('#v570-record'),play=$('#v570-play-mine'),pace=$('#v570-pace');
+      if(record)record.textContent=state.v570Recorder?.state==='recording'?'Stop recording':'Record me';
+      if(play)play.disabled=!state.v570TempRecording.url;
+      if(pace)pace.innerHTML=v570PaceHtml();
+    }
+
+    function v570PaceRatio(){const rec=state.v570TempRecording;return rec.modelDurationMs&&rec.durationMs?rec.durationMs/rec.modelDurationMs:0;}
+    function v570AttemptBase(task){
+      return {
+        t:now(),kind:task.kind,taskId:task.id,noteId:task.noteId||'',itemId:task.itemId||'',exerciseId:task.exerciseId||'',expected:task.expected,
+        support:v570TaskSupport(task),modelUsed:task._modelUsed===true,slowModel:task._slowModel===true,targetVisible:task.targetVisible===true||state.v570SpeakUi.revealed,
+        learnerDurationMs:state.v570TempRecording.durationMs||0,modelDurationMs:state.v570TempRecording.modelDurationMs||0,paceRatio:v570PaceRatio()
+      };
+    }
+    function v570CommitAutomatedAttempt(task,res,responseMs){
+      if(res.status!=='result')return;
+      const row={...v570AttemptBase(task),transcript:res.transcript,similarity:res.comparison?.similarity||0,recognitionConfidence:res.confidence||0,verdict:res.verdict,correct:res.correct===true,almost:res.almost===true,reliable:res.reliable===true,manual:false,responseMs:responseMs};
+      v570StoreAttempt(task,row);
+    }
+    function v570CommitManualAttempt(task,verdict){
+      const source=state.v570SpeakUi.result,row={...v570AttemptBase(task),transcript:source?.transcript||'',similarity:source?.comparison?.similarity||0,recognitionConfidence:source?.confidence||0,verdict:verdict,correct:verdict==='manual_correct',almost:verdict==='manual_almost',reliable:true,manual:true,responseMs:0};
+      v570StoreAttempt(task,row);v570AdvanceAfterAttempt();
+    }
+    function v570StoreAttempt(task,row){
+      state.v570Speaking.attempts.push(row);if(state.v570Speaking.attempts.length>V570_MAX_ATTEMPTS)state.v570Speaking.attempts=state.v570Speaking.attempts.slice(-V570_MAX_ATTEMPTS);
+      v570RecordReviewEvidence(task,row);v570SaveSpeaking();
+    }
+    function v570RecordReviewEvidence(task,row){
+      const note=v570NoteForTask(task)||v560ResolveTargetNote?.(task.expected,V560_ITEM_BY_ID.get(task.itemId))||null;if(!note)return;
+      const card=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note,p=normalizeProgressEntry(getProgress(card.id));
+      state.reviewLog.push({t:row.t,id:card.id,noteId:note.id,skill:'speaking',rating:row.correct?'good':row.almost?'hard':'again',responseMs:row.responseMs||0,wasNew:false,interval:p.interval||0,direction:'en-fr',typed:false,typedQuality:'none',level:note.level,pos:posGroup(note.pos),theme:note.theme||'general',practice:'spoken',correct:row.correct,xp:0,practiceOnly:true,spokenPractice:true,spokenKind:row.kind,spokenTaskId:row.taskId,spokenExerciseId:row.exerciseId,spokenVerdict:row.verdict,spokenSimilarity:row.similarity,spokenRecognitionConfidence:row.recognitionConfidence,spokenReliable:row.reliable,spokenManual:row.manual,spokenSupport:row.support,spokenModelUsed:row.modelUsed,spokenSlowModel:row.slowModel,spokenTargetVisible:row.targetVisible,spokenLearnerDurationMs:row.learnerDurationMs,spokenModelDurationMs:row.modelDurationMs,spokenPaceRatio:row.paceRatio,mixedModality:'speaking',mixedKind:'spoken-'+row.kind,mixedDifficulty:['recall','transfer'].includes(row.kind)?3:2,mixedExposureKeys:['word:'+note.id,'sound:'+note.id],mixedFirstAttempt:row.support===0&&!row.modelUsed,mixedSupportLevel:row.support});
+      if(state.reviewLog.length>DEPTH_MAX_REVIEW_LOG)state.reviewLog=state.reviewLog.slice(-DEPTH_MAX_REVIEW_LOG);
+      saveReviewLog();state.v540EvidenceCache=null;state.v550ProfileCache={signature:'',map:new Map()};
+    }
+    function v570AdvanceAfterAttempt(){
+      const ids=state.v570SpeakUi.sessionIds||[],next=state.v570SpeakUi.sessionIndex+1;
+      if(!ids.length){showToast('Speaking attempt saved.');return;}
+      if(next>=ids.length){v570CloseTask({keepSession:true});state.v570SpeakUi.sessionIds=[];state.v570SpeakUi.sessionIndex=0;showToast('Speak 10 complete.');return;}
+      state.v570SpeakUi.sessionIndex=next;v570OpenTask(ids[next]);
+    }
+
+    const v570NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){if(!entry||typeof entry!=='object')continue;lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);}
+      return v570NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));if(original?.spokenPractice!==true)return entry;
+        return {...entry,spokenPractice:true,spokenKind:V570_MODES.includes(original.spokenKind)?original.spokenKind:'pronunciation',spokenTaskId:String(original.spokenTaskId||'').slice(0,180),spokenExerciseId:String(original.spokenExerciseId||'').slice(0,80),spokenVerdict:V570_VERDICTS[original.spokenVerdict]?original.spokenVerdict:'unscored',spokenSimilarity:clamp(finiteNumber(original.spokenSimilarity),0,1),spokenRecognitionConfidence:clamp(finiteNumber(original.spokenRecognitionConfidence),0,1),spokenReliable:original.spokenReliable===true,spokenManual:original.spokenManual===true,spokenSupport:clamp(finiteNumber(original.spokenSupport),0,3),spokenModelUsed:original.spokenModelUsed===true,spokenSlowModel:original.spokenSlowModel===true,spokenTargetVisible:original.spokenTargetVisible===true,spokenLearnerDurationMs:clamp(finiteNumber(original.spokenLearnerDurationMs),0,3600000),spokenModelDurationMs:clamp(finiteNumber(original.spokenModelDurationMs),0,3600000),spokenPaceRatio:clamp(finiteNumber(original.spokenPaceRatio),0,5)};
+      });
+    };
+    const v570EntryModalityBase=v540EntryModality;
+    v540EntryModality=function(entry){return entry?.spokenPractice===true?'speaking':v570EntryModalityBase(entry);};
+    const v570EntrySupportBase=v540EntrySupport;
+    v540EntrySupport=function(entry){return entry?.spokenPractice===true?clamp(finiteNumber(entry.spokenSupport),0,3):v570EntrySupportBase(entry);};
+
+    function v570SpokenProfile(note){
+      const noteId=depthBaseId(note),rows=(state.v570Speaking?.attempts||[]).filter(function(row){return row.noteId===noteId;});
+      function dim(kind){
+        const list=rows.filter(function(row){return row.kind===kind&&row.reliable;}),success=list.filter(function(row){return row.correct;}).length,almost=list.filter(function(row){return row.almost;}).length,independent=list.filter(function(row){return row.correct&&row.support===0&&!row.modelUsed;}).length;
+        return {attempts:list.length,success:success,almost:almost,independent:independent,score:list.length?clamp((success+almost*.45)/list.length*.72+Math.min(1,independent/3)*.28,0,1):0};
+      }
+      const pronunciation=dim('pronunciation'),shadow=dim('shadow'),recall=dim('recall'),transfer=dim('transfer'),eligible=[pronunciation,shadow,recall,transfer].filter(function(row){return row.attempts>0;}),overall=eligible.length?Math.min(...eligible.map(function(row){return row.score;})):0;
+      return {attempts:rows.length,intelligibility:pronunciation.score,shadowing:shadow.score,recall:recall.score,transfer:transfer.score,overall:overall,pronunciation:pronunciation,shadow:shadow,spokenRecall:recall,spokenTransfer:transfer};
+    }
+    function v570GlobalProfile(){
+      const notes=new Set((state.v570Speaking?.attempts||[]).map(function(row){return row.noteId;}).filter(Boolean)),profiles=[...notes].map(function(id){return v570SpokenProfile(state.cardById.get(id));}),spoken=profiles.filter(function(row){return row.attempts>0;});
+      return {notes:notes.size,secure:spoken.filter(function(row){return row.overall>=.62&&row.recall.independent+row.transfer.independent>=1;}).length,avg:spoken.length?Math.round(spoken.reduce(function(sum,row){return sum+row.overall;},0)/spoken.length*100):0};
+    }
+
+    function v570StartSpeak10(){
+      const modes=['shadow','recall','transfer'],tasks=[];let cursor=0;
+      while(tasks.length<10&&cursor<30){
+        const mode=modes[cursor%modes.length],candidate=v570Tasks(mode,20)[Math.floor(cursor/modes.length)];
+        if(candidate&&!tasks.some(function(row){return row.id===candidate.id;}))tasks.push(candidate);
+        cursor++;
+      }
+      if(!tasks.length){showToast('No speaking tasks are ready yet.');return;}
+      state.v570SpeakUi.sessionIds=tasks.map(function(row){return row.id;});state.v570SpeakUi.sessionIndex=0;v570OpenTask(tasks[0].id);announce('Speak 10 started.');
+    }
+
+    function v570StudyTasks(cards=state.cards,limit=20){
+      if(!v570CanRecognize())return [];
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),rows=[];
+      for(const task of v570TransferTasks(50)){
+        if(!task.noteId||!allowed.has(task.noteId))continue;
+        const note=state.cardById.get(task.noteId),profile=v570SpokenProfile(note),base=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note;
+        rows.push({score:(1-profile.transfer)*100,card:{...base,v570StudySpeak:true,v570TaskId:task.id,v570SpeakKind:'transfer',v570Expected:task.expected,v570Prompt:task.prompt,v570ExerciseId:task.exerciseId,v490PracticeOnly:true,v490Category:'spoken-transfer',v490Reason:'Produce a verified construction aloud in a transferred real-life context.'}});
+      }
+      for(const task of v570RecallTasks(40)){
+        if(!task.noteId||!allowed.has(task.noteId))continue;
+        const note=state.cardById.get(task.noteId),profile=v570SpokenProfile(note),base=v490SkillCard(note,'production')||v490SkillCard(note,'recognition')||note;
+        rows.push({score:(1-profile.recall)*86,card:{...base,v570StudySpeak:true,v570TaskId:task.id,v570SpeakKind:'recall',v570Expected:task.expected,v570Prompt:task.prompt,v490PracticeOnly:true,v490Category:'spoken-recall',v490Reason:'Retrieve a contextual French sentence aloud from meaning.'}});
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.card;});
+    }
+    const v570TaskMetaBase=v540TaskMeta;
+    v540TaskMeta=function(card){
+      if(card?.v570StudySpeak)return {modality:'speaking',kind:'spoken-'+card.v570SpeakKind,difficulty:3,hardProduction:true,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:['word:'+v540NoteId(card),'sound:'+v540NoteId(card)]};
+      return v570TaskMetaBase(card);
+    };
+    const v570PhraseSentenceCandidatesBase=v540PhraseSentenceCandidates;
+    v540PhraseSentenceCandidates=function(cards,limit=80){
+      const speaking=v570StudyTasks(cards,Math.ceil(limit*.28)).map(function(card){return v540DecorateTask(card,'sentence',{modality:'speaking',kind:'spoken-'+card.v570SpeakKind,difficulty:3,hardProduction:true,exposureKeys:['word:'+v540NoteId(card),'sound:'+v540NoteId(card)]});});
+      const existing=v570PhraseSentenceCandidatesBase(cards,limit);
+      return v540Dedupe([...speaking,...existing]).slice(0,limit);
+    };
+
+    const v570CurrentDirectionBase=currentDirection;
+    currentDirection=function(card){return card?.v570StudySpeak?'en-fr':v570CurrentDirectionBase(card);};
+    const v570CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v570StudySpeak?'spoken':v570CurrentPracticeBase(card);};
+    const v570ExpectedTypedBase=expectedTyped;
+    expectedTyped=function(card,direction){
+      if(card?.v570StudySpeak)return {primary:card.v570Expected,alternatives:[card.v570Expected],articleExpected:false,articleForms:[]};
+      return v570ExpectedTypedBase(card,direction);
+    };
+    const v570AnswerResultBase=answerResultFor;
+    answerResultFor=function(card,direction,practice){
+      if(card?.v570StudySpeak){
+        const result=state.v570StudyRecognition;
+        if(!result||result.taskId!==card.v570TaskId||result.status!=='result')return {label:'Needs your judgment',className:'match-review',quality:'none',score:0,correct:null,spokenResult:true};
+        return {label:V570_VERDICTS[result.verdict]||'Unscored',className:result.correct?'match-exact':result.almost?'match-close':'match-review',quality:result.correct?'exact':result.almost?'close':'none',score:result.comparison?.similarity||0,correct:result.reliable?result.correct:null,spokenResult:true,spokenVerdict:result.verdict};
+      }
+      return v570AnswerResultBase(card,direction,practice);
+    };
+    const v570SuggestedRatingBase=suggestedRating;
+    suggestedRating=function(result,responseMs){
+      if(result?.spokenResult){
+        if(result.correct===true)return 'good';
+        if(result.quality==='close')return 'hard';
+        return '';
+      }
+      return v570SuggestedRatingBase(result,responseMs);
+    };
+    const v570PresentationBase=v366CardPresentation;
+    v366CardPresentation=function(card,practice,shown){
+      if(card?.v570StudySpeak){
+        if(!shown)return {label:card.v570SpeakKind==='transfer'?'Spoken context transfer':'Spoken recall',main:card.v570Prompt,sub:'Respond aloud. Speech recognition is an optional intelligibility check, not an accent score.',lang:'en'};
+        return {label:'Reference French',main:card.v570Expected,sub:'Compare meaning and lexical construction. If recognition was uncertain, use your own judgment.',lang:'fr'};
+      }
+      return v570PresentationBase(card,practice,shown);
+    };
+    function v570StudyBoxHtml(card){
+      return '<section class="v570-study-box"><button class="primary" id="v570-study-speak">Speak answer</button><span id="v570-study-status">French target remains hidden until the check finishes.</span><small>Recognition failure does not count as a failed answer. You can reveal and rate manually.</small></section>';
+    }
+    function v570DecorateStudyCard(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v570StudySpeak||!stage)return;
+      stage.querySelector('.v560-study-box')?.remove();
+      if(!state.flipped&&!stage.querySelector('.v570-study-box')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v570StudyBoxHtml(card));
+        $('#v570-study-speak',stage)?.addEventListener('click',function(){
+          const button=$('#v570-study-speak',stage),status=$('#v570-study-status',stage);if(button){button.disabled=true;button.textContent='Listening…';}
+          const task={id:card.v570TaskId,kind:card.v570SpeakKind,exerciseId:card.v570ExerciseId||'',expected:card.v570Expected,alternatives:[],targetVisible:false};
+          v570RunRecognition(task,function(res){
+            if(button){button.disabled=false;button.textContent='Speak answer';}
+            state.v570StudyRecognition={...res,taskId:card.v570TaskId};
+            if(status)status.innerHTML=res.status==='result'?v570AttemptResultHtml(res):'<strong>Unscored</strong> · Recognition could not evaluate this attempt.';
+            flipCard();
+          });
+        });
+      }
+    }
+    const v570RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v570RenderCurrentCardBase();v570DecorateStudyCard();return result;};
+    const v570RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v570RenderStudyBase();v570DecorateStudyCard();return result;};
+
+    const v570RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v570RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v570StudySpeak){
+        const recognition=state.v570StudyRecognition,entry=state.reviewLog?.at(-1),note=state.cardById.get(v540NoteId(card));
+        if(entry&&entry.id===card.id){
+          const reliable=recognition?.status==='result'&&recognition.reliable===true,manual=!reliable,manualCorrect=manual&&['good','easy'].includes(rating),manualAlmost=manual&&rating==='hard';
+          entry.spokenPractice=true;entry.spokenKind=card.v570SpeakKind;entry.spokenTaskId=card.v570TaskId;entry.spokenExerciseId=card.v570ExerciseId||'';entry.spokenVerdict=reliable?recognition.verdict:(manualCorrect?'manual_correct':manualAlmost?'manual_almost':'manual_retry');entry.spokenSimilarity=recognition?.comparison?.similarity||0;entry.spokenRecognitionConfidence=recognition?.confidence||0;entry.spokenReliable=reliable||manual;entry.spokenManual=manual;entry.spokenSupport=0;entry.spokenModelUsed=false;entry.spokenSlowModel=false;entry.spokenTargetVisible=false;entry.spokenLearnerDurationMs=0;entry.spokenModelDurationMs=0;entry.spokenPaceRatio=0;entry.correct=reliable?recognition.correct===true:manualCorrect;entry.mixedModality='speaking';entry.mixedKind='spoken-'+card.v570SpeakKind;entry.mixedDifficulty=3;entry.mixedExposureKeys=['word:'+v540NoteId(card),'sound:'+v540NoteId(card)];entry.mixedFirstAttempt=true;entry.mixedSupportLevel=0;saveReviewLog();
+          if(note){
+            const row={t:entry.t,kind:card.v570SpeakKind,taskId:card.v570TaskId,noteId:note.id,itemId:'',exerciseId:card.v570ExerciseId||'',expected:card.v570Expected,transcript:recognition?.transcript||'',similarity:entry.spokenSimilarity,recognitionConfidence:entry.spokenRecognitionConfidence,verdict:entry.spokenVerdict,correct:entry.correct===true,almost:manualAlmost||recognition?.almost===true,reliable:entry.spokenReliable,manual:manual,support:0,modelUsed:false,slowModel:false,targetVisible:false,responseMs:responseMs,learnerDurationMs:0,modelDurationMs:0,paceRatio:0};
+            state.v570Speaking.attempts.push(row);if(state.v570Speaking.attempts.length>V570_MAX_ATTEMPTS)state.v570Speaking.attempts=state.v570Speaking.attempts.slice(-V570_MAX_ATTEMPTS);v570SaveSpeaking();
+          }
+        }
+        state.v570StudyRecognition=null;state.v540EvidenceCache=null;
+      }
+      return result;
+    };
+    const v570RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v570StudySpeak)return v570RateCardBase(rating);
+      const result=answerResultFor(card,'en-fr','spoken');
+      if(result.correct===false)rating='again';else if(result.quality==='close'&&['good','easy'].includes(rating))rating='hard';
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v570RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    function v570WordPanel(card){
+      const profile=v570SpokenProfile(card),contexts=V560_LISTENING_ITEMS.filter(function(item){return v560TargetNotes(item).some(function(note){return note.id===card.id;});}).slice(0,4);
+      return '<section class="v570-word-speaking"><div><span>Spoken production</span><strong>'+Math.round(profile.overall*100)+'% cross-mode spoken evidence</strong><small>'+profile.attempts+' attempts · pronunciation '+Math.round(profile.intelligibility*100)+'% · shadow '+Math.round(profile.shadowing*100)+'% · recall '+Math.round(profile.recall*100)+'% · transfer '+Math.round(profile.transfer*100)+'%</small></div>'+(contexts.length?'<div class="v570-context-links">'+contexts.map(function(item){return '<button type="button" data-v570-context="'+item.id+'">'+escapeHtml(item.title)+'</button>';}).join('')+'</div>':'')+'<div class="button-row"><button class="primary" id="v570-speak-word">Speak this word</button><button class="secondary" id="v570-word-speak10">Speak 10</button></div></section>';
+    }
+    const v570OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v570OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const anchor=dialog.querySelector('.v560-word-listening')||dialog.querySelector('.v550-word-reading')||dialog.lastElementChild;
+      if(anchor&&!dialog.querySelector('.v570-word-speaking')){
+        anchor.insertAdjacentHTML('afterend',v570WordPanel(card));
+        $('#v570-speak-word',dialog)?.addEventListener('click',function(){dialog.close();state.v570SpeakUi.mode='pronunciation';setView('speak',{focus:false});const task=v570PronunciationTasks(120).find(function(row){return row.noteId===card.id;});if(task)v570OpenTask(task.id);});
+        $('#v570-word-speak10',dialog)?.addEventListener('click',function(){dialog.close();setView('speak',{focus:false});v570StartSpeak10();});
+        dialog.querySelectorAll('[data-v570-context]').forEach(function(button){button.addEventListener('click',function(){dialog.close();state.v570SpeakUi.mode='shadow';setView('speak',{focus:false});const task=v570ShadowTasks(200).find(function(row){return row.itemId===button.dataset.v570Context;});if(task)v570OpenTask(task.id);});});
+      }
+      return result;
+    };
+
+    function v570ProgressPanel(){
+      const stats=v570Stats(),global=v570GlobalProfile(),attempts=state.v570Speaking.attempts||[],byKind=V570_MODES.map(function(kind){const rows=attempts.filter(function(row){return row.kind===kind&&row.reliable;}),ok=rows.filter(function(row){return row.correct;}).length;return {kind:kind,attempts:rows.length,rate:rows.length?Math.round(ok/rows.length*100):0};});
+      return '<section class="v570-progress-panel"><div class="v570-progress-head"><div><p class="eyebrow">P16 spoken transfer</p><h3>Pronunciation → shadowing → recall → transfer</h3><p>Speaking evidence stays practice-only. Automated recognition measures recoverability of the intended French; it does not score accent quality or native-likeness.</p></div><div class="button-row"><button class="primary" id="v570-progress-speak">Open Speak</button><button class="secondary" id="v570-progress-speak10">Speak 10</button></div></div><div class="v570-progress-grid"><span><strong>'+stats.attempts+'</strong> attempts</span><span><strong>'+stats.reliable+'</strong> judged</span><span><strong>'+stats.firstIndependent+'</strong> independent successes</span><span><strong>'+global.notes+'</strong> words spoken</span><span><strong>'+global.secure+'</strong> cross-mode secure</span><span><strong>'+global.avg+'%</strong> avg spoken evidence</span></div><div class="v570-kind-grid">'+byKind.map(function(row){return '<span><strong>'+row.rate+'%</strong>'+escapeHtml(V570_MODE_LABELS[row.kind])+' · '+row.attempts+'</span>';}).join('')+'</div></section>';
+    }
+    function v570DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v570-progress-panel'))return;
+      const anchor=main.querySelector('.v560-progress-panel')||main.querySelector('.v550-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v570ProgressPanel());$('#v570-progress-speak')?.addEventListener('click',function(){setView('speak');});$('#v570-progress-speak10')?.addEventListener('click',function(){setView('speak',{focus:false});v570StartSpeak10();});
+    }
+    const v570RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v570RenderProgressBase();v570DecorateProgress();return result;};
+
+    function v570DashboardPanel(){
+      const global=v570GlobalProfile(),task=v570Tasks('shadow',1)[0];
+      return '<section class="v570-dashboard-card"><div><p class="eyebrow">Speak aloud</p><h3>'+(task?'Shadow: '+escapeHtml(task.expected.slice(0,74)):'Spoken French')+'</h3><p>Build an audio-to-speech loop: hear → imitate → retrieve → transfer.</p><span>'+global.notes+' words with spoken evidence · '+global.secure+' cross-mode secure</span></div><button class="primary" id="v570-dashboard-speak">Speak now</button></section>';
+    }
+    function v570DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v570-dashboard-card'))return;
+      const anchor=main.querySelector('.v560-dashboard-card')||main.querySelector('.v550-dashboard-card')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v570DashboardPanel());$('#v570-dashboard-speak')?.addEventListener('click',function(){setView('speak');});
+    }
+    const v570RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v570RenderDashboardBase();v570DecorateDashboard();return result;};
+
+    const v570NavigationBase=v366ApplyNavigation;
+    v366ApplyNavigation=function(){
+      v570NavigationBase();
+      const desktop=$('.topbar .nav'),mobile=$('.mobile-nav');
+      const desktopItems=[['dashboard','Today'],['study','Study'],['read','Read'],['listen','Listen'],['speak','Speak'],['browse','Words'],['progress','Progress'],['settings','Settings']];
+      const mobileItems=[['dashboard','Today'],['study','Study'],['read','Read'],['listen','Listen'],['speak','Speak'],['browse','Words'],['progress','More']];
+      if(desktop)desktop.innerHTML=desktopItems.map(function(pair){return '<button class="nav-button '+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');
+      if(mobile){mobile.classList.remove('v36-four','v36-five','v550-five','v560-six');mobile.classList.add('v570-seven');mobile.innerHTML=mobileItems.map(function(pair){return '<button class="'+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');}
+    };
+    v36ApplyNavigation=v366ApplyNavigation;
+    const v570SetViewBase=setView;
+    setView=function(view,{focus=true}={}){
+      if(view!=='speak'){
+        if(state.view==='speak'){v570StopCapture();v570ClearTempRecording();try{state.v570Recognition?.abort?.();}catch{}state.v570Recognition=null;}
+        const result=v570SetViewBase(view,{focus});v366ApplyNavigation();return result;
+      }
+      v550ClearReadingPosition?.();stopSpeech();v570StopCapture();v570ClearTempRecording();state.view='speak';v366ApplyNavigation();renderSpeak();window.scrollTo({top:0,behavior:'auto'});if(focus){main.focus({preventScroll:true});announce('Speak view');}
+    };
+
+    const v570EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='spoken')return 'spoken';
+      const base=v570EffectiveFocusBase();if(configured!=='auto')return base;
+      const master=v540AggregateStats(state.cards),global=v570GlobalProfile();
+      if(master.started>=30&&global.notes<Math.max(6,Math.round(master.started*.06)))return 'spoken';
+      return base;
+    };
+    const v570FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='spoken'?'Spoken production':v570FocusLabelBase(value);};
+    const v570PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v570PersonalPlanBase(limit),focus=v490EffectiveFocus();if(focus!=='spoken'||!v570CanRecognize())return plan;
+      const tasks=v570StudyTasks(state.cards,4),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30));let added=0;
+      for(const task of tasks){
+        if(added>=3)break;if(plan.queue.some(function(card){return card.v570TaskId===task.v570TaskId;}))continue;
+        if(plan.queue.length>=max){let remove=-1;for(let index=plan.queue.length-1;index>=0;index--){if(plan.queue[index].v490Category!=='retain'){remove=index;break;}}if(remove<0)break;plan.queue.splice(remove,1);}
+        plan.queue.splice(Math.min(plan.queue.length,4+added*5),0,task);added++;
+      }
+      plan.counts={...plan.counts,spoken:added};plan.focus='spoken';if(added)plan.headline='Move active vocabulary into independent spoken production';return plan;
+    };
+    function v570DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');
+      if(select&&!select.querySelector('option[value="spoken"]')){select.insertAdjacentHTML('beforeend','<option value="spoken">Spoken production & transfer</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v570RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v570RenderSettingsBase();v570DecorateSettings();return result;};
+
+    function v570EnsureStyles(){
+      if(document.querySelector('#v570-speaking-style'))return;
+      const style=document.createElement('style');style.id='v570-speaking-style';
+      style.textContent='.v570-header{align-items:flex-end}.v570-header-stats{display:flex;gap:.4rem;flex-wrap:wrap}.v570-header-stats span{padding:.42rem .52rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);font-size:.6rem;color:var(--muted)}.v570-header-stats strong{display:block;color:var(--navy);font-size:.92rem}.v570-capability{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem;margin-bottom:.6rem}.v570-capability>div{padding:.45rem .55rem;border-radius:10px;background:var(--surface-muted)}.v570-capability strong,.v570-capability span{display:block}.v570-capability span,.v570-capability p{font-size:.61rem;color:var(--muted)}.v570-capability p{grid-column:1/-1;margin:0}.v570-mode-panel{display:grid;gap:.55rem;margin-bottom:.8rem}.v570-mode-tabs{display:flex;gap:.35rem;flex-wrap:wrap}.v570-mode-tabs button{border:1px solid var(--line);background:var(--surface-solid);border-radius:999px;padding:.42rem .65rem;font-weight:800}.v570-mode-tabs button.active{border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,var(--surface-solid))}.v570-section{margin-bottom:1rem}.v570-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}.v570-task-card{display:grid;gap:.42rem;padding:.72rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid)}.v570-card-meta{display:flex;gap:.3rem;flex-wrap:wrap}.v570-card-meta span{padding:.2rem .34rem;border-radius:999px;background:var(--surface-muted);font-size:.55rem;color:var(--muted)}.v570-task-card h3{margin:0;color:var(--navy);font-size:.95rem}.v570-task-card p{margin:0;color:var(--muted);font-size:.65rem}.v570-cue-row,.v570-study-cues{display:flex;gap:.25rem;flex-wrap:wrap}.v570-cue-row span{padding:.2rem .34rem;border:1px solid color-mix(in srgb,var(--blue) 25%,var(--line));border-radius:999px;color:var(--muted);font-size:.54rem}.v570-practice-shell{max-width:880px;margin:0 auto}.v570-practice-head{display:grid;grid-template-columns:auto 1fr auto;gap:.65rem;align-items:center;padding:.55rem 0}.v570-practice-head span,.v570-practice-head strong{display:block}.v570-practice-head>div>span{font-size:.57rem;color:var(--muted)}.v570-support-pill{padding:.28rem .45rem;border:1px solid var(--line);border-radius:999px;font-size:.57rem;color:var(--muted)}.v570-prompt{display:grid;gap:.55rem;padding:.85rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid)}.v570-prompt>p{margin:0;color:var(--muted);font-size:.68rem}.v570-target{padding:.65rem;border-radius:12px;background:var(--surface-muted)}.v570-target span,.v570-target strong,.v570-target small{display:block}.v570-target span,.v570-target small{color:var(--muted);font-size:.58rem}.v570-target strong{color:var(--navy);font-size:1.15rem}.v570-target.hidden{border:1px dashed var(--line);background:transparent}.v570-controls{display:grid;gap:.45rem;padding:.75rem 0}.v570-model-row,.v570-record-row,.v570-check-row{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}.v570-record-row span{font-size:.6rem;color:var(--muted);margin-left:auto}.v570-result{display:grid;gap:.2rem;padding:.68rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v570-result span,.v570-result small{font-size:.63rem;color:var(--muted)}.v570-result em{color:var(--navy)}.v570-self-check{display:grid;gap:.4rem;padding:.68rem;margin-top:.5rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid)}.v570-self-check>span{font-size:.62rem;color:var(--muted)}.v570-self-check>div{display:flex;gap:.35rem}.v570-privacy{margin:.65rem 0;color:var(--muted);font-size:.57rem}.v570-study-box{display:grid;gap:.42rem;padding:.68rem;border:1px solid color-mix(in srgb,var(--blue) 35%,var(--line));border-radius:12px;background:var(--surface-solid)}.v570-study-box span,.v570-study-box small{color:var(--muted);font-size:.61rem}.v570-word-speaking{display:grid;gap:.45rem;padding:.66rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);margin-top:.55rem}.v570-word-speaking>div:first-child span,.v570-word-speaking>div:first-child small{display:block;color:var(--muted);font-size:.6rem}.v570-word-speaking>div:first-child strong{display:block;color:var(--navy);font-size:.78rem}.v570-context-links{display:flex;gap:.3rem;flex-wrap:wrap}.v570-context-links button{padding:.25rem .4rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-solid);font-size:.57rem}.v570-progress-panel{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v570-progress-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v570-progress-head h3{margin:.08rem 0 .2rem}.v570-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:75ch}.v570-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.35rem;margin-top:.7rem}.v570-kind-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.35rem;margin-top:.35rem}.v570-progress-grid span,.v570-kind-grid span{padding:.5rem;border-radius:10px;background:var(--surface-muted);font-size:.6rem;color:var(--muted)}.v570-progress-grid strong,.v570-kind-grid strong{display:block;color:var(--navy);font-size:.95rem}.v570-dashboard-card{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:.75rem .9rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid);margin-bottom:.75rem}.v570-dashboard-card h3{margin:.08rem 0}.v570-dashboard-card p{margin:0;color:var(--muted);font-size:.68rem}.v570-dashboard-card span{display:block;color:var(--muted);font-size:.58rem;margin-top:.3rem}.mobile-nav.v570-seven{grid-template-columns:repeat(7,minmax(58px,1fr));overflow-x:auto;overscroll-behavior-inline:contain}.mobile-nav.v570-seven button{font-size:.59rem;padding-inline:.12rem;min-width:58px}@media(max-width:860px){.v570-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v570-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v570-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.v570-grid{grid-template-columns:1fr}.v570-practice-head{grid-template-columns:auto 1fr}.v570-support-pill{grid-column:1/-1;width:max-content}.v570-capability{grid-template-columns:1fr}.v570-capability p{grid-column:auto}.v570-model-row,.v570-record-row,.v570-check-row,.v570-self-check>div{align-items:stretch;flex-direction:column}.v570-model-row button,.v570-record-row button,.v570-check-row button,.v570-self-check button{width:100%}.v570-record-row span{margin-left:0}.v570-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v570-progress-head,.v570-dashboard-card{align-items:stretch;flex-direction:column}}';
+      document.head.append(style);
+    }
+
+    const v570NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v570NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p16-spoken-production';
+      document.documentElement.dataset.spokenPractice='v570';
+      document.documentElement.dataset.pronunciationScoring='intelligibility-not-accent';
+    };
+    const v570InitBase=init;
+    init=async function(options){
+      v570EnsureStyles();const result=await v570InitBase(options||{});v570LoadSpeaking();v420NormalizeSurface();v366ApplyNavigation();
+      if(state.view==='dashboard')renderDashboard();
+      else if(state.view==='progress')renderProgress();
+      else if(state.view==='speak')renderSpeak();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.7.0';return result;
     };
 
     function v380BootAudit(){
