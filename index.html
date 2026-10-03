@@ -20303,7 +20303,7 @@ qui	who	A1	question word`;
     V490_PATH_FOCI.add('spoken');
 
     state.v570Speaking=null;
-    state.v570SpeakUi={mode:'shadow',selectedTaskId:'',revealed:false,result:null,sessionIds:[],sessionIndex:0,customTask:null};
+    state.v570SpeakUi={mode:'shadow',selectedTaskId:'',revealed:false,result:null,sessionIds:[],sessionIndex:0,customTask:null,modelUsed:false,slowModel:false};
     state.v570TempRecording={url:'',blob:null,durationMs:0,startedAt:0,targetId:'',modelDurationMs:0};
     state.v570Recorder=null;
     state.v570RecorderStream=null;
@@ -20442,7 +20442,7 @@ qui	who	A1	question word`;
       const conf=clamp(finiteNumber(confidence),0,1),sim=comparison.similarity;
       if(comparison.correct||sim>=.9)return {verdict:'recognized',correct:true,almost:false,reliable:conf===0||conf>=.45};
       if(comparison.almost||sim>=.74)return {verdict:'close',correct:false,almost:true,reliable:conf===0||conf>=.45};
-      if(sim<.55&&conf>=.68)return {verdict:'mismatch',correct:false,almost:false,reliable:true};
+      if(sim<.55&&conf>=.68)return {verdict:'mismatch',correct:false,almost:false,reliable:false};
       return {verdict:'unscored',correct:false,almost:false,reliable:false};
     }
     function v570RunRecognition(task,onResult){
@@ -20524,7 +20524,7 @@ qui	who	A1	question word`;
     function v570TaskSupport(task){
       let support=0;
       if(task.kind==='shadow')support=1;
-      if(task._modelUsed===true)support=Math.max(support,task._slowModel===true?2:1);
+      if(state.v570SpeakUi.modelUsed===true)support=Math.max(support,state.v570SpeakUi.slowModel===true?2:1);
       if(state.v570SpeakUi.revealed&&!task.targetVisible)support=Math.max(support,2);
       return support;
     }
@@ -20533,7 +20533,7 @@ qui	who	A1	question word`;
       if(result.status==='unavailable')return '<strong>Speech recognition unavailable</strong><span>Use Record → Play mine → Reveal → self-assess. This attempt is not marked wrong.</span>';
       if(result.status==='error'||result.status==='uncertain')return '<strong>Could not evaluate this attempt</strong><span>Speech recognition was unavailable or uncertain. No failure is recorded; use self-assessment.</span>';
       const pct=Math.round((result.comparison?.similarity||0)*100),confidence=result.confidence?Math.round(result.confidence*100)+'% recognizer confidence':'confidence not reported';
-      return '<strong>'+escapeHtml(V570_VERDICTS[result.verdict]||'Unscored')+'</strong><span>Recognizer heard: <em lang="fr">'+escapeHtml(result.transcript||'—')+'</em> · '+pct+'% text/structure match · '+escapeHtml(confidence)+'</span><small>This is an intelligibility signal, not an accent or native-likeness score.</small>';
+      return '<strong>'+escapeHtml(V570_VERDICTS[result.verdict]||'Unscored')+'</strong><span>Recognizer heard: <em lang="fr">'+escapeHtml(result.transcript||'—')+'</em> · '+pct+'% text/structure match · '+escapeHtml(confidence)+'</span><small>'+(result.verdict==='mismatch'?'The recognizer heard something different, but this is not automatically counted as a learner failure. Confirm it yourself below.':'This is an intelligibility signal, not an accent or native-likeness score.')+'</small>';
     }
     function v570PaceHtml(){
       const rec=state.v570TempRecording;if(!rec.durationMs)return '';
@@ -20575,7 +20575,7 @@ qui	who	A1	question word`;
     }
     function v570OpenTask(id){
       const task=v570TaskById(id);if(!task)return;
-      v570StopCapture();v570ClearTempRecording();state.v570SpeakUi.selectedTaskId=id;state.v570SpeakUi.revealed=task.targetVisible;state.v570SpeakUi.result=null;renderSpeak();
+      v570StopCapture();v570ClearTempRecording();state.v570SpeakUi.selectedTaskId=id;state.v570SpeakUi.revealed=task.targetVisible;state.v570SpeakUi.result=null;state.v570SpeakUi.modelUsed=false;state.v570SpeakUi.slowModel=false;renderSpeak();
     }
     function v570CloseTask({keepSession=false}={}){
       v570StopCapture();v570ClearTempRecording();try{state.v570Recognition?.abort?.();}catch{}state.v570Recognition=null;state.v570SpeakUi.selectedTaskId='';state.v570SpeakUi.revealed=false;state.v570SpeakUi.result=null;
@@ -20592,9 +20592,9 @@ qui	who	A1	question word`;
         (result||state.v570SpeakUi.revealed?'<section class="v570-self-check"><strong>Final judgment</strong><span>Use self-assessment when recognition is unavailable, uncertain, or clearly wrong about what you said.</span><div><button class="secondary" data-v570-self="manual_retry">Retry</button><button class="secondary" data-v570-self="manual_almost">Almost</button><button class="primary" data-v570-self="manual_correct">Correct</button></div></section>':'')+
         '<footer class="v570-privacy">P16 recordings are temporary and remain in this page session. Attempt metadata can be backed up; raw P16 microphone audio is not added to backup/export.</footer></div>';
       $('#v570-back')?.addEventListener('click',function(){v570CloseTask();});
-      $('#v570-model')?.addEventListener('click',function(){task._modelUsed=true;v570SpeakModel(task);});
-      $('#v570-model-slow')?.addEventListener('click',function(){task._modelUsed=true;task._slowModel=true;v570SpeakModel(task,{slow:true});});
-      $('#v570-shadow-now')?.addEventListener('click',function(){task._modelUsed=true;v570ShadowNow(task);});
+      $('#v570-model')?.addEventListener('click',function(){state.v570SpeakUi.modelUsed=true;v570SpeakModel(task);});
+      $('#v570-model-slow')?.addEventListener('click',function(){state.v570SpeakUi.modelUsed=true;state.v570SpeakUi.slowModel=true;v570SpeakModel(task,{slow:true});});
+      $('#v570-shadow-now')?.addEventListener('click',function(){state.v570SpeakUi.modelUsed=true;v570ShadowNow(task);});
       $('#v570-record')?.addEventListener('click',async function(){if(state.v570Recorder?.state==='recording'){v570StopTempRecording();return;}await v570StartTempRecording(task,{modelDurationMs:state.v570TempRecording.modelDurationMs});});
       $('#v570-play-mine')?.addEventListener('click',v570PlayMine);
       $('#v570-reveal')?.addEventListener('click',function(){state.v570SpeakUi.revealed=true;renderSpeak();});
@@ -20624,7 +20624,7 @@ qui	who	A1	question word`;
     function v570AttemptBase(task){
       return {
         t:now(),kind:task.kind,taskId:task.id,noteId:task.noteId||'',itemId:task.itemId||'',exerciseId:task.exerciseId||'',expected:task.expected,
-        support:v570TaskSupport(task),modelUsed:task._modelUsed===true,slowModel:task._slowModel===true,targetVisible:task.targetVisible===true||state.v570SpeakUi.revealed,
+        support:v570TaskSupport(task),modelUsed:state.v570SpeakUi.modelUsed===true,slowModel:state.v570SpeakUi.slowModel===true,targetVisible:task.targetVisible===true||state.v570SpeakUi.revealed,
         learnerDurationMs:state.v570TempRecording.durationMs||0,modelDurationMs:state.v570TempRecording.modelDurationMs||0,paceRatio:v570PaceRatio()
       };
     }
@@ -20636,7 +20636,9 @@ qui	who	A1	question word`;
     function v570CommitManualAttempt(task,verdict){
       v570RemoveRecentAutomatedAttempt(task);
       const source=state.v570SpeakUi.result,row={...v570AttemptBase(task),transcript:source?.transcript||'',similarity:source?.comparison?.similarity||0,recognitionConfidence:source?.confidence||0,verdict:verdict,correct:verdict==='manual_correct',almost:verdict==='manual_almost',reliable:true,manual:true,responseMs:0};
-      v570StoreAttempt(task,row);v570AdvanceAfterAttempt();
+      v570StoreAttempt(task,row);
+      if(verdict==='manual_retry'){v570ClearTempRecording();state.v570SpeakUi.result=null;state.v570SpeakUi.revealed=task.targetVisible;state.v570SpeakUi.modelUsed=false;state.v570SpeakUi.slowModel=false;renderSpeak();return;}
+      v570AdvanceAfterAttempt();
     }
     function v570StoreAttempt(task,row){
       state.v570Speaking.attempts.push(row);if(state.v570Speaking.attempts.length>V570_MAX_ATTEMPTS)state.v570Speaking.attempts=state.v570Speaking.attempts.slice(-V570_MAX_ATTEMPTS);
