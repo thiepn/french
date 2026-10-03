@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.9.0';
-    const APP_RELEASE = 'P18 Real-World Tasks, Scenario Chains & Functional French Independence';
+    const APP_VERSION = '5.10.0';
+    const APP_RELEASE = 'P19 Communicative System Hardening, Evidence Calibration & Real-Device QA';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -21547,7 +21547,7 @@ qui	who	A1	question word`;
     }
     function v580AbortActive(){
       if(!state.v580Conversation.active)return;
-      if(!confirm('End this conversation? The completed turns will remain only in the active local snapshot until you start another scenario.'))return;
+      if(!confirm('End this conversation? The unfinished conversation will not be saved as a completed session. Accepted word-level practice evidence already recorded will remain.'))return;
       state.v580Conversation.active=null;state.v580Ui.pendingResponse='';state.v580Ui.pendingEval=null;v580SaveConversation();renderConversation();
     }
     function v580UseSupport(level){
@@ -22047,7 +22047,7 @@ qui	who	A1	question word`;
     }
     function v590MissionSection(){
       const profile=v590Profile(),recommended=v590RecommendedMission(),active=state.v590Missions?.active,activeMission=active&&V590_MISSION_BY_ID.get(active.missionId);
-      return '<section class="panel v590-missions"><div class="v590-mission-head"><div><p class="eyebrow">P18 real-world missions</p><h3>Chain separate conversations into functional tasks</h3><p>Each mission combines three existing deterministic scenarios. Independence passes require task completion, at least 80% independent successful turns, no manual continuation, and no support above level 1. This is practiced-task evidence, not CEFR certification.</p></div><div class="v590-profile"><span><strong>'+profile.passes+'</strong> passes</span><span><strong>'+profile.covered+'/'+V590_MISSIONS.length+'</strong> missions covered</span><span><strong>'+profile.independentRate+'%</strong> independent turns</span></div></div>'+
+      return '<section class="panel v590-missions"><div class="v590-mission-head"><div><p class="eyebrow">P18 real-world missions</p><h3>Chain separate conversations into functional tasks</h3><p>Each mission combines three existing deterministic scenarios. Independence passes require complete task chains, enough successful turns, calibrated transfer evidence, at least 80% independent successful turns, no manual continuation, and no support above level 1. This is practiced-task evidence, not CEFR certification.</p></div><div class="v590-profile"><span><strong>'+profile.passes+'</strong> passes</span><span><strong>'+profile.covered+'/'+V590_MISSIONS.length+'</strong> missions covered</span><span><strong>'+profile.independentRate+'%</strong> independent turns</span></div></div>'+
         (activeMission?'<div class="v590-active"><div><span>Mission in progress · step '+(active.step+1)+'/'+activeMission.scenarios.length+'</span><strong>'+escapeHtml(activeMission.title)+'</strong><small>'+escapeHtml(V580_SCENARIO_BY_ID.get(activeMission.scenarios[active.step])?.title||'Current task')+'</small></div><div class="button-row"><button class="primary" id="v590-resume-mission">Resume mission</button><button class="secondary" id="v590-end-mission">End mission</button></div></div>':
         '<div class="v590-recommended"><div><span>Recommended next mission</span><strong>'+escapeHtml(recommended.title)+'</strong><small>'+escapeHtml(recommended.goal)+'</small></div><button class="primary" id="v590-start-recommended">Start</button></div>')+
         '<div class="v590-mission-grid">'+V590_MISSIONS.map(v590MissionCard).join('')+'</div></section>';
@@ -22166,6 +22166,243 @@ qui	who	A1	question word`;
       else if(state.view==='progress')renderProgress();
       else if(state.view==='conversation')renderConversation();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.9.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.10.0 COMMUNICATIVE SYSTEM HARDENING, EVIDENCE CALIBRATION &
+       REAL-DEVICE QA
+       P19 hardens P12-P18 evidence and lifecycle behavior. Supported
+       success remains useful practice, but it no longer receives the
+       same mastery credit as independent first-attempt performance.
+       ================================================================ */
+    const V5100_VERSION='5.10.0';
+    const V5100_RELEASE='P19 Communicative System Hardening, Evidence Calibration & Real-Device QA';
+    const V5100_POLICY='communicative-evidence-v2';
+    const V5100_MIN_MISSION_TURNS_PER_TASK=2;
+    state.v5100Qa=state.v5100Qa&&typeof state.v5100Qa==='object'?state.v5100Qa:{last:null};
+    state.v5100LastSubmit=state.v5100LastSubmit&&typeof state.v5100LastSubmit==='object'?state.v5100LastSubmit:{signature:'',at:0};
+
+    function v5100CommunicativeEntry(entry){
+      return entry?.conversationPractice===true||entry?.spokenPractice===true||entry?.contextListening===true||
+        entry?.sentencePractice===true||entry?.transferPractice===true||entry?.usagePractice===true;
+    }
+    function v5100EvidenceCredit(entry){
+      if(!v540EntrySuccess(entry))return 0;
+      const support=clamp(finiteNumber(v540EntrySupport(entry)),0,3),supportCredit=[1,.72,.45,.22][support]??.22;
+      let credit=supportCredit;
+      if(entry?.mixedFirstAttempt===false)credit*=.72;
+      if(entry?.conversationManual===true||entry?.spokenManual===true)credit=Math.min(credit,.28);
+      if(entry?.spokenPractice===true&&entry?.spokenReliable===false)credit=Math.min(credit,.4);
+      if(entry?.conversationPractice===true){
+        const confidence=clamp(finiteNumber(entry.conversationIntentConfidence),0,1);
+        credit*=.65+confidence*.35;
+      }
+      if(entry?.contextListening===true&&entry?.listeningFirstListen===false)credit*=.86;
+      return clamp(credit,0,1);
+    }
+    function v5100ContextKey(entry,dimension){
+      if(entry?.conversationPractice===true)return 'conversation:'+String(entry.conversationScenarioId||'')+':'+String(entry.conversationFunction||'');
+      if(entry?.contextListening===true)return 'listening:'+String(entry.listeningItemId||'')+':'+String(entry.listeningKind||'');
+      if(entry?.spokenPractice===true)return 'spoken:'+String(entry.spokenKind||'')+':'+String(entry.spokenTaskId||entry.spokenExerciseId||'');
+      if(entry?.sentencePractice===true)return 'sentence:'+String(entry.sentenceExerciseId||entry.sentenceExerciseType||'');
+      if(entry?.transferPractice===true)return 'transfer:'+String(entry.transferExerciseId||entry.transferMode||'');
+      if(entry?.usagePractice===true)return 'usage:'+String(entry.usageExerciseId||entry.mixedKind||'');
+      return String(dimension||'')+':'+String(entry?.mixedKind||entry?.practice||'');
+    }
+
+    const v5100DimensionEvidenceBase=v540DimensionEvidence;
+    v540DimensionEvidence=function(note,dimension){
+      const base=v5100DimensionEvidenceBase(note,dimension);
+      if(!['listening','phrase','sentence','transfer'].includes(dimension))return base;
+      const entries=(base.entries||[]).filter(v5100CommunicativeEntry);
+      if(!entries.length)return base;
+      const attempts=entries.length,successes=entries.filter(v540EntrySuccess).length,failures=attempts-successes;
+      const credit=entries.reduce(function(sum,entry){return sum+v5100EvidenceCredit(entry);},0);
+      const independentEntries=entries.filter(function(entry){return v540EntrySuccess(entry)&&v540EntrySupport(entry)===0&&entry.mixedFirstAttempt!==false&&entry.conversationManual!==true&&entry.spokenManual!==true;});
+      const daysSeen=new Set(entries.map(function(entry){return dayKey(entry.t);})).size;
+      const times=entries.map(function(entry){return entry.t;}).sort(function(a,b){return a-b;}),spanDays=times.length>1?(times.at(-1)-times[0])/days(1):0;
+      const successfulTimes=entries.filter(v540EntrySuccess).map(function(entry){return finiteNumber(entry.responseMs);}).filter(function(value){return value>0;});
+      const avgMs=successfulTimes.length?successfulTimes.reduce(function(sum,value){return sum+value;},0)/successfulTimes.length:0;
+      const contexts=new Set(entries.filter(v540EntrySuccess).map(function(entry){return v5100ContextKey(entry,dimension);}).filter(Boolean));
+      const accuracy=attempts?credit/attempts:0,spacing=clamp(daysSeen/4,0,1),span=clamp(spanDays/21,0,1);
+      const speed=!avgMs?0.55:avgMs<=9000?1:avgMs<=16000?.82:avgMs<=28000?.62:.42;
+      const independence=successes?independentEntries.length/successes:0,diversity=clamp(contexts.size/4,0,1);
+      const recent=entries.at(-1)&&now()-entries.at(-1).t<=days(21)?1:entries.length?.55:0;
+      const empirical=clamp(accuracy*.4+spacing*.14+span*.1+speed*.06+independence*.17+diversity*.09+recent*.04-(failures/Math.max(1,attempts))*.08,0,1);
+      const confidence=clamp(Math.min(1,attempts/8)*.38+spacing*.2+span*.13+Math.min(1,independentEntries.length/4)*.17+diversity*.12,0,1);
+      return {...base,attempts:attempts,successes:successes,failures:failures,accuracy:accuracy,daysSeen:daysSeen,spanDays:spanDays,
+        independent:independentEntries.length,avgMs:avgMs,score:empirical,confidence:confidence,
+        calibrated:true,calibrationPolicy:V5100_POLICY,weightedSuccessCredit:credit,contextDiversity:contexts.size};
+    };
+
+    const v5100SpokenProfileBase=v570SpokenProfile;
+    v570SpokenProfile=function(note){
+      const profile=v5100SpokenProfileBase(note),noteId=depthBaseId(note),rows=(state.v570Speaking?.attempts||[]).filter(function(row){return row.noteId===noteId;});
+      function independent(kind){return rows.filter(function(row){return row.kind===kind&&row.reliable&&row.correct&&row.support===0&&!row.modelUsed&&!row.manual;}).length;}
+      profile.pronunciation.independent=independent('pronunciation');profile.shadow.independent=independent('shadow');
+      profile.spokenRecall.independent=independent('recall');profile.spokenTransfer.independent=independent('transfer');
+      return profile;
+    };
+
+    const v5100ConversationProfileBase=v580Profile;
+    v580Profile=function(){
+      const profile=v5100ConversationProfileBase(),completed=(state.v580Conversation?.sessions||[]).filter(function(row){return row.completed;});
+      const secure=V580_SCENARIOS.filter(function(scenario){
+        const rows=completed.filter(function(row){return row.scenarioId===scenario.id;}),variants=new Set(rows.map(function(row){return row.variant;}));
+        const successes=rows.reduce(function(sum,row){return sum+row.successfulTurns;},0),independent=rows.reduce(function(sum,row){return sum+row.independentTurns;},0);
+        const evidenceWeight=rows.reduce(function(sum,row){return sum+row.averageEvidence*Math.max(1,row.successfulTurns);},0),manual=rows.reduce(function(sum,row){return sum+row.manualAccepts;},0);
+        const evidence=successes?evidenceWeight/successes:0;
+        return rows.length>=2&&variants.size>=2&&successes>=4&&independent/Math.max(1,successes)>=.7&&evidence>=.55&&manual/Math.max(1,successes)<=.2;
+      }).length;
+      return {...profile,secure:secure};
+    };
+
+    const v5100NormalizeMissionRunBase=v590NormalizeRun;
+    v590NormalizeRun=function(row){
+      const normalized=v5100NormalizeMissionRunBase(row);if(!normalized)return normalized;
+      const mission=V590_MISSION_BY_ID.get(normalized.missionId),minimumTurns=(mission?.scenarios?.length||0)*V5100_MIN_MISSION_TURNS_PER_TASK;
+      normalized.independentPass=normalized.completed&&normalized.successfulTurns>=minimumTurns&&normalized.independentRate>=80&&normalized.manualAccepts===0&&normalized.supportMax<=1&&normalized.averageEvidence>=.55;
+      normalized.fullyUnsupported=normalized.independentPass&&normalized.successfulTurns>0&&normalized.independentTurns===normalized.successfulTurns&&normalized.supportMax===0;
+      normalized.calibrationPolicy=V5100_POLICY;normalized.minimumTurns=minimumTurns;return normalized;
+    };
+    v590LoadMissions();
+
+    const v5100SubmitResponseBase=v580SubmitResponse;
+    v580SubmitResponse=function(response,options={}){
+      const active=state.v580Conversation?.active,raw=String(response||'').trim(),manual=options?.manual===true;
+      const signature=[active?.id||'',active?.nodeId||'',manual?'manual':'auto',v580Fold(raw)].join('|'),timestamp=now();
+      if(signature===state.v5100LastSubmit.signature&&timestamp-state.v5100LastSubmit.at<900){showToast('Duplicate response ignored.');return;}
+      state.v5100LastSubmit={signature:signature,at:timestamp};
+      const result=v5100SubmitResponseBase(response,options);
+      if(state.v580Ui?.pendingEval){const panel=main.querySelector('.v580-uncertain');if(panel){panel.setAttribute('tabindex','-1');panel.focus({preventScroll:true});}}
+      return result;
+    };
+
+    function v5100ReconcileCommunicativeState(){
+      let changed=false;const mission=state.v590Missions?.active,conversation=state.v580Conversation?.active;
+      if(mission){
+        const spec=V590_MISSION_BY_ID.get(mission.missionId),expected=spec?.scenarios?.[mission.step];
+        if(state.v580Conversation?.batch){state.v580Conversation.batch=null;changed=true;}
+        if(conversation?.batchId===mission.id&&conversation.scenarioId!==expected){conversation.batchId='';changed=true;}
+        if(!conversation&&mission.scenarioResults?.[mission.step]){
+          if(mission.step>=Math.max(0,(spec?.scenarios?.length||1)-1)){v590FinalizeMission();changed=true;}
+        }
+      }else if(conversation?.batchId&&String(conversation.batchId).startsWith('mission-')){
+        conversation.batchId='';changed=true;
+      }
+      if(changed){v580SaveConversation();v590SaveMissions();}
+      return changed;
+    }
+
+    function v5100PauseConversationHome(){
+      try{state.v580Recognition?.abort?.();}catch{}state.v580Recognition=null;
+      try{state.v570Recognition?.abort?.();}catch{}stopSpeech();
+      v580SaveConversation();v590SaveMissions();v580ConversationHome();v590DecorateConversation();v5100DecorateConversationSurface();
+      announce('Conversation paused. Your current turn is saved locally.');
+    }
+    function v5100DecorateConversationSurface(){
+      if(state.view!=='conversation')return;
+      const back=$('#v580-back-home');
+      if(back&&!back.dataset.v5100Pause){
+        const replacement=back.cloneNode(true);replacement.dataset.v5100Pause='1';replacement.textContent='← Pause & home';back.replaceWith(replacement);
+        replacement.addEventListener('click',v5100PauseConversationHome);
+      }
+      const response=$('#v580-response');if(response){response.setAttribute('aria-label','Your response in French');response.setAttribute('autocomplete','off');response.setAttribute('autocapitalize','sentences');response.setAttribute('enterkeyhint','send');}
+      main.querySelectorAll('.v580-progress-meter,.v590-step-meter').forEach(function(meter){
+        meter.setAttribute('role','progressbar');meter.setAttribute('aria-valuemin','0');meter.setAttribute('aria-valuemax','100');
+        const fill=meter.querySelector('i'),value=clamp(parseInt(fill?.style?.width||'0',10)||0,0,100);meter.setAttribute('aria-valuenow',String(value));
+      });
+      const feedback=main.querySelector('.v580-turn-feedback');if(feedback){feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');}
+      const uncertain=main.querySelector('.v580-uncertain');if(uncertain){uncertain.setAttribute('role','status');uncertain.setAttribute('aria-live','assertive');}
+      const nav=$('.mobile-nav');if(nav){nav.setAttribute('role','navigation');nav.setAttribute('aria-label','Primary');}
+    }
+    const v5100RenderConversationBase=renderConversation;
+    renderConversation=function(){const result=v5100RenderConversationBase();v5100DecorateConversationSurface();return result;};
+
+    function v5100StorageProbe(){
+      try{const key='french3000-qa-'+Math.random().toString(36).slice(2);localStorage.setItem(key,'1');localStorage.removeItem(key);return true;}catch{return false;}
+    }
+    function v5100DeviceSnapshot(){
+      const standalone=Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true);
+      return {
+        width:Math.round(window.innerWidth||0),height:Math.round(window.innerHeight||0),dpr:clamp(finiteNumber(window.devicePixelRatio,1),.5,10),
+        touch:clamp(finiteNumber(navigator.maxTouchPoints),0,20),coarse:Boolean(window.matchMedia?.('(pointer: coarse)')?.matches),
+        standalone:standalone,secure:window.isSecureContext===true,online:navigator.onLine!==false,
+        speech:Boolean(v570RecognitionCtor?.()),mediaRecorder:typeof MediaRecorder!=='undefined'&&Boolean(navigator.mediaDevices?.getUserMedia),
+        synthesis:Boolean(window.speechSynthesis&&window.SpeechSynthesisUtterance),storage:v5100StorageProbe(),
+        indexedDb:'indexedDB' in window,serviceWorker:'serviceWorker' in navigator
+      };
+    }
+    function v5100QaCheck(id,label,status,detail){return {id:id,label:label,status:status,detail:detail};}
+    function v5100RunQa(){
+      const checks=[],device=v5100DeviceSnapshot(),graphErrors=v580GraphAudit(),missionErrors=v590MissionAudit();
+      checks.push(v5100QaCheck('graphs','Conversation graphs',graphErrors.length?'fail':'pass',graphErrors.length?graphErrors.join(' · '):V580_SCENARIOS.length+' scenario graphs valid'));
+      checks.push(v5100QaCheck('missions','Mission chains',missionErrors.length?'fail':'pass',missionErrors.length?missionErrors.join(' · '):V590_MISSIONS.length+' mission chains valid'));
+      const badConversation=(state.reviewLog||[]).filter(function(entry){return entry.conversationPractice===true&&((entry.conversationIndependent===true&&(entry.conversationSupport!==0||entry.conversationManual===true))||entry.conversationSupport<0||entry.conversationSupport>3);});
+      checks.push(v5100QaCheck('evidence','Conversation evidence invariants',badConversation.length?'fail':'pass',badConversation.length?badConversation.length+' inconsistent review-log entries':'support/manual/independence fields consistent'));
+      const mission=state.v590Missions?.active,conversation=state.v580Conversation?.active,spec=mission&&V590_MISSION_BY_ID.get(mission.missionId),expected=spec?.scenarios?.[mission?.step];
+      const stateMismatch=Boolean(mission&&conversation?.batchId===mission.id&&conversation.scenarioId!==expected);
+      checks.push(v5100QaCheck('state','Active-state integrity',stateMismatch?'fail':'pass',stateMismatch?'active mission and conversation disagree':'conversation/mission state is coherent'));
+      checks.push(v5100QaCheck('storage','Local persistence',device.storage&&device.indexedDb?'pass':'fail','localStorage '+(device.storage?'available':'blocked')+' · IndexedDB '+(device.indexedDb?'available':'missing')));
+      checks.push(v5100QaCheck('secure','Secure context',device.secure?'pass':'warn',device.secure?'microphone-capable secure context':'voice APIs may be blocked outside HTTPS/localhost'));
+      checks.push(v5100QaCheck('speech','Speech recognition',device.speech?'pass':'warn',device.speech?'browser speech recognition available':'text/offline conversation remains available'));
+      checks.push(v5100QaCheck('capture','Microphone recording',device.mediaRecorder?'pass':'warn',device.mediaRecorder?'MediaRecorder + getUserMedia available':'spoken recording unavailable on this browser'));
+      checks.push(v5100QaCheck('tts','French playback platform',device.synthesis?'pass':'warn',device.synthesis?'speech synthesis API available':'model/partner playback unavailable'));
+      checks.push(v5100QaCheck('pwa','PWA platform',device.serviceWorker?'pass':'warn',(device.serviceWorker?'service worker API available':'service worker API unavailable')+(device.standalone?' · standalone':' · browser tab')));
+      const fail=checks.filter(function(row){return row.status==='fail';}).length,warn=checks.filter(function(row){return row.status==='warn';}).length;
+      const result={t:now(),policy:V5100_POLICY,status:fail?'fail':warn?'warn':'pass',fail:fail,warn:warn,checks:checks,device:device};
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    }
+    function v5100QaPanel(){
+      const qa=state.v5100Qa.last||v5100RunQa(),d=qa.device;
+      return '<section class="panel v5100-qa"><div class="v5100-qa-head"><div><p class="eyebrow">P19 communicative QA</p><h3>Current-device readiness & evidence integrity</h3><p>This audit checks deterministic graphs, mission state, evidence invariants, persistence and browser capabilities. Missing speech APIs are warnings because text/offline conversation remains functional.</p></div><div class="v5100-qa-status '+qa.status+'"><strong>'+qa.status.toUpperCase()+'</strong><span>'+qa.fail+' fail · '+qa.warn+' warning'+(qa.warn===1?'':'s')+'</span></div></div>'+
+        '<div class="v5100-device"><span>'+d.width+'×'+d.height+' @ '+d.dpr+'×</span><span>'+(d.touch?d.touch+' touch points':'no touch points')+'</span><span>'+(d.coarse?'coarse pointer':'fine pointer')+'</span><span>'+(d.standalone?'standalone PWA':'browser tab')+'</span><span>'+(d.online?'online':'offline')+'</span></div>'+
+        '<div class="v5100-checks">'+qa.checks.map(function(row){return '<div class="v5100-check '+row.status+'"><span>'+escapeHtml(row.label)+'</span><strong>'+row.status+'</strong><small>'+escapeHtml(row.detail)+'</small></div>';}).join('')+'</div>'+
+        '<div class="button-row"><button class="secondary" id="v5100-rerun-qa">Run QA again</button><button class="secondary" id="v5100-copy-qa">Copy QA summary</button></div></section>';
+    }
+    function v5100QaText(qa=state.v5100Qa.last||v5100RunQa()){
+      return ['French3000 '+V5100_VERSION+' · '+V5100_RELEASE,'QA: '+qa.status.toUpperCase()+' · '+qa.fail+' fail · '+qa.warn+' warnings',
+        'Viewport: '+qa.device.width+'x'+qa.device.height+' @ '+qa.device.dpr+'x · touch '+qa.device.touch+' · '+(qa.device.standalone?'standalone':'browser'),
+        ...qa.checks.map(function(row){return '['+row.status.toUpperCase()+'] '+row.label+': '+row.detail;})].join('\n');
+    }
+    function v5100DecorateSettings(){
+      if(state.view!=='settings'||main.querySelector('.v5100-qa'))return;
+      const anchor=main.querySelector('.settings-grid')||main.lastElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v5100QaPanel());
+      $('#v5100-rerun-qa')?.addEventListener('click',function(){state.v5100Qa.last=v5100RunQa();renderSettings();});
+      $('#v5100-copy-qa')?.addEventListener('click',async function(){try{await navigator.clipboard.writeText(v5100QaText());showToast('QA summary copied.');}catch{showToast('Clipboard unavailable on this browser.');}});
+    }
+    const v5100RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v5100RenderSettingsBase();v5100DecorateSettings();return result;};
+
+    function v5100EnsureStyles(){
+      if(document.querySelector('#v5100-hardening-style'))return;
+      const style=document.createElement('style');style.id='v5100-hardening-style';
+      style.textContent='.v580-history{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.v580-practice-shell,.v580-result-shell,.v590-mission-card,.v590-result-card{min-width:0}.v580-bubble p,.v580-partner p,.v590-mission-card p,.v590-chain span{overflow-wrap:anywhere}.v580-response-box textarea{scroll-margin-bottom:calc(110px + env(safe-area-inset-bottom))}.v5100-qa{margin-top:.8rem}.v5100-qa-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5100-qa-head h3{margin:.08rem 0}.v5100-qa-head p{margin:0;color:var(--muted);font-size:.68rem;max-width:78ch}.v5100-qa-status{min-width:110px;padding:.55rem .65rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v5100-qa-status strong,.v5100-qa-status span{display:block}.v5100-qa-status strong{font-size:.82rem}.v5100-qa-status span{font-size:.55rem;color:var(--muted)}.v5100-qa-status.fail{border-color:#c96f6f}.v5100-qa-status.warn{border-color:#d5b75d}.v5100-device{display:flex;gap:.3rem;flex-wrap:wrap;margin:.6rem 0}.v5100-device span{padding:.22rem .36rem;border-radius:999px;background:var(--surface-muted);font-size:.54rem;color:var(--muted)}.v5100-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem;margin-bottom:.6rem}.v5100-check{display:grid;grid-template-columns:1fr auto;gap:.12rem .5rem;padding:.5rem .55rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid)}.v5100-check>span{font-size:.6rem;color:var(--navy);font-weight:800}.v5100-check>strong{font-size:.54rem;text-transform:uppercase}.v5100-check>small{grid-column:1/-1;color:var(--muted);font-size:.54rem}.v5100-check.fail strong{color:#963d3d}.v5100-check.warn strong{color:#805b18}.v5100-check.pass strong{color:#2d684c}.v580-uncertain:focus{outline:3px solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:3px}@media(pointer:coarse){.v580-practice-shell button,.v580-result-shell button,.v590-missions button,.v590-dashboard-card button,.v5100-qa button{min-height:44px;touch-action:manipulation}.mobile-nav button{min-height:44px;touch-action:manipulation}}@media(max-width:680px){#v580-response{font-size:16px}.v5100-qa-head{flex-direction:column}.v5100-qa-status{width:100%}.v5100-checks{grid-template-columns:1fr}.mobile-nav.v580-eight{scrollbar-width:none}.mobile-nav.v580-eight::-webkit-scrollbar{display:none}.v580-practice-shell,.v580-result-shell{padding-left:max(0px,env(safe-area-inset-left));padding-right:max(0px,env(safe-area-inset-right))}}@media(max-height:520px) and (orientation:landscape){.v580-history{max-height:150px}.v580-partner{padding:.5rem}.v580-practice-head{margin-bottom:.3rem}.v580-goal-strip,.v590-step-banner{margin-bottom:.35rem}}';
+      document.head.append(style);
+    }
+
+    function v5100BindLifecycle(){
+      if(window.__french3000P19LifecycleBound)return;window.__french3000P19LifecycleBound=true;
+      const persist=function(){try{v580SaveConversation();v590SaveMissions();}catch{}};
+      window.addEventListener('pagehide',function(){persist();try{state.v580Recognition?.abort?.();}catch{}try{state.v570Recognition?.abort?.();}catch{}try{v570StopCapture?.({discard:true});}catch{}});
+      document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')persist();});
+    }
+    const v5100NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5100NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p19-communicative-hardening';
+      document.documentElement.dataset.evidencePolicy=V5100_POLICY;
+    };
+    const v5100InitBase=init;
+    init=async function(options){
+      v5100EnsureStyles();v5100BindLifecycle();
+      const result=await v5100InitBase(options||{});
+      v5100ReconcileCommunicativeState();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='settings')renderSettings();else if(state.view==='conversation')renderConversation();else if(state.view==='progress')renderProgress();else if(state.view==='dashboard')renderDashboard();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.10.0';return result;
     };
 
 
