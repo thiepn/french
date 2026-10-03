@@ -1,4 +1,4 @@
-const CACHE_NAME = 'french3000-shell-v21';
+const CACHE_NAME = 'french3000-shell-v22';
 const APP_SHELL = [
   './',
   './index.html',
