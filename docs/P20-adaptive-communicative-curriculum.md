@@ -121,6 +121,8 @@ The set persists:
 
 It can be paused and resumed.
 
+Ending an adaptive set detaches any paused in-progress conversation from the set rather than deleting it. Boot reconciliation also repairs orphaned adaptive-set linkage after interrupted or imported state.
+
 P20 integrates with the P19 **Pause & home** behavior, so pausing an active adaptive task returns to a Conversation home that still exposes the adaptive curriculum and resume action.
 
 ## Function-level attempt capture
@@ -193,6 +195,6 @@ P20 curriculum state participates in the existing:
 
 P20 uses shell cache:
 
-- `french3000-shell-v26`
+- `french3000-shell-v27`
 
 The manifest description now includes the adaptive communicative curriculum.
