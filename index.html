@@ -22272,7 +22272,7 @@ qui	who	A1	question word`;
     const v5100SubmitResponseBase=v580SubmitResponse;
     v580SubmitResponse=function(response,options={}){
       const active=state.v580Conversation?.active,raw=String(response||'').trim(),manual=options?.manual===true;
-      const signature=[active?.id||'',active?.nodeId||'',manual?'manual':'auto',v580Fold(raw)].join('|'),timestamp=now();
+      const signature=[active?.id||'',manual?'manual':'auto',v580Fold(raw)].join('|'),timestamp=now();
       if(signature===state.v5100LastSubmit.signature&&timestamp-state.v5100LastSubmit.at<900){showToast('Duplicate response ignored.');return;}
       state.v5100LastSubmit={signature:signature,at:timestamp};
       const result=v5100SubmitResponseBase(response,options);
