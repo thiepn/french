@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.5.0';
-    const APP_RELEASE = 'P14 Authentic Input, Comprehensible Reading & Vocabulary-in-the-Wild Transfer';
+    const APP_VERSION = '5.6.0';
+    const APP_RELEASE = 'P15 Listening in Context, Connected Speech & Real-World Aural Vocabulary Transfer';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -19616,6 +19616,619 @@ qui	who	A1	question word`;
       else if(state.view==='progress')renderProgress();
       else if(state.view==='read')renderRead();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.5.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.6.0 LISTENING IN CONTEXT, CONNECTED SPEECH & AURAL TRANSFER
+       P15 turns P14's contextual corpus into audio-first listening work.
+       Passive playback is exposure only. Explicit comprehension, phrase
+       recognition and dictation create practice-only listening evidence
+       whose strength depends on first-listen success and support used.
+       ================================================================ */
+    const V560_VERSION='5.6.0';
+    const V560_RELEASE='P15 Listening in Context, Connected Speech & Real-World Aural Vocabulary Transfer';
+    const V560_STORAGE_KEY='french3000-listening-v1';
+    const V560_SCHEMA=1;
+    const V560_MODES=Object.freeze(['comprehensible','intensive','targeted']);
+    const V560_SPEEDS=Object.freeze([.78,1,1.08]);
+    const V560_MAX_ATTEMPTS=2000;
+    const V560_ERROR_LABELS=Object.freeze({
+      none:'Accurate',
+      meaning:'Meaning from context',
+      detail:'Context detail',
+      lexical:'Lexical item not recognized',
+      connected:'Connected-speech form',
+      segmentation:'Word boundary / segmentation',
+      orthography:'Orthography after correct hearing',
+      speed:'Speed-dependent',
+      transcript:'Transcript-dependent'
+    });
+    V490_PATH_FOCI.add('aural');
+
+    const V560_LISTENING_ITEMS=Object.freeze(V550_READINGS.map(function(reading){
+      return {
+        id:'listen-'+reading.id.replace(/^read-/,''),
+        readingId:reading.id,
+        title:reading.title,
+        level:reading.level,
+        type:reading.type,
+        topic:reading.topic,
+        register:reading.register,
+        durationSeconds:Math.max(18,reading.sentences.length*7),
+        source:'speechSynthesis',
+        audioUrl:'',
+        provenance:reading.sourceLabel,
+        license:reading.license,
+        targets:[...(reading.targets||[])],
+        phrases:[...(reading.phrases||[])],
+        segments:reading.sentences.map(function(sentence,index){return {id:'s'+(index+1),index:index,text:sentence.fr,translation:sentence.en,speaker:reading.type==='dialogue'?index%2:0,audioUrl:'',phenomena:[]};}),
+        questions:(reading.questions||[]).map(function(question){return {...question};})
+      };
+    }));
+    const V560_ITEM_BY_ID=new Map(V560_LISTENING_ITEMS.map(function(item){return [item.id,item];}));
+
+    state.v560Listening=null;
+    state.v560ListenUi={selectedId:'',mode:'comprehensible',phase:'listen',speed:1,transcript:false,translations:false,answers:Object.create(null),phraseAnswer:null,dictation:'',dictationChecked:false,sessionIds:[],sessionIndex:0};
+    state.v560AudioSupport={plays:0,slow:false,transcript:false,translation:false,segmentReplays:0};
+    state.v560PlaybackToken=0;
+
+    function v560NormalizeListening(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history={},attempts=[];
+      for(const [id,value] of Object.entries(source.history||{})){
+        if(!V560_ITEM_BY_ID.has(id)||!value||typeof value!=='object')continue;
+        history[id]={
+          openedAt:Math.max(0,finiteNumber(value.openedAt)),
+          lastOpenedAt:Math.max(0,finiteNumber(value.lastOpenedAt)),
+          completedAt:Math.max(0,finiteNumber(value.completedAt)),
+          completionCount:clamp(Math.floor(finiteNumber(value.completionCount)),0,10000),
+          plays:clamp(Math.floor(finiteNumber(value.plays)),0,100000),
+          segmentPlays:clamp(Math.floor(finiteNumber(value.segmentPlays)),0,100000),
+          firstListenSuccess:clamp(Math.floor(finiteNumber(value.firstListenSuccess)),0,10000),
+          questionAttempts:clamp(Math.floor(finiteNumber(value.questionAttempts)),0,100000),
+          questionCorrect:clamp(Math.floor(finiteNumber(value.questionCorrect)),0,100000),
+          phraseAttempts:clamp(Math.floor(finiteNumber(value.phraseAttempts)),0,100000),
+          phraseCorrect:clamp(Math.floor(finiteNumber(value.phraseCorrect)),0,100000),
+          dictationAttempts:clamp(Math.floor(finiteNumber(value.dictationAttempts)),0,100000),
+          dictationCorrect:clamp(Math.floor(finiteNumber(value.dictationCorrect)),0,100000),
+          mode:V560_MODES.includes(value.mode)?value.mode:'comprehensible',
+          lastSpeed:V560_SPEEDS.includes(Number(value.lastSpeed))?Number(value.lastSpeed):1,
+          feel:['easy','comfortable','challenging','hard'].includes(value.feel)?value.feel:''
+        };
+      }
+      for(const value of (Array.isArray(source.attempts)?source.attempts:[]).slice(-V560_MAX_ATTEMPTS)){
+        if(!value||!V560_ITEM_BY_ID.has(value.itemId))continue;
+        attempts.push({
+          t:Math.max(0,finiteNumber(value.t)),
+          itemId:value.itemId,
+          kind:['comprehension','phrase','dictation'].includes(value.kind)?value.kind:'comprehension',
+          targetId:String(value.targetId||'').slice(0,220),
+          correct:value.correct===true,
+          support:clamp(Math.floor(finiteNumber(value.support)),0,3),
+          firstListen:value.firstListen===true,
+          speed:clamp(finiteNumber(value.speed,1),.5,1.5),
+          playCount:clamp(Math.floor(finiteNumber(value.playCount)),0,100),
+          error:V560_ERROR_LABELS[value.error]?value.error:'detail',
+          transcriptUsed:value.transcriptUsed===true,
+          translationUsed:value.translationUsed===true,
+          responseMs:clamp(finiteNumber(value.responseMs),0,3600000)
+        });
+      }
+      return {schema:V560_SCHEMA,history:history,attempts:attempts};
+    }
+    function v560LoadListening(){state.v560Listening=v560NormalizeListening(state.v560Listening||safeStorageRead(V560_STORAGE_KEY)||{});return state.v560Listening;}
+    function v560SaveListening(){
+      state.v560Listening=v560NormalizeListening(state.v560Listening||{});
+      safeStorageSet(V560_STORAGE_KEY,state.v560Listening);
+      depthSchedulePersist?.();
+    }
+    v560LoadListening();
+
+    const v560DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v560DepthStateSnapshotBase(),v560Listening:v560NormalizeListening(state.v560Listening||{})};};
+    const v560DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v560DepthApplyImportedStateBase(saved);
+      state.v560Listening=v560NormalizeListening(saved?.v560Listening||safeStorageRead(V560_STORAGE_KEY)||{});
+      v560SaveListening();return result;
+    };
+    const v560DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v560DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v560Listening)state.v560Listening=v560NormalizeListening(saved.v560Listening);}catch{}
+      return result;
+    };
+
+    function v560FrenchVoices(){
+      const voices=(state.voices||[]).filter(function(voice){return /^fr([-_]|$)/i.test(voice.lang);});
+      const preferred=normalizeSpeech(state.settings.speech).voiceURI;
+      return voices.slice().sort(function(a,b){return Number(b.voiceURI===preferred)-Number(a.voiceURI===preferred)||a.name.localeCompare(b.name);});
+    }
+    function v560ConnectedPhenomena(text){
+      const value=String(text||''),low=value.toLocaleLowerCase('fr'),items=[];
+      if(/\b[cdjlmnst]['’]/i.test(value)||/\bqu['’]/i.test(value))items.push({type:'elision',label:'Elision',detail:"Listen for a vowel disappearing in forms such as j’, l’, d’, n’ or qu’."});
+      if(/\b(vous avez|vous en|nous avons|nous en|ils ont|elles ont|un autre|les amis|des amis)\b/i.test(low))items.push({type:'liaison',label:'Liaison cue',detail:'A normally silent final consonant may link to the following vowel in this common environment.'});
+      if(/\b(avec un|avec une|tout est|très agréable|plus agréable)\b/i.test(low))items.push({type:'enchaînement',label:'Enchaînement cue',detail:'A pronounced final consonant can attach perceptually to the next vowel-initial word.'});
+      if(/\b(je|de|le|me|te|se)\b/i.test(low))items.push({type:'weak',label:'Weak function word',detail:'Short grammatical words can be less acoustically prominent in connected speech.'});
+      if(/\bn['’].+\bpas\b/i.test(low))items.push({type:'negation',label:'Negation frame',detail:'Track the negative frame across the phrase; rapid speech can make the first element easy to miss.'});
+      return items.slice(0,4);
+    }
+    function v560AnnotateItem(item){return {...item,segments:item.segments.map(function(segment){return {...segment,phenomena:v560ConnectedPhenomena(segment.text)};})};}
+    function v560SpeechRate(speed){return clamp(finiteNumber(speed,1),.65,1.2);}
+    function v560VoiceForSpeaker(index){
+      const voices=v560FrenchVoices();if(!voices.length)return null;
+      return voices[Math.abs(Math.floor(index||0))%Math.min(voices.length,3)]||voices[0];
+    }
+    function v560SpeakSegment(text,{speed=1,speaker=0,onend=null}={}){
+      if(!state.speechAvailable){showToast('A French speech voice is unavailable in this browser.');return false;}
+      if(!text)return false;
+      const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';utterance.rate=v560SpeechRate(speed);
+      const voice=v560VoiceForSpeaker(speaker);if(voice)utterance.voice=voice;
+      utterance.onstart=function(){state.speechState='playing';state.currentUtterance=utterance;updateSpeechButtons();};
+      utterance.onend=function(){state.speechState='idle';state.currentUtterance=null;updateSpeechButtons();if(typeof onend==='function')onend();};
+      utterance.onerror=function(){state.speechState='idle';state.currentUtterance=null;updateSpeechButtons();};
+      speechSynthesis.speak(utterance);return true;
+    }
+    function v560PlayItem(item,speed=1){
+      if(!state.speechAvailable){showToast('Listening requires a browser or device with a French speech voice.');return;}
+      stopSpeech();const token=++state.v560PlaybackToken,annotated=v560AnnotateItem(item),history=state.v560Listening.history[item.id]||{openedAt:now()};
+      state.v560AudioSupport.plays++;if(speed<.95)state.v560AudioSupport.slow=true;
+      state.v560Listening.history[item.id]={...history,plays:(history.plays||0)+1,lastOpenedAt:now(),lastSpeed:speed,mode:state.v560ListenUi.mode};v560SaveListening();
+      let index=0;
+      const next=function(){
+        if(token!==state.v560PlaybackToken||index>=annotated.segments.length)return;
+        const segment=annotated.segments[index++];v560SpeakSegment(segment.text,{speed:speed,speaker:segment.speaker,onend:next});
+      };
+      next();v560RefreshPlayerMetrics();
+    }
+    function v560PlayOne(item,index,speed=1){
+      const segment=item.segments[index];if(!segment)return;
+      stopSpeech();state.v560AudioSupport.segmentReplays++;if(speed<.95)state.v560AudioSupport.slow=true;
+      const history=state.v560Listening.history[item.id]||{openedAt:now()};
+      state.v560Listening.history[item.id]={...history,segmentPlays:(history.segmentPlays||0)+1,lastOpenedAt:now(),lastSpeed:speed};v560SaveListening();
+      v560SpeakSegment(segment.text,{speed:speed,speaker:segment.speaker});v560RefreshPlayerMetrics();
+    }
+    function v560SupportLevel(){
+      if(state.v560AudioSupport.translation)return 3;
+      if(state.v560AudioSupport.transcript)return 2;
+      if(state.v560AudioSupport.slow||state.v560AudioSupport.plays>1||state.v560AudioSupport.segmentReplays>0)return 1;
+      return 0;
+    }
+    function v560SupportLabel(level=v560SupportLevel()){
+      return ['First-listen / no support','Replay or slower audio','Transcript used','Translation used'][clamp(level,0,3)];
+    }
+
+    function v560TargetNotes(item){
+      const reading=V550_READING_BY_ID.get(item.readingId),result=[];
+      for(const note of v550TargetNotes(reading||{targets:item.targets||[]})){if(!result.some(function(row){return row.id===note.id;}))result.push(note);}
+      return result;
+    }
+    function v560ListeningProfile(item){
+      const notes=v560TargetNotes(item),scores=notes.map(function(note){return v540Dimension(note,'listening');}).filter(function(row){return row.eligible;});
+      const score=scores.length?scores.reduce(function(sum,row){return sum+(row.score||0);},0)/scores.length:0;
+      const confidence=scores.length?scores.reduce(function(sum,row){return sum+(row.evidence.confidence||0);},0)/scores.length:0;
+      return {notes:notes,score:score,confidence:confidence};
+    }
+    function v560Difficulty(item){
+      const reading=V550_READING_BY_ID.get(item.readingId),coverage=v550Coverage(reading),listening=v560ListeningProfile(item),history=state.v560Listening.history[item.id];
+      const lexical=coverage.knownPct,aural=Math.round(listening.score*100);
+      let band='High support';
+      if(lexical>=95&&aural>=65)band='Comfortable';
+      else if(lexical>=91&&aural>=40)band='Useful challenge';
+      else if(lexical>=88)band='Challenging';
+      const score=100-Math.abs(95-lexical)*2+(100-aural)*.22+(history?.completedAt?0:12);
+      return {lexical:lexical,aural:aural,confidence:Math.round(listening.confidence*100),band:band,score:score};
+    }
+    function v560Recommended(limit=6){
+      return V560_LISTENING_ITEMS.slice().sort(function(a,b){return v560Difficulty(b).score-v560Difficulty(a).score||a.level.localeCompare(b.level)||a.title.localeCompare(b.title,'fr');}).slice(0,limit);
+    }
+    function v560ListeningStats(){
+      const history=Object.entries(state.v560Listening.history||{}).filter(function(pair){return pair[1].plays>0;}),completed=history.filter(function(pair){return pair[1].completedAt;}),attempts=state.v560Listening.attempts||[],errors={};
+      for(const attempt of attempts){if(!attempt.correct)errors[attempt.error]=(errors[attempt.error]||0)+1;}
+      return {
+        heard:history.length,
+        completed:completed.length,
+        plays:history.reduce(function(sum,pair){return sum+(pair[1].plays||0)+(pair[1].segmentPlays||0);},0),
+        attempts:attempts.length,
+        correct:attempts.filter(function(row){return row.correct;}).length,
+        firstListen:attempts.filter(function(row){return row.correct&&row.firstListen;}).length,
+        independent:attempts.filter(function(row){return row.correct&&row.support===0;}).length,
+        topErrors:Object.entries(errors).sort(function(a,b){return b[1]-a[1];}).slice(0,5)
+      };
+    }
+
+    function v560ModeDescription(mode){
+      if(mode==='intensive')return 'Replay aligned segments, inspect connected-speech cues, then reveal transcript only when needed.';
+      if(mode==='targeted')return 'Listen for weak vocabulary and verified phrases inside complete contextual audio.';
+      return 'Listen for meaning first. Keep transcript hidden and use normal speed before adding support.';
+    }
+    function v560ItemCard(item){
+      const d=v560Difficulty(item),h=state.v560Listening.history[item.id],phenomena=new Set(item.segments.flatMap(function(segment){return v560ConnectedPhenomena(segment.text).map(function(row){return row.label;});}));
+      return '<article class="v560-item-card"><div class="v560-card-meta"><span class="level-chip level-'+item.level.toLowerCase()+'">'+item.level+'</span><span>'+escapeHtml(item.type)+'</span><span>~'+Math.ceil(item.durationSeconds/60)+' min</span></div><h3>'+escapeHtml(item.title)+'</h3><p><strong>'+d.lexical+'%</strong> lexical coverage · <strong>'+d.aural+'%</strong> current listening strength</p><small>'+escapeHtml(d.band)+' · '+phenomena.size+' connected-speech cue'+(phenomena.size===1?'':'s')+'</small><div class="v560-audio-meter"><i style="width:'+d.lexical+'%"></i><b style="width:'+d.aural+'%"></b></div><button class="'+(h?.completedAt?'secondary':'primary')+'" data-v560-open="'+item.id+'">'+(h?.completedAt?'Listen again':'Listen')+'</button></article>';
+    }
+    function renderListen(){
+      v560LoadListening();
+      const item=state.v560ListenUi.selectedId?V560_ITEM_BY_ID.get(state.v560ListenUi.selectedId):null;
+      if(item){v560RenderPlayer(item);return;}
+      const stats=v560ListeningStats(),recommended=v560Recommended(6);
+      main.innerHTML='<div class="view-header v560-header"><div><p class="eyebrow">P15 listening in context</p><h2>Hear French as connected speech</h2><p>Audio-first contextual listening with support-aware evidence. Replays and transcripts help you learn, but first-listen success remains distinct.</p></div><div class="v560-header-stats"><span><strong>'+stats.completed+'</strong> completed</span><span><strong>'+stats.firstListen+'</strong> first-listen successes</span><span><strong>'+stats.plays+'</strong> plays</span></div></div>'+
+        '<section class="panel v560-mode-panel"><div class="v560-mode-tabs">'+V560_MODES.map(function(mode){return '<button type="button" data-v560-mode="'+mode+'" class="'+(state.v560ListenUi.mode===mode?'active':'')+'">'+mode[0].toUpperCase()+mode.slice(1)+'</button>';}).join('')+'</div><p>'+escapeHtml(v560ModeDescription(state.v560ListenUi.mode))+'</p><div class="button-row"><button class="primary" id="v560-listen10">Listen 10</button><button class="secondary" id="v560-read-pair">Open paired reading</button></div></section>'+
+        '<section class="v560-section"><div class="section-heading"><div><p class="eyebrow">Recommended</p><h3>Comprehensible audio with productive targets</h3></div></div><div class="v560-grid">'+recommended.map(v560ItemCard).join('')+'</div></section>'+
+        '<section class="v560-section"><div class="section-heading"><div><p class="eyebrow">Library</p><h3>'+V560_LISTENING_ITEMS.length+' contextual listening scripts</h3><p>Audio is generated locally through the device/browser French speech voice; scripts and alignment metadata are bundled offline.</p></div></div><div class="v560-grid">'+V560_LISTENING_ITEMS.map(v560ItemCard).join('')+'</div></section>';
+      main.querySelectorAll('[data-v560-mode]').forEach(function(button){button.addEventListener('click',function(){state.v560ListenUi.mode=button.dataset.v560Mode;renderListen();});});
+      main.querySelectorAll('[data-v560-open]').forEach(function(button){button.addEventListener('click',function(){v560OpenItem(button.dataset.v560Open);});});
+      $('#v560-listen10')?.addEventListener('click',function(){v560StartListen10();});
+      $('#v560-read-pair')?.addEventListener('click',function(){setView('read');});
+      bindCommonActions();
+    }
+    function v560OpenItem(id){
+      const item=V560_ITEM_BY_ID.get(id);if(!item)return;
+      const h=state.v560Listening.history[id]||{openedAt:now(),completionCount:0,plays:0,segmentPlays:0,firstListenSuccess:0,questionAttempts:0,questionCorrect:0,phraseAttempts:0,phraseCorrect:0,dictationAttempts:0,dictationCorrect:0};
+      state.v560Listening.history[id]={...h,openedAt:h.openedAt||now(),lastOpenedAt:now(),mode:state.v560ListenUi.mode};
+      state.v560ListenUi.selectedId=id;state.v560ListenUi.phase='listen';state.v560ListenUi.speed=1;state.v560ListenUi.transcript=false;state.v560ListenUi.translations=false;state.v560ListenUi.answers=Object.create(null);state.v560ListenUi.phraseAnswer=null;state.v560ListenUi.dictation='';state.v560ListenUi.dictationChecked=false;
+      state.v560AudioSupport={plays:0,slow:false,transcript:false,translation:false,segmentReplays:0};
+      v560SaveListening();renderListen();
+    }
+    function v560CloseItem(){
+      stopSpeech();state.v560PlaybackToken++;state.v560ListenUi.selectedId='';state.v560ListenUi.phase='listen';renderListen();
+    }
+    function v560TranscriptHtml(item){
+      return '<section class="v560-transcript '+(state.v560ListenUi.translations?'show-translations':'')+'">'+item.segments.map(function(segment,index){
+        const phenomena=v560ConnectedPhenomena(segment.text);
+        return '<article><div><span>Segment '+(index+1)+'</span><button type="button" data-v560-segment="'+index+'">▶ segment</button></div><p lang="fr">'+escapeHtml(segment.text)+'</p>'+(state.v560ListenUi.translations?'<p class="v560-translation">'+escapeHtml(segment.translation)+'</p>':'')+(state.v560ListenUi.mode==='intensive'&&phenomena.length?'<div class="v560-phenomena">'+phenomena.map(function(row){return '<button type="button" data-v560-phenomenon="'+escapeHtml(row.type)+'" title="'+escapeHtml(row.detail)+'">'+escapeHtml(row.label)+'</button>';}).join('')+'</div>':'')+'</article>';
+      }).join('')+'</section>';
+    }
+    function v560PlayerSupportHtml(){
+      return '<div class="v560-support-meter"><span>Evidence support</span><strong>'+escapeHtml(v560SupportLabel())+'</strong><i><b style="width:'+((3-v560SupportLevel())/3*100)+'%"></b></i></div>';
+    }
+    function v560RenderPlayer(item){
+      const d=v560Difficulty(item),history=state.v560Listening.history[item.id]||{},voices=v560FrenchVoices(),annotated=v560AnnotateItem(item);
+      main.innerHTML='<div class="v560-player-shell"><header class="v560-player-head"><button class="secondary" id="v560-back">← Listen</button><div><span>'+item.level+' · '+escapeHtml(item.type)+' · '+escapeHtml(item.register)+'</span><strong>'+escapeHtml(item.title)+'</strong></div><button class="secondary" id="v560-paired-read">Read pair</button></header>'+
+        '<section class="v560-player-card"><div class="v560-player-score"><span><b>'+d.lexical+'%</b> lexical</span><span><b>'+d.aural+'%</b> aural</span><span><b>'+voices.length+'</b> French voice'+(voices.length===1?'':'s')+'</span></div><div class="v560-main-play"><button class="v560-play" id="v560-play-all" aria-label="Play full listening">▶</button><div><strong>Listen before reading</strong><span id="v560-play-meta">'+(state.v560AudioSupport.plays?'Played '+state.v560AudioSupport.plays+' time'+(state.v560AudioSupport.plays===1?'':'s'):'Not played yet')+'</span></div></div><div class="v560-speed-row">'+V560_SPEEDS.map(function(speed){return '<button type="button" data-v560-speed="'+speed+'" class="'+(state.v560ListenUi.speed===speed?'active':'')+'">'+speed+'×</button>';}).join('')+'</div>'+v560PlayerSupportHtml()+
+        '<div class="v560-support-actions"><button class="secondary" id="v560-transcript-toggle">'+(state.v560ListenUi.transcript?'Hide transcript':'Reveal transcript')+'</button><button class="secondary" id="v560-translation-toggle" '+(state.v560ListenUi.transcript?'':'disabled')+'>'+(state.v560ListenUi.translations?'Hide translation':'Show translation')+'</button><button class="primary" id="v560-check" '+(state.v560AudioSupport.plays?'':'disabled')+'>Check listening</button></div></section>'+
+        (state.v560ListenUi.transcript?v560TranscriptHtml(annotated):'<section class="v560-hidden-transcript"><strong>Transcript hidden</strong><span>Keep it hidden for the strongest first-listen evidence. Replays and slower speed are available without revealing text.</span></section>')+
+        (state.v560ListenUi.phase==='review'?v560ReviewHtml(annotated):'')+
+        '<footer class="v560-source-note">Audio source: device/browser French speech synthesis · '+escapeHtml(item.provenance)+' · '+escapeHtml(item.license)+'. Connected-speech cues describe common French listening environments; exact realization varies by voice.</footer></div>';
+      $('#v560-back')?.addEventListener('click',v560CloseItem);
+      $('#v560-paired-read')?.addEventListener('click',function(){const readingId=item.readingId;v560CloseItem();setView('read',{focus:false});v550OpenReading(readingId);});
+      $('#v560-play-all')?.addEventListener('click',function(){v560PlayItem(item,state.v560ListenUi.speed);});
+      main.querySelectorAll('[data-v560-speed]').forEach(function(button){button.addEventListener('click',function(){state.v560ListenUi.speed=Number(button.dataset.v560Speed);if(state.v560ListenUi.speed<.95)state.v560AudioSupport.slow=true;renderListen();});});
+      $('#v560-transcript-toggle')?.addEventListener('click',function(){state.v560ListenUi.transcript=!state.v560ListenUi.transcript;if(state.v560ListenUi.transcript){state.v560AudioSupport.transcript=true;}renderListen();});
+      $('#v560-translation-toggle')?.addEventListener('click',function(){state.v560ListenUi.translations=!state.v560ListenUi.translations;if(state.v560ListenUi.translations){state.v560AudioSupport.translation=true;state.v560AudioSupport.transcript=true;state.v560ListenUi.transcript=true;}renderListen();});
+      $('#v560-check')?.addEventListener('click',function(){state.v560ListenUi.phase='review';renderListen();});
+      main.querySelectorAll('[data-v560-segment]').forEach(function(button){button.addEventListener('click',function(){v560PlayOne(item,Number(button.dataset.v560Segment),state.v560ListenUi.speed);});});
+      v560BindReview(item);
+      bindCommonActions();
+    }
+    function v560RefreshPlayerMetrics(){
+      const meta=$('#v560-play-meta');if(meta)meta.textContent='Played '+state.v560AudioSupport.plays+' time'+(state.v560AudioSupport.plays===1?'':'s');
+      const check=$('#v560-check');if(check)check.disabled=!state.v560AudioSupport.plays;
+      const meter=main.querySelector('.v560-support-meter');if(meter)meter.outerHTML=v560PlayerSupportHtml();
+    }
+
+    function v560PhrasePrompt(item){
+      const phrase=item.phrases?.[0]?.text||item.targets?.[0]||'',pool=[phrase];
+      for(const other of V560_LISTENING_ITEMS){
+        const candidate=other.phrases?.[0]?.text||other.targets?.[0]||'';
+        if(candidate&&depthLoose(candidate)!==depthLoose(phrase)&&!pool.some(function(value){return depthLoose(value)===depthLoose(candidate);}))pool.push(candidate);
+        if(pool.length>=3)break;
+      }
+      while(pool.length<3)pool.push(['prendre une décision','avoir besoin','faire attention'][pool.length-1]);
+      const options=[...pool.slice(0,3)],answer=options.indexOf(phrase);
+      return {phrase:phrase,options:options,answer:answer};
+    }
+    function v560DictationSegment(item){
+      const index=Math.min(item.segments.length-1,Math.max(0,Math.floor(item.segments.length/2)));
+      return {...item.segments[index],index:index};
+    }
+    function v560DictationDiagnosis(answer,expected){
+      const typed=depthExact(answer),target=depthExact(expected);
+      if(!typed)return {correct:false,error:'lexical',quality:'blank',score:0};
+      if(typed===target)return {correct:true,error:'none',quality:'exact',score:1};
+      if(depthAccentFold(typed)===depthAccentFold(target))return {correct:true,error:'orthography',quality:'close',score:.96};
+      const looseTyped=depthLoose(typed),looseTarget=depthLoose(target),similarity=1-levenshtein(looseTyped,looseTarget)/Math.max(1,looseTyped.length,looseTarget.length);
+      if(similarity>=.88)return {correct:true,error:'orthography',quality:'close',score:similarity};
+      const targetWords=depthFrenchTokens(expected),typedWords=new Set(depthFrenchTokens(answer)),overlap=targetWords.length?targetWords.filter(function(word){return typedWords.has(word);}).length/targetWords.length:0;
+      if(similarity>=.72||overlap>=.7)return {correct:false,error:'segmentation',quality:'review',score:Math.max(similarity,overlap)};
+      if(overlap>=.42)return {correct:false,error:'connected',quality:'review',score:overlap};
+      return {correct:false,error:'lexical',quality:'review',score:Math.max(0,overlap)};
+    }
+    function v560ReviewHtml(item){
+      const phrase=v560PhrasePrompt(item),dictation=v560DictationSegment(item),answers=state.v560ListenUi.answers||{},phraseDone=state.v560ListenUi.phraseAnswer!==null,dictDone=state.v560ListenUi.dictationChecked,questionsDone=Object.keys(answers).length>=item.questions.length,allDone=questionsDone&&phraseDone&&dictDone;
+      return '<section class="v560-review"><div class="section-heading"><div><p class="eyebrow">Aural retrieval</p><h3>Check what survived the audio</h3><p>Support level: '+escapeHtml(v560SupportLabel())+'. First-listen success is only credited when normal-speed audio was understood without replay, transcript or translation.</p></div></div>'+
+        item.questions.map(function(question,index){const value=answers[question.id],done=value!==undefined;return '<article class="v560-question"><span>Meaning '+(index+1)+'</span><strong>'+escapeHtml(question.prompt)+'</strong><div>'+question.options.map(function(option,optionIndex){let cls='';if(done&&optionIndex===question.answer)cls='correct';else if(done&&optionIndex===value)cls='wrong';return '<button type="button" '+(done?'disabled':'')+' class="'+cls+'" data-v560-q="'+question.id+'" data-v560-option="'+optionIndex+'">'+escapeHtml(option)+'</button>';}).join('')+'</div></article>';}).join('')+
+        '<article class="v560-question"><span>Phrase recognition</span><strong>Which target expression did you hear in this audio?</strong><div>'+phrase.options.map(function(option,index){let cls='';if(phraseDone&&index===phrase.answer)cls='correct';else if(phraseDone&&index===state.v560ListenUi.phraseAnswer)cls='wrong';return '<button type="button" '+(phraseDone?'disabled':'')+' class="'+cls+'" data-v560-phrase-option="'+index+'">'+escapeHtml(option)+'</button>';}).join('')+'</div></article>'+
+        '<article class="v560-question v560-dictation"><span>Connected-speech dictation · segment '+(dictation.index+1)+'</span><strong>Type exactly what you hear.</strong><div class="v560-dictation-controls"><button class="secondary" type="button" id="v560-dict-play">▶ Hear segment</button><textarea id="v560-dictation" rows="2" maxlength="360" '+(dictDone?'disabled':'')+'>'+escapeHtml(state.v560ListenUi.dictation||'')+'</textarea><button class="primary" type="button" id="v560-dict-check" '+(dictDone?'disabled':'')+'>Check</button></div>'+(dictDone?'<div class="v560-dict-result"><strong>'+escapeHtml(V560_ERROR_LABELS[v560DictationDiagnosis(state.v560ListenUi.dictation,dictation.text).error])+'</strong><span lang="fr">'+escapeHtml(dictation.text)+'</span></div>':'')+'</article>'+
+        '<div class="v560-review-actions"><button class="secondary" id="v560-review-replay">Replay full audio</button><button class="primary" id="v560-review-finish" '+(allDone?'':'disabled')+'>Finish listening</button></div></section>';
+    }
+    function v560ResolveTargetNote(target,item){
+      const direct=v550ResolveNote(target);if(direct)return direct;
+      const notes=v560TargetNotes(item);return notes[0]||null;
+    }
+    function v560LogAttempt(item,{kind,target='',correct=false,error='detail',responseMs=8000}={}){
+      const support=v560SupportLevel(),history=state.v560Listening.history[item.id]||{},firstListen=correct&&support===0&&state.v560AudioSupport.plays===1&&state.v560ListenUi.speed>=.95;
+      const note=v560ResolveTargetNote(target,item),row={t:now(),itemId:item.id,kind:kind,targetId:note?.id||'',correct:correct,support:support,firstListen:firstListen,speed:state.v560ListenUi.speed,playCount:state.v560AudioSupport.plays,error:error,transcriptUsed:state.v560AudioSupport.transcript,translationUsed:state.v560AudioSupport.translation,responseMs:responseMs};
+      state.v560Listening.attempts.push(row);if(state.v560Listening.attempts.length>V560_MAX_ATTEMPTS)state.v560Listening.attempts=state.v560Listening.attempts.slice(-V560_MAX_ATTEMPTS);
+      if(note)v560RecordListeningEvidence(note,item,row);
+      if(firstListen)state.v560Listening.history[item.id]={...history,firstListenSuccess:(history.firstListenSuccess||0)+1,lastOpenedAt:now()};
+      v560SaveListening();return row;
+    }
+    function v560RecordListeningEvidence(note,item,attempt){
+      const card=v490SkillCard(note,'listening')||v490SkillCard(note,'recognition')||note,p=normalizeProgressEntry(getProgress(card.id));
+      state.reviewLog.push({t:attempt.t,id:card.id,noteId:note.id,skill:'listening',rating:attempt.correct?'good':'again',responseMs:attempt.responseMs,wasNew:false,interval:p.interval||0,direction:'fr-en',typed:attempt.kind==='dictation',typedQuality:attempt.correct?'exact':'review',answerIssue:attempt.error,level:note.level,pos:posGroup(note.pos),theme:note.theme||'general',practice:'listening',correct:attempt.correct,xp:0,practiceOnly:true,contextListening:true,listeningItemId:item.id,listeningKind:attempt.kind,listeningError:attempt.error,listeningSupport:attempt.support,listeningFirstListen:attempt.firstListen,listeningSpeed:attempt.speed,listeningPlayCount:attempt.playCount,listeningTranscriptUsed:attempt.transcriptUsed,listeningTranslationUsed:attempt.translationUsed,mixedReview:false,mixedModality:'listening',mixedKind:'context-listening-'+attempt.kind,mixedDifficulty:attempt.kind==='dictation'?3:2,mixedExposureKeys:['word:'+note.id,'sound:'+note.id],mixedFirstAttempt:attempt.firstListen,mixedSupportLevel:attempt.support});
+      if(state.reviewLog.length>DEPTH_MAX_REVIEW_LOG)state.reviewLog=state.reviewLog.slice(-DEPTH_MAX_REVIEW_LOG);
+      saveReviewLog();state.v540EvidenceCache=null;state.v550ProfileCache={signature:'',map:new Map()};state.v550CoverageCache.clear();
+    }
+    const v560NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){if(!entry||typeof entry!=='object')continue;lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);}
+      return v560NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));if(original?.contextListening!==true)return entry;
+        return {...entry,contextListening:true,listeningItemId:V560_ITEM_BY_ID.has(original.listeningItemId)?original.listeningItemId:'',listeningKind:['comprehension','phrase','dictation'].includes(original.listeningKind)?original.listeningKind:'comprehension',listeningError:V560_ERROR_LABELS[original.listeningError]?original.listeningError:'detail',listeningSupport:clamp(finiteNumber(original.listeningSupport),0,3),listeningFirstListen:original.listeningFirstListen===true,listeningSpeed:clamp(finiteNumber(original.listeningSpeed,1),.5,1.5),listeningPlayCount:clamp(finiteNumber(original.listeningPlayCount),0,100),listeningTranscriptUsed:original.listeningTranscriptUsed===true,listeningTranslationUsed:original.listeningTranslationUsed===true};
+      });
+    };
+    const v560EntrySupportBase=v540EntrySupport;
+    v540EntrySupport=function(entry){return entry?.contextListening===true?clamp(finiteNumber(entry.listeningSupport),0,3):v560EntrySupportBase(entry);};
+
+    function v560BindReview(item){
+      if(state.v560ListenUi.phase!=='review')return;
+      main.querySelectorAll('[data-v560-q]').forEach(function(button){button.addEventListener('click',function(){
+        const question=item.questions.find(function(row){return row.id===button.dataset.v560Q;});if(!question||state.v560ListenUi.answers[question.id]!==undefined)return;
+        const answer=Number(button.dataset.v560Option),correct=answer===question.answer;state.v560ListenUi.answers[question.id]=answer;
+        const h=state.v560Listening.history[item.id]||{};state.v560Listening.history[item.id]={...h,questionAttempts:(h.questionAttempts||0)+1,questionCorrect:(h.questionCorrect||0)+(correct?1:0)};
+        v560LogAttempt(item,{kind:'comprehension',target:question.target,correct:correct,error:correct?'none':'meaning'});v560SaveListening();renderListen();
+      });});
+      main.querySelectorAll('[data-v560-phrase-option]').forEach(function(button){button.addEventListener('click',function(){
+        if(state.v560ListenUi.phraseAnswer!==null)return;const prompt=v560PhrasePrompt(item),answer=Number(button.dataset.v560PhraseOption),correct=answer===prompt.answer;state.v560ListenUi.phraseAnswer=answer;
+        const h=state.v560Listening.history[item.id]||{};state.v560Listening.history[item.id]={...h,phraseAttempts:(h.phraseAttempts||0)+1,phraseCorrect:(h.phraseCorrect||0)+(correct?1:0)};
+        v560LogAttempt(item,{kind:'phrase',target:item.targets?.[0]||prompt.phrase,correct:correct,error:correct?'none':'connected'});v560SaveListening();renderListen();
+      });});
+      $('#v560-dict-play')?.addEventListener('click',function(){const dict=v560DictationSegment(item);v560PlayOne(item,dict.index,state.v560ListenUi.speed);});
+      $('#v560-dictation')?.addEventListener('input',function(event){state.v560ListenUi.dictation=event.target.value;});
+      $('#v560-dict-check')?.addEventListener('click',function(){
+        const dict=v560DictationSegment(item),diagnosis=v560DictationDiagnosis(state.v560ListenUi.dictation,dict.text);if(!state.v560ListenUi.dictation.trim()){showToast('Type what you heard first.');return;}
+        state.v560ListenUi.dictationChecked=true;const h=state.v560Listening.history[item.id]||{};state.v560Listening.history[item.id]={...h,dictationAttempts:(h.dictationAttempts||0)+1,dictationCorrect:(h.dictationCorrect||0)+(diagnosis.correct?1:0)};
+        v560LogAttempt(item,{kind:'dictation',target:item.targets?.[0]||'',correct:diagnosis.correct,error:diagnosis.error,responseMs:12000});v560SaveListening();renderListen();
+      });
+      $('#v560-review-replay')?.addEventListener('click',function(){v560PlayItem(item,state.v560ListenUi.speed);});
+      $('#v560-review-finish')?.addEventListener('click',function(){v560FinishItem(item);});
+    }
+    function v560FinishItem(item){
+      const h=state.v560Listening.history[item.id]||{};
+      state.v560Listening.history[item.id]={...h,completedAt:h.completedAt||now(),completionCount:(h.completionCount||0)+1,lastOpenedAt:now(),mode:state.v560ListenUi.mode,lastSpeed:state.v560ListenUi.speed};
+      v560SaveListening();v560CloseItem();
+      if(state.v560ListenUi.sessionIds.length){v560AdvanceListen10();}
+    }
+    function v560StartListen10(){
+      const ids=v560Recommended(10).map(function(item){return item.id;});if(!ids.length){showToast('No contextual listening items are available.');return;}
+      state.v560ListenUi.sessionIds=ids;state.v560ListenUi.sessionIndex=0;v560OpenItem(ids[0]);announce('Listen 10 started.');
+    }
+    function v560AdvanceListen10(){
+      const ids=state.v560ListenUi.sessionIds||[],next=state.v560ListenUi.sessionIndex+1;
+      if(next>=ids.length){state.v560ListenUi.sessionIds=[];state.v560ListenUi.sessionIndex=0;showToast('Listen 10 complete.');renderListen();return;}
+      state.v560ListenUi.sessionIndex=next;v560OpenItem(ids[next]);
+    }
+
+    function v560ContextTaskCandidates(cards=state.cards,limit=20){
+      const allowed=new Set((cards||state.cards).map(function(card){return depthBaseId(v540BaseNote(card));})),rows=[];
+      for(const item of V560_LISTENING_ITEMS){
+        const notes=v560TargetNotes(item);
+        for(const note of notes){
+          if(!allowed.has(note.id)||!isAvailable(note))continue;
+          const listening=v490SkillCard(note,'listening')||v490SkillCard(note,'recognition');if(!listening)continue;
+          let segmentIndex=item.segments.findIndex(function(segment){return v550WordTokens(segment.text).some(function(token){return v550ResolveNote(token)?.id===note.id;});});
+          if(segmentIndex<0)segmentIndex=Math.min(item.segments.length-1,Math.floor(item.segments.length/2));
+          const segment=item.segments[segmentIndex],dimension=v540Dimension(note,'listening'),history=state.v560Listening.history[item.id];
+          const task={...v490PracticeClone(listening,'skill','Recognize vocabulary inside connected contextual French.','listening'),v560ContextTask:true,v560ItemId:item.id,v560SegmentIndex:segmentIndex,v560Expected:segment.text,v560Translation:segment.translation,v560Support:0,v560PlayCount:0,v490PracticeOnly:true};
+          rows.push({score:(1-(dimension.score||0))*100+(history?.completedAt?0:10),task:task});
+        }
+      }
+      return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
+    }
+    function v560StartStudyListen10(cards=state.cards){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting contextual Listen 10.');return;}
+      const tasks=v560ContextTaskCandidates(cards,10);if(!tasks.length){showToast('No contextual listening tasks are ready.');return;}
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'listening',scheduleMode:'practice',practice:'listening',typed:false,size:tasks.length,quality:'core'});
+      state.queue=tasks;v490ResetSessionQueue();setView('study');announce('Contextual Listen 10 started.');
+    }
+
+    const v560CurrentPracticeBase=currentPractice;
+    currentPractice=function(card){return card?.v560ContextTask?'listening':v560CurrentPracticeBase(card);};
+    const v560CurrentDirectionBase=currentDirection;
+    currentDirection=function(card){return card?.v560ContextTask?'fr-en':v560CurrentDirectionBase(card);};
+    const v560ExpectedTypedBase=expectedTyped;
+    expectedTyped=function(card,direction){
+      if(card?.v560ContextTask)return {primary:card.v560Expected,alternatives:[card.v560Expected],articleExpected:false,articleForms:[]};
+      return v560ExpectedTypedBase(card,direction);
+    };
+    const v560AnswerResultBase=answerResultFor;
+    answerResultFor=function(card,direction,practice){
+      if(card?.v560ContextTask){
+        const diagnosis=v560DictationDiagnosis(state.typedAnswer,card.v560Expected);
+        return {label:V560_ERROR_LABELS[diagnosis.error],className:diagnosis.correct?'match-exact':'match-review',quality:diagnosis.quality,score:diagnosis.score,correct:diagnosis.correct,issue:diagnosis.error,listeningDiagnosis:diagnosis.error};
+      }
+      return v560AnswerResultBase(card,direction,practice);
+    };
+    const v560SuggestedRatingBase=suggestedRating;
+    suggestedRating=function(result,responseMs){
+      if(result?.listeningDiagnosis)return result.correct?(result.listeningDiagnosis==='orthography'?'hard':'good'):'again';
+      return v560SuggestedRatingBase(result,responseMs);
+    };
+    const v560PresentationBase=v366CardPresentation;
+    v366CardPresentation=function(card,practice,shown){
+      if(card?.v560ContextTask){
+        return shown?{label:'Connected-speech transcript',main:card.v560Expected,sub:card.v560Translation||'',lang:'fr'}:{label:'Context listening',main:'',sub:'Play the excerpt, then type exactly what you hear. Replays and slow audio reduce evidence independence.',lang:'fr',listening:true};
+      }
+      return v560PresentationBase(card,practice,shown);
+    };
+
+    function v560StudyBoxHtml(card){
+      const item=V560_ITEM_BY_ID.get(card.v560ItemId),phenomena=v560ConnectedPhenomena(card.v560Expected);
+      return '<section class="v560-study-box"><div class="v560-study-controls"><button class="primary" id="v560-study-play">▶ Hear excerpt</button><button class="secondary" id="v560-study-slow">0.78× slow</button><span id="v560-study-support">'+escapeHtml(v560SupportLabel(clamp(finiteNumber(card.v560Support),0,3)))+'</span></div><textarea id="v560-study-answer" rows="2" maxlength="360" placeholder="Type the French you hear…" spellcheck="true">'+escapeHtml(state.typedAnswer||'')+'</textarea><button class="primary" id="v560-study-check">Reveal & check</button>'+(phenomena.length?'<div class="v560-study-cues">'+phenomena.map(function(row){return '<span title="'+escapeHtml(row.detail)+'">'+escapeHtml(row.label)+'</span>';}).join('')+'</div>':'')+'<small>'+escapeHtml(item?.title||'Context')+' · transcript stays hidden until you check.</small></section>';
+    }
+    function v560DecorateCurrentCard(){
+      if(state.view!=='study')return;
+      const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v560ContextTask||!stage)return;
+      stage.querySelector('.v520-production-box')?.remove();stage.querySelector('.v530-production-box')?.remove();
+      if(!state.flipped&&!stage.querySelector('.v560-study-box')){
+        const flash=stage.querySelector('.flashcard,.v366-flashcard');flash?.insertAdjacentHTML('afterend',v560StudyBoxHtml(card));
+        $('#v560-study-play',stage)?.addEventListener('click',function(){card.v560PlayCount=(card.v560PlayCount||0)+1;if(card.v560PlayCount>1)card.v560Support=Math.max(card.v560Support||0,1);const item=V560_ITEM_BY_ID.get(card.v560ItemId);v560SpeakSegment(card.v560Expected,{speed:1,speaker:item?.segments?.[card.v560SegmentIndex]?.speaker||0});const label=$('#v560-study-support',stage);if(label)label.textContent=v560SupportLabel(card.v560Support||0);});
+        $('#v560-study-slow',stage)?.addEventListener('click',function(){card.v560PlayCount=(card.v560PlayCount||0)+1;card.v560Support=Math.max(card.v560Support||0,1);const item=V560_ITEM_BY_ID.get(card.v560ItemId);v560SpeakSegment(card.v560Expected,{speed:.78,speaker:item?.segments?.[card.v560SegmentIndex]?.speaker||0});const label=$('#v560-study-support',stage);if(label)label.textContent=v560SupportLabel(card.v560Support||0);});
+        $('#v560-study-answer',stage)?.addEventListener('input',function(event){state.typedAnswer=event.target.value;});
+        $('#v560-study-check',stage)?.addEventListener('click',function(){if(!(card.v560PlayCount||0)){showToast('Play the excerpt first.');return;}if(!state.typedAnswer.trim()){showToast('Type what you heard first.');return;}flipCard();});
+      }
+    }
+    const v560RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v560RenderCurrentCardBase();v560DecorateCurrentCard();return result;};
+    const v560RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v560RenderStudyBase();v560DecorateCurrentCard();return result;};
+
+    const v560RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v560RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v560ContextTask){
+        const entry=state.reviewLog?.at(-1),diagnosis=v560DictationDiagnosis(state.typedAnswer,card.v560Expected);
+        if(entry&&entry.id===card.id){
+          entry.contextListening=true;entry.listeningItemId=card.v560ItemId;entry.listeningKind='dictation';entry.listeningError=diagnosis.error;entry.listeningSupport=clamp(finiteNumber(card.v560Support),0,3);entry.listeningFirstListen=diagnosis.correct&&(card.v560PlayCount||0)===1&&(card.v560Support||0)===0;entry.listeningSpeed=(card.v560Support||0)>0?.78:1;entry.listeningPlayCount=card.v560PlayCount||0;entry.listeningTranscriptUsed=false;entry.listeningTranslationUsed=false;entry.mixedModality='listening';entry.mixedKind='context-listening-dictation';entry.mixedExposureKeys=['word:'+v540NoteId(card),'sound:'+v540NoteId(card)];entry.mixedFirstAttempt=entry.listeningFirstListen;entry.mixedSupportLevel=entry.listeningSupport;saveReviewLog();state.v540EvidenceCache=null;
+        }
+      }
+      return result;
+    };
+    const v560RateCardBase=rateCard;
+    rateCard=function(rating){
+      const card=state.queue?.[state.queueIndex];if(!card?.v560ContextTask)return v560RateCardBase(rating);
+      const diagnosis=v560DictationDiagnosis(state.typedAnswer,card.v560Expected);if(!diagnosis.correct)rating='again';else if(diagnosis.error==='orthography'&&['good','easy'].includes(rating))rating='hard';
+      const mode=state.session.scheduleMode,requeue=state.session.requeueAgain;state.session.scheduleMode='practice';state.session.requeueAgain=false;
+      try{return v560RateCardBase(rating);}finally{state.session.scheduleMode=mode;state.session.requeueAgain=requeue;}
+    };
+
+    const v560TaskMetaBase=v540TaskMeta;
+    v540TaskMeta=function(card){
+      if(card?.v560ContextTask)return {modality:'listening',kind:'context-listening-dictation',difficulty:3,hardProduction:false,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:['word:'+v540NoteId(card),'sound:'+v540NoteId(card)]};
+      return v560TaskMetaBase(card);
+    };
+    const v560ListeningCandidatesBase=v540ListeningCandidates;
+    v540ListeningCandidates=function(cards,limit=80){
+      const contextual=v560ContextTaskCandidates(cards,Math.ceil(limit*.55)).map(function(card){return v540DecorateTask(card,'listening',{modality:'listening',kind:'context-listening-dictation',difficulty:3,hardProduction:false,exposureKeys:['word:'+v540NoteId(card),'sound:'+v540NoteId(card)]});});
+      const isolated=v560ListeningCandidatesBase(cards,limit);
+      return v540Dedupe([...contextual,...isolated]).slice(0,limit);
+    };
+
+    function v560WordListeningHtml(card){
+      const entries=v540DimensionEvidence(card,'listening'),context=state.reviewLog.filter(function(entry){return entry.contextListening===true&&depthBaseId(entry.noteId||entry.id)===card.id;}),first=context.filter(function(entry){return entry.correct&&entry.listeningFirstListen;}).length,supported=context.filter(function(entry){return entry.correct&&!entry.listeningFirstListen;}).length;
+      const relevant=V560_LISTENING_ITEMS.filter(function(item){return v560TargetNotes(item).some(function(note){return note.id===card.id;});}).slice(0,5);
+      return '<section class="v560-word-listening"><div><span>Listening in context</span><strong>'+Math.round((entries.score||0)*100)+'% listening evidence</strong><small>'+first+' first-listen · '+supported+' supported success'+(supported===1?'':'es')+' · '+context.length+' contextual attempts</small></div>'+(relevant.length?'<div class="v560-word-listening-links">'+relevant.map(function(item){return '<button type="button" data-v560-item-link="'+item.id+'">'+escapeHtml(item.title)+'</button>';}).join('')+'</div>':'')+'<div class="button-row"><button class="primary" id="v560-word-listen">Listen in context</button><button class="secondary" id="v560-word-listen10">Listen 10</button></div></section>';
+    }
+    const v560OpenWordBase=v381OpenWord;
+    v381OpenWord=function(id){
+      const result=v560OpenWordBase(id),dialog=$('#v381-word-dialog'),card=state.cardById.get(id);if(!dialog||!card)return result;
+      const anchor=dialog.querySelector('.v550-word-reading')||dialog.querySelector('.v540-word-mastery')||dialog.lastElementChild;
+      if(anchor&&!dialog.querySelector('.v560-word-listening')){
+        anchor.insertAdjacentHTML('afterend',v560WordListeningHtml(card));
+        $('#v560-word-listen',dialog)?.addEventListener('click',function(){dialog.close();const item=V560_LISTENING_ITEMS.find(function(row){return v560TargetNotes(row).some(function(note){return note.id===card.id;});})||v560Recommended(1)[0];setView('listen',{focus:false});if(item)v560OpenItem(item.id);});
+        $('#v560-word-listen10',dialog)?.addEventListener('click',function(){dialog.close();v560StartStudyListen10([card]);});
+        dialog.querySelectorAll('[data-v560-item-link]').forEach(function(button){button.addEventListener('click',function(){dialog.close();setView('listen',{focus:false});v560OpenItem(button.dataset.v560ItemLink);});});
+      }
+      return result;
+    };
+
+    function v560ProgressPanel(){
+      const stats=v560ListeningStats(),errors=stats.topErrors.map(function(pair){return '<span><strong>'+pair[1]+'</strong>'+escapeHtml(V560_ERROR_LABELS[pair[0]]||pair[0])+'</span>';}).join('');
+      return '<section class="v560-progress-panel"><div class="v560-progress-head"><div><p class="eyebrow">P15 aural transfer</p><h3>Listening in connected context</h3><p>First-listen comprehension is separated from replay-, speed-, transcript-, and translation-assisted success. Contextual attempts feed the P13 listening dimension without changing vocabulary SRS intervals.</p></div><div class="button-row"><button class="primary" id="v560-progress-listen">Open Listen</button><button class="secondary" id="v560-progress-listen10">Listen 10</button></div></div><div class="v560-progress-grid"><span><strong>'+stats.heard+'</strong> items heard</span><span><strong>'+stats.completed+'</strong> completed</span><span><strong>'+stats.plays+'</strong> plays</span><span><strong>'+stats.correct+'/'+stats.attempts+'</strong> explicit retrieval</span><span><strong>'+stats.firstListen+'</strong> first-listen success</span><span><strong>'+stats.independent+'</strong> unsupported success</span></div>'+(errors?'<div class="v560-error-grid">'+errors+'</div>':'')+'</section>';
+    }
+    function v560DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v560-progress-panel'))return;
+      const anchor=main.querySelector('.v550-progress-panel')||main.querySelector('.v540-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v560ProgressPanel());
+      $('#v560-progress-listen')?.addEventListener('click',function(){setView('listen');});
+      $('#v560-progress-listen10')?.addEventListener('click',function(){v560StartStudyListen10();});
+    }
+    const v560RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v560RenderProgressBase();v560DecorateProgress();return result;};
+
+    function v560DashboardPanel(){
+      const item=v560Recommended(1)[0],d=item?v560Difficulty(item):null,stats=v560ListeningStats();
+      return '<section class="v560-dashboard-card"><div><p class="eyebrow">Listen in context</p><h3>'+(item?escapeHtml(item.title):'Connected French')+'</h3><p>'+(item?d.lexical+'% lexical coverage · '+d.aural+'% listening strength · '+escapeHtml(d.band):'Train vocabulary inside complete aural contexts.')+'</p><span>'+stats.firstListen+' first-listen successes so far</span></div><button class="primary" id="v560-dashboard-listen">Listen now</button></section>';
+    }
+    function v560DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v560-dashboard-card'))return;
+      const anchor=main.querySelector('.v550-dashboard-card')||main.querySelector('.v540-dashboard-card')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v560DashboardPanel());$('#v560-dashboard-listen')?.addEventListener('click',function(){setView('listen');});
+    }
+    const v560RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v560RenderDashboardBase();v560DecorateDashboard();return result;};
+
+    const v560NavigationBase=v366ApplyNavigation;
+    v366ApplyNavigation=function(){
+      v560NavigationBase();
+      const desktop=$('.topbar .nav'),mobile=$('.mobile-nav');
+      const desktopItems=[['dashboard','Today'],['study','Study'],['read','Read'],['listen','Listen'],['browse','Words'],['progress','Progress'],['settings','Settings']];
+      const mobileItems=[['dashboard','Today'],['study','Study'],['read','Read'],['listen','Listen'],['browse','Words'],['progress','More']];
+      if(desktop)desktop.innerHTML=desktopItems.map(function(pair){return '<button class="nav-button '+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');
+      if(mobile){mobile.classList.remove('v36-four','v36-five','v550-five');mobile.classList.add('v560-six');mobile.innerHTML=mobileItems.map(function(pair){return '<button class="'+(state.view===pair[0]?'active':'')+'" data-view="'+pair[0]+'" '+(state.view===pair[0]?'aria-current="page"':'')+'>'+pair[1]+'</button>';}).join('');}
+    };
+    v36ApplyNavigation=v366ApplyNavigation;
+
+    const v560SetViewBase=setView;
+    setView=function(view,{focus=true}={}){
+      if(view!=='listen'){const result=v560SetViewBase(view,{focus});v366ApplyNavigation();return result;}
+      v550ClearReadingPosition?.();stopSpeech();state.v560PlaybackToken++;state.view='listen';v366ApplyNavigation();renderListen();window.scrollTo({top:0,behavior:'auto'});if(focus){main.focus({preventScroll:true});announce('Listen view');}
+    };
+
+    const v560EffectiveFocusBase=v490EffectiveFocus;
+    v490EffectiveFocus=function(){
+      const configured=V490_PATH_FOCI.has(state.settings?.pathFocus)?state.settings.pathFocus:'auto';
+      if(configured==='aural')return 'aural';
+      const base=v560EffectiveFocusBase();if(configured!=='auto')return base;
+      const stats=v560ListeningStats(),mastery=v540AggregateStats(state.cards);
+      if(stats.attempts>=10&&stats.correct/Math.max(1,stats.attempts)<.68)return 'aural';
+      if(mastery.started>=25&&stats.attempts<Math.max(8,Math.round(mastery.started*.08)))return 'aural';
+      return base;
+    };
+    const v560FocusLabelBase=v490FocusLabel;
+    v490FocusLabel=function(value){return value==='aural'?'Context listening':v560FocusLabelBase(value);};
+    const v560PersonalPlanBase=v490PersonalPlan;
+    v490PersonalPlan=function(limit=30){
+      const plan=v560PersonalPlanBase(limit),focus=v490EffectiveFocus();if(focus!=='aural')return plan;
+      const tasks=v560ContextTaskCandidates(state.cards,4),max=Math.max(5,Math.min(100,finiteNumber(limit,30)||30));let added=0;
+      for(const task of tasks){
+        if(added>=3)break;if(plan.queue.some(function(card){return card.v560ItemId===task.v560ItemId&&v540NoteId(card)===v540NoteId(task);}))continue;
+        if(plan.queue.length>=max){let remove=-1;for(let index=plan.queue.length-1;index>=0;index--){if(plan.queue[index].v490Category!=='retain'){remove=index;break;}}if(remove<0)break;plan.queue.splice(remove,1);}
+        plan.queue.splice(Math.min(plan.queue.length,4+added*5),0,task);added++;
+      }
+      plan.counts={...plan.counts,aural:added};plan.focus='aural';if(added)plan.headline='Strengthen vocabulary inside connected French audio';return plan;
+    };
+    function v560DecorateSettings(){
+      if(state.view!=='settings')return;
+      const select=$('#v490-path-focus');
+      if(select&&!select.querySelector('option[value="aural"]')){select.insertAdjacentHTML('beforeend','<option value="aural">Context listening & aural transfer</option>');select.value=state.settings.pathFocus||'auto';}
+    }
+    const v560RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v560RenderSettingsBase();v560DecorateSettings();return result;};
+
+    function v560EnsureStyles(){
+      if(document.querySelector('#v560-listening-style'))return;
+      const style=document.createElement('style');style.id='v560-listening-style';
+      style.textContent='.v560-header{align-items:flex-end}.v560-header-stats{display:flex;gap:.4rem;flex-wrap:wrap}.v560-header-stats span{padding:.42rem .52rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);font-size:.6rem;color:var(--muted)}.v560-header-stats strong{display:block;color:var(--navy);font-size:.92rem}.v560-mode-panel{display:grid;gap:.55rem;margin-bottom:.8rem}.v560-mode-tabs{display:flex;gap:.35rem;flex-wrap:wrap}.v560-mode-tabs button{border:1px solid var(--line);background:var(--surface-solid);border-radius:999px;padding:.42rem .65rem;font-weight:800}.v560-mode-tabs button.active{border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,var(--surface-solid))}.v560-mode-panel p{margin:0;color:var(--muted);font-size:.7rem}.v560-section{margin-bottom:1rem}.v560-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}.v560-item-card{display:grid;gap:.43rem;padding:.75rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid)}.v560-card-meta{display:flex;gap:.35rem;align-items:center;color:var(--muted);font-size:.57rem;text-transform:capitalize}.v560-item-card h3{margin:0;color:var(--navy)}.v560-item-card p{margin:0;color:var(--muted);font-size:.67rem}.v560-item-card small{color:var(--muted);font-size:.58rem}.v560-audio-meter{display:flex;height:5px;background:var(--line);border-radius:999px;overflow:hidden}.v560-audio-meter i{display:block;background:var(--green)}.v560-audio-meter b{display:block;background:var(--blue);opacity:.65}.v560-player-shell{max-width:900px;margin:0 auto}.v560-player-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.65rem;padding:.55rem 0}.v560-player-head span,.v560-player-head strong{display:block}.v560-player-head span{font-size:.57rem;color:var(--muted)}.v560-player-head strong{color:var(--navy)}.v560-player-card{display:grid;gap:.7rem;padding:1rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid)}.v560-player-score{display:flex;gap:.4rem;flex-wrap:wrap}.v560-player-score span{padding:.3rem .4rem;border-radius:9px;background:var(--surface-muted);font-size:.58rem;color:var(--muted)}.v560-player-score b{display:block;color:var(--navy);font-size:.78rem}.v560-main-play{display:flex;align-items:center;gap:.8rem}.v560-play{width:64px;height:64px;border:0;border-radius:50%;background:var(--blue);color:white;font-size:1.4rem;cursor:pointer}.v560-main-play strong,.v560-main-play span{display:block}.v560-main-play span{font-size:.62rem;color:var(--muted)}.v560-speed-row{display:flex;gap:.3rem}.v560-speed-row button{padding:.35rem .5rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-muted)}.v560-speed-row button.active{border-color:var(--blue);color:var(--blue)}.v560-support-meter{display:grid;grid-template-columns:auto 1fr;gap:.25rem .6rem;align-items:center;font-size:.62rem}.v560-support-meter span{color:var(--muted)}.v560-support-meter strong{justify-self:end;color:var(--navy)}.v560-support-meter i{grid-column:1/-1;height:5px;border-radius:999px;background:var(--line);overflow:hidden}.v560-support-meter b{display:block;height:100%;background:var(--green)}.v560-support-actions{display:flex;gap:.35rem;flex-wrap:wrap}.v560-hidden-transcript{display:grid;gap:.2rem;padding:1.1rem;border:1px dashed var(--line);border-radius:14px;text-align:center;color:var(--muted)}.v560-transcript{display:grid;gap:.4rem;margin-top:.7rem}.v560-transcript article{padding:.65rem .75rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid)}.v560-transcript article>div:first-child{display:flex;justify-content:space-between;align-items:center}.v560-transcript article>div:first-child span{font-size:.55rem;color:var(--muted)}.v560-transcript article>div:first-child button{border:0;background:transparent;color:var(--blue);font-size:.6rem}.v560-transcript p{margin:.25rem 0;color:var(--navy)}.v560-translation{color:var(--muted)!important;font-size:.68rem}.v560-phenomena{display:flex;gap:.3rem;flex-wrap:wrap}.v560-phenomena button,.v560-study-cues span{padding:.2rem .35rem;border:1px solid color-mix(in srgb,var(--blue) 25%,var(--line));border-radius:999px;background:color-mix(in srgb,var(--blue) 7%,var(--surface));color:var(--muted);font-size:.54rem}.v560-source-note{margin:.65rem 0;color:var(--muted);font-size:.57rem}.v560-review{display:grid;gap:.6rem;margin-top:.8rem}.v560-question{display:grid;gap:.45rem;padding:.7rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-solid)}.v560-question>span{font-size:.55rem;color:var(--muted)}.v560-question>div{display:grid;gap:.3rem}.v560-question button{text-align:left;padding:.46rem .54rem;border:1px solid var(--line);border-radius:9px;background:var(--surface-muted)}.v560-question button.correct{border-color:color-mix(in srgb,var(--green) 55%,var(--line));background:color-mix(in srgb,var(--green) 8%,var(--surface-solid))}.v560-question button.wrong{border-color:color-mix(in srgb,var(--red) 55%,var(--line));background:color-mix(in srgb,var(--red) 7%,var(--surface-solid))}.v560-dictation-controls{display:grid!important;grid-template-columns:auto 1fr auto;gap:.35rem}.v560-dictation textarea{min-height:62px;resize:vertical}.v560-dict-result{display:flex;justify-content:space-between!important;gap:.5rem;padding:.45rem;border-radius:9px;background:var(--surface-muted)}.v560-dict-result span{color:var(--muted)}.v560-review-actions{display:flex;justify-content:flex-end;gap:.35rem}.v560-study-box{display:grid;gap:.5rem;padding:.72rem;border:1px solid color-mix(in srgb,var(--blue) 35%,var(--line));border-radius:13px;background:var(--surface-solid)}.v560-study-controls{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}.v560-study-controls span{margin-left:auto;font-size:.58rem;color:var(--muted)}.v560-study-box textarea{width:100%;min-height:62px;resize:vertical}.v560-study-cues{display:flex;gap:.25rem;flex-wrap:wrap}.v560-study-box small{color:var(--muted);font-size:.57rem}.v560-word-listening{display:grid;gap:.45rem;padding:.66rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);margin-top:.55rem}.v560-word-listening>div:first-child span,.v560-word-listening>div:first-child small{display:block;color:var(--muted);font-size:.6rem}.v560-word-listening>div:first-child strong{display:block;color:var(--navy);font-size:.78rem}.v560-word-listening-links{display:flex;gap:.3rem;flex-wrap:wrap}.v560-word-listening-links button{padding:.25rem .4rem;border:1px solid var(--line);border-radius:999px;background:var(--surface-solid);font-size:.57rem}.v560-progress-panel{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v560-progress-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v560-progress-head h3{margin:.08rem 0 .2rem}.v560-progress-head p:last-child{margin:0;color:var(--muted);font-size:.7rem;max-width:75ch}.v560-progress-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.35rem;margin-top:.7rem}.v560-progress-grid span,.v560-error-grid span{padding:.5rem;border-radius:10px;background:var(--surface-muted);font-size:.6rem;color:var(--muted)}.v560-progress-grid strong,.v560-error-grid strong{display:block;color:var(--navy);font-size:.95rem}.v560-error-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem;margin-top:.35rem}.v560-dashboard-card{display:flex;justify-content:space-between;align-items:center;gap:.75rem;padding:.75rem .9rem;border:1px solid var(--line);border-radius:15px;background:var(--surface-solid);margin-bottom:.75rem}.v560-dashboard-card h3{margin:.08rem 0}.v560-dashboard-card p{margin:0;color:var(--muted);font-size:.68rem}.v560-dashboard-card span{display:block;color:var(--muted);font-size:.58rem;margin-top:.3rem}.mobile-nav.v560-six{grid-template-columns:repeat(6,minmax(0,1fr))}.mobile-nav.v560-six button{font-size:.67rem;padding-inline:.15rem}@media(max-width:860px){.v560-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v560-progress-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.v560-error-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.v560-grid{grid-template-columns:1fr}.v560-player-head{grid-template-columns:auto 1fr}.v560-player-head>#v560-paired-read{grid-column:1/-1}.v560-dictation-controls{grid-template-columns:1fr!important}.v560-progress-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v560-progress-head,.v560-dashboard-card{align-items:stretch;flex-direction:column}.v560-review-actions{flex-direction:column}.v560-review-actions button{width:100%}.mobile-nav.v560-six button{font-size:.6rem}}';
+      document.head.append(style);
+    }
+
+    const v560NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v560NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p15-listening-context';
+      document.documentElement.dataset.contextListening='v560';
+      document.documentElement.dataset.auralEvidence='support-aware';
+    };
+    const v560InitBase=init;
+    init=async function(options){
+      v560EnsureStyles();const result=await v560InitBase(options||{});v560LoadListening();v420NormalizeSurface();v366ApplyNavigation();
+      if(state.view==='dashboard')renderDashboard();
+      else if(state.view==='progress')renderProgress();
+      else if(state.view==='listen')renderListen();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.6.0';return result;
     };
 
     function v380BootAudit(){
