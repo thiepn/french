@@ -22687,8 +22687,21 @@ qui	who	A1	question word`;
       state.v580Ui.completed=null;v580StartScenario(focus.queue[focus.index],{batchId:focus.id});
     }
     function v5110CancelFocusSet(){
-      if(!state.v5110Curriculum?.focus)return;
-      state.v5110Curriculum.focus=null;state.v5110Ui.lastFocusRun=null;v5110SaveCurriculum();showToast('Adaptive focus set ended.');renderConversation();
+      const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      const active=state.v580Conversation?.active;if(active?.batchId===focus.id){active.batchId='';v580SaveConversation();}
+      state.v5110Curriculum.focus=null;state.v5110Ui.lastFocusRun=null;v5110SaveCurriculum();showToast('Adaptive focus set ended. The current conversation remains available as standalone practice.');renderConversation();
+    }
+
+
+    function v5110ReconcileCurriculumState(){
+      const focus=state.v5110Curriculum?.focus,active=state.v580Conversation?.active;let changed=false;
+      if(!focus&&active?.batchId&&String(active.batchId).startsWith('function-focus-')){active.batchId='';v580SaveConversation();changed=true;}
+      if(focus&&active?.batchId===focus.id&&active.scenarioId!==focus.queue[focus.index]){
+        const index=focus.queue.indexOf(active.scenarioId);
+        if(index>=0){focus.index=index;v5110SaveCurriculum();changed=true;}
+        else{active.batchId='';v580SaveConversation();changed=true;}
+      }
+      return changed;
     }
 
     function v5110CurriculumStage(){
@@ -22808,7 +22821,7 @@ qui	who	A1	question word`;
     init=async function(options){
       v5110EnsureStyles();v5110LoadCurriculum();
       const result=await v5110InitBase(options||{});
-      v5110LoadCurriculum();v420NormalizeSurface();v5110CurriculumAudit();
+      v5110LoadCurriculum();v5110ReconcileCurriculumState();v420NormalizeSurface();v5110CurriculumAudit();
       if(state.view==='conversation')renderConversation();else if(state.view==='progress')renderProgress();else if(state.view==='dashboard')renderDashboard();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.11.0';return result;
     };
