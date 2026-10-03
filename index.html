@@ -22718,6 +22718,7 @@ qui	who	A1	question word`;
     }
     function v5110DecorateConversation(){
       if(state.view!=='conversation')return;
+      const eyebrow=main.querySelector('.v580-header .eyebrow');if(eyebrow)eyebrow.textContent='P20 adaptive communicative curriculum';
       const practice=main.querySelector('.v580-practice-shell');
       if(practice&&state.v5110Curriculum?.focus&&!practice.querySelector('.v5110-focus-banner')){
         const focus=state.v5110Curriculum.focus,head=practice.querySelector('.v580-practice-head');
@@ -22766,6 +22767,18 @@ qui	who	A1	question word`;
       if(errors.length)console.error('French3000 P20 curriculum audit failed',errors);
       document.documentElement.dataset.curriculumAudit=errors.length?'failed':'passed';return errors;
     }
+
+
+    const v5110RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5110RunQaBase(),errors=v5110CurriculumAudit();
+      result.checks.push(v5100QaCheck('curriculum','Adaptive curriculum integrity',errors.length?'fail':'pass',errors.length?errors.join(' · '):Object.keys(V5110_FUNCTION_META).length+' functions mapped across '+V580_SCENARIOS.length+' scenarios'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=V5100_POLICY+' + p20-function-mastery-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
 
     function v5110EnsureStyles(){
       if(document.querySelector('#v5110-curriculum-style'))return;
