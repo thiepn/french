@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.10.0';
-    const APP_RELEASE = 'P19 Communicative System Hardening, Evidence Calibration & Real-Device QA';
+    const APP_VERSION = '5.11.0';
+    const APP_RELEASE = 'P20 Adaptive Communicative Curriculum, Function Mastery & Next-Best-Task Engine';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -22424,6 +22424,369 @@ qui	who	A1	question word`;
       v5100ReconcileCommunicativeState();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='settings')renderSettings();else if(state.view==='conversation')renderConversation();else if(state.view==='progress')renderProgress();else if(state.view==='dashboard')renderDashboard();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.10.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.11.0 ADAPTIVE COMMUNICATIVE CURRICULUM, FUNCTION MASTERY &
+       NEXT-BEST-TASK ENGINE
+       P20 turns P12-P19 communicative practice into a coherent adaptive
+       curriculum. It records privacy-minimal function evidence, models
+       function-level strength, and recommends tasks that close real gaps.
+       ================================================================ */
+    const V5110_VERSION='5.11.0';
+    const V5110_RELEASE='P20 Adaptive Communicative Curriculum, Function Mastery & Next-Best-Task Engine';
+    const V5110_STORAGE_KEY='french3000-communicative-curriculum-v1';
+    const V5110_SCHEMA=1;
+    const V5110_MAX_EVIDENCE=2500;
+    const V5110_MAX_FOCUS_RUNS=120;
+    const V5110_EVIDENCE_DAYS=180;
+    const V5110_FUNCTION_META=Object.freeze({
+      greet:{label:'Greet',group:'Foundation'},request:{label:'Request',group:'Foundation'},specify:{label:'Specify',group:'Foundation'},
+      quantity:{label:'Give quantity',group:'Foundation'},'ask-information':{label:'Ask for information',group:'Foundation'},
+      'give-information':{label:'Give information',group:'Foundation'},introduce:{label:'Introduce yourself',group:'Foundation'},
+      confirm:{label:'Confirm',group:'Foundation'},close:{label:'Close politely',group:'Foundation'},
+      clarify:{label:'Clarify / repair',group:'Interaction'},accept:{label:'Accept',group:'Interaction'},correct:{label:'Correct',group:'Interaction'},
+      disagree:{label:'Disagree politely',group:'Interaction'},agree:{label:'Reach agreement',group:'Interaction'},
+      explain:{label:'Explain',group:'Problem solving'},'give-reason':{label:'Give a reason',group:'Problem solving'},
+      describe:{label:'Describe',group:'Problem solving'},
+      suggest:{label:'Suggest',group:'Planning & opinion'},preference:{label:'State preference',group:'Planning & opinion'},
+      alternative:{label:'Offer alternative',group:'Planning & opinion'},negotiate:{label:'Negotiate',group:'Planning & opinion'},
+      recommend:{label:'Recommend',group:'Planning & opinion'},compare:{label:'Compare',group:'Planning & opinion'},
+      justify:{label:'Justify',group:'Planning & opinion'},
+      narrate:{label:'Narrate past events',group:'Narrative'},sequence:{label:'Sequence events',group:'Narrative'}
+    });
+    const V5110_GROUP_ORDER=Object.freeze(['Foundation','Interaction','Problem solving','Planning & opinion','Narrative']);
+
+    state.v5110Ui=state.v5110Ui&&typeof state.v5110Ui==='object'?state.v5110Ui:{lastFocusRun:null};
+
+    function v5110NormalizeEvidence(row){
+      if(!row||typeof row!=='object'||!V580_SCENARIO_BY_ID.has(row.scenarioId)||!V5110_FUNCTION_META[row.function])return null;
+      return {
+        id:String(row.id||'').slice(0,140),t:clamp(finiteNumber(row.t),0,now()+days(1)),scenarioId:row.scenarioId,
+        function:row.function,level:['A1','A2','B1'].includes(row.level)?row.level:V580_SCENARIO_BY_ID.get(row.scenarioId).level,
+        variant:clamp(Math.floor(finiteNumber(row.variant)),0,20),nodeId:String(row.nodeId||'').slice(0,100),
+        success:row.success===true,repair:row.repair===true,support:clamp(Math.floor(finiteNumber(row.support)),0,3),
+        manual:row.manual===true,independent:row.independent===true,confidence:clamp(finiteNumber(row.confidence),0,1),
+        evidence:clamp(finiteNumber(row.evidence),0,1),responseWords:clamp(Math.floor(finiteNumber(row.responseWords)),0,100),
+        targetHits:clamp(Math.floor(finiteNumber(row.targetHits)),0,20),batchId:String(row.batchId||'').slice(0,140)
+      };
+    }
+    function v5110NormalizeFocus(row){
+      if(!row||typeof row!=='object'||!Array.isArray(row.queue)||!row.queue.length)return null;
+      const queue=row.queue.filter(function(id){return V580_SCENARIO_BY_ID.has(id);}).slice(0,3);if(!queue.length)return null;
+      const results=Array.isArray(row.results)?row.results.slice(0,queue.length).map(function(item){return item&&typeof item==='object'?{
+        scenarioId:V580_SCENARIO_BY_ID.has(item.scenarioId)?item.scenarioId:'',completed:item.completed===true,
+        independentRate:clamp(Math.floor(finiteNumber(item.independentRate)),0,100),averageEvidence:clamp(finiteNumber(item.averageEvidence),0,1)
+      }:null;}):[];
+      return {
+        id:String(row.id||'').slice(0,140),queue:queue,index:clamp(Math.floor(finiteNumber(row.index)),0,queue.length-1),
+        startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1))||now(),
+        focusFunctions:Array.isArray(row.focusFunctions)?row.focusFunctions.filter(function(fn){return Boolean(V5110_FUNCTION_META[fn]);}).slice(0,6):[],
+        results:results
+      };
+    }
+    function v5110NormalizeFocusRun(row){
+      const focus=v5110NormalizeFocus(row);if(!focus)return null;
+      return {...focus,t:clamp(finiteNumber(row.t),0,now()+days(1))||now(),completed:row.completed===true};
+    }
+    function v5110NormalizeCurriculum(raw){
+      const source=raw&&typeof raw==='object'?raw:{},evidence=[],focusRuns=[];
+      for(const row of (Array.isArray(source.evidence)?source.evidence:[]).slice(-V5110_MAX_EVIDENCE)){const normalized=v5110NormalizeEvidence(row);if(normalized)evidence.push(normalized);}
+      for(const row of (Array.isArray(source.focusRuns)?source.focusRuns:[]).slice(-V5110_MAX_FOCUS_RUNS)){const normalized=v5110NormalizeFocusRun(row);if(normalized)focusRuns.push(normalized);}
+      return {schema:V5110_SCHEMA,startedAt:clamp(finiteNumber(source.startedAt),0,now()+days(1))||now(),evidence:evidence,focus:v5110NormalizeFocus(source.focus),focusRuns:focusRuns};
+    }
+    function v5110LoadCurriculum(){state.v5110Curriculum=v5110NormalizeCurriculum(state.v5110Curriculum||safeStorageRead(V5110_STORAGE_KEY)||{});return state.v5110Curriculum;}
+    function v5110SaveCurriculum(){state.v5110Curriculum=v5110NormalizeCurriculum(state.v5110Curriculum||{});safeStorageSet(V5110_STORAGE_KEY,state.v5110Curriculum);depthSchedulePersist?.();}
+    v5110LoadCurriculum();
+
+    const v5110DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5110DepthStateSnapshotBase(),v5110Curriculum:v5110NormalizeCurriculum(state.v5110Curriculum||{})};};
+    const v5110DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5110DepthApplyImportedStateBase(saved);
+      state.v5110Curriculum=v5110NormalizeCurriculum(saved?.v5110Curriculum||safeStorageRead(V5110_STORAGE_KEY)||{});
+      v5110SaveCurriculum();return result;
+    };
+    const v5110DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5110DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5110Curriculum)state.v5110Curriculum=v5110NormalizeCurriculum(saved.v5110Curriculum);}catch{}
+      return result;
+    };
+
+    function v5110EvidenceCredit(row){
+      if(!row?.success)return 0;
+      const supportCredit=[1,.74,.46,.22][clamp(finiteNumber(row.support),0,3)]??.22;
+      const manualCredit=row.manual?.35:1,confidence=.68+clamp(finiteNumber(row.confidence),0,1)*.32;
+      const breadth=.82+Math.min(1,finiteNumber(row.responseWords)/8)*.1+Math.min(1,finiteNumber(row.targetHits)/2)*.08;
+      return clamp((row.evidence||.5)*supportCredit*manualCredit*confidence*breadth,0,1);
+    }
+    function v5110LegacyEntries(fn){
+      const startedAt=state.v5110Curriculum?.startedAt||now(),rows=[];
+      for(const entry of (state.reviewLog||[])){
+        if(entry.t>=startedAt||entry.conversationPractice!==true||entry.conversationFunction!==fn)continue;
+        rows.push({
+          t:entry.t,scenarioId:entry.conversationScenarioId||'',function:fn,success:entry.correct===true,
+          support:clamp(finiteNumber(entry.conversationSupport),0,3),manual:entry.conversationManual===true,
+          independent:entry.conversationIndependent===true,confidence:clamp(finiteNumber(entry.conversationIntentConfidence),0,1),
+          evidence:v5100EvidenceCredit(entry),responseWords:0,targetHits:entry.conversationTarget?1:0,legacy:true
+        });
+      }
+      return rows;
+    }
+    function v5110FunctionEntries(fn){
+      const cutoff=now()-days(V5110_EVIDENCE_DAYS),direct=(state.v5110Curriculum?.evidence||[]).filter(function(row){return row.function===fn&&row.t>=cutoff;});
+      return direct.concat(v5110LegacyEntries(fn).filter(function(row){return row.t>=cutoff;}));
+    }
+    function v5110HistoricalExposure(fn){
+      return (state.v580Conversation?.sessions||[]).filter(function(row){return row.completed&&(row.functions||[]).includes(fn);}).length;
+    }
+    function v5110FunctionProfile(fn){
+      const entries=v5110FunctionEntries(fn),attempts=entries.length,successRows=entries.filter(function(row){return row.success;}),successes=successRows.length;
+      const credit=entries.reduce(function(sum,row){return sum+(row.legacy?clamp(row.evidence,0,1):v5110EvidenceCredit(row));},0);
+      const independent=successRows.filter(function(row){return row.independent===true&&row.support===0&&!row.manual;}).length;
+      const daysSeen=new Set(entries.map(function(row){return dayKey(row.t);})).size,contexts=new Set(successRows.map(function(row){return row.scenarioId;}).filter(Boolean)).size;
+      const quality=attempts?credit/attempts:0,independence=successes?independent/successes:0,spacing=clamp(daysSeen/4,0,1),diversity=clamp(contexts/3,0,1),volume=clamp(attempts/6,0,1);
+      const latest=entries.length?Math.max(...entries.map(function(row){return row.t;})):0,recency=latest&&now()-latest<=days(21)?1:latest?.55:0;
+      const raw=quality*.38+independence*.24+spacing*.13+diversity*.1+volume*.1+recency*.05,confidence=clamp(volume*.45+spacing*.23+diversity*.2+Math.min(1,independent/3)*.12,0,1);
+      const score=clamp(raw*(.58+.42*confidence),0,1);
+      let status='unseen';if(attempts){status=score>=.75&&confidence>=.55&&independent>=3&&contexts>=2?'secure':score>=.6?'functional':score>=.38?'developing':'emerging';}
+      return {function:fn,label:V5110_FUNCTION_META[fn]?.label||fn,group:V5110_FUNCTION_META[fn]?.group||'Other',attempts:attempts,successes:successes,independent:independent,
+        exposure:v5110HistoricalExposure(fn),daysSeen:daysSeen,contexts:contexts,quality:quality,independence:independence,score:score,confidence:confidence,status:status,last:latest};
+    }
+    function v5110Profiles(){return Object.keys(V5110_FUNCTION_META).map(v5110FunctionProfile);}
+    function v5110LevelCeiling(){
+      const started=v540AggregateStats(state.cards).started||0;return started>=650?'B1':started>=180?'A2':'A1';
+    }
+    function v5110LevelRank(level){return ({A1:1,A2:2,B1:3})[level]||1;}
+    function v5110ScenarioScore(scenario){
+      const profiles=scenario.functions.map(v5110FunctionProfile),need=profiles.length?profiles.reduce(function(sum,p){return sum+(1-p.score);},0)/profiles.length:0;
+      const unseen=profiles.length?profiles.filter(function(p){return p.attempts===0;}).length/profiles.length:0,readiness=v580ScenarioReadiness(scenario),desirable=clamp(1-Math.abs(.68-readiness)/.68,0,1);
+      const plays=v580ScenarioSessions(scenario.id).filter(function(row){return row.completed;}).length,recent=(state.v580Conversation?.sessions||[]).slice(-6).some(function(row){return row.scenarioId===scenario.id;});
+      const novelty=1-Math.min(1,plays/4);
+      return need*.5+unseen*.13+desirable*.2+novelty*.12+(recent?0:.05);
+    }
+    function v5110RecommendedScenario(){
+      const ceiling=v5110LevelRank(v5110LevelCeiling()),eligible=V580_SCENARIOS.filter(function(row){return v5110LevelRank(row.level)<=ceiling;});
+      return eligible.map(function(scenario){return {scenario:scenario,score:v5110ScenarioScore(scenario)};}).sort(function(a,b){return b.score-a.score||a.scenario.title.localeCompare(b.scenario.title);})[0]?.scenario||V580_SCENARIOS[0];
+    }
+    const v5110RecommendedScenarioBase=v580RecommendedScenario;
+    v580RecommendedScenario=function(){return v5110RecommendedScenario()||v5110RecommendedScenarioBase();};
+
+    function v5110MissionFunctions(mission){
+      return [...new Set((mission.scenarios||[]).flatMap(function(id){return V580_SCENARIO_BY_ID.get(id)?.functions||[];}))];
+    }
+    function v5110MissionScore(mission){
+      const profiles=v5110MissionFunctions(mission).map(v5110FunctionProfile),need=profiles.length?profiles.reduce(function(sum,p){return sum+(1-p.score);},0)/profiles.length:0;
+      const readiness=mission.scenarios.map(function(id){return v580ScenarioReadiness(V580_SCENARIO_BY_ID.get(id));}).reduce(function(sum,value){return sum+value;},0)/Math.max(1,mission.scenarios.length);
+      const passes=v590MissionRuns(mission.id).filter(function(row){return row.independentPass;}).length;
+      return need*.62+clamp(1-Math.abs(.7-readiness)/.7,0,1)*.23+(passes?0:.15);
+    }
+    const v5110RecommendedMissionBase=v590RecommendedMission;
+    v590RecommendedMission=function(){
+      const ceiling=v5110LevelRank(v5110LevelCeiling()),eligible=V590_MISSIONS.filter(function(mission){return Math.max(...mission.scenarios.map(function(id){return v5110LevelRank(V580_SCENARIO_BY_ID.get(id)?.level||'A1');}))<=ceiling;});
+      return eligible.map(function(mission){return {mission:mission,score:v5110MissionScore(mission)};}).sort(function(a,b){return b.score-a.score||a.mission.title.localeCompare(b.mission.title);})[0]?.mission||v5110RecommendedMissionBase();
+    };
+
+    function v5110PreviewTurn(response,options={}){
+      const active=state.v580Conversation?.active,scenario=active&&V580_SCENARIO_BY_ID.get(active.scenarioId),node=scenario?.nodes?.[active?.nodeId],raw=String(response||'').trim();
+      if(!active||!scenario||!node||node.end||!raw)return null;
+      let evaluated=v580EvaluateTurn(scenario,node,raw,active),manual=options?.manual===true;
+      if(manual&&evaluated.status!=='repair'){
+        const rule=evaluated.rule||node.rules?.[0];if(rule)evaluated={...evaluated,status:'accepted',rule:rule,next:v580ResolveNext(rule,evaluated.slots||active.slots),gain:rule.gain||[],func:rule.func||'',manual:true};
+      }
+      const support=evaluated.status==='repair'?Math.max(1,active.turnSupport):active.turnSupport,fn=evaluated.status==='repair'?'clarify':evaluated.rule?.func||node.rules?.[0]?.func||'';
+      if(!V5110_FUNCTION_META[fn])return null;
+      const success=evaluated.status==='accepted'||evaluated.status==='repair',independent=success&&support===0&&!manual&&evaluated.status!=='repair';
+      const evidence=evaluated.status==='accepted'?v580EvidenceScore(scenario,raw,evaluated,support,manual):evaluated.status==='repair'?.45:0;
+      return {activeId:active.id,beforeTurns:active.turns,beforeSuccessful:active.successfulTurns,scenarioId:scenario.id,function:fn,level:scenario.level,variant:active.variant,nodeId:active.nodeId,
+        success:success,repair:evaluated.status==='repair',uncertain:evaluated.status==='uncertain',support:support,manual:manual,independent:independent,
+        confidence:clamp(finiteNumber(evaluated.confidence),0,1),evidence:clamp(evidence,0,1),responseWords:v580Words(raw).length,targetHits:(evaluated.targetHits||[]).length,batchId:active.batchId||''};
+    }
+    function v5110RecordTurn(preview){
+      if(!preview)return;
+      const row=v5110NormalizeEvidence({...preview,id:'fn-'+Math.round(now())+'-'+Math.random().toString(36).slice(2,8),t:now()});if(!row)return;
+      state.v5110Curriculum.evidence.push(row);if(state.v5110Curriculum.evidence.length>V5110_MAX_EVIDENCE)state.v5110Curriculum.evidence=state.v5110Curriculum.evidence.slice(-V5110_MAX_EVIDENCE);
+      v5110SaveCurriculum();
+    }
+    const v5110SubmitResponseBase=v580SubmitResponse;
+    v580SubmitResponse=function(response,options={}){
+      const active=state.v580Conversation?.active,raw=String(response||'').trim(),manual=options?.manual===true;
+      const signature=[active?.id||'',manual?'manual':'auto',v580Fold(raw)].join('|'),timestamp=now();
+      if(signature===state.v5100LastSubmit?.signature&&timestamp-finiteNumber(state.v5100LastSubmit?.at)<900)return v5110SubmitResponseBase(response,options);
+      const preview=v5110PreviewTurn(response,options),beforeTurns=preview?.beforeTurns||0,beforeSuccessful=preview?.beforeSuccessful||0,activeId=preview?.activeId||'';
+      const result=v5110SubmitResponseBase(response,options);
+      if(!preview)return result;
+      const after=state.v580Conversation?.active,completed=state.v580Ui?.completed?.summary;
+      const sameActive=after?.id===activeId,turnAdvanced=sameActive&&after.turns>beforeTurns,successAdvanced=(sameActive&&after.successfulTurns>beforeSuccessful)||(completed?.id===activeId&&completed.successfulTurns>beforeSuccessful);
+      if(preview.uncertain){if(state.v580Ui?.pendingEval)v5110RecordTurn(preview);}
+      else if(preview.repair){if(turnAdvanced)v5110RecordTurn(preview);}
+      else if(preview.success&&successAdvanced)v5110RecordTurn(preview);
+      return result;
+    };
+
+    function v5110FocusCandidates(){
+      const ceiling=v5110LevelRank(v5110LevelCeiling()),eligible=V580_SCENARIOS.filter(function(row){return v5110LevelRank(row.level)<=ceiling;}),selected=[];
+      while(selected.length<Math.min(3,eligible.length)){
+        let best=null,bestScore=-Infinity;
+        for(const scenario of eligible){
+          if(selected.includes(scenario))continue;
+          const uniqueBonus=scenario.functions.filter(function(fn){return !selected.some(function(row){return row.functions.includes(fn);});}).reduce(function(sum,fn){return sum+(1-v5110FunctionProfile(fn).score);},0)/Math.max(1,scenario.functions.length);
+          const score=v5110ScenarioScore(scenario)+uniqueBonus*.24;
+          if(score>bestScore){best=scenario;bestScore=score;}
+        }
+        if(!best)break;selected.push(best);
+      }
+      return selected;
+    }
+    function v5110StartFocusSet(){
+      if(state.v590Missions?.active){showToast('Finish or end the active mission before starting an adaptive set.');return;}
+      if(state.v580Conversation?.active){showToast('Finish or pause the active conversation first.');return;}
+      const scenarios=v5110FocusCandidates();if(!scenarios.length){showToast('No adaptive scenarios are available yet.');return;}
+      const profiles=v5110Profiles().sort(function(a,b){return a.score-b.score||a.confidence-b.confidence;}),focus={
+        id:'function-focus-'+Math.round(now()),queue:scenarios.map(function(row){return row.id;}),index:0,startedAt:now(),focusFunctions:profiles.slice(0,5).map(function(row){return row.function;}),results:[]
+      };
+      state.v5110Curriculum.focus=focus;state.v5110Ui.lastFocusRun=null;v5110SaveCurriculum();
+      v580StartScenario(focus.queue[0],{batchId:focus.id});
+    }
+    function v5110FocusLinkedSummary(){
+      const focus=state.v5110Curriculum?.focus,summary=state.v580Ui?.completed?.summary;
+      return focus&&summary&&summary.batchId===focus.id&&summary.scenarioId===focus.queue[focus.index]?summary:null;
+    }
+    function v5110RecordFocusResult(summary){
+      const focus=state.v5110Curriculum?.focus;if(!focus||!summary||summary.batchId!==focus.id)return;
+      focus.results[focus.index]={scenarioId:summary.scenarioId,completed:summary.completed===true,
+        independentRate:summary.successfulTurns?Math.round(summary.independentTurns/summary.successfulTurns*100):0,averageEvidence:summary.averageEvidence};
+      v5110SaveCurriculum();
+    }
+    const v5110FinalizeActiveBase=v580FinalizeActive;
+    v580FinalizeActive=function(){
+      const focus=state.v5110Curriculum?.focus,active=state.v580Conversation?.active,linked=Boolean(focus&&active&&active.batchId===focus.id&&active.scenarioId===focus.queue[focus.index]);
+      const result=v5110FinalizeActiveBase();
+      if(linked){const summary=state.v580Ui?.completed?.summary;if(summary)v5110RecordFocusResult(summary);}
+      return result;
+    };
+    function v5110FinishFocusSet(){
+      const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      const completed=focus.results.filter(Boolean).length===focus.queue.length,run=v5110NormalizeFocusRun({...focus,t:now(),completed:completed});
+      if(run){state.v5110Curriculum.focusRuns.push(run);if(state.v5110Curriculum.focusRuns.length>V5110_MAX_FOCUS_RUNS)state.v5110Curriculum.focusRuns=state.v5110Curriculum.focusRuns.slice(-V5110_MAX_FOCUS_RUNS);state.v5110Ui.lastFocusRun=run;}
+      state.v5110Curriculum.focus=null;state.v580Ui.completed=null;v5110SaveCurriculum();renderConversation();
+    }
+    function v5110ContinueFocusSet(){
+      const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      if(focus.index>=focus.queue.length-1){v5110FinishFocusSet();return;}
+      focus.index++;state.v580Ui.completed=null;v5110SaveCurriculum();v580StartScenario(focus.queue[focus.index],{batchId:focus.id});
+    }
+    function v5110ResumeFocusSet(){
+      const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      const active=state.v580Conversation?.active;
+      if(active?.batchId===focus.id){setView('conversation',{focus:false});renderConversation();return;}
+      if(focus.results[focus.index]){v5110ContinueFocusSet();return;}
+      state.v580Ui.completed=null;v580StartScenario(focus.queue[focus.index],{batchId:focus.id});
+    }
+    function v5110CancelFocusSet(){
+      if(!state.v5110Curriculum?.focus)return;
+      state.v5110Curriculum.focus=null;state.v5110Ui.lastFocusRun=null;v5110SaveCurriculum();showToast('Adaptive focus set ended.');renderConversation();
+    }
+
+    function v5110CurriculumStage(){
+      const ceiling=v5110LevelCeiling(),profiles=v5110Profiles(),secure=profiles.filter(function(row){return row.status==='secure';}).length,functional=profiles.filter(function(row){return ['functional','secure'].includes(row.status);}).length;
+      return {level:ceiling,label:ceiling==='A1'?'Foundation communication':ceiling==='A2'?'Everyday independence':'Independent problem solving',secure:secure,functional:functional,total:profiles.length};
+    }
+    function v5110WeakFunctions(limit=5){
+      return v5110Profiles().sort(function(a,b){
+        const aw=(1-a.score)*.7+(1-a.confidence)*.22+(a.attempts?0:.08),bw=(1-b.score)*.7+(1-b.confidence)*.22+(b.attempts?0:.08);
+        return bw-aw||a.label.localeCompare(b.label);
+      }).slice(0,limit);
+    }
+    function v5110ScenarioReason(scenario){
+      const weak=scenario.functions.map(v5110FunctionProfile).sort(function(a,b){return a.score-b.score;}).slice(0,2);
+      return weak.map(function(row){return row.label+' · '+(row.attempts?Math.round(row.score*100)+'%':'unseen');}).join(' · ');
+    }
+    function v5110CurriculumPanel(){
+      const stage=v5110CurriculumStage(),weak=v5110WeakFunctions(5),scenario=v5110RecommendedScenario(),focus=state.v5110Curriculum?.focus;
+      return '<section class="panel v5110-curriculum"><div class="v5110-head"><div><p class="eyebrow">P20 adaptive curriculum</p><h3>'+escapeHtml(stage.label)+' · '+escapeHtml(stage.level)+'</h3><p>Next tasks are selected from communicative-function weakness, evidence confidence, lexical readiness, context diversity and recent practice—not vocabulary readiness alone.</p></div><div class="v5110-summary"><span><strong>'+stage.functional+'/'+stage.total+'</strong> functional+</span><span><strong>'+stage.secure+'</strong> secure</span></div></div>'+
+        '<div class="v5110-weak"><span class="v5110-label">Highest-priority functions</span>'+weak.map(function(row){return '<span class="v5110-function '+row.status+'"><strong>'+escapeHtml(row.label)+'</strong><small>'+(row.attempts?Math.round(row.score*100)+'% · '+row.attempts+' attempts':'unseen')+'</small></span>';}).join('')+'</div>'+
+        '<div class="v5110-next"><div><span>Next best scenario</span><strong>'+escapeHtml(scenario.title)+'</strong><small>'+escapeHtml(v5110ScenarioReason(scenario))+' · lexical readiness '+Math.round(v580ScenarioReadiness(scenario)*100)+'%</small></div><div class="button-row"><button class="primary" id="v5110-practice-next">Practice next</button>'+(focus?'<button class="secondary" id="v5110-resume-focus">Continue adaptive set · '+(focus.index+1)+'/'+focus.queue.length+'</button><button class="secondary" id="v5110-cancel-focus">End set</button>':'<button class="secondary" id="v5110-start-focus">Adaptive set · 3 tasks</button>')+'</div></div></section>';
+    }
+    function v5110FocusResultPanel(){
+      const focus=state.v5110Curriculum?.focus,summary=v5110FocusLinkedSummary();if(!focus||!summary)return '';
+      const final=focus.index>=focus.queue.length-1,focusLabels=focus.focusFunctions.slice(0,3).map(function(fn){return V5110_FUNCTION_META[fn]?.label||fn;}).join(' · ');
+      return '<section class="v5110-focus-result"><div><span>Adaptive set · task '+(focus.index+1)+'/'+focus.queue.length+'</span><strong>'+Math.round(summary.averageEvidence*100)+'% calibrated transfer evidence</strong><small>Focus: '+escapeHtml(focusLabels)+'</small></div><button class="primary" id="v5110-focus-next">'+(final?'Finish adaptive set':'Next adaptive task')+'</button></section>';
+    }
+    function v5110DecorateConversation(){
+      if(state.view!=='conversation')return;
+      const practice=main.querySelector('.v580-practice-shell');
+      if(practice&&state.v5110Curriculum?.focus&&!practice.querySelector('.v5110-focus-banner')){
+        const focus=state.v5110Curriculum.focus,head=practice.querySelector('.v580-practice-head');
+        if(head)head.insertAdjacentHTML('afterend','<section class="v5110-focus-banner"><span>Adaptive set · '+(focus.index+1)+'/'+focus.queue.length+'</span><strong>'+escapeHtml(focus.focusFunctions.slice(0,3).map(function(fn){return V5110_FUNCTION_META[fn]?.label||fn;}).join(' · '))+'</strong></section>');
+      }
+      const result=main.querySelector('.v580-result-shell');
+      if(result&&!result.querySelector('.v5110-focus-result')){
+        const html=v5110FocusResultPanel();if(html){const actions=result.querySelector('.button-row');if(actions)actions.insertAdjacentHTML('beforebegin',html);}
+      }
+      if(!practice&&!result&&!main.querySelector('.v5110-curriculum')){
+        const anchor=main.querySelector('.v590-missions')||main.querySelector('.v580-recommended')||main.querySelector('.v580-start-panel');
+        if(anchor)anchor.insertAdjacentHTML(anchor.classList.contains('v590-missions')?'beforebegin':'afterend',v5110CurriculumPanel());
+      }
+      $('#v5110-practice-next')?.addEventListener('click',function(){v580StartScenario(v5110RecommendedScenario().id);});
+      $('#v5110-start-focus')?.addEventListener('click',v5110StartFocusSet);
+      $('#v5110-resume-focus')?.addEventListener('click',v5110ResumeFocusSet);
+      $('#v5110-cancel-focus')?.addEventListener('click',v5110CancelFocusSet);
+      $('#v5110-focus-next')?.addEventListener('click',v5110ContinueFocusSet);
+    }
+    const v5110RenderConversationBase=renderConversation;
+    renderConversation=function(){const result=v5110RenderConversationBase();v5110DecorateConversation();return result;};
+
+    function v5110ProgressPanel(){
+      const profiles=v5110Profiles(),stage=v5110CurriculumStage(),groups=V5110_GROUP_ORDER.map(function(group){
+        const rows=profiles.filter(function(row){return row.group===group;}).sort(function(a,b){return a.score-b.score||a.label.localeCompare(b.label);});
+        return '<section class="v5110-group"><h4>'+escapeHtml(group)+'</h4>'+rows.map(function(row){return '<div class="v5110-row"><div><strong>'+escapeHtml(row.label)+'</strong><span>'+row.status+' · '+row.attempts+' attempts · '+row.contexts+' contexts</span></div><div class="v5110-score"><i style="width:'+Math.round(row.score*100)+'%"></i><span>'+Math.round(row.score*100)+'%</span></div></div>';}).join('')+'</section>';
+      }).join('');
+      return '<section class="v5110-progress"><div class="v5110-progress-head"><div><p class="eyebrow">P20 communicative-function map</p><h3>'+stage.functional+'/'+stage.total+' functions at functional or secure evidence</h3><p>Scores are evidence-weighted, confidence-damped estimates from actual communicative turns. “Secure” requires independent success across multiple contexts and days.</p></div><button class="primary" id="v5110-open-curriculum">Open adaptive curriculum</button></div><div class="v5110-groups">'+groups+'</div></section>';
+    }
+    function v5110DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5110-progress'))return;
+      const anchor=main.querySelector('.v5100-progress-panel')||main.querySelector('.v590-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v5110ProgressPanel());$('#v5110-open-curriculum')?.addEventListener('click',function(){setView('conversation');});
+    }
+    const v5110RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5110RenderProgressBase();v5110DecorateProgress();return result;};
+
+    function v5110CurriculumAudit(){
+      const errors=[],declared=new Set(Object.keys(V5110_FUNCTION_META)),used=new Set();
+      for(const scenario of V580_SCENARIOS){
+        for(const fn of (scenario.functions||[])){used.add(fn);if(!declared.has(fn))errors.push('missing taxonomy '+scenario.id+':'+fn);}
+        for(const node of Object.values(scenario.nodes||{}))for(const rule of (node.rules||[])){if(rule.func){used.add(rule.func);if(!declared.has(rule.func))errors.push('missing rule taxonomy '+scenario.id+':'+rule.func);}}
+      }
+      for(const fn of declared)if(!used.has(fn))errors.push('unused taxonomy '+fn);
+      const focus=state.v5110Curriculum?.focus;if(focus&&focus.queue.some(function(id){return !V580_SCENARIO_BY_ID.has(id);}))errors.push('invalid adaptive focus queue');
+      if(errors.length)console.error('French3000 P20 curriculum audit failed',errors);
+      document.documentElement.dataset.curriculumAudit=errors.length?'failed':'passed';return errors;
+    }
+
+    function v5110EnsureStyles(){
+      if(document.querySelector('#v5110-curriculum-style'))return;
+      const style=document.createElement('style');style.id='v5110-curriculum-style';
+      style.textContent='.v5110-curriculum{margin:.75rem 0}.v5110-head,.v5110-progress-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5110-head h3,.v5110-progress-head h3{margin:.08rem 0}.v5110-head p,.v5110-progress-head p{margin:0;color:var(--muted);font-size:.66rem;max-width:78ch}.v5110-summary{display:flex;gap:.3rem;flex-wrap:wrap}.v5110-summary span{padding:.42rem .5rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);font-size:.55rem;color:var(--muted)}.v5110-summary strong{display:block;color:var(--navy);font-size:.86rem}.v5110-weak{display:flex;gap:.32rem;flex-wrap:wrap;align-items:center;margin:.65rem 0}.v5110-label{font-size:.56rem;color:var(--muted);font-weight:800;margin-right:.15rem}.v5110-function{display:grid;gap:.02rem;padding:.3rem .42rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-muted)}.v5110-function strong{font-size:.57rem;color:var(--navy)}.v5110-function small{font-size:.49rem;color:var(--muted)}.v5110-function.unseen,.v5110-function.emerging{border-style:dashed}.v5110-next,.v5110-focus-result{display:flex;justify-content:space-between;gap:.7rem;align-items:center;padding:.65rem .72rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid)}.v5110-next span,.v5110-next small,.v5110-focus-result span,.v5110-focus-result small{display:block;color:var(--muted);font-size:.54rem}.v5110-next strong,.v5110-focus-result strong{display:block;color:var(--navy);font-size:.72rem;margin:.08rem 0}.v5110-focus-banner{display:flex;justify-content:space-between;gap:.7rem;align-items:center;padding:.45rem .6rem;border:1px solid color-mix(in srgb,var(--blue) 30%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--blue) 6%,var(--surface-solid));margin-bottom:.45rem}.v5110-focus-banner span{font-size:.54rem;color:var(--muted)}.v5110-focus-banner strong{font-size:.61rem;color:var(--navy)}.v5110-progress{padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v5110-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-top:.65rem}.v5110-group{padding:.6rem;border-radius:12px;background:var(--surface-muted)}.v5110-group h4{margin:0 0 .4rem;color:var(--navy);font-size:.68rem}.v5110-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,150px);gap:.45rem;align-items:center;padding:.28rem 0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}.v5110-row:first-of-type{border-top:0}.v5110-row strong,.v5110-row span{display:block}.v5110-row strong{font-size:.56rem;color:var(--navy)}.v5110-row>div>span{font-size:.48rem;color:var(--muted)}.v5110-score{display:grid;grid-template-columns:1fr auto;gap:.3rem;align-items:center}.v5110-score:before{content:"";grid-column:1;grid-row:1;height:6px;border-radius:999px;background:var(--surface-solid)}.v5110-score i{grid-column:1;grid-row:1;height:6px;border-radius:999px;background:var(--blue);z-index:1}.v5110-score span{font-size:.48rem;color:var(--muted)}@media(max-width:800px){.v5110-head,.v5110-progress-head{flex-direction:column}.v5110-groups{grid-template-columns:1fr}}@media(max-width:600px){.v5110-next,.v5110-focus-result{align-items:stretch;flex-direction:column}.v5110-next .button-row,.v5110-focus-result .button-row{align-items:stretch;flex-direction:column}.v5110-next button,.v5110-focus-result button{width:100%}.v5110-focus-banner{align-items:flex-start;flex-direction:column}.v5110-row{grid-template-columns:1fr}.v5110-score{grid-template-columns:1fr auto}}';
+      document.head.append(style);
+    }
+
+    const v5110NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5110NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p20-adaptive-communicative-curriculum';
+      document.documentElement.dataset.curriculumEngine='function-mastery-next-best-task';
+    };
+    const v5110InitBase=init;
+    init=async function(options){
+      v5110EnsureStyles();v5110LoadCurriculum();
+      const result=await v5110InitBase(options||{});
+      v5110LoadCurriculum();v420NormalizeSurface();v5110CurriculumAudit();
+      if(state.view==='conversation')renderConversation();else if(state.view==='progress')renderProgress();else if(state.view==='dashboard')renderDashboard();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.11.0';return result;
     };
 
 
