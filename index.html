@@ -21984,6 +21984,11 @@ qui	who	A1	question word`;
     }
     function v590StartMission(id){
       const mission=V590_MISSION_BY_ID.get(id);if(!mission)return;
+      const existing=state.v590Missions?.active;
+      if(existing){
+        if(existing.missionId===id){v590ResumeMission();return;}
+        showToast('End the current mission before starting another.');return;
+      }
       if(state.v580Conversation?.active){showToast('Finish or end the active conversation before starting a mission.');return;}
       const runs=v590MissionRuns(id),active={id:'mission-'+Math.round(now())+'-'+id,missionId:id,step:0,startedAt:now(),runNumber:runs.length+1,scenarioResults:[]};
       state.v590Missions.active=active;state.v590Ui.completedMission=null;state.v580Ui.completed=null;state.v580Conversation.batch=null;
@@ -21998,6 +22003,11 @@ qui	who	A1	question word`;
     function v590ResumeMission(){
       const active=state.v590Missions?.active;if(!active)return;
       const mission=V590_MISSION_BY_ID.get(active.missionId);if(!mission)return;
+      const expected=mission.scenarios[active.step],conversation=state.v580Conversation?.active;
+      if(conversation){
+        if(conversation.batchId===active.id&&conversation.scenarioId===expected){setView('conversation',{focus:false});renderConversation();return;}
+        showToast('Finish or end the active conversation before resuming this mission.');return;
+      }
       if(active.scenarioResults[active.step]&&active.step<mission.scenarios.length-1){active.step++;v590SaveMissions();}
       v590LaunchMissionStep();
     }
