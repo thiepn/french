@@ -20279,6 +20279,7 @@ qui	who	A1	question word`;
        action is used; P16 attempts themselves persist only metadata.
        ================================================================ */
     const V570_VERSION='5.7.0';
+    VALID_PRACTICES.add('spoken');
     const V570_RELEASE='P16 Pronunciation, Shadowing & Spoken Production Transfer';
     const V570_STORAGE_KEY='french3000-speaking-v1';
     const V570_SCHEMA=1;
@@ -20302,7 +20303,7 @@ qui	who	A1	question word`;
     V490_PATH_FOCI.add('spoken');
 
     state.v570Speaking=null;
-    state.v570SpeakUi={mode:'shadow',selectedTaskId:'',revealed:false,result:null,sessionIds:[],sessionIndex:0};
+    state.v570SpeakUi={mode:'shadow',selectedTaskId:'',revealed:false,result:null,sessionIds:[],sessionIndex:0,customTask:null};
     state.v570TempRecording={url:'',blob:null,durationMs:0,startedAt:0,targetId:'',modelDurationMs:0};
     state.v570Recorder=null;
     state.v570RecorderStream=null;
@@ -20480,8 +20481,8 @@ qui	who	A1	question word`;
       const rows=[];
       for(const item of V560_LISTENING_ITEMS){
         item.segments.forEach(function(segment,index){
-          const phenomena=v560ConnectedPhenomena(segment.text),notes=v550WordTokens(segment.text).map(v550ResolveNote).filter(Boolean),weak=notes.length?notes.reduce(function(sum,note){return sum+(1-v570SpokenProfile(note).shadowing);},0)/notes.length:0;
-          rows.push({score:phenomena.length*12+weak*50+(segment.text.length<=110?10:0),task:{id:'shadow-'+item.id+'-'+segment.id,kind:'shadow',itemId:item.id,expected:segment.text,alternatives:[],prompt:segment.text,sub:'Listen, then repeat immediately while preserving the phrase rhythm. Text stays visible because this is shadowing, not recall.',speaker:segment.speaker||0,targetVisible:true,phenomena:phenomena}});
+          const phenomena=v560ConnectedPhenomena(segment.text),notes=v550WordTokens(segment.text).map(v550ResolveNote).filter(Boolean),targetIds=new Set((item.targets||[]).map(function(target){return v550ResolveNote(target)?.id;}).filter(Boolean)),note=notes.find(function(row){return targetIds.has(row.id);})||notes[0]||null,weak=note?1-v570SpokenProfile(note).shadowing:1;
+          rows.push({score:phenomena.length*12+weak*50+(segment.text.length<=110?10:0),task:{id:'shadow-'+item.id+'-'+segment.id,kind:'shadow',itemId:item.id,noteId:note?.id||'',expected:segment.text,alternatives:[],prompt:segment.text,sub:'Listen, then repeat immediately while preserving the phrase rhythm. Text stays visible because this is shadowing, not recall.',speaker:segment.speaker||0,targetVisible:true,phenomena:phenomena}});
         });
       }
       return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.task;});
@@ -20513,12 +20514,17 @@ qui	who	A1	question word`;
       return v570ShadowTasks(limit);
     }
     function v570TaskById(id){
-      for(const mode of V570_MODES){const task=v570Tasks(mode,120).find(function(row){return row.id===id;});if(task)return task;}return null;
+      if(state.v570SpeakUi.customTask?.id===id)return state.v570SpeakUi.customTask;
+      for(const mode of V570_MODES){const task=v570Tasks(mode,160).find(function(row){return row.id===id;});if(task)return task;}return null;
+    }
+    function v570WordTask(note){
+      return {id:'speak-word-'+note.id,kind:'pronunciation',noteId:note.id,itemId:'',expected:note.fr,alternatives:note.aliases||[],prompt:note.en||'Say the French word',sub:'Say the target naturally. Automated checking only tests whether speech recognition recovers the intended French.',speaker:0,targetVisible:true};
     }
 
     function v570TaskSupport(task){
       let support=0;
       if(task.kind==='shadow')support=1;
+      if(task._modelUsed===true)support=Math.max(support,task._slowModel===true?2:1);
       if(state.v570SpeakUi.revealed&&!task.targetVisible)support=Math.max(support,2);
       return support;
     }
@@ -20628,12 +20634,21 @@ qui	who	A1	question word`;
       v570StoreAttempt(task,row);
     }
     function v570CommitManualAttempt(task,verdict){
+      v570RemoveRecentAutomatedAttempt(task);
       const source=state.v570SpeakUi.result,row={...v570AttemptBase(task),transcript:source?.transcript||'',similarity:source?.comparison?.similarity||0,recognitionConfidence:source?.confidence||0,verdict:verdict,correct:verdict==='manual_correct',almost:verdict==='manual_almost',reliable:true,manual:true,responseMs:0};
       v570StoreAttempt(task,row);v570AdvanceAfterAttempt();
     }
     function v570StoreAttempt(task,row){
       state.v570Speaking.attempts.push(row);if(state.v570Speaking.attempts.length>V570_MAX_ATTEMPTS)state.v570Speaking.attempts=state.v570Speaking.attempts.slice(-V570_MAX_ATTEMPTS);
-      v570RecordReviewEvidence(task,row);v570SaveSpeaking();
+      if(row.reliable||row.manual)v570RecordReviewEvidence(task,row);
+      v570SaveSpeaking();
+    }
+    function v570RemoveRecentAutomatedAttempt(task){
+      const last=state.v570Speaking.attempts.at(-1);if(!last||last.taskId!==task.id||last.manual||now()-last.t>120000)return;
+      state.v570Speaking.attempts.pop();
+      for(let index=state.reviewLog.length-1;index>=0;index--){
+        const entry=state.reviewLog[index];if(entry.spokenPractice===true&&entry.spokenTaskId===task.id&&Math.abs(entry.t-last.t)<5000){state.reviewLog.splice(index,1);saveReviewLog();break;}
+      }
     }
     function v570RecordReviewEvidence(task,row){
       const note=v570NoteForTask(task)||v560ResolveTargetNote?.(task.expected,V560_ITEM_BY_ID.get(task.itemId))||null;if(!note)return;
@@ -20669,12 +20684,12 @@ qui	who	A1	question word`;
         const list=rows.filter(function(row){return row.kind===kind&&row.reliable;}),success=list.filter(function(row){return row.correct;}).length,almost=list.filter(function(row){return row.almost;}).length,independent=list.filter(function(row){return row.correct&&row.support===0&&!row.modelUsed;}).length;
         return {attempts:list.length,success:success,almost:almost,independent:independent,score:list.length?clamp((success+almost*.45)/list.length*.72+Math.min(1,independent/3)*.28,0,1):0};
       }
-      const pronunciation=dim('pronunciation'),shadow=dim('shadow'),recall=dim('recall'),transfer=dim('transfer'),eligible=[pronunciation,shadow,recall,transfer].filter(function(row){return row.attempts>0;}),overall=eligible.length?Math.min(...eligible.map(function(row){return row.score;})):0;
-      return {attempts:rows.length,intelligibility:pronunciation.score,shadowing:shadow.score,recall:recall.score,transfer:transfer.score,overall:overall,pronunciation:pronunciation,shadow:shadow,spokenRecall:recall,spokenTransfer:transfer};
+      const pronunciation=dim('pronunciation'),shadow=dim('shadow'),recall=dim('recall'),transfer=dim('transfer'),eligible=[pronunciation,shadow,recall,transfer].filter(function(row){return row.attempts>0;}),breadth=eligible.length/4,overall=eligible.length?Math.min(...eligible.map(function(row){return row.score;}))*Math.min(1,eligible.length/3):0;
+      return {attempts:rows.length,intelligibility:pronunciation.score,shadowing:shadow.score,recall:recall.score,transfer:transfer.score,overall:overall,breadth:breadth,pronunciation:pronunciation,shadow:shadow,spokenRecall:recall,spokenTransfer:transfer};
     }
     function v570GlobalProfile(){
       const notes=new Set((state.v570Speaking?.attempts||[]).map(function(row){return row.noteId;}).filter(Boolean)),profiles=[...notes].map(function(id){return v570SpokenProfile(state.cardById.get(id));}),spoken=profiles.filter(function(row){return row.attempts>0;});
-      return {notes:notes.size,secure:spoken.filter(function(row){return row.overall>=.62&&row.recall.independent+row.transfer.independent>=1;}).length,avg:spoken.length?Math.round(spoken.reduce(function(sum,row){return sum+row.overall;},0)/spoken.length*100):0};
+      return {notes:notes.size,secure:spoken.filter(function(row){return row.overall>=.62&&row.recall.independent>=1&&row.transfer.independent>=1;}).length,avg:spoken.length?Math.round(spoken.reduce(function(sum,row){return sum+row.overall;},0)/spoken.length*100):0};
     }
 
     function v570StartSpeak10(){
@@ -20703,6 +20718,31 @@ qui	who	A1	question word`;
       }
       return rows.sort(function(a,b){return b.score-a.score;}).slice(0,limit).map(function(row){return row.card;});
     }
+    const v570NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v570NormalizeSnapshotBase(raw,knownIds);if(!result)return result;
+      const max=(result.queueIds||[]).length;
+      result.v570SpeakTasks=Array.isArray(raw?.v570SpeakTasks)?raw.v570SpeakTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max;}).slice(0,120).map(function(item){return {index:item.index,taskId:String(item.taskId||'').slice(0,180),kind:['recall','transfer'].includes(item.kind)?item.kind:'recall',expected:String(item.expected||'').slice(0,360),prompt:String(item.prompt||'').slice(0,600),exerciseId:String(item.exerciseId||'').slice(0,80)};}):[];
+      return result;
+    };
+    const v570SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v570SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v570StudySpeak)tasks.push({index:index,taskId:card.v570TaskId||'',kind:card.v570SpeakKind||'recall',expected:card.v570Expected||'',prompt:card.v570Prompt||'',exerciseId:card.v570ExerciseId||''});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v570SpeakTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v570ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v570SpeakTasks)?[...state.resumeSnapshot.v570SpeakTasks]:[];
+      const result=v570ResumeBase();
+      for(const item of tasks){
+        const card=state.queue?.[item.index];if(!card)continue;
+        state.queue[item.index]={...card,v570StudySpeak:true,v570TaskId:item.taskId,v570SpeakKind:item.kind,v570Expected:item.expected,v570Prompt:item.prompt,v570ExerciseId:item.exerciseId,v490PracticeOnly:true,v490Category:'spoken-'+item.kind};
+      }
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}
+      return result;
+    };
+
     const v570TaskMetaBase=v540TaskMeta;
     v540TaskMeta=function(card){
       if(card?.v570StudySpeak)return {modality:'speaking',kind:'spoken-'+card.v570SpeakKind,difficulty:3,hardProduction:true,theme:v540BaseNote(card)?.theme||'general',noteId:v540NoteId(card),exposureKeys:['word:'+v540NoteId(card),'sound:'+v540NoteId(card)]};
@@ -20812,7 +20852,7 @@ qui	who	A1	question word`;
       const anchor=dialog.querySelector('.v560-word-listening')||dialog.querySelector('.v550-word-reading')||dialog.lastElementChild;
       if(anchor&&!dialog.querySelector('.v570-word-speaking')){
         anchor.insertAdjacentHTML('afterend',v570WordPanel(card));
-        $('#v570-speak-word',dialog)?.addEventListener('click',function(){dialog.close();state.v570SpeakUi.mode='pronunciation';setView('speak',{focus:false});const task=v570PronunciationTasks(120).find(function(row){return row.noteId===card.id;});if(task)v570OpenTask(task.id);});
+        $('#v570-speak-word',dialog)?.addEventListener('click',function(){dialog.close();state.v570SpeakUi.mode='pronunciation';state.v570SpeakUi.customTask=v570WordTask(card);setView('speak',{focus:false});v570OpenTask(state.v570SpeakUi.customTask.id);});
         $('#v570-word-speak10',dialog)?.addEventListener('click',function(){dialog.close();setView('speak',{focus:false});v570StartSpeak10();});
         dialog.querySelectorAll('[data-v570-context]').forEach(function(button){button.addEventListener('click',function(){dialog.close();state.v570SpeakUi.mode='shadow';setView('speak',{focus:false});const task=v570ShadowTasks(200).find(function(row){return row.itemId===button.dataset.v570Context;});if(task)v570OpenTask(task.id);});});
       }
@@ -20842,6 +20882,33 @@ qui	who	A1	question word`;
     }
     const v570RenderDashboardBase=renderDashboard;
     renderDashboard=function(){const result=v570RenderDashboardBase();v570DecorateDashboard();return result;};
+
+    const v570RenderListenBase=renderListen;
+    renderListen=function(){
+      const result=v570RenderListenBase();
+      if(state.view==='listen'&&state.v560ListenUi.selectedId){
+        const item=V560_ITEM_BY_ID.get(state.v560ListenUi.selectedId),head=main.querySelector('.v560-player-head');
+        if(item&&head&&!head.querySelector('[data-v570-speak-pair]')){
+          const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.v570SpeakPair=item.id;button.textContent='Speak pair';
+          button.addEventListener('click',function(){const task=v570ShadowTasks(240).find(function(row){return row.itemId===item.id;});setView('speak',{focus:false});if(task){state.v570SpeakUi.mode='shadow';v570OpenTask(task.id);}});
+          head.append(button);
+        }
+      }
+      return result;
+    };
+    const v570RenderReadBase=renderRead;
+    renderRead=function(){
+      const result=v570RenderReadBase();
+      if(state.view==='read'&&state.v550ReadUi.selectedId){
+        const item=V560_LISTENING_ITEMS.find(function(row){return row.readingId===state.v550ReadUi.selectedId;}),bar=main.querySelector('.v550-reader-bar');
+        if(item&&bar&&!bar.querySelector('[data-v570-read-speak]')){
+          const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.v570ReadSpeak=item.id;button.textContent='Speak context';
+          button.addEventListener('click',function(){const task=v570ShadowTasks(240).find(function(row){return row.itemId===item.id;});setView('speak',{focus:false});if(task){state.v570SpeakUi.mode='shadow';v570OpenTask(task.id);}});
+          bar.append(button);
+        }
+      }
+      return result;
+    };
 
     const v570NavigationBase=v366ApplyNavigation;
     v366ApplyNavigation=function(){
