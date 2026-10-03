@@ -66,4 +66,4 @@ P18 adds a runtime audit that verifies:
 - no duplicate scenario inside a mission;
 - at least four real-world mission definitions exist.
 
-The release also bumps the PWA shell cache to `french3000-shell-v21` and refreshes the manifest description.
+The release also bumps the PWA shell cache to `french3000-shell-v22` and refreshes the manifest description.
