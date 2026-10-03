@@ -63,7 +63,7 @@ These labels remain practiced-task evidence, not general CEFR certification.
 
 ### Duplicate submission guard
 
-Rapid duplicate submissions of the same response for the same node are ignored for 900 ms.
+Rapid duplicate submissions of the same response in the same active conversation are ignored for 900 ms.
 
 This prevents a double click/tap from applying the same answer to the following conversation node after the first submission advances the state machine.
 
@@ -137,6 +137,6 @@ The report can be rerun and copied for real-device testing.
 
 P19 uses shell cache:
 
-- `french3000-shell-v23`
+- `french3000-shell-v24`
 
 The web-app manifest description now includes calibrated progress evidence and device QA.
