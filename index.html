@@ -22756,6 +22756,13 @@ qui	who	A1	question word`;
     const v5110RenderProgressBase=renderProgress;
     renderProgress=function(){const result=v5110RenderProgressBase();v5110DecorateProgress();return result;};
 
+
+    const v5110PauseConversationHomeBase=v5100PauseConversationHome;
+    v5100PauseConversationHome=function(){
+      const result=v5110PauseConversationHomeBase();
+      v5110DecorateConversation();return result;
+    };
+
     function v5110CurriculumAudit(){
       const errors=[],declared=new Set(Object.keys(V5110_FUNCTION_META)),used=new Set();
       for(const scenario of V580_SCENARIOS){
@@ -22763,7 +22770,11 @@ qui	who	A1	question word`;
         for(const node of Object.values(scenario.nodes||{}))for(const rule of (node.rules||[])){if(rule.func){used.add(rule.func);if(!declared.has(rule.func))errors.push('missing rule taxonomy '+scenario.id+':'+rule.func);}}
       }
       for(const fn of declared)if(!used.has(fn))errors.push('unused taxonomy '+fn);
-      const focus=state.v5110Curriculum?.focus;if(focus&&focus.queue.some(function(id){return !V580_SCENARIO_BY_ID.has(id);}))errors.push('invalid adaptive focus queue');
+      const focus=state.v5110Curriculum?.focus;
+      if(focus&&focus.queue.some(function(id){return !V580_SCENARIO_BY_ID.has(id);}))errors.push('invalid adaptive focus queue');
+      const active=state.v580Conversation?.active;
+      if(focus&&active?.batchId===focus.id&&active.scenarioId!==focus.queue[focus.index])errors.push('adaptive focus and active conversation disagree');
+      if(focus&&state.v590Missions?.active)errors.push('adaptive focus and real-world mission are both active');
       if(errors.length)console.error('French3000 P20 curriculum audit failed',errors);
       document.documentElement.dataset.curriculumAudit=errors.length?'failed':'passed';return errors;
     }
