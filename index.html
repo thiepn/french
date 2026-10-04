@@ -22661,6 +22661,12 @@ qui	who	A1	question word`;
       if(state.v5110Curriculum?.focus){showToast('Continue or end the adaptive set before starting a real-world mission.');return;}
       return v5110MissionStartBase(id);
     };
+
+    const v5110MissionContinueBase=v590ContinueMission;
+    v590ContinueMission=function(){
+      if(state.v5110Curriculum?.focus){showToast('End the adaptive set before continuing the real-world mission.');return;}
+      return v5110MissionContinueBase();
+    };
     const v5110MissionResumeBase=v590ResumeMission;
     v590ResumeMission=function(){
       if(state.v5110Curriculum?.focus){showToast('End the adaptive set before resuming the real-world mission.');return;}
@@ -22685,6 +22691,7 @@ qui	who	A1	question word`;
       if(state.v590Missions?.active){showToast('Finish or end the active mission before starting an adaptive set.');return;}
       if(state.v580Conversation?.active){showToast('Finish or end the active conversation before starting an adaptive set.');return;}
       const scenarios=v5110FocusCandidates();if(!scenarios.length){showToast('No adaptive scenarios are available yet.');return;}
+      if(state.v580Conversation?.batch){state.v580Conversation.batch=null;v580SaveConversation();}
       const profiles=v5110Profiles().sort(function(a,b){return a.score-b.score||a.confidence-b.confidence;}),focus={
         id:'function-focus-'+Math.round(now()),queue:scenarios.map(function(row){return row.id;}),index:0,startedAt:now(),focusFunctions:profiles.slice(0,5).map(function(row){return row.function;}),results:[]
       };
@@ -22716,6 +22723,8 @@ qui	who	A1	question word`;
     }
     function v5110ContinueFocusSet(){
       const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      if(state.v590Missions?.active){showToast('End the active real-world mission before continuing the adaptive set.');return;}
+      if(state.v580Conversation?.active){showToast('Resume or end the current conversation before advancing the adaptive set.');return;}
       if(focus.index>=focus.queue.length-1){v5110FinishFocusSet();return;}
       focus.index++;state.v580Ui.completed=null;v5110SaveCurriculum();v580StartScenario(focus.queue[focus.index],{batchId:focus.id});
     }
@@ -22736,6 +22745,7 @@ qui	who	A1	question word`;
 
     function v5110ReconcileCurriculumState(){
       const focus=state.v5110Curriculum?.focus,active=state.v580Conversation?.active;let changed=false;
+      if(focus&&state.v580Conversation?.batch){state.v580Conversation.batch=null;v580SaveConversation();changed=true;}
       if(!focus&&active?.batchId&&String(active.batchId).startsWith('function-focus-')){active.batchId='';v580SaveConversation();changed=true;}
       if(focus&&active?.batchId===focus.id&&active.scenarioId!==focus.queue[focus.index]){
         const index=focus.queue.indexOf(active.scenarioId);
