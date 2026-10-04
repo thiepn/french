@@ -23338,8 +23338,8 @@ qui	who	A1	question word`;
       const rows=core.map(function(id){return skills[id];}),weighted=rows.reduce(function(sum,row){return sum+row.strength*(.55+.45*row.confidence);},0)/Math.max(1,rows.length);
       const measured=rows.filter(function(row){return row.confidence>=.18;}),bottleneck=measured.length?measured.slice().sort(function(a,b){return a.strength-b.strength||b.confidence-a.confidence;})[0]:null;
       const high=measured.length?Math.max(...measured.map(function(row){return row.strength;})):0,low=measured.length?Math.min(...measured.map(function(row){return row.strength;})):0;
-      const balance=measured.length>=2?Math.round((1-clamp(high-low,0,1))*100):0;
-      return {skills:skills,readiness:Math.round(weighted*100),balance:balance,bottleneck:bottleneck};
+      const balanceReady=measured.length>=2,balance=balanceReady?Math.round((1-clamp(high-low,0,1))*100):0;
+      return {skills:skills,readiness:Math.round(weighted*100),balance:balance,balanceReady:balanceReady,bottleneck:bottleneck};
     }
     function v5130RecordLaunch(candidate,source){
       if(!candidate||!V5130_ACTIVITY_IDS.includes(candidate.id))return;
@@ -23380,7 +23380,7 @@ qui	who	A1	question word`;
     }
     function v5130DashboardPanel(){
       const candidates=v5130Candidates().slice(0,3),summary=v5130Summary(),b=summary.bottleneck;
-      return '<section class="v5130-orchestrator"><div class="v5130-head"><div><p class="eyebrow">P22 unified adaptive engine</p><h2>Best next activity</h2><p>One priority engine across vocabulary, usage, sentences, input, speech and communication. Scores choose practice; they are not proficiency grades.</p></div><div class="v5130-health"><span><strong>'+summary.readiness+'%</strong> evidence readiness</span><span><strong>'+summary.balance+'%</strong> cross-skill balance</span><span><strong>'+escapeHtml(b?.label||'—')+'</strong> bottleneck</span></div></div><div class="v5130-candidates">'+candidates.map(function(row,index){return v5130CandidateCard(row,index,'dashboard');}).join('')+'</div></section>';
+      return '<section class="v5130-orchestrator"><div class="v5130-head"><div><p class="eyebrow">P22 unified adaptive engine</p><h2>Best next activity</h2><p>One priority engine across vocabulary, usage, sentences, input, speech and communication. Scores choose practice; they are not proficiency grades.</p></div><div class="v5130-health"><span><strong>'+summary.readiness+'%</strong> evidence readiness</span><span><strong>'+(summary.balanceReady?summary.balance+'%':'—')+'</strong> cross-skill balance</span><span><strong>'+escapeHtml(b?.label||'—')+'</strong> bottleneck</span></div></div><div class="v5130-candidates">'+candidates.map(function(row,index){return v5130CandidateCard(row,index,'dashboard');}).join('')+'</div></section>';
     }
     function v5130BindLaunchers(scope='dashboard'){
       const candidates=v5130Candidates().slice(0,3);
@@ -23403,7 +23403,7 @@ qui	who	A1	question word`;
     function v5130ProgressPanel(){
       const summary=v5130Summary(),skills=summary.skills,candidates=v5130Candidates().slice(0,3);
       const rows=['retention','usage','phrase','sentence','reading','listening','speaking','conversation','mission','functions'].map(function(id){return v5130SkillRow(skills[id]);}).join('');
-      return '<section class="v5130-progress"><div class="v5130-progress-head"><div><p class="eyebrow">P22 cross-skill orchestration</p><h3>Evidence map & next-best activity</h3><p>Strength and confidence are derived from each subsystem’s own calibrated evidence. The orchestrator favors downstream transfer gaps without treating missing evidence as failure.</p></div><div class="v5130-health"><span><strong>'+summary.readiness+'%</strong> evidence readiness</span><span><strong>'+summary.balance+'%</strong> balance</span><span><strong>'+escapeHtml(summary.bottleneck?.label||'—')+'</strong> measured bottleneck</span></div></div><div class="v5130-progress-grid"><div class="v5130-skill-map">'+rows+'</div><div class="v5130-next-stack"><h4>Current ranking</h4>'+candidates.map(function(row,index){return v5130CandidateCard(row,index,'progress');}).join('')+'</div></div><p class="v5130-footnote">Open-world French remains exposure evidence, not a mastery score, and is therefore kept outside the core readiness average.</p></section>';
+      return '<section class="v5130-progress"><div class="v5130-progress-head"><div><p class="eyebrow">P22 cross-skill orchestration</p><h3>Evidence map & next-best activity</h3><p>Strength and confidence are derived from each subsystem’s own calibrated evidence. The orchestrator favors downstream transfer gaps without treating missing evidence as failure.</p></div><div class="v5130-health"><span><strong>'+summary.readiness+'%</strong> evidence readiness</span><span><strong>'+(summary.balanceReady?summary.balance+'%':'—')+'</strong> balance</span><span><strong>'+escapeHtml(summary.bottleneck?.label||'—')+'</strong> measured bottleneck</span></div></div><div class="v5130-progress-grid"><div class="v5130-skill-map">'+rows+'</div><div class="v5130-next-stack"><h4>Current ranking</h4>'+candidates.map(function(row,index){return v5130CandidateCard(row,index,'progress');}).join('')+'</div></div><p class="v5130-footnote">Open-world French remains exposure evidence, not a mastery score, and is therefore kept outside the core readiness average.</p></section>';
     }
     function v5130DecorateProgress(){
       if(state.view!=='progress'||main.querySelector('.v5130-progress'))return;
