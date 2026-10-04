@@ -10,9 +10,11 @@ Before P20, French3000 already had sentence production, transfer drills, authent
 
 P20 makes the app choose communicative work from demonstrated function-level gaps.
 
+Every scenario function advertised to the adaptive curriculum must now be emitted by at least one scoring rule. P20 QA treats advertised-but-unobservable functions as a release failure.
+
 ## Communicative-function model
 
-P20 models 26 communicative functions across five groups:
+P20 models 25 directly observable communicative functions across five groups:
 
 - Foundation
 - Interaction
@@ -45,7 +47,7 @@ The visible states are:
 - functional;
 - secure.
 
-“Secure” requires strong evidence, sufficient confidence, at least three independent successes and multiple contexts.
+“Secure” requires strong evidence, sufficient confidence, at least three independent successes, and coverage across multiple scenarios when the curriculum offers them. Functions currently represented in only one scenario instead require successful evidence across multiple wording variants.
 
 ## Privacy-minimal function evidence
 
@@ -121,6 +123,8 @@ The set persists:
 
 It can be paused and resumed.
 
+Cross-mode ownership is exclusive: a paused standalone conversation, Conversation 5 batch, P18 mission, and P20 adaptive set cannot silently overwrite one another. Start/resume/continue operations are guarded before their indexes or batch state mutate. Starting an adaptive set intentionally clears a paused Conversation 5 batch; already completed scenario evidence remains preserved.
+
 Ending an adaptive set detaches any paused in-progress conversation from the set rather than deleting it. Boot reconciliation also repairs orphaned adaptive-set linkage after interrupted or imported state.
 
 P20 integrates with the P19 **Pause & home** behavior, so pausing an active adaptive task returns to a Conversation home that still exposes the adaptive curriculum and resume action.
@@ -195,6 +199,6 @@ P20 curriculum state participates in the existing:
 
 P20 uses shell cache:
 
-- `french3000-shell-v27`
+- `french3000-shell-v28`
 
 The manifest description now includes the adaptive communicative curriculum.
