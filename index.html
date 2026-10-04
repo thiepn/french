@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.16.0';
-    const APP_RELEASE = 'P25 CEFR Progression Engine & Promotion Gates';
+    const APP_VERSION = '5.17.0';
+    const APP_RELEASE = 'P26 Weakness Diagnosis & Targeted Remediation';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -24685,6 +24685,430 @@ qui	who	A1	question word`;
       v5160LoadProgression();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.16.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.17.0 WEAKNESS DIAGNOSIS & TARGETED REMEDIATION
+       P26 unifies error signals from recall, phrase/sentence production,
+       listening, speaking, reading and interaction into root causes.
+       Repair is practice-only: scaffold -> rebuild -> independent retest.
+       ================================================================ */
+    const V5170_VERSION='5.17.0';
+    const V5170_RELEASE='P26 Weakness Diagnosis & Targeted Remediation';
+    const V5170_STORAGE_KEY='french-remediation-v1';
+    const V5170_SCHEMA=1;
+    const V5170_EVIDENCE_DAYS=120;
+    const V5170_MAX_RUNS=240;
+    const V5170_CAUSES=Object.freeze({
+      retrieval:{label:'Retrieval failure',short:'Retrieval',detail:'The knowledge is not being retrieved reliably without support.',activity:'retention'},
+      orthography:{label:'Form / orthography',short:'Form',detail:'The intended French is close, but exact written form is unstable.',activity:'retention'},
+      grammar:{label:'Grammar / connector',short:'Grammar',detail:'Articles, contractions, prepositions, or word order are blocking otherwise known language.',activity:'sentence'},
+      phrase:{label:'Lexical frame / structure',short:'Phrase structure',detail:'The target word is known, but its required phrase or sentence frame is not stable.',activity:'phrase'},
+      listening:{label:'Listening discrimination',short:'Listening',detail:'Connected speech, segmentation, speed, or lexical recognition is breaking aural retrieval.',activity:'listening'},
+      speaking:{label:'Spoken retrieval / intelligibility',short:'Speaking',detail:'The learner cannot yet produce the target reliably aloud without model support.',activity:'speaking'},
+      reading:{label:'Reading comprehension',short:'Reading',detail:'Meaning is not transferring reliably from the surrounding written context.',activity:'reading'},
+      interaction:{label:'Interaction independence',short:'Interaction',detail:'Communication still depends on clarification, manual continuation, or support.',activity:'conversation'}
+    });
+    const V5170_CAUSE_ORDER=Object.freeze(Object.keys(V5170_CAUSES));
+    const V5170_QUEUEABLE=new Set(['retrieval','orthography','grammar','phrase','listening','speaking']);
+
+    state.v5170Remediation=null;
+    let v5170Cache={stamp:'',index:null,profile:null};
+
+    function v5170NormalizeRun(raw){
+      if(!raw||typeof raw!=='object')return null;
+      return {
+        id:String(raw.id||'').slice(0,120),startedAt:clamp(finiteNumber(raw.startedAt),0,now()+days(1)),
+        completedAt:clamp(finiteNumber(raw.completedAt),0,now()+days(1)),
+        causes:Array.isArray(raw.causes)?raw.causes.filter(function(x){return V5170_CAUSES[x];}).slice(0,8):[],
+        cases:clamp(Math.round(finiteNumber(raw.cases)),0,50),tasks:clamp(Math.round(finiteNumber(raw.tasks)),0,100),
+        retests:clamp(Math.round(finiteNumber(raw.retests)),0,100),retestSuccesses:clamp(Math.round(finiteNumber(raw.retestSuccesses)),0,100)
+      };
+    }
+    function v5170NormalizeActive(raw){
+      if(!raw||typeof raw!=='object')return null;
+      const startedAt=clamp(finiteNumber(raw.startedAt),0,now()+days(1));
+      if(!startedAt||now()-startedAt>days(2))return null;
+      return {
+        id:String(raw.id||'').slice(0,120),startedAt:startedAt,
+        causes:Array.isArray(raw.causes)?raw.causes.filter(function(x){return V5170_CAUSES[x];}).slice(0,8):[],
+        caseKeys:Array.isArray(raw.caseKeys)?raw.caseKeys.map(String).slice(0,12):[],
+        tasks:clamp(Math.round(finiteNumber(raw.tasks)),0,100)
+      };
+    }
+    function v5170NormalizeState(raw){
+      const source=raw&&typeof raw==='object'?raw:{},runs=[];
+      for(const row of (Array.isArray(source.runs)?source.runs:[]).slice(-V5170_MAX_RUNS)){const n=v5170NormalizeRun(row);if(n&&n.id)runs.push(n);}
+      return {schema:V5170_SCHEMA,active:v5170NormalizeActive(source.active),runs:runs};
+    }
+    function v5170Load(){
+      state.v5170Remediation=v5170NormalizeState(state.v5170Remediation||safeStorageRead(V5170_STORAGE_KEY)||{});
+      return state.v5170Remediation;
+    }
+    function v5170Save(){
+      state.v5170Remediation=v5170NormalizeState(state.v5170Remediation||{});
+      safeStorageSet(V5170_STORAGE_KEY,state.v5170Remediation);depthSchedulePersist?.();
+    }
+    function v5170Invalidate(){v5170Cache={stamp:'',index:null,profile:null};}
+    v5170Load();
+
+    const v5170DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5170DepthStateSnapshotBase(),v5170Remediation:v5170NormalizeState(state.v5170Remediation||{})};};
+    const v5170DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5170DepthApplyImportedStateBase(saved);
+      state.v5170Remediation=v5170NormalizeState(saved?.v5170Remediation||safeStorageRead(V5170_STORAGE_KEY)||{});
+      v5170Invalidate();v5170Save();return result;
+    };
+    const v5170DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5170DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5170Remediation)state.v5170Remediation=v5170NormalizeState(saved.v5170Remediation);}catch{}
+      v5170Invalidate();return result;
+    };
+
+    function v5170Stamp(){
+      const last=state.reviewLog?.at(-1),fn=state.v5110Curriculum?.evidence?.at(-1),mission=state.v590Missions?.runs?.at(-1);
+      return [
+        dayKey(now()),state.reviewLog?.length||0,last?.t||0,last?.rating||'',
+        state.v5110Curriculum?.evidence?.length||0,fn?.t||0,
+        state.v590Missions?.runs?.length||0,mission?.t||0
+      ].join('|');
+    }
+    function v5170Classify(entry){
+      if(!entry||!entry.t)return null;
+      if(entry.sentencePractice===true&&entry.sentenceCorrect!==true){
+        const d=String(entry.sentenceDiagnosis||'');
+        if(d==='blank')return {cause:'retrieval',subtype:'blank',weight:1.25};
+        if(d==='orthography')return {cause:'orthography',subtype:d,weight:.75};
+        if(['contraction','preposition','order'].includes(d))return {cause:'grammar',subtype:d,weight:1.15};
+        if(['incomplete','target','manual'].includes(d))return {cause:'phrase',subtype:d,weight:1.05};
+      }
+      if(entry.transferPractice===true&&entry.transferCorrect!==true){
+        const d=String(entry.transferDiagnosis||'');
+        if(d==='blank')return {cause:'retrieval',subtype:'blank',weight:1.25};
+        if(['orthography','spelling'].includes(d))return {cause:'orthography',subtype:d,weight:.8};
+        if(['connector','order'].includes(d))return {cause:'grammar',subtype:d,weight:1.15};
+        if(['collocate','neighbor','incomplete','anchor','structure'].includes(d))return {cause:'phrase',subtype:d,weight:1.1};
+      }
+      if(entry.contextListening===true&&entry.correct!==true){
+        const d=String(entry.listeningError||entry.answerIssue||'detail');
+        if(d==='orthography')return {cause:'orthography',subtype:'listening-orthography',weight:.7};
+        return {cause:'listening',subtype:d,weight:['connected','segmentation','speed','transcript'].includes(d)?1.2:1};
+      }
+      if(entry.spokenPractice===true&&entry.correct!==true){
+        return {cause:'speaking',subtype:String(entry.spokenVerdict||'mismatch'),weight:entry.spokenManual?1:1.2};
+      }
+      if(entry.readingContextRetrieval===true&&entry.correct!==true){
+        return {cause:'reading',subtype:'context-comprehension',weight:1};
+      }
+      if(entry.answerIssue==='missing-article'||entry.typedQuality==='missing-article')return {cause:'grammar',subtype:'article',weight:.95};
+      if(entry.typedQuality==='close')return {cause:'orthography',subtype:'close-form',weight:.65};
+      if(entry.rating==='again'||entry.correct===false)return {cause:'retrieval',subtype:'generic-recall',weight:1};
+      return null;
+    }
+    function v5170CleanSuccess(entry,cause){
+      if(!entry)return false;
+      if(cause==='listening')return entry.contextListening===true&&entry.correct===true&&finiteNumber(entry.listeningSupport)<=0&&entry.listeningTranscriptUsed!==true;
+      if(cause==='speaking')return entry.spokenPractice===true&&entry.correct===true&&entry.spokenReliable===true&&entry.spokenManual!==true&&finiteNumber(entry.spokenSupport)<=0&&entry.spokenModelUsed!==true;
+      if(cause==='reading')return entry.readingContextRetrieval===true&&entry.correct===true;
+      if(cause==='interaction')return entry.conversationPractice===true&&entry.correct===true&&entry.conversationIndependent===true&&finiteNumber(entry.conversationSupport)<=0&&entry.conversationManual!==true;
+      if(cause==='orthography'){
+        if(entry.sentencePractice===true)return entry.sentenceCorrect===true&&['exact','accepted'].includes(entry.sentenceDiagnosis);
+        if(entry.transferPractice===true)return entry.transferCorrect===true&&entry.transferDiagnosis==='exact';
+        return entry.correct===true&&entry.typedQuality==='exact';
+      }
+      if(cause==='grammar'||cause==='phrase'){
+        if(entry.sentencePractice===true)return entry.sentenceCorrect===true&&['exact','accepted'].includes(entry.sentenceDiagnosis);
+        if(entry.transferPractice===true)return entry.transferCorrect===true&&entry.transferDiagnosis==='exact';
+        return entry.correct===true&&entry.mixedSupportLevel===0;
+      }
+      return entry.correct===true&&finiteNumber(entry.mixedSupportLevel)<=0&&(!entry.typed||['exact','none'].includes(entry.typedQuality));
+    }
+    function v5170Index(){
+      const stamp=v5170Stamp();if(v5170Cache.stamp===stamp&&v5170Cache.index)return v5170Cache.index;
+      const cutoff=now()-days(V5170_EVIDENCE_DAYS),entries=(state.reviewLog||[]).slice(-8000).filter(function(entry){return entry&&entry.t>=cutoff;}).sort(function(a,b){return a.t-b.t;});
+      const groups=new Map(),clean=new Map();
+      for(const entry of entries){
+        const noteId=depthBaseId(entry.noteId||entry.id||'');if(!noteId)continue;
+        for(const cause of V5170_CAUSE_ORDER)if(v5170CleanSuccess(entry,cause))clean.set(noteId+'|'+cause,Math.max(clean.get(noteId+'|'+cause)||0,entry.t));
+        const issue=v5170Classify(entry);if(!issue)continue;
+        const key=noteId+'|'+issue.cause,current=groups.get(key)||{key:key,noteId:noteId,cause:issue.cause,count:0,weight:0,lastFailure:0,days:new Set(),subtypes:Object.create(null)};
+        current.count++;current.weight+=issue.weight;current.lastFailure=Math.max(current.lastFailure,entry.t);current.days.add(dayKey(entry.t));current.subtypes[issue.subtype]=(current.subtypes[issue.subtype]||0)+1;groups.set(key,current);
+      }
+      const cases=[];
+      for(const row of groups.values()){
+        const lastClean=clean.get(row.key)||0,resolved=lastClean>row.lastFailure,note=state.cardById.get(row.noteId);if(!note)continue;
+        const ageDays=(now()-row.lastFailure)/days(1),recency=ageDays<=2?18:ageDays<=7?12:ageDays<=30?6:1,
+          recurrence=Math.min(22,Math.max(0,row.days.size-1)*5),severity=clamp(Math.round(row.weight*10+recency+recurrence),0,100),
+          confidence=clamp(.22+Math.min(.42,row.count*.09)+Math.min(.22,row.days.size*.07)+(row.count>=3?.08:0),0,1),
+          topSubtype=Object.entries(row.subtypes).sort(function(a,b){return b[1]-a[1];})[0]?.[0]||'';
+        cases.push({...row,daysSeen:row.days.size,days:undefined,note:note,lastClean:lastClean,resolved:resolved,severity:severity,confidence:confidence,topSubtype:topSubtype});
+      }
+      const index={cases:cases,open:cases.filter(function(row){return !row.resolved;}).sort(function(a,b){return b.severity-a.severity||b.lastFailure-a.lastFailure;}),resolved:cases.filter(function(row){return row.resolved;})};
+      v5170Cache={stamp:stamp,index:index,profile:null};return index;
+    }
+    function v5170InteractionExtra(){
+      const cutoff=now()-days(V5170_EVIDENCE_DAYS),rows=(state.v5110Curriculum?.evidence||[]).filter(function(row){return row.t>=cutoff;});
+      const weak=rows.filter(function(row){return !row.success||row.repair||!row.independent||row.support>0||row.manual;}),recent=weak.filter(function(row){return row.t>=now()-days(30);});
+      const missionWeak=(state.v590Missions?.runs||[]).filter(function(row){return row.t>=cutoff&&row.completed&&!row.independentPass;}).length;
+      return {count:weak.length+missionWeak,recent:recent.length,missionWeak:missionWeak,score:weak.length||missionWeak?clamp(recent.length*5+missionWeak*12+(weak.length/Math.max(1,rows.length))*38,0,100):0};
+    }
+    function v5170Profile(){
+      const stamp=v5170Stamp();if(v5170Cache.stamp===stamp&&v5170Cache.profile)return v5170Cache.profile;
+      const index=v5170Index(),byCause=Object.fromEntries(V5170_CAUSE_ORDER.map(function(cause){return [cause,{cause:cause,count:0,cases:0,severity:0,confidence:0}];}));
+      for(const row of index.open){
+        const target=byCause[row.cause];target.count+=row.count;target.cases++;target.severity+=row.severity;target.confidence=Math.max(target.confidence,row.confidence);
+      }
+      const interaction=v5170InteractionExtra();
+      if(interaction.count){byCause.interaction.count+=interaction.count;byCause.interaction.cases+=1;byCause.interaction.severity+=interaction.score;byCause.interaction.confidence=Math.max(byCause.interaction.confidence,clamp(interaction.count/12,0,1));}
+      const rows=Object.values(byCause).map(function(row){
+        const score=row.cases?clamp(Math.round(row.severity/Math.max(1,row.cases)+Math.min(18,row.count*1.5)),0,100):0;
+        return {...row,score:score,meta:V5170_CAUSES[row.cause]};
+      }).filter(function(row){return row.count>0;}).sort(function(a,b){return b.score-a.score||b.count-a.count;});
+      const recentRuns=state.v5170Remediation?.runs||[],retests=recentRuns.reduce(function(sum,row){return sum+row.retests;},0),wins=recentRuns.reduce(function(sum,row){return sum+row.retestSuccesses;},0);
+      const profile={index:index,causes:rows,primary:rows[0]||null,openCases:index.open.length,resolvedCases:index.resolved.length,retests:retests,retestSuccesses:wins,retestRate:retests?wins/retests:0};
+      v5170Cache.profile=profile;return profile;
+    }
+    function v5170Reason(item){
+      const meta=V5170_CAUSES[item.cause],sub=String(item.topSubtype||'').replace(/-/g,' ');
+      return meta.detail+(sub?' Most common signal: '+sub+'.':'');
+    }
+    function v5170Decorate(card,item,stage){
+      if(!card)return null;
+      return {...card,v5170Remediation:true,v5170Cause:item.cause,v5170Stage:stage,v5170CaseKey:item.key,v490PracticeOnly:true,
+        v490Category:'targeted-repair',v490Reason:v5170Reason(item)};
+    }
+    function v5170CaseTasks(item){
+      const note=item.note,rec=v490SkillCard(note,'recognition'),prod=v490SkillCard(note,'production'),spell=v490SkillCard(note,'spelling'),article=v490SkillCard(note,'article'),
+        sentenceRepair=v530TasksForMode([note],'repair',1)[0],phraseRepair=v520TasksForMode([note],'repair',1)[0],
+        sentenceTransfer=v530TasksForMode([note],'transfer',1)[0],phraseTransfer=v520TasksForMode([note],'transfer',1)[0],out=[];
+      const push=function(card,stage){const decorated=v5170Decorate(card,item,stage);if(decorated)out.push(decorated);};
+      if(item.cause==='retrieval'){
+        if(rec)push(v490PracticeClone(rec,'repair','Lower-load recognition scaffold before active retrieval.','choice'),'scaffold');
+        if(prod)push(v490PracticeClone(prod,'repair','Rebuild the French form from meaning without changing the real SRS schedule.','classic'),'rebuild');
+        push(prod?v490PracticeClone(prod,'repair','Independent retest of the original retrieval problem.','classic'):rec?v490PracticeClone(rec,'repair','Independent recognition retest.','classic'):null,'retest');
+      }else if(item.cause==='orthography'){
+        if(spell)push(v490PracticeClone(spell,'repair','Isolate exact French spelling and form.','classic'),'scaffold');
+        push(sentenceRepair||phraseRepair||prod&&v490PracticeClone(prod,'repair','Rebuild the complete form in active recall.','classic'),'rebuild');
+        push(prod?v490PracticeClone(prod,'repair','Retest exact production without a model.','classic'):spell?v490PracticeClone(spell,'repair','Retest exact spelling independently.','classic'):null,'retest');
+      }else if(item.cause==='grammar'){
+        if(article&&item.topSubtype==='article')push(v490PracticeClone(article,'repair','Isolate article and gender before rebuilding the full response.','classic'),'scaffold');
+        else if(rec)push(v490PracticeClone(rec,'repair','Reduce retrieval load before repairing the grammatical relation.','choice'),'scaffold');
+        push(sentenceRepair||phraseRepair||prod&&v490PracticeClone(prod,'repair','Rebuild the target with the required connector or order.','classic'),'rebuild');
+        push(sentenceTransfer||phraseTransfer||prod&&v490PracticeClone(prod,'repair','Independent grammatical retest in active production.','classic'),'retest');
+      }else if(item.cause==='phrase'){
+        if(rec)push(v490PracticeClone(rec,'repair','Confirm the lexical anchor before rebuilding its frame.','choice'),'scaffold');
+        push(sentenceRepair||phraseRepair||prod&&v490PracticeClone(prod,'repair','Reconstruct the complete lexical frame.','classic'),'rebuild');
+        push(sentenceTransfer||phraseTransfer||prod&&v490PracticeClone(prod,'repair','Transfer the repaired frame into unsupported production.','classic'),'retest');
+      }else if(item.cause==='listening'){
+        const context=v560ContextTaskCandidates([note],1)[0],isolated=v490SkillCard(note,'listening');
+        if(context)push({...context,v560Support:1,v560PlayCount:0,v560RecoveryStep:'scaffold'},'scaffold');
+        else if(isolated)push(v490PracticeClone(isolated,'repair','Reduce acoustic load and reconnect sound to meaning.','listening'),'scaffold');
+        if(rec)push(v490PracticeClone(rec,'repair','Confirm the lexical item visually before hearing it again.','choice'),'rebuild');
+        if(context)push({...context,v560Support:0,v560PlayCount:0,v560RecoveryStep:'retest'},'retest');
+        else if(isolated)push(v490PracticeClone(isolated,'repair','Independent listening retest.','listening'),'retest');
+      }else if(item.cause==='speaking'){
+        if(prod)push(v490PracticeClone(prod,'repair','Retrieve the target silently before speaking it.','classic'),'scaffold');
+        const spoken=v570StudyTasks([note],2)[0];
+        if(spoken)push(spoken,'rebuild');
+        const second=v570StudyTasks([note],4).find(function(card){return !spoken||card.v570TaskId!==spoken.v570TaskId;});
+        push(second||spoken||prod&&v490PracticeClone(prod,'repair','Independent spoken-form retest fallback.','classic'),'retest');
+      }
+      const seen=new Set();return out.filter(function(card){const k=String(card.id)+'|'+String(card.v5170Stage)+'|'+String(card.v560ItemId||card.v530ExerciseId||card.v520RecordId||card.v570TaskId||'');if(seen.has(k))return false;seen.add(k);return true;}).slice(0,3);
+    }
+    function v5170Plan(limitCases=4){
+      const profile=v5170Profile(),cases=profile.index.open.filter(function(row){return V5170_QUEUEABLE.has(row.cause);}).slice(0,Math.max(1,limitCases)),byStage={scaffold:[],rebuild:[],retest:[]};
+      for(const item of cases)for(const card of v5170CaseTasks(item))byStage[card.v5170Stage]?.push(card);
+      const tasks=[...byStage.scaffold,...byStage.rebuild,...byStage.retest].slice(0,12);
+      return {profile:profile,cases:cases,tasks:tasks,causes:[...new Set(cases.map(function(row){return row.cause;}))]};
+    }
+    function v5170StartRepair(){
+      if(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds)){showToast('Resume or discard the saved session before starting targeted remediation.');return;}
+      const plan=v5170Plan(4);
+      if(!plan.tasks.length){v5170LaunchPrimary();return;}
+      const active={id:'repair-'+Math.round(now()),startedAt:now(),causes:plan.causes,caseKeys:plan.cases.map(function(row){return row.key;}),tasks:plan.tasks.length};
+      state.v5170Remediation.active=active;v5170Save();
+      state.session=normalizeSession({...state.session,mode:'all',skillMode:'adaptive',scheduleMode:'practice',practice:'classic',typed:false,size:plan.tasks.length,quality:'core'});
+      state.queue=plan.tasks;v490ResetSessionQueue();setView('study');announce('Targeted remediation started: scaffold, rebuild, then independent retest.');
+    }
+    function v5170LaunchPrimary(){
+      const primary=v5170Profile().primary;if(!primary){showToast('No unresolved weakness pattern is strong enough to target.');return;}
+      if(primary.cause==='reading'){setView('read',{focus:false});const reading=v550Recommended(1)[0];if(reading)v550OpenReading(reading.id);return;}
+      if(primary.cause==='interaction'){setView('conversation',{focus:false});v5110StartFocusSet();return;}
+      if(primary.cause==='listening'){v560StartStudyListen10(state.cards);return;}
+      if(primary.cause==='speaking'){setView('speak',{focus:false});v570StartSpeak10();return;}
+      const plan=v5170Plan(4);if(plan.tasks.length){v5170StartRepair();return;}
+      v540StartMixed(state.cards,20);
+    }
+
+    const v5170RecordReviewBase=recordReview;
+    recordReview=function(card,rating,previous,next,responseMs,answerResult=null,practice='classic',xp=0,correct=false){
+      const result=v5170RecordReviewBase(card,rating,previous,next,responseMs,answerResult,practice,xp,correct);
+      if(card?.v5170Remediation){
+        const entry=state.reviewLog?.at(-1),run=state.v5170Remediation?.active;
+        if(entry&&depthBaseId(entry.noteId||entry.id)===depthBaseId(card)){
+          entry.remediationPractice=true;entry.remediationCause=V5170_CAUSES[card.v5170Cause]?card.v5170Cause:'retrieval';
+          entry.remediationStage=['scaffold','rebuild','retest'].includes(card.v5170Stage)?card.v5170Stage:'rebuild';
+          entry.remediationCaseKey=String(card.v5170CaseKey||'').slice(0,360);entry.remediationRunId=String(run?.id||'').slice(0,120);
+          saveReviewLog();v5170Invalidate();
+        }
+      }
+      return result;
+    };
+    const v5170NormalizeReviewLogBase=normalizeReviewLog;
+    normalizeReviewLog=function(raw,knownIds=null){
+      const source=Array.isArray(raw)?raw:[],lookup=new Map();
+      for(const entry of source){if(!entry||typeof entry!=='object')continue;lookup.set([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'),entry);}
+      return v5170NormalizeReviewLogBase(raw,knownIds).map(function(entry){
+        const original=lookup.get([finiteNumber(entry.t),String(entry.id||''),String(entry.rating||''),String(entry.practice||'')].join('|'));if(original?.remediationPractice!==true)return entry;
+        return {...entry,remediationPractice:true,remediationCause:V5170_CAUSES[original.remediationCause]?original.remediationCause:'retrieval',
+          remediationStage:['scaffold','rebuild','retest'].includes(original.remediationStage)?original.remediationStage:'rebuild',
+          remediationCaseKey:String(original.remediationCaseKey||'').slice(0,360),remediationRunId:String(original.remediationRunId||'').slice(0,120)};
+      });
+    };
+
+    const v5170NormalizeSnapshotBase=normalizeSessionSnapshot;
+    normalizeSessionSnapshot=function(raw,knownIds){
+      const result=v5170NormalizeSnapshotBase(raw,knownIds);if(!result)return result;const max=(result.queueIds||[]).length;
+      result.v5170RepairTasks=Array.isArray(raw?.v5170RepairTasks)?raw.v5170RepairTasks.filter(function(item){return item&&Number.isInteger(item.index)&&item.index>=0&&item.index<max&&V5170_CAUSES[item.cause];}).slice(0,40).map(function(item){
+        return {index:item.index,cause:item.cause,stage:['scaffold','rebuild','retest'].includes(item.stage)?item.stage:'rebuild',caseKey:String(item.caseKey||'').slice(0,360)};
+      }):[];
+      return result;
+    };
+    const v5170SaveSnapshotBase=saveSessionSnapshot;
+    saveSessionSnapshot=function(){
+      v5170SaveSnapshotBase();if(!state.resumeSnapshot)return;
+      const tasks=[];state.queue.forEach(function(card,index){if(card?.v5170Remediation)tasks.push({index:index,cause:card.v5170Cause,stage:card.v5170Stage,caseKey:card.v5170CaseKey});});
+      if(tasks.length){state.resumeSnapshot={...state.resumeSnapshot,v5170RepairTasks:tasks};safeStorageSet(SESSION_SNAPSHOT_KEY,state.resumeSnapshot);}
+    };
+    const v5170ResumeBase=resumeSavedSession;
+    resumeSavedSession=function(){
+      const tasks=Array.isArray(state.resumeSnapshot?.v5170RepairTasks)?[...state.resumeSnapshot.v5170RepairTasks]:[],result=v5170ResumeBase();
+      for(const item of tasks){const card=state.queue?.[item.index];if(card)state.queue[item.index]={...card,v5170Remediation:true,v5170Cause:item.cause,v5170Stage:item.stage,v5170CaseKey:item.caseKey,v490PracticeOnly:true};}
+      if(tasks.length){saveSessionSnapshot();renderCurrentCard();}return result;
+    };
+
+    function v5170FinalizeActive(){
+      const active=state.v5170Remediation?.active;if(!active)return null;
+      const rows=(state.reviewLog||[]).filter(function(entry){return entry.remediationPractice===true&&entry.remediationRunId===active.id;});
+      if(!rows.length){state.v5170Remediation.active=null;v5170Save();v5170Invalidate();return null;}
+      const retests=rows.filter(function(entry){return entry.remediationStage==='retest';}),
+        successes=retests.filter(function(entry){return v5170CleanSuccess(entry,entry.remediationCause);}).length;
+      const run=v5170NormalizeRun({id:active.id,startedAt:active.startedAt,completedAt:now(),causes:active.causes,cases:active.caseKeys.length,tasks:rows.length,retests:retests.length,retestSuccesses:successes});
+      if(run){state.v5170Remediation.runs.push(run);if(state.v5170Remediation.runs.length>V5170_MAX_RUNS)state.v5170Remediation.runs=state.v5170Remediation.runs.slice(-V5170_MAX_RUNS);}
+      state.v5170Remediation.active=null;v5170Save();v5170Invalidate();return run;
+    }
+    const v5170RecordCompletedSessionBase=recordCompletedSession;
+    recordCompletedSession=function(stats){
+      const result=v5170RecordCompletedSessionBase(stats);if(state.v5170Remediation?.active)v5170FinalizeActive();return result;
+    };
+
+    const v5170CandidatesBase=v5130Candidates;
+    v5130Candidates=function(){
+      const rows=v5170CandidatesBase();if(!rows.length||rows.some(function(row){return row.kind&&row.kind.startsWith('resume-');}))return rows;
+      const primary=v5170Profile().primary;if(!primary)return rows;
+      const activity=primary.meta.activity,boost=clamp(Math.round(5+primary.score*.09),0,14);
+      return rows.map(function(row){
+        if(row.id!==activity)return row;
+        return {...row,score:clamp(row.score+boost,0,120),remediationBoost:boost,remediationCause:primary.cause,
+          detail:row.detail+' · repair focus: '+primary.meta.short};
+      }).sort(function(a,b){return b.score-a.score||a.label.localeCompare(b.label);});
+    };
+    const v5170FactorHtmlBase=v5130FactorHtml;
+    v5130FactorHtml=function(candidate){
+      const html=v5170FactorHtmlBase(candidate),boost=finiteNumber(candidate?.remediationBoost);
+      return boost?html+'<span>'+escapeHtml(V5170_CAUSES[candidate.remediationCause]?.short||'repair')+' +'+boost+'</span>':html;
+    };
+
+    function v5170CauseCard(row){
+      const meta=row.meta;
+      return '<article class="v5170-cause"><div><strong>'+escapeHtml(meta.label)+'</strong><span>'+row.count+' recent signal'+(row.count===1?'':'s')+' · '+row.cases+' unresolved pattern'+(row.cases===1?'':'s')+'</span></div><b>'+row.score+'</b></article>';
+    }
+    function v5170DashboardStrip(){
+      const p=v5170Profile(),plan=v5170Plan(4);if(!p.primary)return '';
+      const primary=p.primary.meta;
+      return '<section class="v5170-strip"><div><p class="eyebrow">P26 targeted remediation</p><strong>'+escapeHtml(primary.label)+'</strong><span>'+p.openCases+' unresolved note-level patterns · '+p.resolvedCases+' repaired by later clean evidence'+(p.retests?' · '+Math.round(p.retestRate*100)+'% repair retest success':'')+'</span></div><button class="primary" id="v5170-dashboard-start">'+(plan.tasks.length?'Repair '+plan.cases.length+' weak area'+(plan.cases.length===1?'':'s'):'Open targeted practice')+'</button></section>';
+    }
+    function v5170ProgressPanel(){
+      const p=v5170Profile(),plan=v5170Plan(4);
+      if(!p.primary)return '<section class="v5170-panel"><p class="eyebrow">P26 targeted remediation</p><h3>No unresolved root-cause pattern yet</h3><p>French will diagnose recurring retrieval, form, grammar, phrase, listening, speaking, reading, and interaction failures as evidence accumulates.</p></section>';
+      const causes=p.causes.slice(0,5).map(v5170CauseCard).join(''),cases=p.index.open.slice(0,8).map(function(row){
+        const meta=V5170_CAUSES[row.cause];
+        return '<div class="v5170-case"><div><strong lang="fr">'+escapeHtml(row.note.fr)+'</strong><span>'+escapeHtml(meta.short)+' · '+row.count+' failure signal'+(row.count===1?'':'s')+' across '+row.daysSeen+' day'+(row.daysSeen===1?'':'s')+'</span><small>'+escapeHtml(v5170Reason(row))+'</small></div><div><b>'+row.severity+'</b><span>'+Math.round(row.confidence*100)+'% evidence</span></div></div>';
+      }).join('');
+      return '<section class="v5170-panel"><div class="v5170-head"><div><p class="eyebrow">P26 weakness diagnosis</p><h3>Repair the cause, not just the failed card</h3><p>Recent errors are classified across eight root causes. Queueable problems use a three-stage practice-only sequence: reduce load, rebuild the missing relation, then retest independently after spacing inside the session.</p></div><button class="primary" id="v5170-progress-start">'+(plan.tasks.length?'Start targeted repair · '+plan.tasks.length:'Open targeted practice')+'</button></div><div class="v5170-cause-grid">'+causes+'</div>'+(cases?'<div class="v5170-case-list">'+cases+'</div>':'')+'<p class="v5170-footnote">Repair attempts do not advance the underlying SRS schedule. Only later clean evidence can close an unresolved diagnosis. Reading and interaction problems route to their native task systems instead of being disguised as flashcard errors.</p></section>';
+    }
+    function v5170Bind(scope){
+      const id=scope==='dashboard'?'#v5170-dashboard-start':'#v5170-progress-start';
+      $(id)?.addEventListener('click',v5170LaunchPrimary);
+    }
+    function v5170DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v5170-strip'))return;
+      const anchor=main.querySelector('.v5160-strip')||main.querySelector('.v5150-strip')||main.querySelector('.v5130-orchestrator');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5170DashboardStrip());v5170Bind('dashboard');
+    }
+    const v5170RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v5170RenderDashboardBase();v5170DecorateDashboard();return result;};
+
+    function v5170DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5170-panel'))return;
+      const anchor=main.querySelector('.v5160-panel')||main.querySelector('.v5150-panel')||main.querySelector('.v5130-progress');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5170ProgressPanel());else main.insertAdjacentHTML('afterbegin',v5170ProgressPanel());v5170Bind('progress');
+    }
+    const v5170RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5170RenderProgressBase();v5170DecorateProgress();return result;};
+
+    function v5170StudyBanner(){
+      if(state.view!=='study')return;const card=state.queue?.[state.queueIndex],stage=$('#study-stage');if(!card?.v5170Remediation||!stage||stage.querySelector('.v5170-study-banner'))return;
+      const meta=V5170_CAUSES[card.v5170Cause]||V5170_CAUSES.retrieval,label={scaffold:'Scaffold',rebuild:'Rebuild',retest:'Independent retest'}[card.v5170Stage]||'Repair';
+      stage.insertAdjacentHTML('afterbegin','<div class="v5170-study-banner"><strong>'+escapeHtml(label)+' · '+escapeHtml(meta.short)+'</strong><span>'+escapeHtml(meta.detail)+'</span></div>');
+    }
+    const v5170RenderCurrentCardBase=renderCurrentCard;
+    renderCurrentCard=function(){const result=v5170RenderCurrentCardBase();v5170StudyBanner();return result;};
+    const v5170RenderStudyBase=renderStudy;
+    renderStudy=function(){const result=v5170RenderStudyBase();v5170StudyBanner();return result;};
+
+    function v5170Audit(){
+      const errors=[],p=v5170Profile(),normalized=v5170NormalizeState(state.v5170Remediation||{});
+      if(normalized.runs.length>V5170_MAX_RUNS)errors.push('repair run cap exceeded');
+      for(const row of normalized.runs){if(row.retestSuccesses>row.retests)errors.push('repair successes exceed retests');if(row.completedAt<row.startedAt)errors.push('repair run ends before start');}
+      for(const item of p.index.open){if(!V5170_CAUSES[item.cause])errors.push('unknown cause '+item.cause);if(item.resolved)errors.push('resolved case leaked into open set');if(item.severity<0||item.severity>100)errors.push('case severity out of bounds');}
+      const plan=v5170Plan(4);for(const card of plan.tasks){if(!card.v490PracticeOnly)errors.push('repair task can change schedule');if(!['scaffold','rebuild','retest'].includes(card.v5170Stage))errors.push('invalid repair stage');}
+      const serialized=JSON.stringify(normalized);if(/"text"\s*:|"transcript"\s*:|"expected"\s*:|"answer"\s*:/i.test(serialized))errors.push('raw learner content leaked into P26 persistence');
+      if(errors.length)console.error('French P26 remediation audit failed',errors.slice(0,30));
+      document.documentElement.dataset.remediationAudit=errors.length?'failed':'passed';return errors;
+    }
+    const v5170RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5170RunQaBase(),errors=v5170Audit();
+      result.checks.push(v5100QaCheck('targeted-remediation','Weakness diagnosis & targeted remediation',errors.length?'fail':'pass',errors.length?errors.slice(0,8).join(' · '):'8-cause taxonomy · practice-only scaffold/rebuild/retest · clean-evidence resolution · privacy-minimal run history'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p26-targeted-remediation-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5170EnsureStyles(){
+      if(document.querySelector('#v5170-remediation-style'))return;
+      const style=document.createElement('style');style.id='v5170-remediation-style';
+      style.textContent='.v5170-strip,.v5170-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0}.v5170-strip{display:flex;justify-content:space-between;align-items:center;gap:.7rem;padding:.68rem .78rem}.v5170-strip>div{display:grid;gap:.06rem}.v5170-strip p,.v5170-strip strong,.v5170-strip span{margin:0}.v5170-strip strong{font-size:.72rem;color:var(--navy)}.v5170-strip span{font-size:.5rem;color:var(--muted)}.v5170-panel{padding:.82rem}.v5170-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}.v5170-head h3{margin:.06rem 0}.v5170-head p{margin:0;color:var(--muted);font-size:.61rem;max-width:82ch}.v5170-cause-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.32rem;margin-top:.6rem}.v5170-cause{display:flex;justify-content:space-between;gap:.3rem;padding:.48rem;border-radius:11px;background:var(--surface-muted)}.v5170-cause>div{display:grid}.v5170-cause strong{font-size:.52rem;color:var(--navy)}.v5170-cause span{font-size:.42rem;color:var(--muted)}.v5170-cause>b{font-size:.74rem;color:var(--red)}.v5170-case-list{display:grid;gap:.26rem;margin-top:.55rem}.v5170-case{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;align-items:center;padding:.45rem .5rem;border:1px solid var(--line);border-radius:11px}.v5170-case>div:first-child{display:grid}.v5170-case strong{font-size:.57rem;color:var(--navy)}.v5170-case span,.v5170-case small{font-size:.43rem;color:var(--muted)}.v5170-case>div:last-child{display:grid;text-align:right}.v5170-case>div:last-child b{font-size:.68rem;color:var(--red)}.v5170-footnote{font-size:.47rem!important;margin:.55rem 0 0!important;color:var(--muted)!important}.v5170-study-banner{display:flex;align-items:center;gap:.5rem;margin:0 0 .55rem;padding:.48rem .58rem;border:1px solid color-mix(in srgb,var(--red) 32%,var(--line));border-radius:11px;background:color-mix(in srgb,var(--red) 6%,var(--surface));font-size:.56rem}.v5170-study-banner strong{color:var(--navy);white-space:nowrap}.v5170-study-banner span{color:var(--muted)}@media(max-width:900px){.v5170-cause-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:650px){.v5170-strip,.v5170-head{align-items:flex-start;flex-direction:column}.v5170-cause-grid{grid-template-columns:1fr 1fr}.v5170-study-banner{align-items:flex-start;flex-direction:column}}@media(max-width:430px){.v5170-cause-grid{grid-template-columns:1fr}}';
+      document.head.append(style);
+    }
+    const v5170NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5170NormalizeSurfaceBase();document.documentElement.dataset.release='p26-targeted-remediation';
+      document.documentElement.dataset.weaknessDiagnosis='root-cause-v1';
+    };
+    const v5170InitBase=init;
+    init=async function(options){
+      v5170EnsureStyles();v5170Load();
+      const result=await v5170InitBase(options||{});
+      v5170Load();v5170Invalidate();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();else if(state.view==='study')renderStudy();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.17.0';return result;
     };
 
 
