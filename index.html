@@ -21012,7 +21012,7 @@ qui	who	A1	question word`;
     const V580_SCENARIOS=Object.freeze([
       {
         id:'cafe-order',title:'Order at a café',level:'A1',duration:'quick',setting:'Café',goal:'Order a drink, specify a preference, and close politely.',
-        functions:['greet','request','specify','close'],targets:['café','thé','eau','petit','grand','merci'],requiredGoals:['order','detail','close'],start:'order',variantCount:3,
+        functions:['request','specify','close'],targets:['café','thé','eau','petit','grand','merci'],requiredGoals:['order','detail','close'],start:'order',variantCount:3,
         slots:{
           drink:{'café':['café','cafe','espresso'],'thé':['thé','the'],'eau':['eau'],'jus':['jus']},
           size:{'petit':['petit','petite'],'grand':['grand','grande']}
@@ -21043,7 +21043,7 @@ qui	who	A1	question word`;
             v580Rule([['je voudrais','je veux','je prends','il me faut'],['baguette','croissant','croissants','pain']],'quantity','item','request','Je voudrais une baguette, s’il vous plaît.',{minWords:2,skipIfSlot:'quantity',skipNext:'close'})
           ]},
           quantity:{npc:'Combien en voulez-vous ?',npcVariants:['Combien en voulez-vous ?','Vous en voulez combien ?','Quelle quantité ?'],hint:'Give a quantity.',phrases:['Deux, s’il vous plaît.','J’en voudrais trois.','Un seul, merci.'],rules:[
-            v580Rule([['un','une','deux','trois','quatre']],'close','quantity','give-information','Deux, s’il vous plaît.',{minWords:1})
+            v580Rule([['un','une','deux','trois','quatre']],'close','quantity','quantity','Deux, s’il vous plaît.',{minWords:1})
           ]},
           close:{npc:'Très bien. Ce sera tout ?',hint:'Close politely.',phrases:['Oui, merci.','C’est tout, merci.','Oui, c’est tout.'],rules:[
             v580Rule([['oui','c est tout','cest tout','merci']],'end','close','close','Oui, c’est tout, merci.',{minWords:1})
@@ -21070,7 +21070,7 @@ qui	who	A1	question word`;
       },
       {
         id:'meet-classmate',title:'Meet a classmate',level:'A1',duration:'quick',setting:'Class',goal:'Introduce yourself with fictional details, exchange one fact, and close naturally.',
-        functions:['greet','introduce','give-information','ask-information','close'],targets:['bonjour','je m’appelle','j’habite','étudier','langue','enchanté'],requiredGoals:['intro','fact','close'],start:'intro',variantCount:3,
+        functions:['introduce','give-information','close'],targets:['bonjour','je m’appelle','j’habite','étudier','langue','enchanté'],requiredGoals:['intro','fact','close'],start:'intro',variantCount:3,
         nodes:{
           intro:{npc:'Salut ! Moi, c’est Camille. Et toi ?',npcVariants:['Salut ! Moi, c’est Camille. Et toi ?','Bonjour, je m’appelle Camille. Tu t’appelles comment ?','Salut, je suis Camille. Et toi ?'],hint:'Give a fictional name and greet.',phrases:['Salut, je m’appelle Alex.','Bonjour, moi c’est Sam.','Je m’appelle Léa. Enchanté.'],rules:[
             v580Rule([['je m appelle','je mappelle','moi c est','moi cest','je suis']],'fact','intro','introduce','Salut, je m’appelle Alex.',{minWords:3})
@@ -21102,7 +21102,7 @@ qui	who	A1	question word`;
       },
       {
         id:'train-ticket',title:'Buy a train ticket',level:'A2',duration:'standard',setting:'Station',goal:'Request a ticket, specify trip details, ask the price, and confirm.',
-        functions:['request','give-information','ask-information','confirm','close'],targets:['billet','aller','retour','train','demain','combien','euros'],requiredGoals:['ticket','trip','time','price','close'],start:'ticket',variantCount:3,
+        functions:['request','specify','give-information','confirm'],targets:['billet','aller','retour','train','demain','combien','euros'],requiredGoals:['ticket','trip','time','price','close'],start:'ticket',variantCount:3,
         slots:{
           trip:{'aller simple':['aller simple','simple'],'aller-retour':['aller retour','aller-retour','retour']},
           time:{'matin':['matin'],'après-midi':['après midi','apres midi'],'soir':['soir']}
@@ -21128,7 +21128,7 @@ qui	who	A1	question word`;
       },
       {
         id:'hotel-problem',title:'Solve a hotel problem',level:'A2',duration:'standard',setting:'Hotel',goal:'Explain a room problem, clarify it, request a solution, and accept or reject an option.',
-        functions:['explain','clarify','request','accept','close'],targets:['chambre','problème','wifi','chauffage','douche','changer','réparer'],requiredGoals:['problem','clarify','solution','decision','close'],start:'problem',variantCount:3,
+        functions:['explain','give-information','request','accept','close'],targets:['chambre','problème','wifi','chauffage','douche','changer','réparer'],requiredGoals:['problem','clarify','solution','decision','close'],start:'problem',variantCount:3,
         nodes:{
           problem:{npc:'Bonsoir. Tout se passe bien dans votre chambre ?',npcVariants:['Bonsoir. Tout se passe bien dans votre chambre ?','Bonsoir. Votre chambre vous convient ?','Bonsoir. Est-ce que tout va bien ?'],hint:'Explain one concrete room problem.',phrases:['Non, j’ai un problème avec le wifi.','Le chauffage ne marche pas.','La douche ne fonctionne pas.'],rules:[
             v580Rule([['problème','probleme','ne marche pas','ne fonctionne pas'],['wifi','chauffage','douche','clé','cle','chambre']],'clarify','problem','explain','J’ai un problème : le wifi ne marche pas.',{minWords:4})
@@ -21150,7 +21150,7 @@ qui	who	A1	question word`;
       },
       {
         id:'restaurant-fix',title:'Correct a restaurant order',level:'A2',duration:'standard',setting:'Restaurant',goal:'Point out a mistake, clarify the intended order, request a correction, and close politely.',
-        functions:['correct','clarify','request','confirm','close'],targets:['commande','plat','salade','poisson','désolé','changer','merci'],requiredGoals:['mistake','clarify','request','confirm','close'],start:'mistake',variantCount:3,
+        functions:['correct','give-information','request','accept','close'],targets:['commande','plat','salade','poisson','désolé','changer','merci'],requiredGoals:['mistake','clarify','request','confirm','close'],start:'mistake',variantCount:3,
         nodes:{
           mistake:{npc:'Voilà votre plat. Bon appétit !',npcVariants:['Voilà votre plat. Bon appétit !','Et voilà pour vous.','Voici votre commande.'],hint:'Politely say that this is not what you ordered.',phrases:['Excusez-moi, ce n’est pas ma commande.','Désolé, je n’ai pas commandé ça.','Je crois qu’il y a une erreur.'],rules:[
             v580Rule([['ce n est pas','ce nest pas','pas ma commande','pas commandé','pas commande','une erreur','il y a une erreur']],'clarify','mistake','correct','Excusez-moi, ce n’est pas ma commande.',{minWords:4})
@@ -21172,7 +21172,7 @@ qui	who	A1	question word`;
       },
       {
         id:'weekend-plan',title:'Make a weekend plan',level:'A2',duration:'standard',setting:'Friends',goal:'Suggest an activity, negotiate time, disagree or offer an alternative, and confirm the plan.',
-        functions:['suggest','preference','disagree','alternative','confirm'],targets:['samedi','dimanche','cinéma','parc','préférer','plutôt','heure'],requiredGoals:['suggest','time','alternative','confirm'],start:'suggest',variantCount:3,
+        functions:['suggest','preference','alternative','confirm'],targets:['samedi','dimanche','cinéma','parc','préférer','plutôt','heure'],requiredGoals:['suggest','time','alternative','confirm'],start:'suggest',variantCount:3,
         nodes:{
           suggest:{npc:'On fait quelque chose ce week-end ?',npcVariants:['On fait quelque chose ce week-end ?','Tu as envie de sortir ce week-end ?','On organise quelque chose samedi ou dimanche ?'],hint:'Suggest an activity.',phrases:['On pourrait aller au cinéma.','Je propose d’aller au parc.','Pourquoi pas un café ?'],rules:[
             v580Rule([['on pourrait','je propose','pourquoi pas','on peut','j aimerais'],['cinéma','cinema','parc','café','cafe','musée','musee','restaurant']],'time','suggest','suggest','On pourrait aller au cinéma.',{minWords:3})
@@ -21191,7 +21191,7 @@ qui	who	A1	question word`;
       },
       {
         id:'return-item',title:'Return an item to a shop',level:'A2',duration:'standard',setting:'Shop',goal:'Explain a return, give a reason, request refund or exchange, and confirm the solution.',
-        functions:['explain','give-reason','request','confirm','close'],targets:['retourner','article','taille','rembourser','échanger','ticket','merci'],requiredGoals:['return','reason','solution','confirm','close'],start:'return',variantCount:3,
+        functions:['request','give-reason','preference','confirm','close'],targets:['retourner','article','taille','rembourser','échanger','ticket','merci'],requiredGoals:['return','reason','solution','confirm','close'],start:'return',variantCount:3,
         nodes:{
           return:{npc:'Bonjour. Je peux vous aider ?',hint:'Say that you want to return an item.',phrases:['Bonjour, je voudrais retourner cet article.','Je veux rendre ce pull.','Je voudrais faire un retour.'],rules:[
             v580Rule([['je voudrais','je veux','j aimerais'],['retourner','rendre','faire un retour']],'reason','return','request','Je voudrais retourner cet article.',{minWords:3})
@@ -22443,7 +22443,7 @@ qui	who	A1	question word`;
     const V5110_MAX_FOCUS_RUNS=120;
     const V5110_EVIDENCE_DAYS=180;
     const V5110_FUNCTION_META=Object.freeze({
-      greet:{label:'Greet',group:'Foundation'},request:{label:'Request',group:'Foundation'},specify:{label:'Specify',group:'Foundation'},
+      request:{label:'Request',group:'Foundation'},specify:{label:'Specify',group:'Foundation'},
       quantity:{label:'Give quantity',group:'Foundation'},'ask-information':{label:'Ask for information',group:'Foundation'},
       'give-information':{label:'Give information',group:'Foundation'},introduce:{label:'Introduce yourself',group:'Foundation'},
       confirm:{label:'Confirm',group:'Foundation'},close:{label:'Close politely',group:'Foundation'},
@@ -22627,6 +22627,41 @@ qui	who	A1	question word`;
       return result;
     };
 
+
+    const v5110StartScenarioBase=v580StartScenario;
+    v580StartScenario=function(id,options={}){
+      const current=state.v580Conversation?.active,mission=state.v590Missions?.active,focus=state.v5110Curriculum?.focus,batchId=String(options?.batchId||'');
+      if(current){showToast('Resume or end the current conversation before starting another.');return false;}
+      if(mission){
+        const spec=V590_MISSION_BY_ID.get(mission.missionId),expected=spec?.scenarios?.[mission.step];
+        if(batchId!==mission.id||id!==expected){showToast('Continue or end the active real-world mission before starting other conversation practice.');return false;}
+      }
+      if(focus){
+        const expected=focus.queue?.[focus.index];
+        if(batchId!==focus.id||id!==expected){showToast('Continue or end the adaptive set before starting other conversation practice.');return false;}
+      }
+      return v5110StartScenarioBase(id,options);
+    };
+
+    const v5110Conversation5Base=v580StartConversation5;
+    v580StartConversation5=function(){
+      if(state.v580Conversation?.active){showToast('Resume or end the current conversation before starting Conversation 5.');return;}
+      if(state.v590Missions?.active){showToast('Continue or end the active mission before starting Conversation 5.');return;}
+      if(state.v5110Curriculum?.focus){showToast('Continue or end the adaptive set before starting Conversation 5.');return;}
+      return v5110Conversation5Base();
+    };
+
+    const v5110MissionStartBase=v590StartMission;
+    v590StartMission=function(id){
+      if(state.v5110Curriculum?.focus){showToast('Continue or end the adaptive set before starting a real-world mission.');return;}
+      return v5110MissionStartBase(id);
+    };
+    const v5110MissionResumeBase=v590ResumeMission;
+    v590ResumeMission=function(){
+      if(state.v5110Curriculum?.focus){showToast('End the adaptive set before resuming the real-world mission.');return;}
+      return v5110MissionResumeBase();
+    };
+
     function v5110FocusCandidates(){
       const ceiling=v5110LevelRank(v5110LevelCeiling()),eligible=V580_SCENARIOS.filter(function(row){return v5110LevelRank(row.level)<=ceiling;}),selected=[];
       while(selected.length<Math.min(3,eligible.length)){
@@ -22643,7 +22678,7 @@ qui	who	A1	question word`;
     }
     function v5110StartFocusSet(){
       if(state.v590Missions?.active){showToast('Finish or end the active mission before starting an adaptive set.');return;}
-      if(state.v580Conversation?.active){showToast('Finish or pause the active conversation first.');return;}
+      if(state.v580Conversation?.active){showToast('Finish or end the active conversation before starting an adaptive set.');return;}
       const scenarios=v5110FocusCandidates();if(!scenarios.length){showToast('No adaptive scenarios are available yet.');return;}
       const profiles=v5110Profiles().sort(function(a,b){return a.score-b.score||a.confidence-b.confidence;}),focus={
         id:'function-focus-'+Math.round(now()),queue:scenarios.map(function(row){return row.id;}),index:0,startedAt:now(),focusFunctions:profiles.slice(0,5).map(function(row){return row.function;}),results:[]
@@ -22681,6 +22716,7 @@ qui	who	A1	question word`;
     }
     function v5110ResumeFocusSet(){
       const focus=state.v5110Curriculum?.focus;if(!focus)return;
+      if(state.v590Missions?.active){showToast('End the active real-world mission before resuming the adaptive set.');return;}
       const active=state.v580Conversation?.active;
       if(active?.batchId===focus.id){setView('conversation',{focus:false});renderConversation();return;}
       if(focus.results[focus.index]){v5110ContinueFocusSet();return;}
@@ -22779,8 +22815,9 @@ qui	who	A1	question word`;
     function v5110CurriculumAudit(){
       const errors=[],declared=new Set(Object.keys(V5110_FUNCTION_META)),used=new Set();
       for(const scenario of V580_SCENARIOS){
-        for(const fn of (scenario.functions||[])){used.add(fn);if(!declared.has(fn))errors.push('missing taxonomy '+scenario.id+':'+fn);}
-        for(const node of Object.values(scenario.nodes||{}))for(const rule of (node.rules||[])){if(rule.func){used.add(rule.func);if(!declared.has(rule.func))errors.push('missing rule taxonomy '+scenario.id+':'+rule.func);}}
+        const emitted=new Set();
+        for(const node of Object.values(scenario.nodes||{}))for(const rule of (node.rules||[])){if(rule.func){used.add(rule.func);emitted.add(rule.func);if(!declared.has(rule.func))errors.push('missing rule taxonomy '+scenario.id+':'+rule.func);}}
+        for(const fn of (scenario.functions||[])){used.add(fn);if(!declared.has(fn))errors.push('missing taxonomy '+scenario.id+':'+fn);if(!emitted.has(fn))errors.push('unobservable scenario function '+scenario.id+':'+fn);}
       }
       for(const fn of declared)if(!used.has(fn))errors.push('unused taxonomy '+fn);
       const focus=state.v5110Curriculum?.focus;
