@@ -23269,7 +23269,7 @@ qui	who	A1	question word`;
     }
     function v5130BaseScore(skillMap,id,bonus=0){
       const f=v5130PriorityFactors(skillMap,id);
-      return clamp(Math.round(f.need*54+f.bridge*24+f.readiness*10+f.novelty*8+bonus-f.recentPenalty),0,120);
+      const calibratedNeed=f.need*(.68+.32*f.readiness);return clamp(Math.round(calibratedNeed*54+f.bridge*24+f.readiness*10+f.novelty*8+bonus-f.recentPenalty),0,120);
     }
     function v5130SavedStudyAvailable(){try{return Boolean(normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds));}catch{return false;}}
     function v5130ResumeCandidate(){
@@ -23312,23 +23312,23 @@ qui	who	A1	question word`;
       }
       if(listening){
         const f=v5130PriorityFactors(skills,'listening'),difficulty=v560Difficulty(listening);
-        rows.push(v5130Candidate('listening','Listen: '+listening.title,difficulty.lexical+'% lexical · '+difficulty.aural+'% aural','Listening is prioritized when lexical/context knowledge is ahead of independent aural evidence.',v5130BaseScore(skills,'listening',skills.reading.strength>skills.listening.strength+.12?10:0),listening.id,f));
+        rows.push(v5130Candidate('listening','Listen: '+listening.title,difficulty.lexical+'% lexical · '+difficulty.aural+'% aural','Listening is prioritized when lexical/context knowledge is ahead of independent aural evidence.',v5130BaseScore(skills,'listening',skills.reading.strength>skills.listening.strength+.12?10:f.readiness<.32?-8:0),listening.id,f));
       }
       if(speakReady){
         const f=v5130PriorityFactors(skills,'speaking'),stats=v570Stats();
-        rows.push(v5130Candidate('speaking','Speak 10',stats.firstIndependent+' independent spoken successes','Convert sentence and listening knowledge into unsupported spoken retrieval.',v5130BaseScore(skills,'speaking',skills.sentence.strength>skills.speaking.strength+.14?12:0),'',f));
+        rows.push(v5130Candidate('speaking','Speak 10',stats.firstIndependent+' independent spoken successes','Convert sentence and listening knowledge into unsupported spoken retrieval.',v5130BaseScore(skills,'speaking',skills.sentence.strength>skills.speaking.strength+.14?12:f.readiness<.35?-10:0),'',f));
       }
       if(focus.length){
         const f=v5130PriorityFactors(skills,'conversation'),weak=v5110Profiles().sort(function(a,b){return a.score-b.score||a.confidence-b.confidence;}).slice(0,3);
-        rows.push(v5130Candidate('conversation','Adaptive conversation · 3 tasks',weak.map(function(row){return row.label;}).join(' · '),'Practice the weakest observable communicative functions in multi-turn tasks.',v5130BaseScore(skills,'conversation',skills.functions.strength<.55?12:5),'',f));
+        rows.push(v5130Candidate('conversation','Adaptive conversation · 3 tasks',weak.map(function(row){return row.label;}).join(' · '),'Practice the weakest observable communicative functions in multi-turn tasks.',v5130BaseScore(skills,'conversation',f.readiness<.38?-16:skills.functions.strength<.55?12:5),'',f));
       }
       if(mission){
         const f=v5130PriorityFactors(skills,'mission'),profile=v590Profile();
-        rows.push(v5130Candidate('mission','Mission: '+mission.title,profile.covered+'/'+V590_MISSIONS.length+' mission types passed','Chain several communicative tasks when conversation evidence is ready for broader functional transfer.',v5130BaseScore(skills,'mission',skills.conversation.strength>=.48?10:-10),mission.id,f));
+        rows.push(v5130Candidate('mission','Mission: '+mission.title,profile.covered+'/'+V590_MISSIONS.length+' mission types passed','Chain several communicative tasks when conversation evidence is ready for broader functional transfer.',v5130BaseScore(skills,'mission',skills.conversation.strength>=.48?10:-24),mission.id,f));
       }
       {
         const f=v5130PriorityFactors(skills,'open-world'),open=v5120Stats();
-        const readyBonus=skills.retention.strength>=.45&&skills.reading.strength>=.3?8:-8;
+        const readyBonus=skills.retention.strength>=.45&&skills.reading.strength>=.3?8:-16;
         rows.push(v5130Candidate('open-world','Bring real French',open.sessions+' open-world sessions · '+open.words.toLocaleString()+' words','Apply the current learner model to French you actually encounter; exposure stays distinct from mastery.',v5130BaseScore(skills,'open-world',readyBonus),'',f));
       }
       return rows.sort(function(a,b){return b.score-a.score||a.label.localeCompare(b.label);});
@@ -23371,7 +23371,7 @@ qui	who	A1	question word`;
     function v5130FactorHtml(candidate){
       if(!candidate?.factors)return '<span>Resume priority</span>';
       const f=candidate.factors;
-      return '<span>gap '+Math.round(f.need*100)+'</span><span>transfer '+Math.round(f.bridge*100)+'</span><span>ready '+Math.round(f.readiness*100)+'</span>'+(f.recentPenalty?'<span>recent −'+f.recentPenalty+'</span>':'');
+      return '<span>gap '+Math.round(f.need*100)+'</span><span>evidence '+Math.round(f.confidence*100)+'</span><span>transfer '+Math.round(f.bridge*100)+'</span><span>ready '+Math.round(f.readiness*100)+'</span>'+(f.recentPenalty?'<span>recent −'+f.recentPenalty+'</span>':'');
     }
     function v5130CandidateCard(candidate,index,source){
       const meta=V5130_ACTIVITY_META[candidate.id]||{short:candidate.id};
