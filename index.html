@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.14.0';
-    const APP_RELEASE = 'P23 Adaptive Session Composition, Outcome Feedback & Orchestrator Self-Calibration';
+    const APP_VERSION = '5.15.0';
+    const APP_RELEASE = 'P24 Longitudinal Mastery Model & Forgetting Calibration';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -23939,6 +23939,381 @@ qui	who	A1	question word`;
       v5140LoadComposer();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();else v5140RefreshBanner();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.14.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.15.0 LONGITUDINAL MASTERY MODEL & FORGETTING CALIBRATION
+       P24 separates recent performance from durable retention. It derives
+       forecasts from the existing FSRS-compatible memory state, delayed
+       retrieval evidence and P13 active-mastery evidence. It stores only
+       compact daily aggregate snapshots; underlying review systems remain
+       authoritative for mastery and scheduling.
+       ================================================================ */
+    const V5150_VERSION='5.15.0';
+    const V5150_RELEASE='P24 Longitudinal Mastery Model & Forgetting Calibration';
+    const V5150_STORAGE_KEY='french-longitudinal-mastery-v1';
+    const V5150_SCHEMA=1;
+    const V5150_MAX_SNAPSHOTS=400;
+    const V5150_HORIZONS=Object.freeze([1,7,30,90]);
+    const V5150_STATES=Object.freeze(['UNSEEN','SEEN','LEARNED','RETRIEVABLE','USABLE','DURABLE']);
+    const V5150_STATE_LABELS=Object.freeze({UNSEEN:'Unseen',SEEN:'Seen',LEARNED:'Learned',RETRIEVABLE:'Retrievable',USABLE:'Usable',DURABLE:'Durable'});
+
+    state.v5150Longitudinal=null;
+    let v5150DerivedCache={stamp:'',aggregate:null,delayed:null,calibration:null};
+
+    function v5150SafeNumber(value,min,max,fallback=0){return clamp(finiteNumber(value,fallback),min,max);}
+    function v5150NormalizeSnapshot(raw){
+      if(!raw||typeof raw!=='object')return null;
+      const states={};for(const key of V5150_STATES)states[key]=clamp(Math.round(finiteNumber(raw.states?.[key])),0,100000);
+      return {
+        day:String(raw.day||dayKey(raw.t||now())).slice(0,16),
+        t:clamp(finiteNumber(raw.t),0,now()+days(1))||now(),
+        reason:String(raw.reason||'daily').slice(0,32),
+        started:clamp(Math.round(finiteNumber(raw.started)),0,100000),
+        states:states,
+        fragile:clamp(Math.round(finiteNumber(raw.fragile)),0,100000),
+        likely7:clamp(Math.round(finiteNumber(raw.likely7)),0,100000),
+        likely30:clamp(Math.round(finiteNumber(raw.likely30)),0,100000),
+        likely90:clamp(Math.round(finiteNumber(raw.likely90)),0,100000),
+        avg7:v5150SafeNumber(raw.avg7,0,1),
+        avg30:v5150SafeNumber(raw.avg30,0,1),
+        avg90:v5150SafeNumber(raw.avg90,0,1),
+        confidence:v5150SafeNumber(raw.confidence,0,1),
+        calibrationN:clamp(Math.round(finiteNumber(raw.calibrationN)),0,100000),
+        calibrationCorrection:v5150SafeNumber(raw.calibrationCorrection,-.08,.08)
+      };
+    }
+    function v5150NormalizeLongitudinal(raw){
+      const source=raw&&typeof raw==='object'?raw:{},byDay=new Map();
+      for(const item of (Array.isArray(source.snapshots)?source.snapshots:[]).slice(-V5150_MAX_SNAPSHOTS*2)){
+        const row=v5150NormalizeSnapshot(item);if(row)byDay.set(row.day,row);
+      }
+      const snapshots=[...byDay.values()].sort(function(a,b){return a.t-b.t;}).slice(-V5150_MAX_SNAPSHOTS);
+      return {schema:V5150_SCHEMA,snapshots:snapshots};
+    }
+    function v5150LoadLongitudinal(){
+      state.v5150Longitudinal=v5150NormalizeLongitudinal(state.v5150Longitudinal||safeStorageRead(V5150_STORAGE_KEY)||{});
+      return state.v5150Longitudinal;
+    }
+    function v5150SaveLongitudinal(){
+      state.v5150Longitudinal=v5150NormalizeLongitudinal(state.v5150Longitudinal||{});
+      safeStorageSet(V5150_STORAGE_KEY,state.v5150Longitudinal);depthSchedulePersist?.();
+    }
+    function v5150Invalidate(){v5150DerivedCache={stamp:'',aggregate:null,delayed:null,calibration:null};}
+    v5150LoadLongitudinal();
+
+    const v5150DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5150DepthStateSnapshotBase(),v5150Longitudinal:v5150NormalizeLongitudinal(state.v5150Longitudinal||{})};};
+    const v5150DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5150DepthApplyImportedStateBase(saved);
+      state.v5150Longitudinal=v5150NormalizeLongitudinal(saved?.v5150Longitudinal||safeStorageRead(V5150_STORAGE_KEY)||{});
+      v5150Invalidate();v5150SaveLongitudinal();return result;
+    };
+    const v5150DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5150DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5150Longitudinal)state.v5150Longitudinal=v5150NormalizeLongitudinal(saved.v5150Longitudinal);}catch{}
+      v5150Invalidate();return result;
+    };
+
+    function v5150EvidenceStamp(){
+      const last=state.reviewLog?.at(-1),lastRun=state.v5140Composer?.runs?.at(-1);
+      return [
+        state.reviewLog?.length||0,last?.t||0,last?.rating||'',Object.keys(state.progress||{}).length,
+        state.cards?.length||0,lastRun?.completedAt||0,lastRun?.feedback||''
+      ].join('|');
+    }
+    function v5150ReviewSuccess(entry){
+      if(typeof v540EntrySuccess==='function')return v540EntrySuccess(entry);
+      return entry?.correct===true||['good','easy'].includes(entry?.rating);
+    }
+    function v5150ReviewModality(entry){
+      if(typeof v540EntryModality==='function')return v540EntryModality(entry);
+      const skill=String(entry?.skill||'');return skill==='listening'?'listening':['production','spelling','article'].includes(skill)?'recall':'recognition';
+    }
+    function v5150DelayedIndex(){
+      const stamp=v5150EvidenceStamp();
+      if(v5150DerivedCache.stamp===stamp&&v5150DerivedCache.delayed)return v5150DerivedCache.delayed;
+      const map=new Map(),all=[],previous=new Map(),entries=[...(state.reviewLog||[])].filter(Boolean).sort(function(a,b){return finiteNumber(a.t)-finiteNumber(b.t);});
+      for(const entry of entries){
+        const noteId=depthBaseId(entry.noteId||entry.id||'');if(!noteId)continue;
+        const modality=v5150ReviewModality(entry),key=noteId+'|'+modality,prev=previous.get(key),t=finiteNumber(entry.t);
+        if(prev&&t>finiteNumber(prev.t)){
+          const gapDays=(t-finiteNumber(prev.t))/days(1),stability=Math.max(0,finiteNumber(prev.stability,prev.scheduledDays||prev.interval||0));
+          const predicted=stability>0?clamp(Math.pow(.9,gapDays/Math.max(.05,stability)),0,1):null;
+          const row={
+            noteId:noteId,modality:modality,t:t,gapDays:gapDays,success:v5150ReviewSuccess(entry),
+            independent:(typeof v540EntrySupport==='function'?v540EntrySupport(entry):0)===0&&entry.mixedFirstAttempt!==false,
+            predicted:predicted,previousStability:stability
+          };
+          if(!map.has(noteId))map.set(noteId,[]);map.get(noteId).push(row);all.push(row);
+        }
+        previous.set(key,entry);
+      }
+      const delayed={map:map,all:all};
+      if(v5150DerivedCache.stamp!==stamp)v5150DerivedCache={stamp:stamp,aggregate:null,delayed:delayed,calibration:null};
+      else v5150DerivedCache.delayed=delayed;
+      return delayed;
+    }
+    function v5150Wilson(successes,total){
+      if(!total)return {rate:0,low:0,high:1,n:0};
+      const z=1.96,p=successes/total,den=1+z*z/total,center=(p+z*z/(2*total))/den,margin=(z*Math.sqrt((p*(1-p)+z*z/(4*total))/total))/den;
+      return {rate:p,low:clamp(center-margin,0,1),high:clamp(center+margin,0,1),n:total};
+    }
+    function v5150Calibration(){
+      const stamp=v5150EvidenceStamp();
+      if(v5150DerivedCache.stamp===stamp&&v5150DerivedCache.calibration)return v5150DerivedCache.calibration;
+      const eligible=v5150DelayedIndex().all.filter(function(row){
+        return row.gapDays>=1&&Number.isFinite(row.predicted)&&['recognition','recall','listening'].includes(row.modality);
+      }).slice(-5000);
+      const n=eligible.length,observed=n?eligible.filter(function(row){return row.success;}).length/n:0,predicted=n?eligible.reduce(function(sum,row){return sum+row.predicted;},0)/n:0;
+      const raw=observed-predicted,correction=n>=12?clamp(raw*.45,-.08,.08):0;
+      const bins=[
+        {id:'low',label:'<70%',min:0,max:.7},{id:'mid',label:'70–85%',min:.7,max:.85},
+        {id:'high',label:'85–95%',min:.85,max:.95},{id:'very-high',label:'95%+',min:.95,max:1.001}
+      ].map(function(bin){
+        const rows=eligible.filter(function(row){return row.predicted>=bin.min&&row.predicted<bin.max;}),successes=rows.filter(function(row){return row.success;}).length,w=v5150Wilson(successes,rows.length);
+        return {...bin,n:rows.length,predicted:rows.length?rows.reduce(function(sum,row){return sum+row.predicted;},0)/rows.length:0,observed:w.rate,low:w.low,high:w.high};
+      });
+      const result={n:n,observed:observed,predicted:predicted,raw:raw,correction:correction,bins:bins};
+      v5150DerivedCache.calibration=result;return result;
+    }
+    function v5150DelayedStats(note){
+      const rows=v5150DelayedIndex().map.get(depthBaseId(note))||[],one=rows.filter(function(row){return row.gapDays>=1;}),seven=rows.filter(function(row){return row.gapDays>=7;}),thirty=rows.filter(function(row){return row.gapDays>=30;});
+      const summarize=function(items){const successes=items.filter(function(row){return row.success;}).length,w=v5150Wilson(successes,items.length);return {n:items.length,successes:successes,rate:w.rate,low:w.low,high:w.high,independent:items.filter(function(row){return row.success&&row.independent;}).length};};
+      return {all:rows,one:summarize(one),seven:summarize(seven),thirty:summarize(thirty)};
+    }
+    function v5150StartedSkillCards(note,skill){
+      if(typeof depthCreateSkillCards!=='function')return [];
+      return depthCreateSkillCards(note,skill).filter(function(card){
+        if(typeof isAvailable==='function'&&!isAvailable(card))return false;
+        const p=normalizeProgressEntry(getProgress(card.id));return p.seen>0||p.status!=='new';
+      });
+    }
+    function v5150SkillForecast(note,skill,horizonDays){
+      const cards=v5150StartedSkillCards(note,skill);if(!cards.length)return null;
+      const values=cards.map(function(card){
+        const memory=v3MemorySnapshot(card),stability=Math.max(.05,finiteNumber(memory.stability,.05)),elapsed=Math.max(0,finiteNumber(memory.elapsed));
+        return clamp(Math.pow(.9,(elapsed+horizonDays)/stability),0,1);
+      });
+      return values.length?Math.min(...values):null;
+    }
+    function v5150LapseSummary(note){
+      const cards=['recognition','production','listening'].flatMap(function(skill){return v5150StartedSkillCards(note,skill);}),seen=new Set(),lapses=0,relearning=false;
+      for(const card of cards){
+        if(seen.has(card.id))continue;seen.add(card.id);const p=normalizeProgressEntry(getProgress(card.id));lapses+=finiteNumber(p.lapses);if(p.relearning||(p.status==='learning'&&p.lapses>0))relearning=true;
+      }
+      return {lapses:lapses,relearning:relearning};
+    }
+    function v5150ForecastBand(value,confidence,calibrationN){
+      const margin=clamp(.19-confidence*.11+(calibrationN<12?.03:0),.05,.22);
+      return {low:clamp(value-margin,0,1),high:clamp(value+margin,0,1)};
+    }
+    function v5150Profile(core,calibration){
+      const note=core.note,delayed=v5150DelayedStats(note),recognition={},production={},listening={};
+      for(const horizon of V5150_HORIZONS){
+        recognition[horizon]=v5150SkillForecast(note,'recognition',horizon);
+        production[horizon]=v5150SkillForecast(note,'production',horizon);
+        listening[horizon]=v5150SkillForecast(note,'listening',horizon);
+      }
+      const forecast={};
+      for(const horizon of V5150_HORIZONS){
+        const r=recognition[horizon],p=production[horizon],l=listening[horizon];let base=Number.isFinite(r)?r:0;
+        if(Number.isFinite(p))base=base*.52+p*.48;
+        if(Number.isFinite(l))base=base*.9+l*.1;
+        forecast[horizon]=clamp(base+calibration.correction,0,1);
+      }
+      const activeIndependent=['recall','phrase','sentence','transfer'].reduce(function(sum,key){return sum+finiteNumber(core.dimensions?.[key]?.evidence?.independent);},0);
+      const confidence=clamp(core.confidence*.42+Math.min(1,delayed.one.n/8)*.22+Math.min(1,delayed.seven.n/3)*.18+Math.min(1,core.spanDays/60)*.18,0,1);
+      const lapse=v5150LapseSummary(note),recognitionScore=finiteNumber(core.dimensions?.recognition?.score);
+      let mastery='SEEN';
+      if(['FAMILIAR','RECALLABLE','USABLE','DURABLE','ROBUST'].includes(core.mastery)||recognitionScore>=.38)mastery='LEARNED';
+      if(forecast[7]>=.72&&recognitionScore>=.5&&confidence>=.16)mastery='RETRIEVABLE';
+      if(forecast[7]>=.68&&core.active>=.5&&activeIndependent>=2)mastery='USABLE';
+      if(mastery==='USABLE'&&forecast[30]>=.62&&delayed.seven.successes>=2&&core.spanDays>=21&&confidence>=.42)mastery='DURABLE';
+      const fragile=mastery!=='DURABLE'&&['LEARNED','RETRIEVABLE','USABLE'].includes(mastery)&&(
+        (forecast[7]>=.72&&forecast[30]<.58)||(delayed.seven.n>=2&&delayed.seven.rate<.6&&core.active>=.45)||lapse.lapses>=3
+      );
+      const bands={};for(const horizon of V5150_HORIZONS)bands[horizon]=v5150ForecastBand(forecast[horizon],confidence,calibration.n);
+      return {
+        note:note,state:mastery,fragile:fragile,relearning:lapse.relearning,lapses:lapse.lapses,confidence:confidence,
+        active:core.active,passive:core.passive,durability:core.durability,spanDays:core.spanDays,activeIndependent:activeIndependent,
+        forecast:forecast,bands:bands,delayed:delayed,core:core
+      };
+    }
+    function v5150Aggregate(){
+      const stamp=v5150EvidenceStamp();
+      if(v5150DerivedCache.stamp===stamp&&v5150DerivedCache.aggregate)return v5150DerivedCache.aggregate;
+      if(!Array.isArray(state.cards)||!state.cards.length){
+        return {started:0,total:0,states:Object.fromEntries(V5150_STATES.map(function(key){return [key,0];})),profiles:[],fragile:0,relearning:0,likely7:0,likely30:0,likely90:0,avg7:0,avg30:0,avg90:0,confidence:0,calibration:v5150Calibration()};
+      }
+      const calibration=v5150Calibration(),base=v540AggregateStats(state.cards),profiles=(base.profiles||[]).map(function(core){return v5150Profile(core,calibration);});
+      const total=new Set(state.cards.filter(function(card){return card&&card.core!==false;}).map(function(card){return depthBaseId(card.id);}).filter(Boolean)).size;
+      const states=Object.fromEntries(V5150_STATES.map(function(key){return [key,0];}));states.UNSEEN=Math.max(0,total-profiles.length);
+      for(const profile of profiles)states[profile.state]=(states[profile.state]||0)+1;
+      const started=profiles.length,average=function(h){return started?profiles.reduce(function(sum,row){return sum+row.forecast[h];},0)/started:0;};
+      const aggregate={
+        total:total,started:started,states:states,profiles:profiles,
+        fragile:profiles.filter(function(row){return row.fragile;}).length,
+        relearning:profiles.filter(function(row){return row.relearning;}).length,
+        likely7:profiles.filter(function(row){return row.forecast[7]>=.8;}).length,
+        likely30:profiles.filter(function(row){return row.forecast[30]>=.7;}).length,
+        likely90:profiles.filter(function(row){return row.forecast[90]>=.6;}).length,
+        avg7:average(7),avg30:average(30),avg90:average(90),
+        confidence:started?profiles.reduce(function(sum,row){return sum+row.confidence;},0)/started:0,
+        calibration:calibration
+      };
+      v5150DerivedCache.aggregate=aggregate;return aggregate;
+    }
+    function v5150CaptureSnapshot(reason='daily'){
+      const aggregate=v5150Aggregate();if(!aggregate.started)return null;
+      const snapshot=v5150NormalizeSnapshot({
+        day:dayKey(now()),t:now(),reason:reason,started:aggregate.started,states:aggregate.states,fragile:aggregate.fragile,
+        likely7:aggregate.likely7,likely30:aggregate.likely30,likely90:aggregate.likely90,
+        avg7:aggregate.avg7,avg30:aggregate.avg30,avg90:aggregate.avg90,confidence:aggregate.confidence,
+        calibrationN:aggregate.calibration.n,calibrationCorrection:aggregate.calibration.correction
+      });
+      const rows=(state.v5150Longitudinal?.snapshots||[]).filter(function(row){return row.day!==snapshot.day;});rows.push(snapshot);
+      state.v5150Longitudinal={schema:V5150_SCHEMA,snapshots:rows.slice(-V5150_MAX_SNAPSHOTS)};v5150SaveLongitudinal();return snapshot;
+    }
+    function v5150Trend(daysBack=30){
+      const rows=state.v5150Longitudinal?.snapshots||[],cutoff=now()-days(daysBack),recent=rows.filter(function(row){return row.t>=cutoff;});
+      if(recent.length<2)return null;
+      const first=recent[0],last=recent.at(-1);return {days:Math.max(1,Math.round((last.t-first.t)/days(1))),avg30:last.avg30-first.avg30,durable:(last.states.DURABLE||0)-(first.states.DURABLE||0),fragile:last.fragile-first.fragile};
+    }
+    function v5150Percent(value){return Math.round(clamp(finiteNumber(value),0,1)*100);}
+    function v5150TopFragile(limit=6){
+      return v5150Aggregate().profiles.filter(function(row){return row.fragile;}).sort(function(a,b){
+        return a.forecast[30]-b.forecast[30]||b.lapses-a.lapses||a.note.fr.localeCompare(b.note.fr,'fr');
+      }).slice(0,limit);
+    }
+
+    const v5150SkillMapBase=v5130SkillMap;
+    v5130SkillMap=function(){
+      const skills=v5150SkillMapBase(),aggregate=v5150Aggregate();
+      if(aggregate.started){
+        const strength=clamp(aggregate.avg7*.35+aggregate.avg30*.4+aggregate.avg90*.25,0,1),confidence=aggregate.confidence;
+        skills.retention=v5130Skill('retention','Durable vocabulary',strength,confidence,
+          aggregate.states.DURABLE+' durable · '+aggregate.fragile+' fragile · '+v5150Percent(aggregate.avg30)+'% 30d forecast');
+      }
+      return skills;
+    };
+
+    const v5150CandidatesBase=v5130Candidates;
+    v5130Candidates=function(){
+      const rows=v5150CandidatesBase();if(!rows.length||rows.some(function(row){return row.kind&&row.kind.startsWith('resume-');}))return rows;
+      const aggregate=v5150Aggregate();if(!aggregate.started)return rows;
+      const fragileRate=aggregate.fragile/Math.max(1,aggregate.started),forecastGap=Math.max(0,.72-aggregate.avg30);
+      const adjustment=clamp(Math.round(fragileRate*18+forecastGap*20),0,18);
+      return rows.map(function(row){
+        if(row.id!=='retention')return row;
+        const factors=row.factors?{...row.factors,longitudinalRisk:adjustment,forecast30:aggregate.avg30,fragileRate:fragileRate}:row.factors;
+        return {...row,score:clamp(row.score+adjustment,0,120),factors:factors,longitudinalAdjustment:adjustment,
+          detail:row.detail+' · '+aggregate.fragile+' fragile · '+v5150Percent(aggregate.avg30)+'% 30d retained'};
+      }).sort(function(a,b){return b.score-a.score||a.label.localeCompare(b.label);});
+    };
+    const v5150FactorHtmlBase=v5130FactorHtml;
+    v5130FactorHtml=function(candidate){
+      const html=v5150FactorHtmlBase(candidate),adjustment=finiteNumber(candidate?.longitudinalAdjustment);
+      if(!candidate?.factors||candidate.id!=='retention')return html;
+      return html+'<span>30d '+v5150Percent(candidate.factors.forecast30)+'%</span>'+(adjustment?'<span>retention risk +'+adjustment+'</span>':'');
+    };
+
+    function v5150DashboardStrip(){
+      const a=v5150Aggregate();if(!a.started)return '';
+      const cal=a.calibration,trend=v5150Trend(30);
+      return '<section class="v5150-strip"><div><p class="eyebrow">P24 retention outlook</p><strong>'+v5150Percent(a.avg30)+'% expected after 30 days</strong><span>'+a.fragile+' fragile · '+a.states.DURABLE+' durable'+(trend?' · '+(trend.avg30>=0?'+':'')+Math.round(trend.avg30*100)+' pts vs '+trend.days+'d ago':'')+'</span></div><div><span>7d <b>'+v5150Percent(a.avg7)+'%</b></span><span>90d <b>'+v5150Percent(a.avg90)+'%</b></span><span>calibration <b>n='+cal.n+'</b></span></div></section>';
+    }
+    function v5150ProgressPanel(){
+      const a=v5150Aggregate();if(!a.started)return '<section class="v5150-panel"><p class="eyebrow">P24 longitudinal mastery</p><h3>Long-term evidence begins after spaced review</h3><p>French will separate recent success from durable retention as review intervals accumulate.</p></section>';
+      const cal=a.calibration,trend=v5150Trend(30),fragile=v5150TopFragile(),states=V5150_STATES.map(function(key){
+        return '<span><strong>'+a.states[key]+'</strong>'+escapeHtml(V5150_STATE_LABELS[key])+'</span>';
+      }).join('');
+      const forecasts=V5150_HORIZONS.map(function(h){
+        const value=h===1?a.profiles.reduce(function(sum,row){return sum+row.forecast[1];},0)/a.started:h===7?a.avg7:h===30?a.avg30:a.avg90;
+        const band=v5150ForecastBand(value,a.confidence,cal.n);
+        return '<div><strong>'+v5150Percent(value)+'%</strong><span>'+h+' day'+(h===1?'':'s')+'</span><small>'+v5150Percent(band.low)+'–'+v5150Percent(band.high)+'% uncertainty band</small></div>';
+      }).join('');
+      const calibration=cal.n>=12
+        ?'Observed delayed recall '+v5150Percent(cal.observed)+'% vs '+v5150Percent(cal.predicted)+'% model prediction · bounded correction '+(cal.correction>=0?'+':'')+Math.round(cal.correction*100)+' pts.'
+        :'Calibration is provisional: '+cal.n+' delayed retrieval pairs; at least 12 are required before forecasts receive a correction.';
+      const fragileHtml=fragile.length?'<div class="v5150-fragile"><h4>Fragile knowledge</h4>'+fragile.map(function(row){
+        return '<span><strong lang="fr">'+escapeHtml(row.note.fr)+'</strong><small>'+v5150Percent(row.forecast[30])+'% 30d · '+row.lapses+' lapses · '+Math.round(row.spanDays)+'d evidence span</small></span>';
+      }).join('')+'</div>':'<div class="v5150-fragile empty"><h4>Fragile knowledge</h4><p>No learned item currently crosses the conservative fragility threshold.</p></div>';
+      return '<section class="v5150-panel"><div class="v5150-head"><div><p class="eyebrow">P24 longitudinal mastery</p><h3>Retention across time, not just today</h3><p>Forecasts combine FSRS-compatible memory state, delayed retrieval outcomes, spacing span and active-use evidence. Recent easy practice cannot create durable status by itself.</p></div><div class="v5150-head-stat"><strong>'+a.states.DURABLE+'</strong><span>durable</span><small>'+a.fragile+' fragile · '+a.relearning+' relearning</small></div></div><div class="v5150-states">'+states+'</div><div class="v5150-forecast">'+forecasts+'</div><div class="v5150-calibration"><strong>Forgetting calibration</strong><span>'+escapeHtml(calibration)+'</span><small>'+(trend?'30-day trend: '+(trend.avg30>=0?'+':'')+Math.round(trend.avg30*100)+' forecast pts · '+(trend.durable>=0?'+':'')+trend.durable+' durable · '+(trend.fragile>=0?'+':'')+trend.fragile+' fragile.':'Daily aggregate snapshots will establish the longitudinal trend without storing raw answers or text.')+'</small></div>'+fragileHtml+'<p class="v5150-footnote">“Durable” requires active-use evidence, at least two successful retrievals after 7+ day gaps, a 21+ day evidence span, and a conservative 30-day retention forecast. Forecast bands describe model uncertainty; they are not guarantees.</p></section>';
+    }
+
+    function v5150DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v5150-strip'))return;
+      const anchor=main.querySelector('.v5140-plan')||main.querySelector('.v5130-orchestrator');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5150DashboardStrip());
+    }
+    const v5150RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v5150RenderDashboardBase();v5150DecorateDashboard();return result;};
+
+    function v5150DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5150-panel'))return;
+      const anchor=main.querySelector('.v5140-calibration')||main.querySelector('.v5130-progress');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5150ProgressPanel());else main.insertAdjacentHTML('afterbegin',v5150ProgressPanel());
+    }
+    const v5150RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5150RenderProgressBase();v5150DecorateProgress();return result;};
+
+    const v5150RecordCompletedSessionBase=recordCompletedSession;
+    recordCompletedSession=function(stats){
+      const result=v5150RecordCompletedSessionBase(stats);v5150Invalidate();v5150CaptureSnapshot('study-session');return result;
+    };
+    const v5150FinalizeBlockBase=v5140FinalizeBlock;
+    v5140FinalizeBlock=function(status='completed'){
+      const result=v5150FinalizeBlockBase(status);v5150Invalidate();if(status==='completed')v5150CaptureSnapshot('adaptive-block');return result;
+    };
+
+    function v5150Audit(){
+      const errors=[],normalized=v5150NormalizeLongitudinal(state.v5150Longitudinal||{}),a=v5150Aggregate(),cal=a.calibration;
+      if(normalized.snapshots.length>V5150_MAX_SNAPSHOTS)errors.push('snapshot cap exceeded');
+      const daysSeen=new Set();for(const row of normalized.snapshots){if(daysSeen.has(row.day))errors.push('duplicate daily snapshot '+row.day);daysSeen.add(row.day);if(row.t>now()+days(1))errors.push('future snapshot timestamp');}
+      if(!Number.isFinite(cal.correction)||cal.correction<-.08||cal.correction>.08)errors.push('forgetting correction out of bounds');
+      for(const profile of a.profiles){
+        const f=profile.forecast;if(!(f[1]>=f[7]&&f[7]>=f[30]&&f[30]>=f[90]))errors.push('non-monotonic forecast '+profile.note.id);
+        for(const h of V5150_HORIZONS)if(!Number.isFinite(f[h])||f[h]<0||f[h]>1)errors.push('forecast out of bounds '+profile.note.id);
+        if(profile.state==='DURABLE'&&(profile.delayed.seven.successes<2||profile.spanDays<21||profile.forecast[30]<.62))errors.push('durable gate violated '+profile.note.id);
+      }
+      const serialized=JSON.stringify(normalized);
+      if(/"text"\s*:|"transcript"\s*:|"expected"\s*:|"answer"\s*:/i.test(serialized))errors.push('raw learning content leaked into P24 persistence');
+      if(errors.length)console.error('French P24 longitudinal mastery audit failed',errors.slice(0,30));
+      document.documentElement.dataset.longitudinalMasteryAudit=errors.length?'failed':'passed';return errors;
+    }
+    const v5150RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5150RunQaBase(),errors=v5150Audit();
+      result.checks.push(v5100QaCheck('longitudinal-mastery','Longitudinal mastery & forgetting calibration',errors.length?'fail':'pass',errors.length?errors.slice(0,8).join(' · '):'monotonic 1/7/30/90d forecasts · durable spacing gates · bounded forgetting correction · aggregate-only snapshots'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p24-longitudinal-mastery-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5150EnsureStyles(){
+      if(document.querySelector('#v5150-longitudinal-style'))return;
+      const style=document.createElement('style');style.id='v5150-longitudinal-style';
+      style.textContent='.v5150-strip,.v5150-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0}.v5150-strip{display:flex;justify-content:space-between;gap:.8rem;align-items:center;padding:.68rem .78rem}.v5150-strip p,.v5150-strip strong,.v5150-strip span{margin:0}.v5150-strip>div:first-child{display:grid;gap:.08rem}.v5150-strip>div:first-child>strong{font-size:.72rem;color:var(--navy)}.v5150-strip>div:first-child>span{font-size:.5rem;color:var(--muted)}.v5150-strip>div:last-child{display:flex;gap:.3rem;flex-wrap:wrap}.v5150-strip>div:last-child span{padding:.35rem .42rem;border-radius:9px;background:var(--surface-muted);font-size:.48rem;color:var(--muted)}.v5150-strip b{color:var(--navy)}.v5150-panel{padding:.82rem}.v5150-panel h3,.v5150-panel h4{margin:.06rem 0}.v5150-panel p{color:var(--muted)}.v5150-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5150-head>div:first-child p{margin:0;font-size:.61rem;max-width:78ch}.v5150-head-stat{display:grid;min-width:110px;padding:.48rem;border-radius:11px;background:var(--surface-muted);text-align:right}.v5150-head-stat strong{font-size:1.2rem;color:var(--navy)}.v5150-head-stat span{font-size:.5rem;font-weight:900;color:var(--blue);text-transform:uppercase}.v5150-head-stat small{font-size:.45rem;color:var(--muted)}.v5150-states{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.28rem;margin-top:.58rem}.v5150-states span{padding:.44rem;border-radius:10px;background:var(--surface-muted);font-size:.48rem;color:var(--muted)}.v5150-states strong{display:block;font-size:.78rem;color:var(--navy)}.v5150-forecast{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.32rem;margin-top:.55rem}.v5150-forecast>div{display:grid;gap:.03rem;padding:.52rem;border:1px solid var(--line);border-radius:11px}.v5150-forecast strong{font-size:.9rem;color:var(--navy)}.v5150-forecast span{font-size:.52rem;font-weight:850;color:var(--blue)}.v5150-forecast small{font-size:.45rem;color:var(--muted)}.v5150-calibration{display:grid;gap:.1rem;margin-top:.55rem;padding:.55rem;border-radius:11px;background:var(--surface-muted)}.v5150-calibration strong{font-size:.58rem;color:var(--navy)}.v5150-calibration span,.v5150-calibration small{font-size:.49rem;color:var(--muted)}.v5150-fragile{margin-top:.6rem;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3rem}.v5150-fragile h4{grid-column:1/-1;font-size:.58rem}.v5150-fragile>span{display:grid;gap:.03rem;padding:.42rem;border:1px solid var(--line);border-radius:10px}.v5150-fragile strong{font-size:.58rem;color:var(--navy)}.v5150-fragile small{font-size:.45rem;color:var(--muted)}.v5150-fragile.empty{display:block}.v5150-fragile.empty p{margin:.2rem 0 0;font-size:.52rem}.v5150-footnote{font-size:.49rem!important;margin:.6rem 0 0!important}@media(max-width:840px){.v5150-states{grid-template-columns:repeat(3,minmax(0,1fr))}.v5150-fragile{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.v5150-strip,.v5150-head{align-items:flex-start;flex-direction:column}.v5150-states,.v5150-forecast,.v5150-fragile{grid-template-columns:1fr 1fr}.v5150-head-stat{width:100%;text-align:left}}@media(max-width:430px){.v5150-states,.v5150-forecast,.v5150-fragile{grid-template-columns:1fr}}';
+      document.head.append(style);
+    }
+    const v5150NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5150NormalizeSurfaceBase();document.documentElement.dataset.release='p24-longitudinal-mastery';
+      document.documentElement.dataset.longitudinalMastery='forgetting-calibrated-v1';
+    };
+    const v5150InitBase=init;
+    init=async function(options){
+      v5150EnsureStyles();v5150LoadLongitudinal();
+      const result=await v5150InitBase(options||{});
+      v5150LoadLongitudinal();v5150Invalidate();v5150CaptureSnapshot('startup');v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.15.0';return result;
     };
 
 
