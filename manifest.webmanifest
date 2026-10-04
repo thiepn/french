@@ -2,16 +2,22 @@
   "id": "/french3000/",
   "name": "French 3000",
   "short_name": "French 3000",
-  "description": "French vocabulary training with spaced repetition, contextual reading and listening, spoken production, guided conversations, adaptive communicative curriculum, real-world missions, an open-world personal French reading bridge, calibrated progress evidence, device QA, and offline support.",
+  "description": "French vocabulary training with spaced repetition, contextual reading and listening, spoken production, guided conversations, adaptive communicative curriculum, real-world missions, open-world French reading, unified cross-skill next-best-activity orchestration, calibrated progress evidence, device QA, and offline support.",
   "lang": "en",
   "start_url": "/french3000/",
   "scope": "/french3000/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#f6f0e6",
   "theme_color": "#14213d",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "prefer_related_applications": false,
   "icons": [
     {
