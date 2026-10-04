@@ -22548,13 +22548,18 @@ qui	who	A1	question word`;
       const credit=entries.reduce(function(sum,row){return sum+(row.legacy?clamp(row.evidence,0,1):v5110EvidenceCredit(row));},0);
       const independent=successRows.filter(function(row){return row.independent===true&&row.support===0&&!row.manual;}).length;
       const daysSeen=new Set(entries.map(function(row){return dayKey(row.t);})).size,contexts=new Set(successRows.map(function(row){return row.scenarioId;}).filter(Boolean)).size;
-      const quality=attempts?credit/attempts:0,independence=successes?independent/successes:0,spacing=clamp(daysSeen/4,0,1),diversity=clamp(contexts/3,0,1),volume=clamp(attempts/6,0,1);
+      const variants=new Set(successRows.filter(function(row){return !row.legacy&&Number.isFinite(Number(row.variant));}).map(function(row){return row.scenarioId+'#'+row.variant;})).size;
+      const availableContexts=Math.max(1,V580_SCENARIOS.filter(function(scenario){return (scenario.functions||[]).includes(fn);}).length),requiredContexts=Math.min(2,availableContexts);
+      const contextCoverage=clamp(contexts/Math.max(1,Math.min(3,availableContexts)),0,1),variantCoverage=availableContexts===1?clamp(variants/2,0,1):contextCoverage;
+      const diversity=availableContexts===1?contextCoverage*.6+variantCoverage*.4:contextCoverage;
+      const quality=attempts?credit/attempts:0,independence=successes?independent/successes:0,spacing=clamp(daysSeen/4,0,1),volume=clamp(attempts/6,0,1);
       const latest=entries.length?Math.max(...entries.map(function(row){return row.t;})):0,recency=latest&&now()-latest<=days(21)?1:latest?.55:0;
       const raw=quality*.38+independence*.24+spacing*.13+diversity*.1+volume*.1+recency*.05,confidence=clamp(volume*.45+spacing*.23+diversity*.2+Math.min(1,independent/3)*.12,0,1);
-      const score=clamp(raw*(.58+.42*confidence),0,1);
-      let status='unseen';if(attempts){status=score>=.75&&confidence>=.55&&independent>=3&&contexts>=2?'secure':score>=.6?'functional':score>=.38?'developing':'emerging';}
+      const score=clamp(raw*(.58+.42*confidence),0,1),coverageReady=contexts>=requiredContexts&&(availableContexts>1||variants>=2);
+      let status='unseen';if(attempts){status=score>=.75&&confidence>=.55&&independent>=3&&coverageReady?'secure':score>=.6?'functional':score>=.38?'developing':'emerging';}
       return {function:fn,label:V5110_FUNCTION_META[fn]?.label||fn,group:V5110_FUNCTION_META[fn]?.group||'Other',attempts:attempts,successes:successes,independent:independent,
-        exposure:v5110HistoricalExposure(fn),daysSeen:daysSeen,contexts:contexts,quality:quality,independence:independence,score:score,confidence:confidence,status:status,last:latest};
+        exposure:v5110HistoricalExposure(fn),daysSeen:daysSeen,contexts:contexts,variants:variants,availableContexts:availableContexts,requiredContexts:requiredContexts,
+        quality:quality,independence:independence,diversity:diversity,score:score,confidence:confidence,status:status,last:latest};
     }
     function v5110Profiles(){return Object.keys(V5110_FUNCTION_META).map(v5110FunctionProfile);}
     function v5110LevelCeiling(){
@@ -22793,9 +22798,9 @@ qui	who	A1	question word`;
     function v5110ProgressPanel(){
       const profiles=v5110Profiles(),stage=v5110CurriculumStage(),groups=V5110_GROUP_ORDER.map(function(group){
         const rows=profiles.filter(function(row){return row.group===group;}).sort(function(a,b){return a.score-b.score||a.label.localeCompare(b.label);});
-        return '<section class="v5110-group"><h4>'+escapeHtml(group)+'</h4>'+rows.map(function(row){return '<div class="v5110-row"><div><strong>'+escapeHtml(row.label)+'</strong><span>'+row.status+' · '+row.attempts+' attempts · '+row.contexts+' contexts</span></div><div class="v5110-score"><i style="width:'+Math.round(row.score*100)+'%"></i><span>'+Math.round(row.score*100)+'%</span></div></div>';}).join('')+'</section>';
+        return '<section class="v5110-group"><h4>'+escapeHtml(group)+'</h4>'+rows.map(function(row){return '<div class="v5110-row"><div><strong>'+escapeHtml(row.label)+'</strong><span>'+row.status+' · '+row.attempts+' attempts · '+row.contexts+'/'+row.availableContexts+' contexts'+(row.availableContexts===1?' · '+row.variants+' variants':'')+'</span></div><div class="v5110-score"><i style="width:'+Math.round(row.score*100)+'%"></i><span>'+Math.round(row.score*100)+'%</span></div></div>';}).join('')+'</section>';
       }).join('');
-      return '<section class="v5110-progress"><div class="v5110-progress-head"><div><p class="eyebrow">P20 communicative-function map</p><h3>'+stage.functional+'/'+stage.total+' functions at functional or secure evidence</h3><p>Scores are evidence-weighted, confidence-damped estimates from actual communicative turns. “Secure” requires independent success across multiple contexts and days.</p></div><button class="primary" id="v5110-open-curriculum">Open adaptive curriculum</button></div><div class="v5110-groups">'+groups+'</div></section>';
+      return '<section class="v5110-progress"><div class="v5110-progress-head"><div><p class="eyebrow">P20 communicative-function map</p><h3>'+stage.functional+'/'+stage.total+' functions at functional or secure evidence</h3><p>Scores are evidence-weighted, confidence-damped estimates from actual communicative turns. “Secure” requires independent success across multiple contexts when available; single-context functions require repeated scenario variants across days.</p></div><button class="primary" id="v5110-open-curriculum">Open adaptive curriculum</button></div><div class="v5110-groups">'+groups+'</div></section>';
     }
     function v5110DecorateProgress(){
       if(state.view!=='progress'||main.querySelector('.v5110-progress'))return;
