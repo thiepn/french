@@ -282,4 +282,8 @@ It is an orchestration layer for choosing the next useful task from the evidence
 
 ## PWA
 
-The final P22 shell cache version is recorded in this document after release qualification.
+P22 uses shell cache:
+
+- `french3000-shell-v31`
+
+The manifest description now includes unified cross-skill next-best-activity orchestration.
