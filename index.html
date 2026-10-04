@@ -23336,9 +23336,10 @@ qui	who	A1	question word`;
     function v5130Summary(){
       const skills=v5130SkillMap(),core=['retention','usage','phrase','sentence','reading','listening','speaking','conversation','mission'];
       const rows=core.map(function(id){return skills[id];}),weighted=rows.reduce(function(sum,row){return sum+row.strength*(.55+.45*row.confidence);},0)/Math.max(1,rows.length);
-      const measured=rows.filter(function(row){return row.confidence>=.18;}),bottleneck=(measured.length?measured:rows).slice().sort(function(a,b){return a.strength-b.strength||b.confidence-a.confidence;})[0];
+      const measured=rows.filter(function(row){return row.confidence>=.18;}),bottleneck=measured.length?measured.slice().sort(function(a,b){return a.strength-b.strength||b.confidence-a.confidence;})[0]:null;
       const high=measured.length?Math.max(...measured.map(function(row){return row.strength;})):0,low=measured.length?Math.min(...measured.map(function(row){return row.strength;})):0;
-      return {skills:skills,readiness:Math.round(weighted*100),balance:Math.round((1-clamp(high-low,0,1))*100),bottleneck:bottleneck};
+      const balance=measured.length>=2?Math.round((1-clamp(high-low,0,1))*100):0;
+      return {skills:skills,readiness:Math.round(weighted*100),balance:balance,bottleneck:bottleneck};
     }
     function v5130RecordLaunch(candidate,source){
       if(!candidate||!V5130_ACTIVITY_IDS.includes(candidate.id))return;
