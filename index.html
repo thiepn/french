@@ -23607,6 +23607,10 @@ qui	who	A1	question word`;
 
     const v5140CandidatesBase=v5130Candidates;
     v5130Candidates=function(){
+      if(state.v5140Composer?.active){
+        const step=v5140CurrentStep();
+        if(step)return [{id:step.activity,kind:'resume-block',label:'Continue adaptive block · '+step.label,detail:'Step '+(state.v5140Composer.index+1)+' of '+state.v5140Composer.steps.length,reason:'Finish the active P23 learning block before opening unrelated work.',score:230,targetId:step.targetId||'',factors:null,calibrationBonus:0}];
+      }
       const rows=v5140CandidatesBase();if(rows.length===1&&rows[0].kind&&rows[0].kind.startsWith('resume-'))return rows;
       const calibration=v5140Calibration();
       return rows.map(function(row){
@@ -23680,6 +23684,12 @@ qui	who	A1	question word`;
       step.status='active';step.launchedAt=step.launchedAt||now();step.before=step.before||v5140PointFor(step.activity);v5140SaveComposer();
       v5130Launch(v5140StepCandidate(step),'other');
     }
+    const v5140LaunchBase=v5130Launch;
+    v5130Launch=function(candidate,source='other'){
+      if(candidate?.kind==='resume-block'){v5140LaunchCurrent();return;}
+      return v5140LaunchBase(candidate,source);
+    };
+
     function v5140CompletionQuality(activity,payload){
       if(activity==='retention'||activity==='usage'||activity==='phrase'||activity==='sentence'){
         const reviewed=finiteNumber(payload?.reviewed),correct=finiteNumber(payload?.correct);return reviewed?clamp(correct/reviewed,0,1):null;
@@ -23808,11 +23818,22 @@ qui	who	A1	question word`;
       $('#v5140-banner-current')?.addEventListener('click',v5140LaunchCurrent);
       $('#v5140-banner-home')?.addEventListener('click',function(){setView('dashboard');});
     }
-    function v5140WrapRenderer(name){
-      const base=window[name];if(typeof base!=='function')return;
-      window[name]=function(...args){const result=base.apply(this,args);v5140RefreshBanner();return result;};
-    }
-    ['renderStudy','renderRead','renderListen','renderSpeak','renderConversation','renderBrowse','renderLearned','renderSettings'].forEach(v5140WrapRenderer);
+    const v5140RenderStudyBase=renderStudy;
+    renderStudy=function(...args){const result=v5140RenderStudyBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderReadBase=renderRead;
+    renderRead=function(...args){const result=v5140RenderReadBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderListenBase=renderListen;
+    renderListen=function(...args){const result=v5140RenderListenBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderSpeakBase=renderSpeak;
+    renderSpeak=function(...args){const result=v5140RenderSpeakBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderConversationBase=renderConversation;
+    renderConversation=function(...args){const result=v5140RenderConversationBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderBrowseBase=renderBrowse;
+    renderBrowse=function(...args){const result=v5140RenderBrowseBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderLearnedBase=renderLearned;
+    renderLearned=function(...args){const result=v5140RenderLearnedBase.apply(this,args);v5140RefreshBanner();return result;};
+    const v5140RenderSettingsBase=renderSettings;
+    renderSettings=function(...args){const result=v5140RenderSettingsBase.apply(this,args);v5140RefreshBanner();return result;};
 
     const v5140RecordCompletedSessionBase=recordCompletedSession;
     recordCompletedSession=function(stats){
