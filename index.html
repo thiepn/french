@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.11.0';
-    const APP_RELEASE = 'P20 Adaptive Communicative Curriculum, Function Mastery & Next-Best-Task Engine';
+    const APP_VERSION = '5.12.0';
+    const APP_RELEASE = 'P21 Open-World French Bridge, Personal Corpus & Authentic Transfer';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -22876,6 +22876,242 @@ qui	who	A1	question word`;
       v5110LoadCurriculum();v5110ReconcileCurriculumState();v420NormalizeSurface();v5110CurriculumAudit();
       if(state.view==='conversation')renderConversation();else if(state.view==='progress')renderProgress();else if(state.view==='dashboard')renderDashboard();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.11.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.12.0 OPEN-WORLD FRENCH BRIDGE, PERSONAL CORPUS & AUTHENTIC TRANSFER
+       P21 bridges bundled French3000 material to learner-supplied French.
+       Raw pasted/imported text remains session-only; only aggregate reading
+       telemetry is persisted. Passive exposure never becomes retrieval or
+       vocabulary-SRS success.
+       ================================================================ */
+    const V5120_VERSION='5.12.0';
+    const V5120_RELEASE='P21 Open-World French Bridge, Personal Corpus & Authentic Transfer';
+    const V5120_STORAGE_KEY='french3000-open-world-v1';
+    const V5120_SCHEMA=1;
+    const V5120_MAX_SESSIONS=120;
+    const V5120_MAX_TEXT_CHARS=20000;
+    const V5120_MAX_FILE_BYTES=262144;
+    const V5120_MIN_WORDS=20;
+
+    state.v5120OpenWorld=null;
+    state.v5120OpenWorldUi=state.v5120OpenWorldUi&&typeof state.v5120OpenWorldUi==='object'?state.v5120OpenWorldUi:{
+      text:'',source:'',sourceKind:'paste',reader:false,sessionId:'',startedAt:0,lookups:0
+    };
+
+    function v5120NormalizeSession(row){
+      if(!row||typeof row!=='object')return null;
+      const words=clamp(Math.floor(finiteNumber(row.words)),0,100000);
+      if(!words)return null;
+      return {
+        id:String(row.id||'').slice(0,140),t:clamp(finiteNumber(row.t),0,now()+days(1))||now(),
+        words:words,known:clamp(Math.floor(finiteNumber(row.known)),0,words),
+        learning:clamp(Math.floor(finiteNumber(row.learning)),0,words),
+        newMapped:clamp(Math.floor(finiteNumber(row.newMapped)),0,words),
+        unmapped:clamp(Math.floor(finiteNumber(row.unmapped)),0,words),
+        knownPct:clamp(Math.round(finiteNumber(row.knownPct)),0,100),
+        mappedPct:clamp(Math.round(finiteNumber(row.mappedPct)),0,100),
+        effectivePct:clamp(Math.round(finiteNumber(row.effectivePct)),0,100),
+        lookups:clamp(Math.floor(finiteNumber(row.lookups)),0,10000),
+        sourceKind:['paste','file'].includes(row.sourceKind)?row.sourceKind:'paste'
+      };
+    }
+    function v5120NormalizeOpenWorld(raw){
+      const source=raw&&typeof raw==='object'?raw:{},sessions=[];
+      for(const row of (Array.isArray(source.sessions)?source.sessions:[]).slice(-V5120_MAX_SESSIONS)){
+        const normalized=v5120NormalizeSession(row);if(normalized)sessions.push(normalized);
+      }
+      return {schema:V5120_SCHEMA,sessions:sessions};
+    }
+    function v5120LoadOpenWorld(){
+      state.v5120OpenWorld=v5120NormalizeOpenWorld(state.v5120OpenWorld||safeStorageRead(V5120_STORAGE_KEY)||{});
+      return state.v5120OpenWorld;
+    }
+    function v5120SaveOpenWorld(){
+      state.v5120OpenWorld=v5120NormalizeOpenWorld(state.v5120OpenWorld||{});
+      safeStorageSet(V5120_STORAGE_KEY,state.v5120OpenWorld);depthSchedulePersist?.();
+    }
+    v5120LoadOpenWorld();
+
+    const v5120DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5120DepthStateSnapshotBase(),v5120OpenWorld:v5120NormalizeOpenWorld(state.v5120OpenWorld||{})};};
+    const v5120DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5120DepthApplyImportedStateBase(saved);
+      state.v5120OpenWorld=v5120NormalizeOpenWorld(saved?.v5120OpenWorld||safeStorageRead(V5120_STORAGE_KEY)||{});
+      v5120SaveOpenWorld();return result;
+    };
+    const v5120DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5120DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5120OpenWorld)state.v5120OpenWorld=v5120NormalizeOpenWorld(saved.v5120OpenWorld);}catch{}
+      return result;
+    };
+
+    function v5120CleanText(value){return String(value||'').replace(/\u0000/g,'').slice(0,V5120_MAX_TEXT_CHARS);}
+    function v5120Paragraphs(text){
+      const clean=v5120CleanText(text).replace(/\r\n?/g,'\n');
+      return clean.split(/\n{2,}/).map(function(part){return part.replace(/\s*\n\s*/g,' ').trim();}).filter(Boolean);
+    }
+    function v5120Analyze(text){
+      const clean=v5120CleanText(text),tokens=v550WordTokens(clean),counts={known:0,learning:0,newMapped:0,unmapped:0},gaps=new Map(),mapped=new Map();
+      for(const token of tokens){
+        const note=v550ResolveNote(token);
+        if(!note){counts.unmapped++;continue;}
+        mapped.set(note.id,note);
+        const status=v550WordState(note);
+        if(status==='known')counts.known++;
+        else if(status==='learning')counts.learning++;
+        else counts.newMapped++;
+        if(status!=='known'){
+          const current=gaps.get(note.id)||{note:note,count:0,status:status};current.count++;gaps.set(note.id,current);
+        }
+      }
+      const total=tokens.length||1,mappedCount=counts.known+counts.learning+counts.newMapped;
+      const knownPct=Math.round(counts.known/total*100),mappedPct=Math.round(mappedCount/total*100);
+      const effectivePct=Math.round((counts.known+counts.learning*.55+counts.newMapped*.18)/total*100);
+      const band=effectivePct>=95?'Comfortable':effectivePct>=90?'Manageable':effectivePct>=82?'Stretch':'High support';
+      return {
+        text:clean,words:tokens.length,...counts,knownPct:knownPct,mappedPct:mappedPct,effectivePct:effectivePct,band:band,
+        uniqueMapped:mapped.size,gaps:[...gaps.values()].sort(function(a,b){return b.count-a.count||a.note.fr.localeCompare(b.note.fr,'fr');})
+      };
+    }
+    function v5120Stats(){
+      const rows=state.v5120OpenWorld?.sessions||[],words=rows.reduce(function(sum,row){return sum+row.words;},0),lookups=rows.reduce(function(sum,row){return sum+row.lookups;},0);
+      const weighted=function(key){return words?Math.round(rows.reduce(function(sum,row){return sum+row[key]*row.words;},0)/words):0;};
+      return {sessions:rows.length,words:words,lookups:lookups,knownPct:weighted('knownPct'),mappedPct:weighted('mappedPct')};
+    }
+    function v5120HistoryHtml(){
+      const rows=(state.v5120OpenWorld?.sessions||[]).slice(-6).reverse();if(!rows.length)return '';
+      return '<div class="v5120-history">'+rows.map(function(row){return '<span><strong>'+row.knownPct+'%</strong> known · '+row.words+' words · '+row.lookups+' lookup'+(row.lookups===1?'':'s')+'</span>';}).join('')+'</div>';
+    }
+    function v5120PanelHtml(){
+      const stats=v5120Stats(),ui=state.v5120OpenWorldUi;
+      return '<section class="panel v5120-open-world"><div class="v5120-open-head"><div><p class="eyebrow">P21 open-world French</p><h3>Bring real French into your learning system</h3><p>Paste French from an article, message, transcript, study note, or other text you are allowed to use. French3000 maps it against your live 3,000-word mastery model and reuses the P14 lookup/practice tools.</p></div><div class="v5120-open-stats"><span><strong>'+stats.sessions+'</strong> sessions</span><span><strong>'+stats.words.toLocaleString()+'</strong> words</span><span><strong>'+stats.knownPct+'%</strong> avg known</span></div></div>'+
+        '<div class="v5120-input-grid"><label><span>Optional source label</span><input id="v5120-source" maxlength="120" value="'+escapeHtml(ui.source||'')+'" placeholder="e.g. article, church message, chat"></label><label class="v5120-text-label"><span>French text</span><textarea id="v5120-text" maxlength="'+V5120_MAX_TEXT_CHARS+'" placeholder="Collez votre texte français ici…">'+escapeHtml(ui.text||'')+'</textarea></label></div>'+
+        '<div class="v5120-actions"><button class="primary" id="v5120-open-reader">Analyze & read</button><label class="secondary file-label" for="v5120-file">Open .txt / .md<input hidden id="v5120-file" type="file" accept=".txt,.md,text/plain,text/markdown"></label><button class="ghost" id="v5120-clear" '+(ui.text?'':'disabled')+'>Clear</button><span id="v5120-count">'+v550WordTokens(ui.text||'').length+' words</span></div>'+
+        '<p class="v5120-privacy"><strong>Privacy:</strong> the raw text stays only in this page session. Backups store aggregate reading statistics, not the pasted/imported text or source label. Reading remains exposure-only unless you deliberately practice a mapped word.</p>'+v5120HistoryHtml()+'</section>';
+    }
+    function v5120BindPanel(){
+      const text=$('#v5120-text'),source=$('#v5120-source');
+      text?.addEventListener('input',function(){state.v5120OpenWorldUi.text=v5120CleanText(text.value);const count=$('#v5120-count');if(count)count.textContent=v550WordTokens(state.v5120OpenWorldUi.text).length+' words';});
+      source?.addEventListener('input',function(){state.v5120OpenWorldUi.source=String(source.value||'').slice(0,120);});
+      $('#v5120-clear')?.addEventListener('click',function(){state.v5120OpenWorldUi.text='';state.v5120OpenWorldUi.source='';state.v5120OpenWorldUi.sourceKind='paste';renderRead();});
+      $('#v5120-open-reader')?.addEventListener('click',function(){
+        const analysis=v5120Analyze(state.v5120OpenWorldUi.text);
+        if(analysis.words<V5120_MIN_WORDS){showToast('Add at least '+V5120_MIN_WORDS+' French words for a useful open-world reading analysis.');return;}
+        state.v5120OpenWorldUi.reader=true;state.v5120OpenWorldUi.startedAt=now();state.v5120OpenWorldUi.lookups=0;
+        state.v5120OpenWorldUi.sessionId='openworld-'+Math.round(now());renderRead();
+      });
+      $('#v5120-file')?.addEventListener('change',async function(event){
+        const chosen=event.target.files?.[0];if(!chosen)return;
+        if(chosen.size>V5120_MAX_FILE_BYTES){showToast('Use a text file smaller than 256 KB.');event.target.value='';return;}
+        try{
+          state.v5120OpenWorldUi.text=v5120CleanText(await chosen.text());state.v5120OpenWorldUi.source=String(chosen.name||'').replace(/\.(txt|md)$/i,'').slice(0,120);
+          state.v5120OpenWorldUi.sourceKind='file';renderRead();
+        }catch{showToast('Could not read that text file.');}
+      });
+    }
+    function v5120DecorateRead(){
+      if(state.view!=='read'||state.v550ReadUi.selectedId||state.v5120OpenWorldUi.reader||main.querySelector('.v5120-open-world'))return;
+      const anchor=main.querySelector('.v550-controls')||main.querySelector('.v550-read-header')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v5120PanelHtml());v5120BindPanel();
+    }
+
+    function v5120GapHtml(analysis){
+      const gaps=analysis.gaps.slice(0,12);if(!gaps.length)return '<p class="v5120-no-gaps">No mapped vocabulary gaps were found in this text.</p>';
+      return '<div class="v5120-gaps">'+gaps.map(function(row){return '<button type="button" data-v5120-gap="'+escapeHtml(row.note.fr)+'"><strong lang="fr">'+escapeHtml(row.note.fr)+'</strong><span>'+escapeHtml(row.note.en)+' · '+row.count+'× · '+(row.status==='learning'?'learning':'new')+'</span></button>';}).join('')+'</div>';
+    }
+    function v5120RenderReader(){
+      const ui=state.v5120OpenWorldUi,analysis=v5120Analyze(ui.text),paragraphs=v5120Paragraphs(ui.text),reading={id:ui.sessionId||'openworld-current',targets:[]};
+      if(analysis.words<V5120_MIN_WORDS){ui.reader=false;renderRead();return;}
+      main.innerHTML='<div class="v550-reader-shell v5120-reader"><header class="v550-reader-bar"><button type="button" class="secondary" id="v5120-back">← Read</button><div><span>OPEN-WORLD · '+analysis.words+' words</span><strong>'+escapeHtml(ui.source||'Personal French text')+'</strong></div><button type="button" class="secondary" id="v5120-finish">Finish exposure</button></header>'+
+        '<section class="v550-reader-meta"><div><strong>'+analysis.knownPct+'%</strong><span>known</span></div><div><strong>'+analysis.mappedPct+'%</strong><span>mapped to French3000</span></div><div><strong>'+analysis.unmapped+'</strong><span>unmapped occurrences</span></div><div><strong>'+escapeHtml(analysis.band)+'</strong><span>reading load</span></div></section>'+
+        (analysis.effectivePct<82?'<div class="v550-overload"><strong>High support text</strong><span>This text is substantially above your current lexical comfort band. Read selectively, save repeated gaps, or choose an easier source.</span></div>':'')+
+        '<section class="panel v5120-gap-panel"><div class="section-heading"><div><p class="eyebrow">Mapped gaps</p><h3>Words worth noticing</h3><p>These are mapped words in the text that are not currently known. Opening or saving them does not count as successful recall.</p></div><span>'+analysis.uniqueMapped+' unique mapped</span></div>'+v5120GapHtml(analysis)+'</section>'+
+        '<article class="v550-reading-text v5120-reader-text">'+paragraphs.map(function(paragraph){return '<div class="v550-sentence"><p lang="fr">'+v550RenderWordChunk(paragraph,reading)+'</p></div>';}).join('')+'</article>'+
+        '<footer class="v550-reader-footer"><div><span>'+analysis.words+' words</span><span>'+analysis.knownPct+'% known</span><span>'+analysis.learning+' learning</span><span>'+analysis.newMapped+' mapped-new</span></div><button class="primary" id="v5120-finish-bottom">Finish exposure</button></footer><aside class="v550-lookup" id="v550-lookup" hidden></aside></div>';
+      const back=function(){ui.reader=false;renderRead();};
+      $('#v5120-back')?.addEventListener('click',back);
+      const finish=function(){v5120FinishReader();};
+      $('#v5120-finish')?.addEventListener('click',finish);$('#v5120-finish-bottom')?.addEventListener('click',finish);
+      main.querySelectorAll('[data-v550-word]').forEach(function(button){button.addEventListener('click',function(){ui.lookups++;v550OpenLookup(button.dataset.v550Word,reading.id);});});
+      main.querySelectorAll('[data-v5120-gap]').forEach(function(button){button.addEventListener('click',function(){ui.lookups++;v550OpenLookup(button.dataset.v5120Gap,reading.id);});});
+      bindCommonActions();
+    }
+    function v5120FinishReader(){
+      const ui=state.v5120OpenWorldUi,analysis=v5120Analyze(ui.text);if(!ui.reader||analysis.words<V5120_MIN_WORDS)return;
+      const row=v5120NormalizeSession({
+        id:ui.sessionId||('openworld-'+Math.round(now())),t:now(),words:analysis.words,known:analysis.known,learning:analysis.learning,
+        newMapped:analysis.newMapped,unmapped:analysis.unmapped,knownPct:analysis.knownPct,mappedPct:analysis.mappedPct,effectivePct:analysis.effectivePct,
+        lookups:ui.lookups,sourceKind:ui.sourceKind
+      });
+      if(row){state.v5120OpenWorld.sessions.push(row);if(state.v5120OpenWorld.sessions.length>V5120_MAX_SESSIONS)state.v5120OpenWorld.sessions=state.v5120OpenWorld.sessions.slice(-V5120_MAX_SESSIONS);v5120SaveOpenWorld();}
+      ui.reader=false;ui.text='';ui.source='';ui.sourceKind='paste';ui.sessionId='';ui.startedAt=0;ui.lookups=0;
+      showToast('Open-world reading recorded as exposure only.');renderRead();
+    }
+
+    const v5120RenderReadBase=renderRead;
+    renderRead=function(){
+      if(state.v5120OpenWorldUi.reader){v5120RenderReader();return;}
+      const result=v5120RenderReadBase();v5120DecorateRead();return result;
+    };
+
+    function v5120ProgressPanel(){
+      const s=v5120Stats(),recent=(state.v5120OpenWorld?.sessions||[]).at(-1);
+      return '<section class="v5120-progress"><div><p class="eyebrow">P21 open-world transfer</p><h3>Real French exposure</h3><p>Only aggregate exposure is tracked here. Raw imported text is never copied into progress backups, and exposure does not count as retrieval mastery.</p></div><div class="v5120-progress-grid"><span><strong>'+s.sessions+'</strong> completed texts</span><span><strong>'+s.words.toLocaleString()+'</strong> words read</span><span><strong>'+s.knownPct+'%</strong> weighted known</span><span><strong>'+s.mappedPct+'%</strong> mapped to core</span><span><strong>'+s.lookups+'</strong> lookups</span><span><strong>'+(recent?recent.knownPct+'%':'—')+'</strong> latest known</span></div><button class="secondary" id="v5120-progress-read">Open Read</button></section>';
+    }
+    function v5120DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5120-progress'))return;
+      const anchor=main.querySelector('.v5110-progress')||main.querySelector('.v5100-progress-panel')||main.firstElementChild;if(!anchor)return;
+      anchor.insertAdjacentHTML('afterend',v5120ProgressPanel());$('#v5120-progress-read')?.addEventListener('click',function(){setView('read');});
+    }
+    const v5120RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5120RenderProgressBase();v5120DecorateProgress();return result;};
+
+    function v5120OpenWorldAudit(){
+      const errors=[],normalized=v5120NormalizeOpenWorld(state.v5120OpenWorld||{});
+      if(normalized.sessions.length>V5120_MAX_SESSIONS)errors.push('session cap exceeded');
+      for(const row of normalized.sessions){
+        if(row.known+row.learning+row.newMapped+row.unmapped!==row.words)errors.push('coverage counts do not sum for '+row.id);
+      }
+      const serialized=JSON.stringify(normalized);
+      if(/"text"\s*:|"source"\s*:|"title"\s*:/i.test(serialized))errors.push('raw/source text leaked into persisted P21 state');
+      if(typeof v550WordTokens!=='function'||typeof v550ResolveNote!=='function'||typeof v550OpenLookup!=='function')errors.push('P14 bridge primitive missing');
+      if(v5120CleanText(state.v5120OpenWorldUi.text).length>V5120_MAX_TEXT_CHARS)errors.push('draft length cap failed');
+      if(errors.length)console.error('French3000 P21 open-world audit failed',errors);
+      document.documentElement.dataset.openWorldAudit=errors.length?'failed':'passed';return errors;
+    }
+    const v5120RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5120RunQaBase(),errors=v5120OpenWorldAudit();
+      result.checks.push(v5100QaCheck('open-world','Open-world privacy & bridge integrity',errors.length?'fail':'pass',errors.length?errors.join(' · '):'raw text session-only · aggregate history normalized · P14 lookup bridge available'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p21-open-world-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5120EnsureStyles(){
+      if(document.querySelector('#v5120-open-world-style'))return;
+      const style=document.createElement('style');style.id='v5120-open-world-style';
+      style.textContent='.v5120-open-world{margin:.75rem 0}.v5120-open-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5120-open-head h3,.v5120-progress h3{margin:.08rem 0}.v5120-open-head p,.v5120-progress p{margin:0;color:var(--muted);font-size:.66rem;max-width:78ch}.v5120-open-stats{display:flex;gap:.3rem;flex-wrap:wrap}.v5120-open-stats span{padding:.4rem .48rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid);font-size:.53rem;color:var(--muted)}.v5120-open-stats strong{display:block;color:var(--navy);font-size:.82rem}.v5120-input-grid{display:grid;gap:.5rem;margin-top:.65rem}.v5120-input-grid label{display:grid;gap:.22rem;font-size:.56rem;font-weight:800;color:var(--muted)}.v5120-input-grid input,.v5120-input-grid textarea{width:100%;border:1px solid var(--line);border-radius:11px;background:var(--surface-solid);color:var(--navy);padding:.58rem;font:inherit}.v5120-input-grid textarea{min-height:150px;resize:vertical;line-height:1.5}.v5120-actions{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.5rem}.v5120-actions>span{font-size:.55rem;color:var(--muted)}.v5120-privacy{font-size:.55rem!important;margin-top:.5rem!important}.v5120-history{display:flex;gap:.3rem;overflow:auto;padding-top:.45rem}.v5120-history span{flex:0 0 auto;padding:.34rem .42rem;border-radius:9px;background:var(--surface-muted);font-size:.52rem;color:var(--muted)}.v5120-history strong{color:var(--navy)}.v5120-gap-panel{margin:.65rem 0}.v5120-gap-panel>.section-heading{align-items:flex-start}.v5120-gap-panel>.section-heading>span{font-size:.54rem;color:var(--muted)}.v5120-gaps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}.v5120-gaps button{display:grid;text-align:left;gap:.06rem;padding:.42rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-solid)}.v5120-gaps strong{color:var(--navy);font-size:.62rem}.v5120-gaps span,.v5120-no-gaps{color:var(--muted);font-size:.5rem}.v5120-reader-text{white-space:normal}.v5120-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.75rem;align-items:center;padding:.9rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin-bottom:.75rem}.v5120-progress-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}.v5120-progress-grid span{padding:.46rem;border-radius:10px;background:var(--surface-muted);font-size:.54rem;color:var(--muted)}.v5120-progress-grid strong{display:block;color:var(--navy);font-size:.82rem}@media(pointer:coarse){.v5120-open-world button,.v5120-reader button,.v5120-progress button{min-height:44px;touch-action:manipulation}}@media(max-width:760px){.v5120-open-head{flex-direction:column}.v5120-gaps{grid-template-columns:1fr 1fr}.v5120-progress{grid-template-columns:1fr}.v5120-progress-grid{grid-template-columns:1fr 1fr}}@media(max-width:480px){.v5120-gaps,.v5120-progress-grid{grid-template-columns:1fr}.v5120-actions{align-items:stretch;flex-direction:column}.v5120-actions button,.v5120-actions .file-label{width:100%;text-align:center}}';
+      document.head.append(style);
+    }
+    const v5120NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5120NormalizeSurfaceBase();document.documentElement.dataset.release='p21-open-world-french';
+      document.documentElement.dataset.openWorldBridge='personal-corpus-local-only';
+    };
+    const v5120InitBase=init;
+    init=async function(options){
+      v5120EnsureStyles();v5120LoadOpenWorld();
+      const result=await v5120InitBase(options||{});
+      v5120LoadOpenWorld();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='read')renderRead();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.12.0';return result;
     };
 
 
