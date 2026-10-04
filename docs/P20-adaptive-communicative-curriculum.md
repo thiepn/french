@@ -1,12 +1,12 @@
 # P20 — Adaptive Communicative Curriculum, Function Mastery & Next-Best-Task Engine
 
-French3000 v5.11.0
+French v5.11.0
 
 ## Purpose
 
 P20 turns the communicative stack from P12–P19 into an adaptive curriculum.
 
-Before P20, French3000 already had sentence production, transfer drills, authentic reading/listening, spoken production, guided conversation, real-world missions, calibrated evidence and device QA. The remaining weakness was orchestration: scenario recommendations were still driven primarily by lexical readiness, recency and replay counts.
+Before P20, French already had sentence production, transfer drills, authentic reading/listening, spoken production, guided conversation, real-world missions, calibrated evidence and device QA. The remaining weakness was orchestration: scenario recommendations were still driven primarily by lexical readiness, recency and replay counts.
 
 P20 makes the app choose communicative work from demonstrated function-level gaps.
 

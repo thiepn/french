@@ -7,7 +7,7 @@
   <meta name="description" content="Focused local-first French vocabulary flashcards with spaced repetition, contextual examples, independent memory skills, resilient storage, and centralized settings.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <title>French 3000 — Vocabulary flashcards</title>
+  <title>French — Vocabulary flashcards</title>
   <style>
     :root {
       color-scheme: light;
@@ -3021,9 +3021,9 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   <div class="app-shell">
     <header class="topbar">
       <div class="topbar-inner">
-        <div class="brand" aria-label="French 3000 home">
+        <div class="brand" aria-label="French home">
           <div class="brand-mark" aria-hidden="true">FR</div>
-          <div class="brand-copy"><strong>French 3000 <small class="version-badge">v4.1.4</small></strong><span>Focused French vocabulary and spaced repetition</span></div>
+          <div class="brand-copy"><strong>French <small class="version-badge">v4.1.4</small></strong><span>Focused French vocabulary and spaced repetition</span></div>
         </div>
         <nav class="nav" aria-label="Main navigation">
           <button class="nav-button active" data-view="dashboard">Dashboard</button>
@@ -4646,7 +4646,7 @@ qui	who	A1	question word`;
       }).join('');
       main.innerHTML=`
         <section class="hero compact-hero">
-          <div class="hero-panel"><p class="eyebrow">French 3000 v${APP_VERSION} · Release Candidate</p><h1>Study the right thing next.</h1><p class="lead">Adaptive SRS with a CEFR mastery roadmap, target-date pacing, a personal study coach, five practice modes, custom lists, and fully local progress.</p><div class="button-row"><button class="primary" data-session-preset="${coach.preset}">Start recommended session</button><button class="secondary" data-start-today>Study today</button><button class="secondary" data-start-due ${total.due?'':'disabled'}>Review ${total.due.toLocaleString()} due</button><button class="secondary" data-view-link="browse">Build a custom list</button></div></div>
+          <div class="hero-panel"><p class="eyebrow">French v${APP_VERSION} · Release Candidate</p><h1>Study the right thing next.</h1><p class="lead">Adaptive SRS with a CEFR mastery roadmap, target-date pacing, a personal study coach, five practice modes, custom lists, and fully local progress.</p><div class="button-row"><button class="primary" data-session-preset="${coach.preset}">Start recommended session</button><button class="secondary" data-start-today>Study today</button><button class="secondary" data-start-due ${total.due?'':'disabled'}>Review ${total.due.toLocaleString()} due</button><button class="secondary" data-view-link="browse">Build a custom list</button></div></div>
           <aside class="hero-panel source-status"><div><span class="data-badge"><span class="dot"></span>${state.loadSource==='embedded-starter'?'Offline starter':'Pinned and validated'}</span><strong class="big">${state.cards.length.toLocaleString()}</strong><p>A1–B2 vocabulary cards</p></div><div class="source-facts"><p><strong>${escapeHtml(cacheLabel)}</strong></p><p class="small-note">Fingerprint ${PINNED_BLOB_SHA.slice(0,12)} · ${state.catalogHealth.core?.toLocaleString()||0} core cards · dataset v${escapeHtml(state.dataMeta.version??'—')}</p>${state.dataMeta.loadWarning?`<p class="offline-note">${escapeHtml(state.dataMeta.loadWarning)}</p>`:''}</div></aside>
         </section>
         ${resume}
@@ -5378,8 +5378,8 @@ qui	who	A1	question word`;
     }
 
     function exportProgress(){
-      const data={app:'French 3000',schema:10,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),progress:state.progress,settings:state.settings,studyPlan:state.studyPlan,reviewLog:state.reviewLog,studyDays:state.studyDays,sessionHistory:state.sessionHistory,profile:state.profile,mistakeLog:state.mistakeLog,customDecks:state.customDecks};
-      downloadBlob(JSON.stringify(data,null,2),'french-3000-progress.json','application/json'); showToast('Progress exported.');
+      const data={app:'French',schema:10,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),progress:state.progress,settings:state.settings,studyPlan:state.studyPlan,reviewLog:state.reviewLog,studyDays:state.studyDays,sessionHistory:state.sessionHistory,profile:state.profile,mistakeLog:state.mistakeLog,customDecks:state.customDecks};
+      downloadBlob(JSON.stringify(data,null,2),'french-progress.json','application/json'); showToast('Progress exported.');
     }
     async function importProgress(event){
       const file=event.target.files?.[0]; if(!file) return;
@@ -5403,7 +5403,7 @@ qui	who	A1	question word`;
     }
     function catalogSnapshot(){
       return {
-        app:'French 3000',kind:'verified-offline-catalog',version:APP_VERSION,schema:DATA_SCHEMA,
+        app:'French',kind:'verified-offline-catalog',version:APP_VERSION,schema:DATA_SCHEMA,
         fingerprint:PINNED_BLOB_SHA,cachedAt:new Date().toISOString(),
         cards:state.cards.map(card=>({
           id:card.id,fr:card.fr,en:card.en,ipa:card.ipa,pos:card.pos,level:card.level,sourceLevel:card.sourceLevel,
@@ -5415,7 +5415,7 @@ qui	who	A1	question word`;
     }
     function exportOfflineCatalog(){
       if(state.loadSource==='embedded-starter'){ showToast('Download the full verified catalog before exporting it.'); return; }
-      downloadBlob(JSON.stringify(catalogSnapshot()),'french-3000-offline-catalog.json','application/json');
+      downloadBlob(JSON.stringify(catalogSnapshot()),'french-offline-catalog.json','application/json');
       showToast('Verified offline catalog exported.');
     }
     async function importOfflineCatalog(event){
@@ -5774,7 +5774,7 @@ qui	who	A1	question word`;
     }
     function v3ImportCards(cards){ let added=0,skipped=0; const existing=new Set(state.cards.map(card=>`${normalizeWord(card.fr)}|${normalizeTyped(card.en)}`)); for(const raw of cards){if(Object.keys(state.userCards).length>=V3_MAX_USER_CARDS)break;const key=`${normalizeWord(raw.fr)}|${normalizeTyped(raw.en)}`;if(existing.has(key)){skipped++;continue;}const id=v3Uid(),card=v3NormalizeCardShape({...raw,userCreated:true,createdAt:now(),updatedAt:now()},id);if(!card){skipped++;continue;}state.userCards[id]=card;existing.add(key);added++;}v3RebuildCatalog({trimUnknown:false});return{added,skipped}; }
     function v3ExportUserCards(format='json'){
-      const cards=Object.values(state.userCards); if(format==='csv'){ const rows=[['french','english','level','part_of_speech','theme','ipa','article','gender','plural','lemma','passe_compose_auxiliary','past_participle','example_french','example_english','hint','tags','aliases','flag','image','audio_url']]; for(const card of cards)rows.push([card.fr,card.en,card.level,card.pos,card.theme,card.ipa,card.article,card.gender,card.plural,card.lemma,card.auxiliary,card.pastParticiple,card.exampleFr,card.exampleEn,card.hint,(card.tags||[]).join('; '),(card.aliases||[]).join('; '),card.flag,card.image,card.audioUrl]); const csv=rows.map(row=>row.map(value=>`"${String(value||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-3000-user-cards-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');}else downloadBlob(JSON.stringify({app:'French 3000',version:APP_VERSION,kind:'user-cards',cards},null,2),`french-3000-user-cards-v${APP_VERSION}.json`,'application/json'); showToast(`${cards.length} user cards exported.`);
+      const cards=Object.values(state.userCards); if(format==='csv'){ const rows=[['french','english','level','part_of_speech','theme','ipa','article','gender','plural','lemma','passe_compose_auxiliary','past_participle','example_french','example_english','hint','tags','aliases','flag','image','audio_url']]; for(const card of cards)rows.push([card.fr,card.en,card.level,card.pos,card.theme,card.ipa,card.article,card.gender,card.plural,card.lemma,card.auxiliary,card.pastParticiple,card.exampleFr,card.exampleEn,card.hint,(card.tags||[]).join('; '),(card.aliases||[]).join('; '),card.flag,card.image,card.audioUrl]); const csv=rows.map(row=>row.map(value=>`"${String(value||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-user-cards-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');}else downloadBlob(JSON.stringify({app:'French',version:APP_VERSION,kind:'user-cards',cards},null,2),`french-user-cards-v${APP_VERSION}.json`,'application/json'); showToast(`${cards.length} user cards exported.`);
     }
     function v3ImportTabHtml(){ return `<div class="studio-grid"><section class="panel"><p class="eyebrow">Universal import</p><h3>Paste CSV, TSV, Quizlet-style text, or JSON</h3><p class="small-note">Two-column tab-separated text is treated as French → English. Header names such as French, English, level, POS, theme, and tags are recognized. Exact duplicates are skipped.</p><div class="import-drop"><textarea class="studio-textarea" id="v3-import-text" placeholder="bonjour\thello\tA1\texpression"></textarea><div class="button-row" style="margin-top:.7rem"><button class="primary" id="v3-import-paste">Import pasted cards</button><label class="secondary file-label" for="v3-import-file">Import file<input hidden id="v3-import-file" type="file" accept=".csv,.tsv,.txt,.json,application/json,text/csv,text/plain"></label></div></div></section><section class="panel"><h3>Portable card files</h3><p>${Object.keys(state.userCards).length.toLocaleString()} user-created cards are stored locally and included in complete progress backups.</p><div class="button-row"><button class="secondary" id="v3-export-user-json">Export JSON</button><button class="secondary" id="v3-export-user-csv">Export CSV</button></div><h3 style="margin-top:1rem">Supported columns</h3><p class="small-note">French, English, level, part_of_speech, theme, IPA, article, gender, plural, lemma, passé composé auxiliary, past participle, examples, hint, tags, aliases, flag, image, and audio URL.</p></section></div>`; }
 
@@ -5811,7 +5811,7 @@ qui	who	A1	question word`;
     function renderStudio(){
       const tabs=[['cards','Cards'],['smart','Smart decks'],['import','Import / export'],['test','Test lab'],['match','Match game'],['scheduler','Scheduler']], active=tabs.some(([key])=>key===state.studioTab)?state.studioTab:'cards'; state.studioTab=active;
       const content=active==='cards'?v3CardsTabHtml():active==='smart'?v3SmartTabHtml():active==='import'?v3ImportTabHtml():active==='test'?v3TestTabHtml():active==='match'?v3MatchTabHtml():v3SchedulerTabHtml();
-      main.innerHTML=`<div class="view-header"><div><p class="eyebrow">French 3000 v3.6.9</p><h2>Ultimate flashcard studio</h2><p>Create and edit cards, build dynamic decks, import other collections, generate tests, play Match, and tune the memory scheduler.</p></div></div><nav class="studio-tabs" aria-label="Studio sections">${tabs.map(([key,label])=>`<button class="studio-tab ${active===key?'active':''}" data-v3-studio-tab="${key}">${label}</button>`).join('')}</nav>${content}`;
+      main.innerHTML=`<div class="view-header"><div><p class="eyebrow">French v3.6.9</p><h2>Ultimate flashcard studio</h2><p>Create and edit cards, build dynamic decks, import other collections, generate tests, play Match, and tune the memory scheduler.</p></div></div><nav class="studio-tabs" aria-label="Studio sections">${tabs.map(([key,label])=>`<button class="studio-tab ${active===key?'active':''}" data-v3-studio-tab="${key}">${label}</button>`).join('')}</nav>${content}`;
       $$('[data-v3-studio-tab]').forEach(button=>button.addEventListener('click',()=>{state.studioTab=button.dataset.v3StudioTab;renderStudio();}));
       if(active==='cards') v3BindCardsTab(); else if(active==='smart') v3BindSmartTab(); else if(active==='import') v3BindImportTab(); else if(active==='test') v3BindTestTab(); else if(active==='match') v3BindMatchTab(); else v3BindSchedulerTab();
     }
@@ -5843,10 +5843,10 @@ qui	who	A1	question word`;
     renderProgress=function(){ v29RenderProgress(); main.insertAdjacentHTML('beforeend',v3MemoryAnalyticsHtml()); const button=main.querySelector('section:last-child [data-view-link="studio"]');button?.addEventListener('click',()=>{state.studioTab='scheduler';setView('studio');}); };
 
     catalogSnapshot=function(){
-      return {app:'French 3000',kind:'verified-offline-catalog',version:APP_VERSION,schema:DATA_SCHEMA,fingerprint:PINNED_BLOB_SHA,cachedAt:new Date().toISOString(),cards:(state.baseCards||[]).map(card=>({id:card.id,fr:card.fr,en:card.en,ipa:card.ipa,pos:card.pos,level:card.level,sourceLevel:card.sourceLevel,order:card.order,lemma:card.lemma,core:card.core,exampleFr:card.exampleFr,exampleEn:card.exampleEn,exampleKind:card.exampleKind,article:card.article,gender:card.gender,plural:card.plural,auxiliary:card.auxiliary,pastParticiple:card.pastParticiple})),meta:{...state.dataMeta,source:'exported verified offline catalog',cachedAt:new Date().toISOString(),userCards:undefined,editedCards:undefined}};
+      return {app:'French',kind:'verified-offline-catalog',version:APP_VERSION,schema:DATA_SCHEMA,fingerprint:PINNED_BLOB_SHA,cachedAt:new Date().toISOString(),cards:(state.baseCards||[]).map(card=>({id:card.id,fr:card.fr,en:card.en,ipa:card.ipa,pos:card.pos,level:card.level,sourceLevel:card.sourceLevel,order:card.order,lemma:card.lemma,core:card.core,exampleFr:card.exampleFr,exampleEn:card.exampleEn,exampleKind:card.exampleKind,article:card.article,gender:card.gender,plural:card.plural,auxiliary:card.auxiliary,pastParticiple:card.pastParticiple})),meta:{...state.dataMeta,source:'exported verified offline catalog',cachedAt:new Date().toISOString(),userCards:undefined,editedCards:undefined}};
     };
 
-    exportProgress=function(){ const data={app:'French 3000',schema:11,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),progress:state.progress,settings:state.settings,studyPlan:state.studyPlan,reviewLog:state.reviewLog,studyDays:state.studyDays,sessionHistory:state.sessionHistory,profile:state.profile,mistakeLog:state.mistakeLog,customDecks:state.customDecks,userCards:state.userCards,cardEdits:state.cardEdits,smartDecks:state.smartDecks};downloadBlob(JSON.stringify(data,null,2),'french-3000-complete-backup-v4.1.2.json','application/json');showToast('Complete v4.1.2 backup exported.'); };
+    exportProgress=function(){ const data={app:'French',schema:11,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),progress:state.progress,settings:state.settings,studyPlan:state.studyPlan,reviewLog:state.reviewLog,studyDays:state.studyDays,sessionHistory:state.sessionHistory,profile:state.profile,mistakeLog:state.mistakeLog,customDecks:state.customDecks,userCards:state.userCards,cardEdits:state.cardEdits,smartDecks:state.smartDecks};downloadBlob(JSON.stringify(data,null,2),'french-complete-backup-v4.1.2.json','application/json');showToast('Complete v4.1.2 backup exported.'); };
     importProgress=async function(event){ const file=event.target.files?.[0];if(!file)return;try{if(file.size>V3_MAX_BACKUP_BYTES)throw new Error('The backup is larger than 12 MB.');const data=JSON.parse(await file.text());if(!data||typeof data!=='object'||!data.progress||typeof data.progress!=='object'||Array.isArray(data.progress))throw new Error('Missing or invalid progress object.');state.userCards=v3NormalizeUserCards(data.userCards||{});state.cardEdits=v3NormalizeCardEdits(data.cardEdits||{});state.smartDecks=v3NormalizeSmartDecks(data.smartDecks||{});v3RebuildCatalog({trimUnknown:false});const importIds=state.loadSource==='embedded-starter'?null:state.cardIds;const normalized=normalizeProgressObject(data.progress,importIds),originalCount=Object.keys(data.progress).length;state.progress=normalized;state.settings=normalizeSettings(data.settings||{});applyAppearance();state.session={...state.settings.session};state.reviewLog=normalizeReviewLog(data.reviewLog||[],importIds);state.studyDays=normalizeStudyDays([...(data.studyDays||[]),...state.reviewLog.map(entry=>dayKey(entry.t))]);state.profile=normalizeProfile(data.profile||{});state.mistakeLog=normalizeMistakeLog(data.mistakeLog||[],importIds);state.customDecks=data.customDecks?normalizeCustomDecks(data.customDecks,importIds):state.customDecks;state.sessionHistory=normalizeSessionHistory(data.sessionHistory||[]);state.studyPlan=normalizeStudyPlan(data.studyPlan||state.studyPlan);reconcileProfileFromLogs();syncAchievements(false);saveProgress();saveSettings();saveStudyPlan();saveReviewLog();saveStudyDays();saveSessionHistory();saveProfile();saveMistakeLog();saveCustomDecks();v3SaveUserContent();clearSessionSnapshot();event.target.value='';showToast(`Imported ${Object.keys(normalized).length} card records, ${Object.keys(state.userCards).length} user cards, and ${Object.keys(state.smartDecks).length} smart decks${originalCount!==Object.keys(normalized).length?`; skipped ${originalCount-Object.keys(normalized).length} unknown records`:''}.`);renderProgress();}catch(error){event.target.value='';alert(`Could not import this backup: ${error.message}`);} };
     exportVocabulary=function(){ const rows=[['rank','source','level','french','english','ipa','part_of_speech','theme','tags','aliases','hint','flag','quality_score','quality_flags','core','family','family_size','article','gender','plural','lemma','passe_compose_auxiliary','past_participle','status','due','stability','difficulty','known_before_study','example_french','example_english','image','audio_url']];for(const card of state.cards){const progress=getProgress(card.id),memory=v3MemorySnapshot(card);rows.push([card.order,v3CardSourceLabel(card),card.level,card.fr,card.en,card.ipa,card.pos,THEME_LABELS[card.theme],(card.tags||[]).join('; '),(card.aliases||[]).join('; '),card.hint,card.flag,card.qualityScore,card.qualityFlags.join('; '),card.core!==false?'yes':'no',card.familyKey,card.familySize,card.article,card.gender,card.plural,card.lemma,card.auxiliary,card.pastParticiple,statusLabel(progress),progress.due?new Date(progress.due).toISOString():'',memory.stability.toFixed(2),memory.difficulty.toFixed(2),progress.manualKnown?'yes':'no',card.exampleFr,card.exampleEn,card.image,card.audioUrl]);}const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,'french-a1-b1-vocabulary-v3.9.4.csv','text/csv;charset=utf-8');showToast('Complete vocabulary CSV exported.'); };
 
@@ -5943,7 +5943,7 @@ qui	who	A1	question word`;
       window.addEventListener('keydown',event=>{ if(event.key==='Escape'&&$('#theme-dialog')?.open){ closeThemeDialog(); return; } handleKeyboard(event); });
       window.addEventListener('storage',event=>{ if(event.key===SETTINGS_KEY&&event.newValue){ try{ const incoming=normalizeSettings(JSON.parse(event.newValue)); state.settings={...state.settings,appearance:incoming.appearance}; applyAppearance(); }catch{} } });
       window.addEventListener('beforeinstallprompt',event=>{ event.preventDefault(); state.installPrompt=event; if(state.initialized&&state.cards.length&&state.view==='dashboard') renderDashboard(); });
-      window.addEventListener('appinstalled',()=>{ state.installPrompt=null; state.isStandalone=true; showToast('French 3000 was installed.'); if(state.view==='dashboard') renderDashboard(); });
+      window.addEventListener('appinstalled',()=>{ state.installPrompt=null; state.isStandalone=true; showToast('French was installed.'); if(state.view==='dashboard') renderDashboard(); });
       state.systemThemeMedia=matchMedia('(prefers-color-scheme: dark)'); state.systemThemeMedia.addEventListener?.('change',()=>{ if(state.settings.appearance?.theme==='system') applyAppearance(); });
       window.addEventListener('pagehide',()=>{saveProgress();saveSettings();saveStudyPlan();saveReviewLog();saveStudyDays();saveSessionHistory();saveProfile();saveMistakeLog();saveCustomDecks();saveSessionSnapshot();stopSpeech();});
       if(state.speechAvailable){ speechSynthesis.addEventListener?.('voiceschanged',loadVoices); loadVoices(); }
@@ -6580,7 +6580,7 @@ qui	who	A1	question word`;
     renderDashboard=function(){
       depthV3RenderDashboard();depthApplyFocusedUi();
       const total=overallStats(),today=todayStats(),newAvailable=state.cards.filter(card=>cardStatus(card)==='new'&&card.core!==false).length,minutes=Math.max(1,Math.round(total.due*.55+Math.min(state.settings.dailyNewLimit,newAvailable)*.75));
-      const focus=document.createElement('section');focus.className='depth-home panel';focus.innerHTML=`<div><p class="eyebrow">French 3000 v3.6.9 · curriculum edition</p><h1>${total.due?`${total.due.toLocaleString()} skill reviews are due`:'You are caught up'}</h1><p>${Math.min(state.settings.dailyNewLimit,newAvailable).toLocaleString()} new skill cards available · approximately ${minutes} minutes</p></div><div class="button-row"><button class="primary" id="depth-study-now">Study now</button><button class="secondary" id="depth-review-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view-link="browse">Browse words</button></div><div class="depth-home-metrics"><span><strong>${today.reviewed}</strong> answered today</span><span><strong>${rollingStats(7).accuracy}%</strong> 7-day accuracy</span><span><strong>${total.mastered}</strong> notes learned</span></div>`;
+      const focus=document.createElement('section');focus.className='depth-home panel';focus.innerHTML=`<div><p class="eyebrow">French v3.6.9 · curriculum edition</p><h1>${total.due?`${total.due.toLocaleString()} skill reviews are due`:'You are caught up'}</h1><p>${Math.min(state.settings.dailyNewLimit,newAvailable).toLocaleString()} new skill cards available · approximately ${minutes} minutes</p></div><div class="button-row"><button class="primary" id="depth-study-now">Study now</button><button class="secondary" id="depth-review-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view-link="browse">Browse words</button></div><div class="depth-home-metrics"><span><strong>${today.reviewed}</strong> answered today</span><span><strong>${rollingStats(7).accuracy}%</strong> 7-day accuracy</span><span><strong>${total.mastered}</strong> notes learned</span></div>`;
       main.insertBefore(focus,main.firstChild);
       $('#depth-study-now').addEventListener('click',()=>{state.session=normalizeSession({...state.session,mode:'today',skillMode:'balanced',scheduleMode:'review',practice:'classic',typed:true,size:30});buildQueue();setView('study');});
       $('#depth-review-mistakes').addEventListener('click',()=>{const ids=[...new Set(state.mistakeLog.slice().reverse().map(item=>item.id))].slice(0,30),cards=ids.map(id=>state.cardById.get(id)||state.depthSkillIndex.get(id)).filter(Boolean);state.queue=cards;state.sessionSeedIds=cards.map(card=>card.id);state.queueIndex=0;state.session=normalizeSession({...state.session,scheduleMode:'practice'});state.sessionStats=newSessionStats();setView('study');});
@@ -6623,11 +6623,11 @@ qui	who	A1	question word`;
       const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await depthDeriveKey(password,salt,['encrypt']);
       const payload=new TextEncoder().encode(JSON.stringify({...depthStateSnapshot(),exportedAt:new Date().toISOString()}));
       const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,payload));
-      const envelope={format:'French3000EncryptedSync',version:1,kdf:'PBKDF2-SHA256',iterations:210000,cipher:'AES-256-GCM',salt:depthBytesToBase64(salt),iv:depthBytesToBase64(iv),data:depthBytesToBase64(ciphertext)};
-      downloadBlob(JSON.stringify(envelope),`french-3000-${dayKey(now())}.f3sync`,'application/octet-stream');
+      const envelope={format:'FrenchEncryptedSync',version:1,kdf:'PBKDF2-SHA256',iterations:210000,cipher:'AES-256-GCM',salt:depthBytesToBase64(salt),iv:depthBytesToBase64(iv),data:depthBytesToBase64(ciphertext)};
+      downloadBlob(JSON.stringify(envelope),`french-${dayKey(now())}.f3sync`,'application/octet-stream');
     }
     async function depthImportEncrypted(file,password){
-      if(password.length<8)throw new Error('Enter the file password.');const envelope=JSON.parse(await file.text());if(envelope?.format!=='French3000EncryptedSync')throw new Error('Not a French 3000 encrypted sync file.');
+      if(password.length<8)throw new Error('Enter the file password.');const envelope=JSON.parse(await file.text());if(!['FrenchEncryptedSync','French3000EncryptedSync'].includes(envelope?.format))throw new Error('Not a French encrypted sync file.');
       const salt=depthBase64ToBytes(envelope.salt),iv=depthBase64ToBytes(envelope.iv),data=depthBase64ToBytes(envelope.data),key=await depthDeriveKey(password,salt,['decrypt']);
       const decoded=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data).catch(()=>{throw new Error('Wrong password or damaged file.');});
       const saved=JSON.parse(new TextDecoder().decode(decoded));await depthApplyImportedState(saved);showToast('Encrypted sync file restored.');renderProgress();
@@ -6653,7 +6653,7 @@ qui	who	A1	question word`;
     const depthV3ApplyPrepared=applyPrepared;
     applyPrepared=function(prepared,loadSource,options={}){depthV3ApplyPrepared(prepared,loadSource,options);depthIndexSkills();depthMigrateLegacyProgress();state.resumeSnapshot=normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds);depthSchedulePersist();};
 
-    exportProgress=function(){const data={app:'French 3000',schema:DEPTH_BACKUP_SCHEMA,version:DEPTH_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot()};downloadBlob(JSON.stringify(data,null,2),'french-3000-complete-backup-v4.1.2.json','application/json');showToast('Complete v4.1.2 backup exported.');};
+    exportProgress=function(){const data={app:'French',schema:DEPTH_BACKUP_SCHEMA,version:DEPTH_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot()};downloadBlob(JSON.stringify(data,null,2),'french-complete-backup-v4.1.2.json','application/json');showToast('Complete v4.1.2 backup exported.');};
     const depthV3ImportProgress=importProgress;
     importProgress=async function(event){await depthV3ImportProgress(event);depthIndexSkills();depthMigrateLegacyProgress();depthSchedulePersist();};
 
@@ -6661,7 +6661,7 @@ qui	who	A1	question word`;
     exportVocabulary=function(){
       const rows=[['note_id','skill_card_id','skill','sense','level','french','english','article','gender','plural','ipa','part_of_speech','theme','editorial_status','editorial_issues','status','due','stability','difficulty','retrievability','example_french','example_english']];
       for(const note of state.cards){for(const card of depthCreateSkillCards(note,'all')){const p=normalizeProgressEntry(getProgress(card.id)),m=v3MemorySnapshot(card);rows.push([note.id,card.id,depthSkillOf(card),card.sense||'',card.level,card.fr,card.en,card.article,card.gender,card.plural,card.ipa,card.pos,THEME_LABELS[card.theme],note.editoriallyVerified?'verified':'automated audit only',(note.editorialIssues||[]).join('; '),statusLabel(p),p.due?new Date(p.due).toISOString():'',m.stability.toFixed(2),m.difficulty.toFixed(2),m.retrievability.toFixed(3),card.exampleFr,card.exampleEn]);}}
-      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,'french-3000-skill-cards-v3.9.4.csv','text/csv;charset=utf-8');showToast('Skill-level vocabulary CSV exported.');
+      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,'french-skill-cards-v3.9.4.csv','text/csv;charset=utf-8');showToast('Skill-level vocabulary CSV exported.');
     };
 
     const depthV3BindGlobalEvents=bindGlobalEvents;
@@ -6956,7 +6956,7 @@ qui	who	A1	question word`;
 
     renderDashboard=function(){
       depthIndexSkills();depthApplyFocusedUi();const q=v32QueueSummary(),today=todayStats(),week=rollingStats(7),lesson=v32CurrentLesson(),lessonStats=v32LessonMastery(lesson.id),streak=studyStreak();
-      main.innerHTML=`<div class="v32-today"><div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French 3000 v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} reviews are ready`:'Today’s queue is clear'}</h1><p class="lead">The adaptive queue introduces one vocabulary note at a time, then develops article recall, production, spelling, and listening independently.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p></div><span class="status-pill">${lessonStats.pct}% complete</span></div>${progressBar(lessonStats.pct,`Lesson ${lesson.id} progress`)}<div class="button-row" style="margin-top:.8rem"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study this lesson</button></div></section><div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>accuracy over the last seven days</p></article><article class="v32-action"><h3>${streak}</h3><p>day study streak</p></article></div></div>`;
+      main.innerHTML=`<div class="v32-today"><div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} reviews are ready`:'Today’s queue is clear'}</h1><p class="lead">The adaptive queue introduces one vocabulary note at a time, then develops article recall, production, spelling, and listening independently.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p></div><span class="status-pill">${lessonStats.pct}% complete</span></div>${progressBar(lessonStats.pct,`Lesson ${lesson.id} progress`)}<div class="button-row" style="margin-top:.8rem"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study this lesson</button></div></section><div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>accuracy over the last seven days</p></article><article class="v32-action"><h3>${streak}</h3><p>day study streak</p></article></div></div>`;
       $('#v32-study-now')?.addEventListener('click',()=>{state.session=normalizeSession({...state.session,mode:'today',skillMode:'adaptive',scheduleMode:'review',practice:'classic',typed:true,size:30,lessonId:0});buildQueue();setView('study');});
       $('#v32-practice-mistakes')?.addEventListener('click',()=>{const ids=[...new Set(state.mistakeLog.slice().reverse().map(item=>item.id))].slice(0,30),cards=ids.map(id=>state.cardById.get(id)||state.depthSkillIndex.get(id)).filter(Boolean);state.queue=cards;state.sessionSeedIds=cards.map(card=>card.id);state.queueIndex=0;state.session=normalizeSession({...state.session,scheduleMode:'practice',lessonId:0});state.sessionStats=newSessionStats();setView('study');});
       $$('[data-open-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.openLesson);setView('lessons');}));
@@ -7008,7 +7008,7 @@ qui	who	A1	question word`;
     function v32OnboardingSeen(){try{return localStorage.getItem(V32_ONBOARDING_KEY)==='1';}catch{return true;}}
     function v32ShowOnboarding(){
       if(v32OnboardingSeen()||state.reviewLog.length)return;
-      const dialog=document.createElement('dialog');dialog.className='v32-onboarding';dialog.innerHTML=`<form method="dialog" class="v32-onboarding-inner"><p class="eyebrow">Set up French 3000 v3.6.9</p><h2>Choose a practical starting point</h2><p>The default queue will teach recognition first, then article and gender, production, spelling, and listening.</p><div class="v32-onboarding-grid">${selectControl('Learning track','v32-onboard-track',[['coursebook','Coursebook track · supplied A1 materials'],['frequency','CEFR and frequency']],state.settings.courseTrack)}${selectControl('Starting deck','v32-onboard-deck',[['A1','A1 beginner'],['A2','A1 + A2'],['ALL','All available levels']],state.session.deck)}${selectControl('Daily time','v32-onboard-minutes',[['10','10 minutes'],['20','20 minutes'],['30','30 minutes'],['45','45 minutes']],String(state.settings.dailyMinutes))}${selectControl('French grading','v32-onboard-grading',[['strict','Strict'],['learning','Learning'],['lenient','Lenient']],state.settings.gradingMode)}</div><div class="button-row"><button class="primary" value="save" id="v32-onboard-save">Start learning</button></div></form>`;document.body.appendChild(dialog);
+      const dialog=document.createElement('dialog');dialog.className='v32-onboarding';dialog.innerHTML=`<form method="dialog" class="v32-onboarding-inner"><p class="eyebrow">Set up French v3.6.9</p><h2>Choose a practical starting point</h2><p>The default queue will teach recognition first, then article and gender, production, spelling, and listening.</p><div class="v32-onboarding-grid">${selectControl('Learning track','v32-onboard-track',[['coursebook','Coursebook track · supplied A1 materials'],['frequency','CEFR and frequency']],state.settings.courseTrack)}${selectControl('Starting deck','v32-onboard-deck',[['A1','A1 beginner'],['A2','A1 + A2'],['ALL','All available levels']],state.session.deck)}${selectControl('Daily time','v32-onboard-minutes',[['10','10 minutes'],['20','20 minutes'],['30','30 minutes'],['45','45 minutes']],String(state.settings.dailyMinutes))}${selectControl('French grading','v32-onboard-grading',[['strict','Strict'],['learning','Learning'],['lenient','Lenient']],state.settings.gradingMode)}</div><div class="button-row"><button class="primary" value="save" id="v32-onboard-save">Start learning</button></div></form>`;document.body.appendChild(dialog);
       dialog.addEventListener('close',()=>{if(dialog.returnValue==='save'){state.settings=normalizeSettings({...state.settings,courseTrack:$('#v32-onboard-track',dialog).value,dailyMinutes:Number($('#v32-onboard-minutes',dialog).value),gradingMode:$('#v32-onboard-grading',dialog).value});state.session=normalizeSession({...state.session,deck:$('#v32-onboard-deck',dialog).value,skillMode:'adaptive'});saveSettings();try{localStorage.setItem(V32_ONBOARDING_KEY,'1');localStorage.setItem(V32_TRACK_KEY,JSON.stringify(state.settings.courseTrack));}catch{}renderDashboard();}dialog.remove();});
       if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
     }
@@ -7208,7 +7208,7 @@ qui	who	A1	question word`;
 
     renderDashboard=function(){
       depthIndexSkills();depthApplyFocusedUi();const q=v32QueueSummary(),today=todayStats(),week=rollingStats(7),lesson=v32CurrentLesson(),lessonStats=v32LessonMastery(lesson.id),streak=studyStreak(),duePressure=q.due.length>60?'High':q.due.length>20?'Moderate':'Controlled';
-      main.innerHTML=`<div class="v32-today"><div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French 3000 v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} study items are ready`:'Today’s queue is clear'}</h1><p class="lead">Work through due reviews first, then introduce one note at a time and develop article recall, production, spelling, and listening independently.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due reviews</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel v33-next-panel"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p>${v33MasteryHtml(lessonStats)}</div><div class="button-row"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study words</button><button class="primary" data-v33-checkpoint="${lesson.id}">Checkpoint</button></div></section><div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>accuracy over seven days</p></article><article class="v32-action"><h3>${duePressure}</h3><p>due-review pressure</p></article></div></div>`;
+      main.innerHTML=`<div class="v32-today"><div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} study items are ready`:'Today’s queue is clear'}</h1><p class="lead">Work through due reviews first, then introduce one note at a time and develop article recall, production, spelling, and listening independently.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due reviews</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair mistakes</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel v33-next-panel"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p>${v33MasteryHtml(lessonStats)}</div><div class="button-row"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study words</button><button class="primary" data-v33-checkpoint="${lesson.id}">Checkpoint</button></div></section><div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>accuracy over seven days</p></article><article class="v32-action"><h3>${duePressure}</h3><p>due-review pressure</p></article></div></div>`;
       $('#v32-study-now')?.addEventListener('click',()=>{state.session=normalizeSession({...state.session,mode:'today',skillMode:'adaptive',scheduleMode:'review',practice:'classic',typed:true,size:30,lessonId:0});buildQueue();setView('study');});
       $('#v32-practice-mistakes')?.addEventListener('click',()=>{const ids=[...new Set(state.mistakeLog.slice().reverse().map(item=>item.id))].slice(0,30),cards=ids.map(id=>state.cardById.get(id)||state.depthSkillIndex.get(id)).filter(Boolean);state.queue=cards;state.sessionSeedIds=cards.map(card=>card.id);state.queueIndex=0;state.session=normalizeSession({...state.session,scheduleMode:'practice',lessonId:0});state.sessionStats=newSessionStats();setView('study');});
       $$('[data-open-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.openLesson);setView('lessons');}));$$('[data-start-lesson]').forEach(button=>button.addEventListener('click',()=>v32StartLesson(Number(button.dataset.startLesson))));$$('[data-v33-checkpoint]').forEach(button=>button.addEventListener('click',()=>v33StartCheckpoint(Number(button.dataset.v33Checkpoint))));
@@ -7220,10 +7220,10 @@ qui	who	A1	question word`;
     }
     const v33RenderProgressBase=renderProgress;
     renderProgress=function(){
-      v33RenderProgressBase();const audit=v33IntegritySnapshot();main.insertAdjacentHTML('beforeend',`<section class="panel storage-panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">v3.6.9 reliability gate</p><h3>Local data self-check</h3><p>Structural diagnostics distinguish application integrity from unfinished linguistic content.</p></div></div><div class="v33-integrity-grid"><div class="v33-integrity-item"><strong>${audit.duplicateIds}</strong><span>duplicate note IDs</span></div><div class="v33-integrity-item"><strong>${audit.orphanProgress}</strong><span>orphan progress records</span></div><div class="v33-integrity-item"><strong>${audit.invalidDue}</strong><span>invalid due timestamps</span></div><div class="v33-integrity-item"><strong>${audit.unmapped}</strong><span>notes outside lessons 1–18</span></div><div class="v33-integrity-item"><strong>${audit.missingArticle}</strong><span>nouns missing articles</span></div><div class="v33-integrity-item"><strong>${audit.missingGender}</strong><span>nouns missing gender</span></div><div class="v33-integrity-item"><strong>${audit.missingExamples}</strong><span>notes missing example pairs</span></div><div class="v33-integrity-item"><strong>${audit.missingIpa}</strong><span>notes missing IPA</span></div></div><p class="small-note">Zero duplicate IDs, orphan records, and invalid timestamps indicate structural integrity. Content warnings require editorial review and are not silently treated as verified.</p><div class="button-row"><button class="secondary" id="v33-export-audit">Export diagnostic JSON</button></div></section>`);$('#v33-export-audit')?.addEventListener('click',()=>{downloadBlob(JSON.stringify(v33IntegritySnapshot(),null,2),'french-3000-v3.8.2-diagnostic.json','application/json');showToast('Diagnostic exported.');});
+      v33RenderProgressBase();const audit=v33IntegritySnapshot();main.insertAdjacentHTML('beforeend',`<section class="panel storage-panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">v3.6.9 reliability gate</p><h3>Local data self-check</h3><p>Structural diagnostics distinguish application integrity from unfinished linguistic content.</p></div></div><div class="v33-integrity-grid"><div class="v33-integrity-item"><strong>${audit.duplicateIds}</strong><span>duplicate note IDs</span></div><div class="v33-integrity-item"><strong>${audit.orphanProgress}</strong><span>orphan progress records</span></div><div class="v33-integrity-item"><strong>${audit.invalidDue}</strong><span>invalid due timestamps</span></div><div class="v33-integrity-item"><strong>${audit.unmapped}</strong><span>notes outside lessons 1–18</span></div><div class="v33-integrity-item"><strong>${audit.missingArticle}</strong><span>nouns missing articles</span></div><div class="v33-integrity-item"><strong>${audit.missingGender}</strong><span>nouns missing gender</span></div><div class="v33-integrity-item"><strong>${audit.missingExamples}</strong><span>notes missing example pairs</span></div><div class="v33-integrity-item"><strong>${audit.missingIpa}</strong><span>notes missing IPA</span></div></div><p class="small-note">Zero duplicate IDs, orphan records, and invalid timestamps indicate structural integrity. Content warnings require editorial review and are not silently treated as verified.</p><div class="button-row"><button class="secondary" id="v33-export-audit">Export diagnostic JSON</button></div></section>`);$('#v33-export-audit')?.addEventListener('click',()=>{downloadBlob(JSON.stringify(v33IntegritySnapshot(),null,2),'french-v3.8.2-diagnostic.json','application/json');showToast('Diagnostic exported.');});
     };
 
-    function v33ApplyBrand(){document.title='French 3000 — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, lessons, and mastery checkpoints';}
+    function v33ApplyBrand(){document.title='French — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, lessons, and mastery checkpoints';}
     const v33InitBase=init;
     init=async function(options={}){await v33InitBase(options);state.settings=normalizeSettings(state.settings||{});v33ApplyBrand();};
 
@@ -7421,7 +7421,7 @@ qui	who	A1	question word`;
     }
     renderDashboard=function(){
       depthIndexSkills();depthApplyFocusedUi();state.v34CheckpointDraft=v34LoadDraft();const q=v32QueueSummary(),today=todayStats(),week=rollingStats(7),lesson=v32CurrentLesson(),lessonStats=v32LessonMastery(lesson.id),duePressure=q.due.length>60?'High':q.due.length>20?'Moderate':'Controlled',weak=v34WeakSnapshot(),draft=state.v34CheckpointDraft;
-      main.innerHTML=`<div class="v32-today">${draft?`<div class="v34-resume-banner"><div><strong>Resume lesson ${draft.lessonId} checkpoint</strong><p>Question ${draft.index+1} of ${draft.queue.length} is saved locally.</p></div><div class="button-row"><button class="primary" id="v34-resume-checkpoint">Resume</button><button class="secondary" id="v34-discard-draft">Discard</button></div></div>`:''}<div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French 3000 v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} study items are ready`:'Today’s queue is clear'}</h1><p class="lead">Review due skill cards, introduce new notes gradually, and repair grammar errors without altering spaced-repetition intervals.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due reviews</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair vocabulary</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel v33-next-panel"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p>${v34MasteryHtml(lessonStats)}</div><div class="button-row"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study words</button><button class="primary" data-v33-checkpoint="${lesson.id}">Checkpoint</button></div></section>${weak.items.length?`<section class="panel v34-repair-panel"><div class="v33-next-panel"><div><p class="eyebrow">Error intelligence</p><h2>${weak.items.length} grammar item${weak.items.length===1?' needs':'s need'} repair</h2><p>${weak.topics.slice(0,3).map(item=>`${escapeHtml(item.topic)} (${item.accuracy}%)`).join(' · ')}</p></div><button class="primary" id="v34-repair-grammar">Repair grammar</button></div></section>`:''}<div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>vocabulary accuracy · 7 days</p></article><article class="v32-action"><h3>${duePressure}</h3><p>due-review pressure</p></article></div></div>`;
+      main.innerHTML=`<div class="v32-today">${draft?`<div class="v34-resume-banner"><div><strong>Resume lesson ${draft.lessonId} checkpoint</strong><p>Question ${draft.index+1} of ${draft.queue.length} is saved locally.</p></div><div class="button-row"><button class="primary" id="v34-resume-checkpoint">Resume</button><button class="secondary" id="v34-discard-draft">Discard</button></div></div>`:''}<div class="v32-today-hero"><section class="hero-panel v32-primary-card"><p class="eyebrow">French v3.6.9 · today</p><h1>${q.total?`${q.total.toLocaleString()} study items are ready`:'Today’s queue is clear'}</h1><p class="lead">Review due skill cards, introduce new notes gradually, and repair grammar errors without altering spaced-repetition intervals.</p><div class="v32-estimate"><span>${q.minutes} min estimate</span><span>${q.due.length} due reviews</span><span>${q.staged.length} next-skill cards</span><span>${q.newNotes} new notes</span></div><div class="button-row"><button class="primary" id="v32-study-now" ${q.total?'':'disabled'}>Study now</button><button class="secondary" id="v32-practice-mistakes" ${state.mistakeLog.length?'':'disabled'}>Repair vocabulary</button><button class="secondary" data-view="lessons">Open lessons</button></div><div class="v32-estimate">${v32SkillChips(q.counts)}</div></section><section class="panel v32-queue-card"><p class="eyebrow">Queue composition</p><h3>What comes next</h3><div class="v32-queue-grid"><div><strong>${q.counts.recognition}</strong><span>Recognition</span></div><div><strong>${q.counts.production}</strong><span>Production</span></div><div><strong>${q.counts.article}</strong><span>Article / gender</span></div><div><strong>${q.counts.spelling}</strong><span>Spelling</span></div><div><strong>${q.counts.listening}</strong><span>Listening</span></div><div><strong>${q.newNotes}</strong><span>New vocabulary notes</span></div></div></section></div><section class="panel v33-next-panel"><div><p class="eyebrow">Coursebook path</p><h2>Lesson ${lesson.id}: ${escapeHtml(lesson.title)}</h2><p>${escapeHtml(lesson.goal)}</p>${v34MasteryHtml(lessonStats)}</div><div class="button-row"><button class="secondary" data-open-lesson="${lesson.id}">View lesson</button><button class="secondary" data-start-lesson="${lesson.id}">Study words</button><button class="primary" data-v33-checkpoint="${lesson.id}">Checkpoint</button></div></section>${weak.items.length?`<section class="panel v34-repair-panel"><div class="v33-next-panel"><div><p class="eyebrow">Error intelligence</p><h2>${weak.items.length} grammar item${weak.items.length===1?' needs':'s need'} repair</h2><p>${weak.topics.slice(0,3).map(item=>`${escapeHtml(item.topic)} (${item.accuracy}%)`).join(' · ')}</p></div><button class="primary" id="v34-repair-grammar">Repair grammar</button></div></section>`:''}<div class="v32-next-actions"><article class="v32-action"><h3>${today.reviewed}</h3><p>answers completed today</p></article><article class="v32-action"><h3>${week.reviewed?`${week.accuracy}%`:'—'}</h3><p>vocabulary accuracy · 7 days</p></article><article class="v32-action"><h3>${duePressure}</h3><p>due-review pressure</p></article></div></div>`;
       $('#v32-study-now')?.addEventListener('click',()=>{state.session=normalizeSession({...state.session,mode:'today',skillMode:'adaptive',scheduleMode:'review',practice:'classic',typed:true,size:30,lessonId:0});buildQueue();setView('study');});$('#v32-practice-mistakes')?.addEventListener('click',()=>{const ids=[...new Set(state.mistakeLog.slice().reverse().map(item=>item.id))].slice(0,30),cards=ids.map(id=>state.cardById.get(id)||state.depthSkillIndex.get(id)).filter(Boolean);state.queue=cards;state.sessionSeedIds=cards.map(card=>card.id);state.queueIndex=0;state.session=normalizeSession({...state.session,scheduleMode:'practice',lessonId:0});state.sessionStats=newSessionStats();setView('study');});$$('[data-open-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.openLesson);setView('lessons');}));$$('[data-start-lesson]').forEach(button=>button.addEventListener('click',()=>v32StartLesson(Number(button.dataset.startLesson))));$$('[data-v33-checkpoint]').forEach(button=>button.addEventListener('click',()=>v34StartCheckpoint(Number(button.dataset.v33Checkpoint),'full')));$('#v34-resume-checkpoint')?.addEventListener('click',v34ResumeCheckpoint);$('#v34-discard-draft')?.addEventListener('click',()=>{v34ClearDraft();renderDashboard();});$('#v34-repair-grammar')?.addEventListener('click',()=>{const item=v34WeakSnapshot().items[0];if(item)v34StartCheckpoint(item.lessonId,'repair',v34WeakQuestionIds(item.lessonId));});
     };
 
@@ -7435,10 +7435,10 @@ qui	who	A1	question word`;
     renderProgress=function(){
       v34RenderProgressBase();const weak=v34WeakSnapshot(),lessonStats=V32_LESSONS.map(lesson=>({lesson,...v32LessonMastery(lesson.id)})),attempts=lessonStats.reduce((sum,item)=>sum+item.practiceAttempts,0),questionAttempts=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v33PracticeRecord(lesson.id).questionStats||{}).reduce((inner,item)=>inner+item.attempts,0),0),questionCorrect=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v33PracticeRecord(lesson.id).questionStats||{}).reduce((inner,item)=>inner+item.correct,0),0);
       main.insertAdjacentHTML('beforeend',`<section class="panel storage-panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">v3.6.9 error intelligence</p><h3>Grammar and checkpoint diagnostics</h3><p>Checkpoint mistakes are tracked by stable question and topic. Targeted repair does not change SRS intervals or inflate lesson confidence.</p></div></div><div class="v34-summary-grid"><div class="v34-summary-cell"><strong>${attempts}</strong><span>checkpoint rounds</span></div><div class="v34-summary-cell"><strong>${questionAttempts}</strong><span>question attempts</span></div><div class="v34-summary-cell"><strong>${questionAttempts?percent(questionCorrect,questionAttempts)+'%':'—'}</strong><span>checkpoint accuracy</span></div><div class="v34-summary-cell"><strong>${weak.items.length}</strong><span>weak questions</span></div></div>${weak.topics.length?`<h3>Weak topics</h3><div class="v34-weak-grid">${weak.topics.slice(0,6).map(item=>`<article class="v34-weak-card"><strong>${escapeHtml(item.topic)}</strong><span>Lesson ${item.lessonId} · ${item.accuracy}% across ${item.attempts} attempts</span><button class="tiny-button" data-v34-progress-repair="${item.lessonId}">Repair</button></article>`).join('')}</div>`:'<div class="v34-progress-note">No checkpoint weak areas have been recorded yet.</div>'}<h3 style="margin-top:1rem">Lesson confidence</h3><div class="v34-lesson-confidence">${lessonStats.map(item=>`<button class="v34-confidence-cell" data-v34-progress-lesson="${item.lesson.id}" title="${escapeHtml(item.lesson.title)}"><strong>${item.practicePct}%</strong><span>L${item.lesson.id} · ${item.weakCount} weak</span></button>`).join('')}</div><div class="button-row" style="margin-top:1rem"><button class="secondary" id="v34-export-grammar">Export grammar CSV</button></div></section>`);
-      $$('[data-v34-progress-repair]').forEach(button=>button.addEventListener('click',()=>v34StartCheckpoint(Number(button.dataset.v34ProgressRepair),'repair')));$$('[data-v34-progress-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.v34ProgressLesson);setView('lessons');}));$('#v34-export-grammar')?.addEventListener('click',()=>{downloadBlob(v34GrammarCsv(),'french-3000-v3.8.2-grammar-diagnostics.csv','text/csv;charset=utf-8');showToast('Grammar diagnostics exported.');});
+      $$('[data-v34-progress-repair]').forEach(button=>button.addEventListener('click',()=>v34StartCheckpoint(Number(button.dataset.v34ProgressRepair),'repair')));$$('[data-v34-progress-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.v34ProgressLesson);setView('lessons');}));$('#v34-export-grammar')?.addEventListener('click',()=>{downloadBlob(v34GrammarCsv(),'french-v3.8.2-grammar-diagnostics.csv','text/csv;charset=utf-8');showToast('Grammar diagnostics exported.');});
     };
 
-    function v34ApplyBrand(){document.title='French 3000 — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, lessons, checkpoints, and targeted repair';}
+    function v34ApplyBrand(){document.title='French — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, lessons, checkpoints, and targeted repair';}
     const v34InitBase=init;
     init=async function(options={}){await v34InitBase(options);state.settings=normalizeSettings(state.settings||{});state.v34CheckpointDraft=v34LoadDraft();v34ApplyBrand();if(state.view==='dashboard')renderDashboard();};
 
@@ -7600,16 +7600,16 @@ qui	who	A1	question word`;
     renderLessons=function(){v35RenderLessonsBase();const eyebrow=main.querySelector('.view-header .eyebrow');if(eyebrow)eyebrow.textContent='Coursebook curriculum · v3.6.9';const copy=main.querySelector('.view-header p:not(.eyebrow)');if(copy)copy.textContent='Each lesson combines spaced vocabulary, grammar checkpoints, and independent context-transfer production.';$$('[data-v35-transfer]').forEach(button=>button.addEventListener('click',()=>v35StartTransfer(Number(button.dataset.v35Transfer),'full')));$$('[data-v35-transfer-repair]').forEach(button=>button.addEventListener('click',()=>v35StartTransfer(Number(button.dataset.v35TransferRepair),'repair')));$('#v35-resume-lesson-transfer')?.addEventListener('click',v35ResumeTransfer);};
 
     const v35RenderDashboardBase=renderDashboard;
-    renderDashboard=function(){v35RenderDashboardBase();state.v35TransferDraft=v35LoadDraft();const lesson=v32CurrentLesson(),stats=v32LessonMastery(lesson.id),record=v35TransferRecord(lesson.id),draft=state.v35TransferDraft,anchor=main.querySelector('.v33-next-panel');const todayEyebrow=main.querySelector('.v32-primary-card .eyebrow');if(todayEyebrow)todayEyebrow.textContent='French 3000 v3.6.9 · today';if(draft){const banner=document.createElement('div');banner.className='v35-resume-banner';banner.innerHTML=`<div><strong>Resume lesson ${draft.lessonId} context round</strong><p>Task ${draft.index+1} of ${draft.queue.length} is saved locally.</p></div><div class="button-row"><button class="primary" id="v35-resume-dashboard">Resume</button><button class="secondary" id="v35-discard-dashboard">Discard</button></div>`;main.querySelector('.v32-today')?.prepend(banner);}if(anchor){const panel=document.createElement('section');panel.className='panel v35-transfer-panel';panel.innerHTML=`<div class="v33-next-panel"><div><p class="eyebrow">Context transfer</p><h2>Use lesson ${lesson.id} in complete sentences</h2><p>${escapeHtml(v35NextAction(stats))} Hints are available, but assisted answers receive reduced mastery credit.</p><div class="v32-estimate"><span>${record.confidence}% recent confidence</span><span>${record.passes} passing rounds</span><span>${stats.transferWeak} weak tasks</span></div></div><div class="button-row"><button class="primary" id="v35-start-dashboard">Start context round</button>${stats.transferWeak?'<button class="secondary danger" id="v35-repair-dashboard">Repair weak context</button>':''}</div></div>`;anchor.insertAdjacentElement('afterend',panel);}$('#v35-start-dashboard')?.addEventListener('click',()=>v35StartTransfer(lesson.id,'full'));$('#v35-repair-dashboard')?.addEventListener('click',()=>v35StartTransfer(lesson.id,'repair'));$('#v35-resume-dashboard')?.addEventListener('click',v35ResumeTransfer);$('#v35-discard-dashboard')?.addEventListener('click',()=>{v35ClearDraft();renderDashboard();});};
+    renderDashboard=function(){v35RenderDashboardBase();state.v35TransferDraft=v35LoadDraft();const lesson=v32CurrentLesson(),stats=v32LessonMastery(lesson.id),record=v35TransferRecord(lesson.id),draft=state.v35TransferDraft,anchor=main.querySelector('.v33-next-panel');const todayEyebrow=main.querySelector('.v32-primary-card .eyebrow');if(todayEyebrow)todayEyebrow.textContent='French v3.6.9 · today';if(draft){const banner=document.createElement('div');banner.className='v35-resume-banner';banner.innerHTML=`<div><strong>Resume lesson ${draft.lessonId} context round</strong><p>Task ${draft.index+1} of ${draft.queue.length} is saved locally.</p></div><div class="button-row"><button class="primary" id="v35-resume-dashboard">Resume</button><button class="secondary" id="v35-discard-dashboard">Discard</button></div>`;main.querySelector('.v32-today')?.prepend(banner);}if(anchor){const panel=document.createElement('section');panel.className='panel v35-transfer-panel';panel.innerHTML=`<div class="v33-next-panel"><div><p class="eyebrow">Context transfer</p><h2>Use lesson ${lesson.id} in complete sentences</h2><p>${escapeHtml(v35NextAction(stats))} Hints are available, but assisted answers receive reduced mastery credit.</p><div class="v32-estimate"><span>${record.confidence}% recent confidence</span><span>${record.passes} passing rounds</span><span>${stats.transferWeak} weak tasks</span></div></div><div class="button-row"><button class="primary" id="v35-start-dashboard">Start context round</button>${stats.transferWeak?'<button class="secondary danger" id="v35-repair-dashboard">Repair weak context</button>':''}</div></div>`;anchor.insertAdjacentElement('afterend',panel);}$('#v35-start-dashboard')?.addEventListener('click',()=>v35StartTransfer(lesson.id,'full'));$('#v35-repair-dashboard')?.addEventListener('click',()=>v35StartTransfer(lesson.id,'repair'));$('#v35-resume-dashboard')?.addEventListener('click',v35ResumeTransfer);$('#v35-discard-dashboard')?.addEventListener('click',()=>{v35ClearDraft();renderDashboard();});};
 
     function v35WeakSnapshot(){const items=[];for(const lesson of V32_LESSONS){const record=v35TransferRecord(lesson.id);for(const [id,item] of Object.entries(record.taskStats||{})){if(!v35WeakTaskIds(lesson.id).includes(id))continue;const meta=v35TaskFromId(id);if(meta)items.push({id,lessonId:lesson.id,context:meta.task.context,attempts:item.attempts,independent:item.independentCorrect,accuracy:percent(item.independentCorrect,item.attempts),lastAt:item.lastAt});}}return items.sort((a,b)=>a.accuracy-b.accuracy||b.attempts-a.attempts);}
     function v35TransferCsv(){const rows=[['lesson','task_id','context','attempts','independent_correct','accepted','exact','assisted','independent_accuracy','last_correct','last_assisted','last_issue','last_answer','last_at']];for(const lesson of V32_LESSONS){const record=v35TransferRecord(lesson.id);for(const [id,item] of Object.entries(record.taskStats||{})){const meta=v35TaskFromId(id);if(!meta)continue;rows.push([lesson.id,id,meta.task.context,item.attempts,item.independentCorrect,item.accepted,item.exact,item.assisted,percent(item.independentCorrect,item.attempts),item.lastCorrect,item.lastAssisted,item.lastIssue,item.lastAnswer,item.lastAt?new Date(item.lastAt).toISOString():'']);}}return rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\n');}
     const v35IntegrityBase=v33IntegritySnapshot;
     v33IntegritySnapshot=function(){const base=v35IntegrityBase(),weak=v35WeakSnapshot(),records=V32_LESSONS.reduce((sum,lesson)=>sum+Object.keys(v35TransferRecord(lesson.id).taskStats||{}).length,0),taskCount=Object.values(V35_TRANSFER).reduce((sum,tasks)=>sum+tasks.length,0);return {...base,contextTransferTasks:taskCount,contextTaskRecords:records,weakContextTasks:weak.length,interruptedContextRound:Boolean(v35LoadDraft())};};
     const v35RenderProgressBase=renderProgress;
-    renderProgress=function(){v35RenderProgressBase();const weak=v35WeakSnapshot(),lessonStats=V32_LESSONS.map(lesson=>({lesson,...v32LessonMastery(lesson.id)})),attempts=lessonStats.reduce((sum,item)=>sum+item.transferAttempts,0),taskAttempts=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v35TransferRecord(lesson.id).taskStats||{}).reduce((inner,item)=>inner+item.attempts,0),0),independent=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v35TransferRecord(lesson.id).taskStats||{}).reduce((inner,item)=>inner+item.independentCorrect,0),0);main.insertAdjacentHTML('beforeend',`<section class="panel storage-panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">v3.6.9 context transfer</p><h3>Independent sentence-use diagnostics</h3><p>Context rounds measure whether lesson vocabulary and grammar can be applied in complete French sentences. Hints remain available but reduce mastery credit.</p></div></div><div class="v35-summary-grid"><div class="v35-summary-cell"><strong>${attempts}</strong><span>context rounds</span></div><div class="v35-summary-cell"><strong>${taskAttempts}</strong><span>task attempts</span></div><div class="v35-summary-cell"><strong>${taskAttempts?percent(independent,taskAttempts)+'%':'—'}</strong><span>independent accuracy</span></div><div class="v35-summary-cell"><strong>${weak.length}</strong><span>weak context tasks</span></div></div>${weak.length?`<h3>Weak transfer tasks</h3><div class="v35-weak-grid">${weak.slice(0,6).map(item=>`<article class="v35-weak-card"><strong>${escapeHtml(item.context)}</strong><span>Lesson ${item.lessonId} · ${item.accuracy}% independent across ${item.attempts} attempts</span><button class="tiny-button" data-v35-progress-repair="${item.lessonId}">Repair</button></article>`).join('')}</div>`:'<div class="v34-progress-note">No context-transfer weaknesses have been recorded yet.</div>'}<h3 style="margin-top:1rem">Transfer confidence by lesson</h3><div class="v35-context-confidence">${lessonStats.map(item=>`<button class="v35-confidence-cell" data-v35-progress-lesson="${item.lesson.id}" title="${escapeHtml(item.lesson.title)}"><strong>${item.transferPct}%</strong><span>L${item.lesson.id} · ${item.transferWeak} weak</span></button>`).join('')}</div><div class="button-row" style="margin-top:1rem"><button class="secondary" id="v35-export-transfer">Export context CSV</button></div></section>`);$$('[data-v35-progress-repair]').forEach(button=>button.addEventListener('click',()=>v35StartTransfer(Number(button.dataset.v35ProgressRepair),'repair')));$$('[data-v35-progress-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.v35ProgressLesson);setView('lessons');}));$('#v35-export-transfer')?.addEventListener('click',()=>{downloadBlob(v35TransferCsv(),'french-3000-v3.8.2-context-diagnostics.csv','text/csv;charset=utf-8');showToast('Context diagnostics exported.');});};
+    renderProgress=function(){v35RenderProgressBase();const weak=v35WeakSnapshot(),lessonStats=V32_LESSONS.map(lesson=>({lesson,...v32LessonMastery(lesson.id)})),attempts=lessonStats.reduce((sum,item)=>sum+item.transferAttempts,0),taskAttempts=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v35TransferRecord(lesson.id).taskStats||{}).reduce((inner,item)=>inner+item.attempts,0),0),independent=V32_LESSONS.reduce((sum,lesson)=>sum+Object.values(v35TransferRecord(lesson.id).taskStats||{}).reduce((inner,item)=>inner+item.independentCorrect,0),0);main.insertAdjacentHTML('beforeend',`<section class="panel storage-panel"><div class="section-heading" style="margin:0 0 .8rem"><div><p class="eyebrow">v3.6.9 context transfer</p><h3>Independent sentence-use diagnostics</h3><p>Context rounds measure whether lesson vocabulary and grammar can be applied in complete French sentences. Hints remain available but reduce mastery credit.</p></div></div><div class="v35-summary-grid"><div class="v35-summary-cell"><strong>${attempts}</strong><span>context rounds</span></div><div class="v35-summary-cell"><strong>${taskAttempts}</strong><span>task attempts</span></div><div class="v35-summary-cell"><strong>${taskAttempts?percent(independent,taskAttempts)+'%':'—'}</strong><span>independent accuracy</span></div><div class="v35-summary-cell"><strong>${weak.length}</strong><span>weak context tasks</span></div></div>${weak.length?`<h3>Weak transfer tasks</h3><div class="v35-weak-grid">${weak.slice(0,6).map(item=>`<article class="v35-weak-card"><strong>${escapeHtml(item.context)}</strong><span>Lesson ${item.lessonId} · ${item.accuracy}% independent across ${item.attempts} attempts</span><button class="tiny-button" data-v35-progress-repair="${item.lessonId}">Repair</button></article>`).join('')}</div>`:'<div class="v34-progress-note">No context-transfer weaknesses have been recorded yet.</div>'}<h3 style="margin-top:1rem">Transfer confidence by lesson</h3><div class="v35-context-confidence">${lessonStats.map(item=>`<button class="v35-confidence-cell" data-v35-progress-lesson="${item.lesson.id}" title="${escapeHtml(item.lesson.title)}"><strong>${item.transferPct}%</strong><span>L${item.lesson.id} · ${item.transferWeak} weak</span></button>`).join('')}</div><div class="button-row" style="margin-top:1rem"><button class="secondary" id="v35-export-transfer">Export context CSV</button></div></section>`);$$('[data-v35-progress-repair]').forEach(button=>button.addEventListener('click',()=>v35StartTransfer(Number(button.dataset.v35ProgressRepair),'repair')));$$('[data-v35-progress-lesson]').forEach(button=>button.addEventListener('click',()=>{state.v32LessonSelection=Number(button.dataset.v35ProgressLesson);setView('lessons');}));$('#v35-export-transfer')?.addEventListener('click',()=>{downloadBlob(v35TransferCsv(),'french-v3.8.2-context-diagnostics.csv','text/csv;charset=utf-8');showToast('Context diagnostics exported.');});};
 
-    function v35ApplyBrand(){document.title='French 3000 — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, grammar repair, and sentence transfer';}
+    function v35ApplyBrand(){document.title='French — French flashcards';const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive vocabulary, grammar repair, and sentence transfer';}
     const v35InitBase=init;
     init=async function(options={}){await v35InitBase(options);state.settings=normalizeSettings(state.settings||{});v35MigrateLegacyMastery();state.v35TransferDraft=v35LoadDraft();v35ApplyBrand();if(state.view==='dashboard')renderDashboard();};
 
@@ -7774,7 +7774,7 @@ qui	who	A1	question word`;
       const missingIpa=state.cards.filter(card=>!card.ipa).length;
       const releaseCritical=duplicateIds+invalidDue+tasks.malformedCheckpoints+tasks.malformedContexts+(scheduler.ok?0:1);
       return {
-        app:'French 3000',version:V36_VERSION,release:V36_RELEASE,generatedAt:new Date().toISOString(),
+        app:'French',version:V36_VERSION,release:V36_RELEASE,generatedAt:new Date().toISOString(),
         catalog:{cards:state.cards.length,source:state.loadSource,fingerprint:PINNED_BLOB_SHA,fullCatalogActive:state.loadSource!=='embedded-starter'},
         storage:{progressRecords:progressKeys.length,orphanProgress,invalidDue},
         content:{duplicateIds,nouns:nouns.length,missingArticle,missingGender,missingExamples,missingIpa},
@@ -7796,18 +7796,18 @@ qui	who	A1	question word`;
 
     function v36ExportIntegrity(){
       const payload={...v36ContentIntegrity(),preferences:{courseTrack:state.settings.courseTrack,lessonsEnabled:state.settings.lessonsEnabled,focusedInterface:state.settings.focusedInterface,showExtras:state.settings.showExtras}};
-      downloadBlob(JSON.stringify(payload,null,2),'french-3000-v3.8.2-release-diagnostics.json','application/json');
+      downloadBlob(JSON.stringify(payload,null,2),'french-v3.8.2-release-diagnostics.json','application/json');
       showToast('v3.6.9 release diagnostics exported.');
     }
 
     function v36ExportMapping(){
-      downloadBlob('\ufeff'+v36DiagnosticsCsv(),'french-3000-v3.8.2-lesson-mapping.csv','text/csv;charset=utf-8');
+      downloadBlob('\ufeff'+v36DiagnosticsCsv(),'french-v3.8.2-lesson-mapping.csv','text/csv;charset=utf-8');
       showToast('Lesson mapping diagnostics exported.');
     }
 
     exportProgress=function(){
-      const data={app:'French 3000',schema:V36_BACKUP_SCHEMA,version:V36_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),finalization:{courseTrack:state.settings.courseTrack,lessonsEnabled:state.settings.lessonsEnabled,contentVersion:'2026-08-04'}};
-      downloadBlob(JSON.stringify(data,null,2),'french-3000-complete-backup-v4.1.2.json','application/json');
+      const data={app:'French',schema:V36_BACKUP_SCHEMA,version:V36_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),finalization:{courseTrack:state.settings.courseTrack,lessonsEnabled:state.settings.lessonsEnabled,contentVersion:'2026-08-04'}};
+      downloadBlob(JSON.stringify(data,null,2),'french-complete-backup-v4.1.2.json','application/json');
       showToast('Complete v4.1.2 backup exported.');
     };
 
@@ -7826,7 +7826,7 @@ qui	who	A1	question word`;
        curriculum disclosure, focused navigation, and release health.
        ================================================================ */
     function v36ApplyBrand(){
-      document.title='French 3000 v3.6.9 — Full Regression Edition';
+      document.title='French v3.6.9 — Full Regression Edition';
       const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';
       const sub=$('.brand-copy span');if(sub)sub.textContent='Adaptive French vocabulary · finalized local-first release';
       document.querySelector('meta[name="description"]')?.setAttribute('content','Finalized local-first French vocabulary learning with adaptive independent skill schedules, French-aware grading, optional A1 lesson practice, resilient storage, and transparent diagnostics.');
@@ -7854,7 +7854,7 @@ qui	who	A1	question word`;
       if(v32OnboardingSeen()||state.reviewLog.length)return;
       const settings=normalizeSettings(state.settings||{}),dialog=document.createElement('dialog');
       dialog.className='v32-onboarding';
-      dialog.innerHTML=`<form method="dialog" class="v32-onboarding-inner"><p class="eyebrow">Set up French 3000 v3.6.9</p><h2>Choose your daily learning path</h2><p>The default adaptive queue develops recognition, article and gender recall, production, spelling, and listening as separate memory skills. The frequency track is recommended for general use.</p><div class="v32-onboarding-grid">${selectControl('Learning track','v32-onboard-track',[['frequency','CEFR and frequency · recommended'],['coursebook','Coursebook track · supplied A1 materials']],settings.courseTrack)}${selectControl('Starting deck','v32-onboard-deck',[['A1','A1 beginner'],['A2','A1 + A2'],['ALL','All available levels']],state.session.deck)}${selectControl('Daily time','v32-onboard-minutes',[['10','10 minutes'],['20','20 minutes'],['30','30 minutes'],['45','45 minutes']],String(settings.dailyMinutes))}${selectControl('French grading','v32-onboard-grading',[['strict','Strict'],['learning','Learning'],['lenient','Lenient']],settings.gradingMode)}</div><label class="v36-toggle-card" style="margin-top:.8rem"><input id="v36-onboard-lessons" type="checkbox" ${settings.lessonsEnabled?'checked':''}><span><strong>Show optional Lessons section</strong><span>Enables the custom 18-lesson A1 sequence, checkpoints, and context-transfer exercises.</span></span></label>${v36CourseDisclosure()}<div class="button-row"><button class="primary" value="save" id="v32-onboard-save">Start learning</button></div></form>`;
+      dialog.innerHTML=`<form method="dialog" class="v32-onboarding-inner"><p class="eyebrow">Set up French v3.6.9</p><h2>Choose your daily learning path</h2><p>The default adaptive queue develops recognition, article and gender recall, production, spelling, and listening as separate memory skills. The frequency track is recommended for general use.</p><div class="v32-onboarding-grid">${selectControl('Learning track','v32-onboard-track',[['frequency','CEFR and frequency · recommended'],['coursebook','Coursebook track · supplied A1 materials']],settings.courseTrack)}${selectControl('Starting deck','v32-onboard-deck',[['A1','A1 beginner'],['A2','A1 + A2'],['ALL','All available levels']],state.session.deck)}${selectControl('Daily time','v32-onboard-minutes',[['10','10 minutes'],['20','20 minutes'],['30','30 minutes'],['45','45 minutes']],String(settings.dailyMinutes))}${selectControl('French grading','v32-onboard-grading',[['strict','Strict'],['learning','Learning'],['lenient','Lenient']],settings.gradingMode)}</div><label class="v36-toggle-card" style="margin-top:.8rem"><input id="v36-onboard-lessons" type="checkbox" ${settings.lessonsEnabled?'checked':''}><span><strong>Show optional Lessons section</strong><span>Enables the custom 18-lesson A1 sequence, checkpoints, and context-transfer exercises.</span></span></label>${v36CourseDisclosure()}<div class="button-row"><button class="primary" value="save" id="v32-onboard-save">Start learning</button></div></form>`;
       document.body.appendChild(dialog);
       const track=$('#v32-onboard-track',dialog),lessonToggle=$('#v36-onboard-lessons',dialog);
       track?.addEventListener('change',()=>{if(track.value==='coursebook')lessonToggle.checked=true;});
@@ -7876,7 +7876,7 @@ qui	who	A1	question word`;
     renderDashboard=function(){
       v36RenderDashboardBase();v36ApplyBrand();v36ApplyNavigation();
       const settings=normalizeSettings(state.settings||{}),todayEyebrow=main.querySelector('.v32-primary-card .eyebrow');
-      if(todayEyebrow)todayEyebrow.textContent='French 3000 v3.6.9 · today';
+      if(todayEyebrow)todayEyebrow.textContent='French v3.6.9 · today';
       const savedSession=normalizeSessionSnapshot(state.resumeSnapshot,state.cardIds);
       if(savedSession&&!main.querySelector('#resume-session')){
         state.resumeSnapshot=savedSession;
@@ -8153,17 +8153,17 @@ qui	who	A1	question word`;
 
     async function v362EmergencyStart(error){
       try{
-        if(!state.cards.length)v362ApplyStarter('French 3000 recovered from a startup error and opened the local starter catalog.');
+        if(!state.cards.length)v362ApplyStarter('French recovered from a startup error and opened the local starter catalog.');
         state.settings=normalizeSettings(state.settings||{});
         v36Migrate();
         v36ApplyBrand();
         v36ApplyNavigation();
         setView('dashboard',{focus:false});
         showToast('Recovered using the local starter catalog.');
-        console.error('French 3000 startup recovery:',error);
+        console.error('French startup recovery:',error);
       }catch(finalError){
-        main.innerHTML=`<section class="panel empty-state"><h2>French 3000 could not start</h2><p>The browser blocked local storage or an essential script failed.</p><p class="offline-note">Reload the page. If the problem remains, clear this site’s stored data and reopen the app. Your exported backups are not affected.</p><button class="primary" onclick="location.reload()">Reload</button></section>`;
-        console.error('French 3000 fatal startup error:',finalError);
+        main.innerHTML=`<section class="panel empty-state"><h2>French could not start</h2><p>The browser blocked local storage or an essential script failed.</p><p class="offline-note">Reload the page. If the problem remains, clear this site’s stored data and reopen the app. Your exported backups are not affected.</p><button class="primary" onclick="location.reload()">Reload</button></section>`;
+        console.error('French fatal startup error:',finalError);
       }
     }
 
@@ -8172,7 +8172,7 @@ qui	who	A1	question word`;
       state.v362InitPromise=(async()=>{
         const timing={started:performance.now()};
         try{
-          renderLoading(force?'Refreshing vocabulary':'Opening French 3000',force?'Connecting only because you requested a vocabulary refresh…':'Loading local progress and the local vocabulary catalog…');
+          renderLoading(force?'Refreshing vocabulary':'Opening French',force?'Connecting only because you requested a vocabulary refresh…':'Loading local progress and the local vocabulary catalog…');
           let startupCache;
           if(!state.initialized){
             loadLocalState();
@@ -8763,7 +8763,7 @@ qui	who	A1	question word`;
     const v364InitBase=init;
     init=async function(options={}){
       await v364InitBase(options);
-      document.title='French 3000 v3.6.9 — Content & Reliability Audit';
+      document.title='French v3.6.9 — Content & Reliability Audit';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent='v3.6.9';
     };
 
@@ -8858,7 +8858,7 @@ qui	who	A1	question word`;
       try{
         const anchor=document.createElement('a');
         anchor.href=`data:${type||'text/plain'};charset=utf-8,${encodeURIComponent(String(content??''))}`;
-        anchor.download=name||'french-3000-export.txt';document.body.append(anchor);anchor.click();anchor.remove();
+        anchor.download=name||'french-export.txt';document.body.append(anchor);anchor.click();anchor.remove();
       }catch{showToast('File downloads are unavailable in this browser.');}
     };
 
@@ -8974,7 +8974,7 @@ qui	who	A1	question word`;
     };
 
     function v365ApplyBrand(){
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';
       const sub=$('.brand-copy span');if(sub)sub.textContent='Audited vocabulary, reliable review, and transparent lesson mastery';
     }
@@ -9223,7 +9223,7 @@ qui	who	A1	question word`;
       state.session=normalizeSession({...state.session,typed:false});
       state.settings={...state.settings,session:{...state.session}};
       saveSettings();
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';
       const sub=$('.brand-copy span');if(sub)sub.textContent='Focused French flashcards with adaptive review';
       v366ApplyNavigation();
@@ -9360,7 +9360,7 @@ qui	who	A1	question word`;
       state.settings=normalizeSettings({...state.settings,session:{...state.session},autoRate:false});
       saveSettings();
       document.body.classList.add('v367-toolbar-edition');
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       const badge=$('.version-badge');if(badge)badge.textContent='v3.6.9';
       const sub=$('.brand-copy span');if(sub)sub.textContent='Focused French flashcards with visible examples and compact controls';
       if(state.view==='study')renderStudy();else if(state.view==='settings')renderSettings();
@@ -9460,7 +9460,7 @@ qui	who	A1	question word`;
       const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
       for(const node of nodes){
         if(!/v?3\.\d+\.\d+/i.test(node.nodeValue||''))continue;
-        node.nodeValue=node.nodeValue.replace(/\s*v?3\.\d+\.\d+\s*(?:[·—–-]\s*)?/gi,match=>match.includes('·')?' · ':'').replace(/French 3000\s+·/g,'French 3000 ·').trimStart();
+        node.nodeValue=node.nodeValue.replace(/\s*v?3\.\d+\.\d+\s*(?:[·—–-]\s*)?/gi,match=>match.includes('·')?' · ':'').replace(/French\s+·/g,'French ·').trimStart();
       }
     }
     function v368CleanProgress(){
@@ -9514,7 +9514,7 @@ qui	who	A1	question word`;
 
     function v368PostRender(){
       document.querySelector('.version-badge')?.remove();
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       v368UpdateQuickThemeButton();
       if(state.view!=='settings')v368StripVisibleVersion(main);
     }
@@ -9535,7 +9535,7 @@ qui	who	A1	question word`;
       await v368InitBase(options);
       document.querySelector('.version-badge')?.remove();
       document.querySelector('#theme-dialog')?.remove();
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       const sub=$('.brand-copy span');if(sub)sub.textContent='Focused French flashcards with adaptive review';
       v368RememberTheme(normalizeAppearance(state.settings.appearance).theme);
       v368BindHeaderOnce();v368UpdateQuickThemeButton();
@@ -9813,7 +9813,7 @@ qui	who	A1	question word`;
     }
     function v370UpdateVersion(){
       const about=v370Section('About and storage');if(about){const item=[...about.querySelectorAll('.v368-about-item')].find(node=>node.querySelector('span')?.textContent.trim()==='App version');const strong=item?.querySelector('strong');if(strong)strong.textContent=V370_VERSION;}
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
     }
     function v370EnhanceSettings(){
       const shell=main.querySelector('.v366-settings-shell');if(!shell)return;
@@ -9898,7 +9898,7 @@ qui	who	A1	question word`;
     const v370InitBase=init;
     init=async function(options={}){
       await v370InitBase(options);v370BindSettingsActions();
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       if(state.view==='settings')renderSettings();
     };
 
@@ -10150,8 +10150,8 @@ qui	who	A1	question word`;
     renderSettings=function(){
       main.className='main v371-settings-view';
       const settings=normalizeSettings(state.settings||{}),session=normalizeSession(settings.session||state.session||{}),speech=normalizeSpeech(settings.speech),appearance=normalizeAppearance(settings.appearance),customOptions=customDeckOptions(),smartOptions=v366SmartDeckOptions();
-      main.innerHTML=`<div class="v371-settings-shell"><header class="v371-settings-head"><div><p class="eyebrow">Settings</p><h2>Configure French 3000</h2><p>Common study controls stay visible. Rare or technical settings are moved to Advanced, and maintenance lives under Data.</p>${v371Summary()}</div></header><nav class="v371-settings-tabs" role="tablist" aria-label="Settings categories">${[['study','Study'],['look','Look & sound'],['advanced','Advanced'],['data','Data']].map(([key,label])=>`<button type="button" role="tab" class="v371-settings-tab ${state.v371SettingsTab===key?'active':''}" data-v371-tab="${key}" aria-selected="${state.v371SettingsTab===key}">${label}</button>`).join('')}</nav>${v371StudyTab(settings,session,customOptions,smartOptions)}${v371LookTab(settings,session,speech,appearance)}${v371AdvancedTab(settings,session)}${v371DataTab(settings)}</div>`;
-      v371BindSettings();applyAppearance();v368UpdateQuickThemeButton();document.title='French 3000 — French flashcards';
+      main.innerHTML=`<div class="v371-settings-shell"><header class="v371-settings-head"><div><p class="eyebrow">Settings</p><h2>Configure French</h2><p>Common study controls stay visible. Rare or technical settings are moved to Advanced, and maintenance lives under Data.</p>${v371Summary()}</div></header><nav class="v371-settings-tabs" role="tablist" aria-label="Settings categories">${[['study','Study'],['look','Look & sound'],['advanced','Advanced'],['data','Data']].map(([key,label])=>`<button type="button" role="tab" class="v371-settings-tab ${state.v371SettingsTab===key?'active':''}" data-v371-tab="${key}" aria-selected="${state.v371SettingsTab===key}">${label}</button>`).join('')}</nav>${v371StudyTab(settings,session,customOptions,smartOptions)}${v371LookTab(settings,session,speech,appearance)}${v371AdvancedTab(settings,session)}${v371DataTab(settings)}</div>`;
+      v371BindSettings();applyAppearance();v368UpdateQuickThemeButton();document.title='French — French flashcards';
     };
 
     const v371UpdateVoiceSelectBase=updateVoiceSelect;
@@ -10271,7 +10271,7 @@ qui	who	A1	question word`;
       v368StripVisibleVersion(main);
     }
     const v372RenderProgressBase=renderProgress;
-    renderProgress=function(){const result=v372RenderProgressBase();v372TransformProgress();document.title='French 3000 — French flashcards';return result;};
+    renderProgress=function(){const result=v372RenderProgressBase();v372TransformProgress();document.title='French — French flashcards';return result;};
 
 
     /* ================================================================
@@ -10295,7 +10295,7 @@ qui	who	A1	question word`;
       nodes.forEach(text=>{text.nodeValue=(text.nodeValue||'').replace(/v3\.(?:6\.9|7\.0|7\.2|8\.2|8\.3)/g,`v${V380_VERSION}`);});
     }
     function v380NormalizeSurface(view=state.view){
-      document.title='French 3000 — French flashcards';
+      document.title='French — French flashcards';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V380_VERSION}`;
       document.documentElement.dataset.appVersion=V380_VERSION;
       document.documentElement.dataset.release='consolidated';
@@ -10941,7 +10941,7 @@ qui	who	A1	question word`;
 
     /* ================================================================
        v3.9.1 VOCABULARY-FIRST PRODUCT SCOPE
-       French 3000 is now explicitly a vocabulary/SRS application.
+       French is now explicitly a vocabulary/SRS application.
        Historical lesson/course engines remain dormant only so older local
        saves and backups can be read safely; they are no longer exposed by
        navigation, onboarding, settings, Home, Study, or Progress.
@@ -11028,7 +11028,7 @@ qui	who	A1	question word`;
       dialog.dataset.newWords=String([10,20,30,50].includes(Number(settings.dailyNewLimit))?Number(settings.dailyNewLimit):20);
       dialog.dataset.sessionSize=String([10,20,30,50].includes(Number(session.size))?Number(session.size):20);
       const choice=(name,value,label,small='')=>`<button type="button" class="v385-choice" data-v385-choice="${name}" data-value="${escapeHtml(String(value))}" aria-pressed="false">${escapeHtml(label)}${small?`<small>${escapeHtml(small)}</small>`:''}</button>`;
-      dialog.innerHTML=`<div class="v385-onboard-inner"><p class="eyebrow">Quick setup</p><h2>Set up vocabulary study</h2><p class="v385-onboard-intro">Three choices are enough. French 3000 handles the spaced-repetition details automatically.</p><div class="v385-onboard-grid"><section class="v385-choice-block"><span>1. Current level</span><div class="v385-choice-row four">${choice('level','A1','A1','Beginner')}${choice('level','A2','A2','Elementary')}${choice('level','B1','B1','Intermediate')}${choice('level','B2','B2','Upper intermediate')}</div></section><section class="v385-choice-block"><span>2. New words per day</span><div class="v385-choice-row four">${[10,20,30,50].map(n=>choice('newWords',n,String(n))).join('')}</div></section><section class="v385-choice-block"><span>3. Cards per session</span><div class="v385-choice-row four">${[10,20,30,50].map(n=>choice('sessionSize',n,String(n))).join('')}</div></section></div><div class="v385-onboard-summary" id="v385-onboard-summary"></div><div class="v385-onboard-actions">${force?'<button class="ghost" type="button" id="v385-cancel">Cancel</button>':''}<button class="secondary" type="button" id="v385-defaults">Use recommended defaults</button><button class="primary" type="button" id="v385-start">Save & start</button></div></div>`;
+      dialog.innerHTML=`<div class="v385-onboard-inner"><p class="eyebrow">Quick setup</p><h2>Set up vocabulary study</h2><p class="v385-onboard-intro">Three choices are enough. French handles the spaced-repetition details automatically.</p><div class="v385-onboard-grid"><section class="v385-choice-block"><span>1. Current level</span><div class="v385-choice-row four">${choice('level','A1','A1','Beginner')}${choice('level','A2','A2','Elementary')}${choice('level','B1','B1','Intermediate')}${choice('level','B2','B2','Upper intermediate')}</div></section><section class="v385-choice-block"><span>2. New words per day</span><div class="v385-choice-row four">${[10,20,30,50].map(n=>choice('newWords',n,String(n))).join('')}</div></section><section class="v385-choice-block"><span>3. Cards per session</span><div class="v385-choice-row four">${[10,20,30,50].map(n=>choice('sessionSize',n,String(n))).join('')}</div></section></div><div class="v385-onboard-summary" id="v385-onboard-summary"></div><div class="v385-onboard-actions">${force?'<button class="ghost" type="button" id="v385-cancel">Cancel</button>':''}<button class="secondary" type="button" id="v385-defaults">Use recommended defaults</button><button class="primary" type="button" id="v385-start">Save & start</button></div></div>`;
       document.body.appendChild(dialog);
       dialog.querySelectorAll('[data-v385-choice]').forEach(button=>button.addEventListener('click',()=>v385SetChoice(dialog,button.dataset.v385Choice,button.dataset.value)));
       ['level','newWords','sessionSize'].forEach(name=>v385SetChoice(dialog,name,dialog.dataset[name]));
@@ -11100,7 +11100,7 @@ qui	who	A1	question word`;
       v390ApplyScopeMigration();
       if(state.view==='lessons'){state.view='dashboard';renderDashboard();}
       v382ApplyNavigation?.();
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
       document.documentElement.dataset.appVersion=V390_VERSION;
       document.documentElement.dataset.productScope='vocabulary-srs';
       return result;
@@ -11283,7 +11283,7 @@ qui	who	A1	question word`;
         rows.push([card.order,card.level,card.fr,card.displayForm||card.fr,card.primaryMeaning||card.en,(card.alternativeMeanings||[]).join('; '),card.en,card.ipa,card.pos,card.article,card.gender,card.plural,card.lemma,card.usagePattern,card.usagePatternAlt,card.register,card.senseIndex||1,card.senseCount||1,card.lexicalScore,card.lexicalConfidence,(card.lexicalIssues||[]).join('; '),THEME_LABELS[card.theme]||card.theme,card.core!==false?'yes':'no',statusLabel(progress),progress.due?new Date(progress.due).toISOString():'',Number(memory.stability||0).toFixed(2),Number(memory.difficulty||0).toFixed(2),progress.manualKnown?'yes':'no',card.exampleFr,card.exampleEn]);
       }
       const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-      downloadBlob('\ufeff'+csv,'french-3000-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');
+      downloadBlob('\ufeff'+csv,'french-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');
       showToast('Vocabulary Database 2.0 CSV exported.');
     };
 
@@ -11338,7 +11338,7 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V391_VERSION;
       document.documentElement.dataset.lexicalLayer='v2';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V391_VERSION}`;
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
       return result;
     };
 
@@ -11595,7 +11595,7 @@ qui	who	A1	question word`;
         const progress=getProgress(card.id),memory=typeof v3MemorySnapshot==='function'?v3MemorySnapshot(card):{stability:progress.stability||0,difficulty:progress.difficulty||0},examples=v392ExamplesFor(card),e1=examples[0]||{},e2=examples[1]||{},e3=examples[2]||{};
         rows.push([card.order,card.level,card.fr,card.displayForm||card.fr,card.primaryMeaning||card.en,(card.alternativeMeanings||[]).join('; '),card.en,card.ipa,card.pos,card.article,card.gender,card.plural,card.lemma,card.usagePattern,card.usagePatternAlt,card.register,card.senseIndex||1,card.senseCount||1,card.lexicalScore,card.lexicalConfidence,(card.lexicalIssues||[]).join('; '),THEME_LABELS[card.theme]||card.theme,card.core!==false?'yes':'no',statusLabel(progress),progress.due?new Date(progress.due).toISOString():'',Number(memory.stability||0).toFixed(2),Number(memory.difficulty||0).toFixed(2),progress.manualKnown?'yes':'no',e1.fr||'',e1.en||'',e1.kind||'',e1.quality||0,(e1.flags||[]).join('; '),examples.length,e1.clozeReady?'yes':'no',e2.fr||'',e2.en||'',e3.fr||'',e3.en||'']);
       }
-      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,'french-3000-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');showToast('Vocabulary + Example Sentences 2.0 CSV exported.');
+      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,'french-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');showToast('Vocabulary + Example Sentences 2.0 CSV exported.');
     };
 
     function v392SentenceHealthHtml(){
@@ -11616,7 +11616,7 @@ qui	who	A1	question word`;
 
     const v392InitBase=init;
     init=async function(options={}){
-      const result=await v392InitBase(options);document.documentElement.dataset.appVersion=V392_VERSION;document.documentElement.dataset.sentenceLayer='v2';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V392_VERSION}`;document.title='French 3000 — Vocabulary flashcards';return result;
+      const result=await v392InitBase(options);document.documentElement.dataset.appVersion=V392_VERSION;document.documentElement.dataset.sentenceLayer='v2';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V392_VERSION}`;document.title='French — Vocabulary flashcards';return result;
     };
 
 
@@ -11796,7 +11796,7 @@ qui	who	A1	question word`;
         rows.push([card.order,card.level,card.fr,card.displayForm||card.fr,v393PrimaryMeaning(card),(card.studyMeanings||[]).map(item=>item.meaning).join('; '),(card.meaningSenses||[]).map(item=>item.meaning).join('; '),card.meaningSenseCount||1,card.hiddenMeaningCount||0,(card.acceptedEnglish||[]).join('; '),card.en,card.ipa,card.pos,card.article,card.gender,card.plural,card.lemma,card.usagePattern,card.usagePatternAlt,card.register,card.senseIndex||1,card.senseCount||1,card.lexicalScore,card.lexicalConfidence,(card.lexicalIssues||[]).join('; '),THEME_LABELS[card.theme]||card.theme,card.core!==false?'yes':'no',statusLabel(progress),progress.due?new Date(progress.due).toISOString():'',Number(memory.stability||0).toFixed(2),Number(memory.difficulty||0).toFixed(2),progress.manualKnown?'yes':'no',e1.fr||'',e1.en||'',e1.kind||'',e1.quality||0,(e1.flags||[]).join('; '),examples.length,e1.clozeReady?'yes':'no',e2.fr||'',e2.en||'',e3.fr||'',e3.en||'']);
       }
       const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\\r\
-');downloadBlob('\\ufeff'+csv,'french-3000-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');showToast('Vocabulary + Meaning & Nuance CSV exported.');
+');downloadBlob('\\ufeff'+csv,'french-vocabulary-database-v4.1.2.csv','text/csv;charset=utf-8');showToast('Vocabulary + Meaning & Nuance CSV exported.');
     };
 
     function v393MeaningHealthHtml(){
@@ -11815,7 +11815,7 @@ qui	who	A1	question word`;
 
     const v393InitBase=init;
     init=async function(options={}){
-      const result=await v393InitBase(options);document.documentElement.dataset.appVersion=V393_VERSION;document.documentElement.dataset.meaningLayer='v1';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V393_VERSION}`;document.title='French 3000 — Vocabulary flashcards';return result;
+      const result=await v393InitBase(options);document.documentElement.dataset.appVersion=V393_VERSION;document.documentElement.dataset.meaningLayer='v1';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V393_VERSION}`;document.title='French — Vocabulary flashcards';return result;
     };
 
 
@@ -12052,7 +12052,7 @@ qui	who	A1	question word`;
 
     const v394InitBase=init;
     init=async function(options={}){
-      const result=await v394InitBase(options);document.documentElement.dataset.appVersion=V394_VERSION;document.documentElement.dataset.adaptiveSrs='v2';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V394_VERSION}`;document.title='French 3000 — Vocabulary flashcards';return result;
+      const result=await v394InitBase(options);document.documentElement.dataset.appVersion=V394_VERSION;document.documentElement.dataset.adaptiveSrs='v2';const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V394_VERSION}`;document.title='French — Vocabulary flashcards';return result;
     };
 
 
@@ -12211,7 +12211,7 @@ qui	who	A1	question word`;
       document.documentElement.dataset.flashcardUx='v395';
       document.body.classList.toggle('v395-study-ux',state.view==='study');
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V395_VERSION}`;
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
       return result;
     };
 
@@ -12322,7 +12322,7 @@ qui	who	A1	question word`;
     }
     function v396BindReleaseActions(){
       $('#v396-open-qa')?.addEventListener('click',()=>{state.browse={...state.browse,quality:'needs-review',sort:'quality',page:1};setView('browse');});
-      $('#v396-export-qa')?.addEventListener('click',()=>{const report=v396BuildAudit(true);downloadBlob(JSON.stringify(report,null,2),appExportName('french-3000-qa-report','json'),'application/json');showToast('QA report exported.');});
+      $('#v396-export-qa')?.addEventListener('click',()=>{const report=v396BuildAudit(true);downloadBlob(JSON.stringify(report,null,2),appExportName('french-qa-report','json'),'application/json');showToast('QA report exported.');});
       $('#v396-rerun-qa')?.addEventListener('click',()=>{v396AuditCache=null;renderSettings();showToast('Vocabulary checks refreshed.');});
     }
     function v396InjectReleaseHealth(){
@@ -12384,7 +12384,7 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V396_VERSION;document.documentElement.dataset.release='lexical-qa';document.documentElement.dataset.productScope='vocabulary-srs';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V396_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='Vocabulary flashcards · adaptive spaced repetition';
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
     }
     const v396InitBase=init;
     init=async function(options={}){
@@ -12495,7 +12495,7 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V400_VERSION;document.documentElement.dataset.release='production-3000';document.documentElement.dataset.catalogTarget=String(V400_TARGET);
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V400_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · adaptive spaced repetition';
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
     }
     const v400InitBase=init;
     init=async function(options={}){
@@ -12759,8 +12759,8 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V401_VERSION;document.documentElement.dataset.release='high-frequency-lexical-curation';document.documentElement.dataset.lexicalCuration='v401';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V401_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · curated high-frequency core';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero&&/French 3000 v4\.0\.0/.test(hero.textContent||''))hero.textContent=(hero.textContent||'').replace('v4.0.0',`v${V401_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero&&/French v4\.0\.0/.test(hero.textContent||''))hero.textContent=(hero.textContent||'').replace('v4.0.0',`v${V401_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v401InitBase=init;
     init=async function(options={}){
@@ -13067,15 +13067,15 @@ qui	who	A1	question word`;
         const progress=getProgress(card.id),memory=typeof v3MemorySnapshot==='function'?v3MemorySnapshot(card):{stability:progress.stability||0,difficulty:progress.difficulty||0},examples=v392ExamplesFor(card),e1=examples[0]||{},e2=examples[1]||{},e3=examples[2]||{};
         rows.push([card.order,card.level,card.fr,card.displayForm||card.fr,v393PrimaryMeaning(card),(card.studyMeanings||[]).map(x=>x.meaning).join('; '),(card.meaningSenses||[]).map(x=>x.meaning).join('; '),card.meaningSenseCount||1,(card.acceptedEnglish||[]).join('; '),card.en,card.ipa,card.pos,card.article,card.gender,card.plural,card.lemma,card.usagePattern,card.usagePatternAlt,card.register,card.lexicalScore,card.lexicalConfidence,(card.lexicalIssues||[]).join('; '),statusLabel(progress),progress.due?new Date(progress.due).toISOString():'',Number(memory.stability||0).toFixed(2),Number(memory.difficulty||0).toFixed(2),e1.fr||'',e1.en||'',e1.kind||'',e1.quality||0,e1.learnerFit||0,e1.v402SenseMeaning||'',examples.length,e1.clozeReady?'yes':'no',e2.fr||'',e2.en||'',e2.v402Label||e2.v402Use||'',e2.v402SenseMeaning||'',e2.learnerFit||0,e3.fr||'',e3.en||'',e3.v402Label||e3.v402Use||'',e3.v402SenseMeaning||'',e3.learnerFit||0,V402_VERSION]);
       }
-      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-3000-vocabulary-database-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');showToast('Vocabulary + selective context CSV exported.');
+      const csv=rows.map(row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-vocabulary-database-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');showToast('Vocabulary + selective context CSV exported.');
     };
 
     function v402NormalizeSurface(){
       document.documentElement.dataset.appVersion=V402_VERSION;document.documentElement.dataset.release='example-nuance-completion';document.documentElement.dataset.contextLayer='v402';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V402_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · curated meanings and context';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V402_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V402_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v402InitBase=init;
     init=async function(options={}){const result=await v402InitBase(options);state.v402ContextHealth=v402ContextHealth();v402NormalizeSurface();return result;};
@@ -13257,16 +13257,16 @@ qui	who	A1	question word`;
     };
 
     exportProgress=function(){
-      const data={app:'French 3000',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V403_RELEASE,srsCalibration:V403_CALIBRATION}};
-      downloadBlob(JSON.stringify(data,null,2),`french-3000-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
+      const data={app:'French',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V403_RELEASE,srsCalibration:V403_CALIBRATION}};
+      downloadBlob(JSON.stringify(data,null,2),`french-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
     };
     v3ExportUserCards=function(format='json'){
       const cards=Object.values(state.userCards);
       if(format==='csv'){
         const rows=[['french','english','level','part_of_speech','theme','ipa','article','gender','plural','lemma','passe_compose_auxiliary','past_participle','example_french','example_english','hint','tags','aliases','flag','image','audio_url']];
         for(const card of cards)rows.push([card.fr,card.en,card.level,card.pos,card.theme,card.ipa,card.article,card.gender,card.plural,card.lemma,card.auxiliary,card.pastParticiple,card.exampleFr,card.exampleEn,card.hint,(card.tags||[]).join('; '),(card.aliases||[]).join('; '),card.flag,card.image,card.audioUrl]);
-        const csv=rows.map(row=>row.map(value=>`"${String(value||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-3000-user-cards-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');
-      }else downloadBlob(JSON.stringify({app:'French 3000',version:APP_VERSION,kind:'user-cards',cards},null,2),`french-3000-user-cards-v${APP_VERSION}.json`,'application/json');
+        const csv=rows.map(row=>row.map(value=>`"${String(value||'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob('\ufeff'+csv,`french-user-cards-v${APP_VERSION}.csv`,'text/csv;charset=utf-8');
+      }else downloadBlob(JSON.stringify({app:'French',version:APP_VERSION,kind:'user-cards',cards},null,2),`french-user-cards-v${APP_VERSION}.json`,'application/json');
       showToast(`${cards.length} user cards exported.`);
     };
 
@@ -13274,8 +13274,8 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V403_VERSION;document.documentElement.dataset.release='srs-calibration';document.documentElement.dataset.srsCalibration='v403';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V403_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · calibrated adaptive review';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V403_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V403_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v403InitBase=init;
     init=async function(options={}){const result=await v403InitBase(options);v403NormalizeSurface();return result;};
@@ -13552,16 +13552,16 @@ qui	who	A1	question word`;
 
     exportProgress=function(){
       v404FlushReviewLog();
-      const data={app:'French 3000',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V404_RELEASE,hardeningVersion:V404_VERSION}};
-      downloadBlob(JSON.stringify(data,null,2),`french-3000-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
+      const data={app:'French',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V404_RELEASE,hardeningVersion:V404_VERSION}};
+      downloadBlob(JSON.stringify(data,null,2),`french-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
     };
 
     function v404NormalizeSurface(){
       document.documentElement.dataset.appVersion=V404_VERSION;document.documentElement.dataset.release='performance-storage-hardening';document.documentElement.dataset.hardening='v404';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V404_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · fast local-first adaptive review';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V404_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V404_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v404InitBase=init;
     init=async function(options={}){const result=await v404InitBase(options);v404EnsureSearchIndex();v404RefreshStorageEstimate();v404NormalizeSurface();return result;};
@@ -13677,7 +13677,7 @@ qui	who	A1	question word`;
       document.documentElement.dataset.a11y='v405';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V405_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · accessible local-first adaptive review';
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
       main.setAttribute('role','main');
       v405PrepareNavigation();v405PrepareViewHeading();v405PrepareButtons(root);v405PrepareForms(root);
       root.querySelectorAll?.('dialog')?.forEach?.(v405PrepareDialog);
@@ -13735,8 +13735,8 @@ qui	who	A1	question word`;
 
     exportProgress=function(){
       try{v404FlushReviewLog?.();}catch{}
-      const data={app:'French 3000',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V405_RELEASE,interfacePolishVersion:V405_VERSION}};
-      downloadBlob(JSON.stringify(data,null,2),`french-3000-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
+      const data={app:'French',schema:V36_BACKUP_SCHEMA,version:APP_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),...depthStateSnapshot(),release:{name:V405_RELEASE,interfacePolishVersion:V405_VERSION}};
+      downloadBlob(JSON.stringify(data,null,2),`french-complete-backup-v${APP_VERSION}.json`,'application/json');showToast(`Complete v${APP_VERSION} backup exported.`);
     };
 
     const v405InitBase=init;
@@ -13772,7 +13772,7 @@ qui	who	A1	question word`;
     function v410BackupPreflight(data){
       const errors=[],warnings=[];
       if(!v410PlainObject(data)){errors.push('Backup root is not an object.');return {ok:false,errors,warnings,schema:null,version:''};}
-      if(data.app&&data.app!=='French 3000')errors.push('Backup belongs to a different application.');
+      if(data.app&&!['French','French 3000'].includes(data.app))errors.push('Backup belongs to a different application.');
       if(!v410PlainObject(data.progress))errors.push('Missing or invalid progress object.');
       const schema=Number(data.schema);
       if(Number.isFinite(schema)){
@@ -13780,7 +13780,7 @@ qui	who	A1	question word`;
         else if(schema<V410_SUPPORTED_BACKUP_MIN_SCHEMA)warnings.push(`Legacy schema ${schema} will be normalized during import.`);
       }else warnings.push('Legacy backup has no schema marker; compatible fields will be normalized.');
       if(data.sourceFingerprint&&data.sourceFingerprint!==PINNED_BLOB_SHA)warnings.push('Catalog fingerprint differs; stable IDs will be reconciled against the current catalog.');
-      if(data.version&&String(data.version)!==V410_VERSION)warnings.push(`Backup was created by French 3000 ${String(data.version)}.`);
+      if(data.version&&String(data.version)!==V410_VERSION)warnings.push(`Backup was created by French ${String(data.version)}.`);
       const arrays=['reviewLog','studyDays','sessionHistory','mistakeLog'];
       for(const key of arrays)if(data[key]!=null&&!Array.isArray(data[key]))errors.push(`${key} must be an array when present.`);
       const objects=['settings','profile','customDecks','userCards','cardEdits','smartDecks','studyPlan'];
@@ -13792,7 +13792,7 @@ qui	who	A1	question word`;
       try{v404FlushReviewLog?.();}catch{}
       return {
         ...depthStateSnapshot(),
-        app:'French 3000',schema:V410_BACKUP_SCHEMA,version:V410_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),
+        app:'French',schema:V410_BACKUP_SCHEMA,version:V410_VERSION,sourceFingerprint:PINNED_BLOB_SHA,exportedAt:new Date().toISOString(),
         release:{name:V410_RELEASE,version:V410_VERSION,featureFreeze:true,catalogTarget:V400_TARGET,backupSchema:V410_BACKUP_SCHEMA}
       };
     }
@@ -13855,7 +13855,7 @@ qui	who	A1	question word`;
       if((audit.content?.warningCount||0)>0)warnings.push(`${audit.content.warningCount.toLocaleString()} editorial QA warnings`);
       const status=blockers.length?'blocked':warnings.length?'attention':'ready';
       const report={
-        app:'French 3000',version:V410_VERSION,release:V410_RELEASE,reportSchema:V410_REPORT_SCHEMA,generatedAt:new Date().toISOString(),featureFreeze:true,
+        app:'French',version:V410_VERSION,release:V410_RELEASE,reportSchema:V410_REPORT_SCHEMA,generatedAt:new Date().toISOString(),featureFreeze:true,
         migration:{from:V410_PREVIOUS_VERSION||'fresh-install',to:V410_VERSION,backupSchemas:`${V410_SUPPORTED_BACKUP_MIN_SCHEMA}–${V410_BACKUP_SCHEMA}`},
         catalog,controllers,navigation,scheduler:{ok:scheduler.ok,passed:scheduler.passed,total:scheduler.total},backup:{ok:backup.ok,bytes:backup.bytes,warnings:backup.preflight?.warnings||[]},legacyBackups:legacy,storage,
         lexical:{structural:audit.structural,criticalCount:audit.content?.criticalCount||0,warningCount:audit.content?.warningCount||0,validatedExampleCoverage:audit.content?.validatedExampleCoverage||0},
@@ -13872,7 +13872,7 @@ qui	who	A1	question word`;
     }
     function v410BindReleaseActions(){
       $('#v410-run-checks')?.addEventListener('click',()=>{state.v410ReleaseChecks=null;v396AuditCache=null;v410ReleaseChecks(true);renderSettings();showToast('Release checks completed.');});
-      $('#v410-export-report')?.addEventListener('click',()=>{state.v410ReleaseChecks=null;const report=v410ReleaseChecks(true);downloadBlob(JSON.stringify(report,null,2),`french-3000-v${V410_VERSION}-release-candidate-report.json`,'application/json');showToast('Release-candidate report exported.');});
+      $('#v410-export-report')?.addEventListener('click',()=>{state.v410ReleaseChecks=null;const report=v410ReleaseChecks(true);downloadBlob(JSON.stringify(report,null,2),`french-v${V410_VERSION}-release-candidate-report.json`,'application/json');showToast('Release-candidate report exported.');});
       $('#v410-export-backup')?.addEventListener('click',()=>exportProgress());
     }
     function v410InjectReleaseCandidate(){
@@ -13893,7 +13893,7 @@ qui	who	A1	question word`;
        mutating live state. Catalog-fingerprint differences are warnings because
        stable note IDs are reconciled against the currently loaded catalog. */
     exportProgress=function(){
-      const data=v410BuildBackupPayload();downloadBlob(JSON.stringify(data,null,2),`french-3000-complete-backup-v${V410_VERSION}.json`,'application/json');showToast(`Complete v${V410_VERSION} backup exported.`);
+      const data=v410BuildBackupPayload();downloadBlob(JSON.stringify(data,null,2),`french-complete-backup-v${V410_VERSION}.json`,'application/json');showToast(`Complete v${V410_VERSION} backup exported.`);
     };
     importProgress=async function(event){
       const file=event.target.files?.[0];if(!file)return;
@@ -13909,11 +13909,11 @@ qui	who	A1	question word`;
       if(password.length<8)throw new Error('Use a password of at least 8 characters.');if(!crypto?.subtle)throw new Error('Web Crypto is unavailable.');
       const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await depthDeriveKey(password,salt,['encrypt']);
       const payload=new TextEncoder().encode(JSON.stringify(v410BuildBackupPayload())),ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,payload));
-      const envelope={format:'French3000EncryptedSync',version:2,appVersion:V410_VERSION,backupSchema:V410_BACKUP_SCHEMA,kdf:'PBKDF2-SHA256',iterations:210000,cipher:'AES-256-GCM',salt:depthBytesToBase64(salt),iv:depthBytesToBase64(iv),data:depthBytesToBase64(ciphertext)};
-      downloadBlob(JSON.stringify(envelope),`french-3000-v${V410_VERSION}-${dayKey(now())}.f3sync`,'application/octet-stream');
+      const envelope={format:'FrenchEncryptedSync',version:2,appVersion:V410_VERSION,backupSchema:V410_BACKUP_SCHEMA,kdf:'PBKDF2-SHA256',iterations:210000,cipher:'AES-256-GCM',salt:depthBytesToBase64(salt),iv:depthBytesToBase64(iv),data:depthBytesToBase64(ciphertext)};
+      downloadBlob(JSON.stringify(envelope),`french-v${V410_VERSION}-${dayKey(now())}.f3sync`,'application/octet-stream');
     };
     depthImportEncrypted=async function(file,password){
-      if(password.length<8)throw new Error('Enter the file password.');const envelope=JSON.parse(await file.text());if(envelope?.format!=='French3000EncryptedSync')throw new Error('Not a French 3000 encrypted sync file.');
+      if(password.length<8)throw new Error('Enter the file password.');const envelope=JSON.parse(await file.text());if(!['FrenchEncryptedSync','French3000EncryptedSync'].includes(envelope?.format))throw new Error('Not a French encrypted sync file.');
       const salt=depthBase64ToBytes(envelope.salt),iv=depthBase64ToBytes(envelope.iv),data=depthBase64ToBytes(envelope.data),key=await depthDeriveKey(password,salt,['decrypt']);
       const decoded=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data).catch(()=>{throw new Error('Wrong password or damaged file.');}),saved=JSON.parse(new TextDecoder().decode(decoded)),preflight=v410BackupPreflight(saved);if(!preflight.ok)throw new Error(preflight.errors.join(' '));
       await depthApplyImportedState(saved);depthIndexSkills();depthMigrateLegacyProgress();depthSchedulePersist();state.v410ReleaseChecks=null;v396AuditCache=null;showToast(`Encrypted v${V410_VERSION} sync restored.`);if(state.view==='settings')renderSettings();else renderProgress();
@@ -13923,15 +13923,15 @@ qui	who	A1	question word`;
     catalogSnapshot=function(){const snapshot=v410CatalogSnapshotBase();snapshot.version=V410_VERSION;snapshot.meta={...(snapshot.meta||{}),release:V410_RELEASE,releaseCandidate:true,featureFreeze:true,backupSchema:V410_BACKUP_SCHEMA};return snapshot;};
     exportOfflineCatalog=function(){
       const manifest=v400CatalogManifest();if(!manifest.full){showToast('Load the full 3,000-word verified catalog before exporting it.');return;}
-      downloadBlob(JSON.stringify(catalogSnapshot()),`french-3000-production-catalog-v${V410_VERSION}.json`,'application/json');showToast(`v${APP_VERSION} production catalog exported.`);
+      downloadBlob(JSON.stringify(catalogSnapshot()),`french-production-catalog-v${V410_VERSION}.json`,'application/json');showToast(`v${APP_VERSION} production catalog exported.`);
     };
 
     function v410NormalizeSurface(){
       document.documentElement.dataset.appVersion=V410_VERSION;document.documentElement.dataset.release='release-candidate';document.documentElement.dataset.releaseCandidate='true';document.documentElement.dataset.featureFreeze='true';document.documentElement.dataset.productScope='vocabulary-srs';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V410_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · release candidate';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V410_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V410_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v410ApplyPreparedBase=applyPrepared;
     applyPrepared=function(prepared,loadSource,options={}){state.v410ReleaseChecks=null;const result=v410ApplyPreparedBase(prepared,loadSource,options);state.dataMeta={...(state.dataMeta||{}),release:V410_RELEASE,releaseCandidate:true,featureFreeze:true,backupSchema:V410_BACKUP_SCHEMA};return result;};
@@ -13943,7 +13943,7 @@ qui	who	A1	question word`;
       return result;
     };
 
-    globalThis.French3000ReleaseCandidate={version:V410_VERSION,runChecks:()=>v410ReleaseChecks(true),backupPreflight:v410BackupPreflight,backupRoundTrip:v410BackupRoundTrip};
+    globalThis.FrenchReleaseCandidate={version:V410_VERSION,runChecks:()=>v410ReleaseChecks(true),backupPreflight:v410BackupPreflight,backupRoundTrip:v410BackupRoundTrip};globalThis.French3000ReleaseCandidate=globalThis.FrenchReleaseCandidate;
 
 
     /* ================================================================
@@ -14000,8 +14000,8 @@ qui	who	A1	question word`;
       document.documentElement.dataset.appVersion=V411_VERSION;
       document.documentElement.dataset.bugfixAudit='v411';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V411_VERSION}`;
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V411_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V411_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v411InitBase=init;
     init=async function(options={}){
@@ -14140,8 +14140,8 @@ qui	who	A1	question word`;
       document.documentElement.dataset.bugfixAudit='v412';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V412_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · release candidate';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V412_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V412_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v412CatalogSnapshotBase=catalogSnapshot;
     catalogSnapshot=function(){const snapshot=v412CatalogSnapshotBase();snapshot.version=V412_VERSION;snapshot.meta={...(snapshot.meta||{}),bugfixAudit:V412_RELEASE};return snapshot;};
@@ -14278,9 +14278,9 @@ qui	who	A1	question word`;
       document.documentElement.dataset.bugfixAudit='v413';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V413_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · release candidate';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V413_VERSION}`);
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V413_VERSION}`);
       const rc=main?.querySelector('#v410-release-candidate h4');if(rc)rc.textContent=`v${V413_VERSION} release candidate`;
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
     }
     const v413RenderDashboardBase=renderDashboard;renderDashboard=function(){const r=v413RenderDashboardBase();v413NormalizeSurface();return r;};
     const v413RenderBrowseBase=renderBrowse;renderBrowse=function(focusSearch=false){const r=v413RenderBrowseBase(focusSearch);v413NormalizeSurface();return r;};
@@ -14374,9 +14374,9 @@ qui	who	A1	question word`;
       document.documentElement.dataset.bugfixAudit='v414';
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${V414_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer · release candidate';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${V414_VERSION}`);
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${V414_VERSION}`);
       const rc=main?.querySelector('#v410-release-candidate h4');if(rc)rc.textContent=`v${V414_VERSION} release candidate`;
-      document.title='French 3000 — Vocabulary flashcards';
+      document.title='French — Vocabulary flashcards';
     }
     const v414RenderDashboardBase=renderDashboard;renderDashboard=function(){const r=v414RenderDashboardBase();v414NormalizeSurface();return r;};
     const v414RenderBrowseBase=renderBrowse;renderBrowse=function(focusSearch=false){const r=v414RenderBrowseBase(focusSearch);v414NormalizeSurface();return r;};
@@ -14494,8 +14494,8 @@ qui	who	A1	question word`;
       delete document.documentElement.dataset.featureFreeze;
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${APP_VERSION}`;
       const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer';
-      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French 3000 v\d+\.\d+\.\d+/i,`French 3000 v${APP_VERSION}`);
-      document.title='French 3000 — Vocabulary flashcards';
+      const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${APP_VERSION}`);
+      document.title='French — Vocabulary flashcards';
     }
     const v420RenderDashboardBase=renderDashboard;renderDashboard=function(){const r=v420RenderDashboardBase();v420NormalizeSurface();return r;};
     const v420RenderBrowseBase=renderBrowse;renderBrowse=function(focusSearch=false){const r=v420RenderBrowseBase(focusSearch);v420NormalizeSurface();return r;};
@@ -15468,7 +15468,7 @@ qui	who	A1	question word`;
         }
       }
       v460BindProgress(states);
-      document.title='French 3000 — Vocabulary intelligence';
+      document.title='French — Vocabulary intelligence';
     }
 
     function v460EnsureStyles(){
@@ -16874,7 +16874,7 @@ qui	who	A1	question word`;
       acadRdv:{label:"Dictionnaire de l'Académie française · rendez-vous",url:'https://www.dictionnaire-academie.fr/article/A9R1684',tier:'verified'},
       acadQuestion:{label:"Dictionnaire de l'Académie française · poser",url:'https://www.dictionnaire-academie.fr/article/A9P3569',tier:'verified'},
       acadChance:{label:"Dictionnaire de l'Académie française · chance",url:'https://www.dictionnaire-academie.fr/article/A9C1567',tier:'verified'},
-      legacy:{label:'French3000 pre-P10 reference metadata',url:'',tier:'reference'}
+      legacy:{label:'French pre-P10 reference metadata',url:'',tier:'reference'}
     });
 
     /* [anchor, frame, kind, source, blank]
@@ -18907,7 +18907,7 @@ qui	who	A1	question word`;
     const V550_READINGS=Object.freeze([
       {
         id:'read-a1-matin',title:'Un matin simple',level:'A1',type:'story',minutes:2,topic:'time-routine',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded text',license:'Bundled original content',
+        sourceLabel:'Original French graded text',license:'Bundled original content',
         targets:['se lever','prendre','avoir besoin'],
         phrases:[{text:'prendre le bus',frame:'prendre + transport'},{text:"avoir besoin d'un café",frame:'avoir besoin'}],
         sentences:[
@@ -18924,7 +18924,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a1-cafe',title:'Au café',level:'A1',type:'dialogue',minutes:2,topic:'food',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',
+        sourceLabel:'Original French graded dialogue',license:'Bundled original content',
         targets:['vouloir','prendre','addition'],phrases:[{text:'Je voudrais',frame:'je voudrais + nom / infinitif'}],
         sentences:[
           {fr:"— Bonjour, vous avez choisi ?",en:'— Hello, have you chosen?'},
@@ -18940,7 +18940,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a1-train',title:'Le train pour Lille',level:'A1',type:'practical',minutes:2,topic:'travel',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 practical text',license:'Bundled original content',targets:['partir','arriver','retard'],phrases:[],
+        sourceLabel:'Original French practical text',license:'Bundled original content',targets:['partir','arriver','retard'],phrases:[],
         sentences:[
           {fr:"Le train pour Lille part à neuf heures vingt de la voie six.",en:'The train to Lille leaves at 9:20 from platform six.'},
           {fr:"Il arrive normalement à dix heures trente-cinq.",en:'It normally arrives at 10:35.'},
@@ -18955,7 +18955,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a1-weekend',title:'Des plans pour samedi',level:'A1',type:'message',minutes:2,topic:'communication',register:'informal',authenticity:'graded',
-        sourceLabel:'Original French3000 message exchange',license:'Bundled original content',targets:['avoir envie','préférer','décider'],phrases:[{text:"J'ai envie de",frame:'avoir envie'},{text:'on peut décider',frame:'prendre une décision'}],
+        sourceLabel:'Original French message exchange',license:'Bundled original content',targets:['avoir envie','préférer','décider'],phrases:[{text:"J'ai envie de",frame:'avoir envie'},{text:'on peut décider',frame:'prendre une décision'}],
         sentences:[
           {fr:"Maya : Tu fais quoi samedi ?",en:'Maya: What are you doing Saturday?'},
           {fr:"Noah : Rien de spécial. J'ai envie de sortir.",en:'Noah: Nothing special. I feel like going out.'},
@@ -18970,7 +18970,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a1-marche',title:'Au marché',level:'A1',type:'dialogue',minutes:2,topic:'shopping',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['chercher','prendre','combien'],phrases:[],
+        sourceLabel:'Original French graded dialogue',license:'Bundled original content',targets:['chercher','prendre','combien'],phrases:[],
         sentences:[
           {fr:"— Bonjour, je cherche des tomates et des pommes.",en:'— Hello, I am looking for tomatoes and apples.'},
           {fr:"— Les tomates sont ici. Vous en voulez combien ?",en:'— The tomatoes are here. How many do you want?'},
@@ -18985,7 +18985,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a1-message',title:'Un message à un ami',level:'A1',type:'message',minutes:2,topic:'communication',register:'informal',authenticity:'graded',
-        sourceLabel:'Original French3000 message',license:'Bundled original content',targets:['avoir besoin','aider','rendez-vous'],phrases:[{text:"J'ai besoin de",frame:'avoir besoin'},{text:"m'aider à",frame:'aider quelqu’un à + infinitif'}],
+        sourceLabel:'Original French message',license:'Bundled original content',targets:['avoir besoin','aider','rendez-vous'],phrases:[{text:"J'ai besoin de",frame:'avoir besoin'},{text:"m'aider à",frame:'aider quelqu’un à + infinitif'}],
         sentences:[
           {fr:"Salut Karim ! J'ai besoin de ton aide pour demain.",en:'Hi Karim! I need your help for tomorrow.'},
           {fr:"J'ai un rendez-vous important à dix heures.",en:'I have an important appointment at ten.'},
@@ -19000,7 +19000,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-hotel',title:'Choisir un hôtel',level:'A2',type:'practical',minutes:3,topic:'travel',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded text',license:'Bundled original content',targets:['tenir compte','réserver','préférer'],phrases:[{text:'tenir compte du prix',frame:'tenir compte de + nom'},{text:"tenir compte de l'emplacement",frame:'tenir compte de + nom'}],
+        sourceLabel:'Original French graded text',license:'Bundled original content',targets:['tenir compte','réserver','préférer'],phrases:[{text:'tenir compte du prix',frame:'tenir compte de + nom'},{text:"tenir compte de l'emplacement",frame:'tenir compte de + nom'}],
         sentences:[
           {fr:"Sofia prépare un week-end à Strasbourg et compare trois hôtels.",en:'Sofia is preparing a weekend in Strasbourg and compares three hotels.'},
           {fr:"Le premier est très central, mais il coûte cher.",en:'The first is very central, but it is expensive.'},
@@ -19015,7 +19015,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-universite',title:'Une question après le cours',level:'A2',type:'dialogue',minutes:3,topic:'work-study',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['poser une question','expliquer','avoir du mal'],phrases:[{text:'poser une question',frame:'poser une question à quelqu’un'},{text:"J'ai du mal à comprendre",frame:'avoir du mal à + infinitif'}],
+        sourceLabel:'Original French graded dialogue',license:'Bundled original content',targets:['poser une question','expliquer','avoir du mal'],phrases:[{text:'poser une question',frame:'poser une question à quelqu’un'},{text:"J'ai du mal à comprendre",frame:'avoir du mal à + infinitif'}],
         sentences:[
           {fr:"Après le cours, Émilie reste quelques minutes dans la salle.",en:'After class, Émilie stays a few minutes in the room.'},
           {fr:"Elle veut poser une question au professeur.",en:'She wants to ask the professor a question.'},
@@ -19030,7 +19030,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-restaurant',title:'Une réservation à changer',level:'A2',type:'dialogue',minutes:3,topic:'food',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['changer','réservation','proposer'],phrases:[{text:'changer ma réservation',frame:'changer + nom'},{text:'propose une table',frame:'proposer + nom'}],
+        sourceLabel:'Original French graded dialogue',license:'Bundled original content',targets:['changer','réservation','proposer'],phrases:[{text:'changer ma réservation',frame:'changer + nom'},{text:'propose une table',frame:'proposer + nom'}],
         sentences:[
           {fr:"— Bonjour, je voudrais changer ma réservation de ce soir.",en:'— Hello, I would like to change my reservation for tonight.'},
           {fr:"— Bien sûr. Elle est à quel nom ?",en:'— Of course. What name is it under?'},
@@ -19045,7 +19045,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-medecin',title:'Prendre rendez-vous',level:'A2',type:'practical',minutes:3,topic:'health',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 practical text',license:'Bundled original content',targets:['prendre rendez-vous','avoir besoin','disponible'],phrases:[{text:'prendre rendez-vous',frame:'prendre rendez-vous avec quelqu’un'},{text:"a besoin de",frame:'avoir besoin'}],
+        sourceLabel:'Original French practical text',license:'Bundled original content',targets:['prendre rendez-vous','avoir besoin','disponible'],phrases:[{text:'prendre rendez-vous',frame:'prendre rendez-vous avec quelqu’un'},{text:"a besoin de",frame:'avoir besoin'}],
         sentences:[
           {fr:"Nora téléphone au cabinet médical pour prendre rendez-vous.",en:'Nora calls the medical office to make an appointment.'},
           {fr:"Elle explique qu'elle a besoin de parler au médecin cette semaine.",en:'She explains that she needs to speak to the doctor this week.'},
@@ -19060,7 +19060,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-appartement',title:"Un problème dans l'appartement",level:'A2',type:'message',minutes:3,topic:'home',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 message exchange',license:'Bundled original content',targets:['faire face','aider','problème'],phrases:[{text:'faire face à un problème',frame:'faire face à + nom'}],
+        sourceLabel:'Original French message exchange',license:'Bundled original content',targets:['faire face','aider','problème'],phrases:[{text:'faire face à un problème',frame:'faire face à + nom'}],
         sentences:[
           {fr:"Bonjour Madame Leroy, je vous écris parce que nous devons faire face à un problème dans la cuisine.",en:'Hello Ms Leroy, I am writing because we have to deal with a problem in the kitchen.'},
           {fr:"Depuis hier, l'eau chaude ne fonctionne plus.",en:'Since yesterday, the hot water no longer works.'},
@@ -19075,7 +19075,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-a2-voyage',title:'Un week-end à Lyon',level:'A2',type:'story',minutes:4,topic:'travel',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded story',license:'Bundled original content',targets:['prévoir','pourtant','finalement','décider'],phrases:[{text:'a décidé de partir',frame:'décider de + infinitif'}],
+        sourceLabel:'Original French graded story',license:'Bundled original content',targets:['prévoir','pourtant','finalement','décider'],phrases:[{text:'a décidé de partir',frame:'décider de + infinitif'}],
         sentences:[
           {fr:"Thomas avait prévu de passer le week-end à Lyon avec deux amis.",en:'Thomas had planned to spend the weekend in Lyon with two friends.'},
           {fr:"Vendredi soir, la météo annonçait beaucoup de pluie.",en:'Friday evening, the weather forecast a lot of rain.'},
@@ -19090,7 +19090,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-travail',title:'Choisir entre deux offres',level:'B1',type:'story',minutes:4,topic:'work-study',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded text',license:'Bundled original content',targets:['prendre une décision','tenir compte','pourtant'],phrases:[{text:'prendre une décision',frame:'prendre une décision'},{text:'tenir compte du salaire',frame:'tenir compte de + nom'},{text:'tenir compte du temps',frame:'tenir compte de + nom'}],
+        sourceLabel:'Original French graded text',license:'Bundled original content',targets:['prendre une décision','tenir compte','pourtant'],phrases:[{text:'prendre une décision',frame:'prendre une décision'},{text:'tenir compte du salaire',frame:'tenir compte de + nom'},{text:'tenir compte du temps',frame:'tenir compte de + nom'}],
         sentences:[
           {fr:"Amélie a reçu deux offres de travail et doit prendre une décision avant lundi.",en:'Amélie has received two job offers and must make a decision before Monday.'},
           {fr:"Le premier poste offre un meilleur salaire, pourtant le trajet est très long.",en:'The first position offers a better salary, yet the commute is very long.'},
@@ -19105,7 +19105,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-benevolat',title:'Une journée de bénévolat',level:'B1',type:'story',minutes:4,topic:'people',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 graded story',license:'Bundled original content',targets:['faire partie','aider','faire face'],phrases:[{text:"fait partie d'une association",frame:'faire partie de + nom'},{text:'faire face à des difficultés',frame:'faire face à + nom'}],
+        sourceLabel:'Original French graded story',license:'Bundled original content',targets:['faire partie','aider','faire face'],phrases:[{text:"fait partie d'une association",frame:'faire partie de + nom'},{text:'faire face à des difficultés',frame:'faire face à + nom'}],
         sentences:[
           {fr:"Depuis six mois, Hugo fait partie d'une association qui distribue des repas.",en:'For six months, Hugo has been part of an association that distributes meals.'},
           {fr:"Deux samedis par mois, il aide l'équipe à préparer les sacs et à accueillir les visiteurs.",en:'Two Saturdays a month, he helps the team prepare bags and welcome visitors.'},
@@ -19120,7 +19120,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-environnement',title:'Changer une habitude',level:'B1',type:'informational',minutes:4,topic:'nature',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['éviter','faire attention','essayer'],phrases:[{text:"essaie d'éviter",frame:'essayer de + infinitif'},{text:'fait attention à',frame:'faire attention à + nom'}],
+        sourceLabel:'Original French learner article',license:'Bundled original content',targets:['éviter','faire attention','essayer'],phrases:[{text:"essaie d'éviter",frame:'essayer de + infinitif'},{text:'fait attention à',frame:'faire attention à + nom'}],
         sentences:[
           {fr:"Réduire ses déchets ne demande pas de changer toute sa vie en une journée.",en:'Reducing waste does not require changing your whole life in one day.'},
           {fr:"Claire commence par observer ce qu'elle jette le plus souvent.",en:'Claire starts by observing what she throws away most often.'},
@@ -19135,7 +19135,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-langue',title:'Apprendre sans tout comprendre',level:'B1',type:'informational',minutes:4,topic:'communication',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['avoir du mal','continuer','se rendre compte'],phrases:[{text:"d'avoir du mal à comprendre",frame:'avoir du mal à + infinitif'}],
+        sourceLabel:'Original French learner article',license:'Bundled original content',targets:['avoir du mal','continuer','se rendre compte'],phrases:[{text:"d'avoir du mal à comprendre",frame:'avoir du mal à + infinitif'}],
         sentences:[
           {fr:"Quand on apprend une langue, il est normal d'avoir du mal à comprendre certains textes ou certaines conversations.",en:'When learning a language, it is normal to have trouble understanding some texts or conversations.'},
           {fr:"Beaucoup d'apprenants s'arrêtent dès qu'ils rencontrent plusieurs mots inconnus.",en:'Many learners stop as soon as they encounter several unknown words.'},
@@ -19150,7 +19150,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-retard',title:'Un trajet qui change',level:'B1',type:'practical',minutes:4,topic:'travel',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 practical scenario',license:'Bundled original content',targets:['retard','proposer','tenir compte'],phrases:[{text:'tenir compte du retard',frame:'tenir compte de + nom'}],
+        sourceLabel:'Original French practical scenario',license:'Bundled original content',targets:['retard','proposer','tenir compte'],phrases:[{text:'tenir compte du retard',frame:'tenir compte de + nom'}],
         sentences:[
           {fr:"Le train de Marc doit arriver à Paris à dix-sept heures quinze, mais une annonce signale trente minutes de retard.",en:'Marc’s train is supposed to arrive in Paris at 5:15 p.m., but an announcement reports a thirty-minute delay.'},
           {fr:"Marc a ensuite un rendez-vous important à dix-huit heures.",en:'Marc then has an important appointment at 6 p.m.'},
@@ -19165,7 +19165,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-plan',title:'Quand le plan change',level:'B1',type:'dialogue',minutes:4,topic:'communication',register:'informal',authenticity:'graded',
-        sourceLabel:'Original French3000 graded dialogue',license:'Bundled original content',targets:['pourtant','refuser','proposer'],phrases:[{text:'propose de partir',frame:'proposer de + infinitif'},{text:'refuse de conduire',frame:'refuser de + infinitif'}],
+        sourceLabel:'Original French graded dialogue',license:'Bundled original content',targets:['pourtant','refuser','proposer'],phrases:[{text:'propose de partir',frame:'proposer de + infinitif'},{text:'refuse de conduire',frame:'refuser de + infinitif'}],
         sentences:[
           {fr:"— On devait partir à huit heures, mais Paul n'est toujours pas prêt.",en:'— We were supposed to leave at eight, but Paul still is not ready.'},
           {fr:"— Pourtant, il a dit hier qu'il serait à l'heure.",en:'— Yet he said yesterday that he would be on time.'},
@@ -19180,7 +19180,7 @@ qui	who	A1	question word`;
       },
       {
         id:'read-b1-budget',title:'Préparer un petit budget',level:'B1',type:'informational',minutes:4,topic:'shopping',register:'neutral',authenticity:'graded',
-        sourceLabel:'Original French3000 learner article',license:'Bundled original content',targets:['tenir compte','prévoir','éviter'],phrases:[{text:'tenir compte des dépenses',frame:'tenir compte de + nom'},{text:"éviter d'utiliser",frame:'éviter de + infinitif'}],
+        sourceLabel:'Original French learner article',license:'Bundled original content',targets:['tenir compte','prévoir','éviter'],phrases:[{text:'tenir compte des dépenses',frame:'tenir compte de + nom'},{text:"éviter d'utiliser",frame:'éviter de + infinitif'}],
         sentences:[
           {fr:"Un budget simple peut aider à comprendre où part son argent chaque mois.",en:'A simple budget can help you understand where your money goes each month.'},
           {fr:"Il faut d'abord prévoir les dépenses fixes, comme le loyer, les transports et les abonnements.",en:'First you need to plan for fixed expenses such as rent, transport and subscriptions.'},
@@ -19465,7 +19465,7 @@ qui	who	A1	question word`;
     function v550OpenLookup(surface,textId){
       const note=v550ResolveNote(surface),count=v550TouchLookup(surface,textId,note),panel=$('#v550-lookup');if(!panel)return;
       const profile=note?v550MasteryCached(note):null,exposure=note?state.v550Reading.exposures[note.id]:null,key=depthLoose(surface),saved=Boolean(state.v550Reading.saved[key]);
-      panel.hidden=false;panel.innerHTML='<div class="v550-lookup-head"><div><span>'+escapeHtml(note?.posGroup||'word')+'</span><strong lang="fr">'+escapeHtml(note?.fr||surface)+'</strong></div><button type="button" id="v550-close-lookup">×</button></div><p class="v550-gloss">'+escapeHtml(note?.en||'Not mapped to the French3000 core catalog.')+'</p>'+
+      panel.hidden=false;panel.innerHTML='<div class="v550-lookup-head"><div><span>'+escapeHtml(note?.posGroup||'word')+'</span><strong lang="fr">'+escapeHtml(note?.fr||surface)+'</strong></div><button type="button" id="v550-close-lookup">×</button></div><p class="v550-gloss">'+escapeHtml(note?.en||'Not mapped to the French core catalog.')+'</p>'+
         (note?'<div class="v550-lookup-facts"><span>'+escapeHtml(note.level)+'</span><span>'+escapeHtml(v540MasteryLabel(profile.mastery))+'</span><span>'+Math.round(profile.passive*100)+'% passive</span>'+(note.ipa?'<span>'+escapeHtml(note.ipa)+'</span>':'')+'</div>':'')+
         '<p class="v550-lookup-note">'+(count>=3?'You have looked up this form '+count+' times. Repeated encounters are a useful signal that it may deserve deliberate study.':'Lookup gives enough information to continue reading; it does not count as successful recall.')+(exposure?' Seen in '+exposure.textIds.length+' completed text'+(exposure.textIds.length===1?'':'s')+'.':'')+'</p><div class="button-row"><button class="'+(saved?'secondary':'primary')+'" id="v550-save-word">'+(saved?'Saved':'Save')+'</button>'+(note?'<button class="secondary" id="v550-word-details">Word details</button><button class="secondary" id="v550-practice-word">Practice</button>':'')+'</div>';
       $('#v550-close-lookup')?.addEventListener('click',function(){panel.hidden=true;});
@@ -21800,7 +21800,7 @@ qui	who	A1	question word`;
         for(const goal of (scenario.requiredGoals||[])){const exists=Object.values(scenario.nodes).some(function(node){return (node.rules||[]).some(function(rule){return (rule.gain||[]).includes(goal);});});if(!exists)errors.push('missing goal '+scenario.id+':'+goal);}
       }
       if(V580_SCENARIOS.filter(function(row){return row.duration==='quick';}).length<5)errors.push('Conversation 5 needs five quick scenarios');
-      if(errors.length)console.error('French3000 P17 graph audit failed',errors);
+      if(errors.length)console.error('French P17 graph audit failed',errors);
       document.documentElement.dataset.conversationAudit=errors.length?'failed':'passed';
       return errors;
     }
@@ -22153,7 +22153,7 @@ qui	who	A1	question word`;
         if(new Set(mission.scenarios||[]).size!==(mission.scenarios||[]).length)errors.push('duplicate scenario in '+mission.id);
       }
       if(V590_MISSIONS.length<4)errors.push('need at least four real-world missions');
-      if(errors.length)console.error('French3000 P18 mission audit failed',errors);
+      if(errors.length)console.error('French P18 mission audit failed',errors);
       document.documentElement.dataset.missionAudit=errors.length?'failed':'passed';return errors;
     }
 
@@ -22363,7 +22363,7 @@ qui	who	A1	question word`;
         '<div class="button-row"><button class="secondary" id="v5100-rerun-qa">Run QA again</button><button class="secondary" id="v5100-copy-qa">Copy QA summary</button></div></section>';
     }
     function v5100QaText(qa=state.v5100Qa.last||v5100RunQa()){
-      return ['French3000 '+V5100_VERSION+' · '+V5100_RELEASE,'QA: '+qa.status.toUpperCase()+' · '+qa.fail+' fail · '+qa.warn+' warnings',
+      return ['French '+V5100_VERSION+' · '+V5100_RELEASE,'QA: '+qa.status.toUpperCase()+' · '+qa.fail+' fail · '+qa.warn+' warnings',
         'Viewport: '+qa.device.width+'x'+qa.device.height+' @ '+qa.device.dpr+'x · touch '+qa.device.touch+' · '+(qa.device.standalone?'standalone':'browser'),
         ...qa.checks.map(function(row){return '['+row.status.toUpperCase()+'] '+row.label+': '+row.detail;})].join('\n');
     }
@@ -22840,7 +22840,7 @@ qui	who	A1	question word`;
       const active=state.v580Conversation?.active;
       if(focus&&active?.batchId===focus.id&&active.scenarioId!==focus.queue[focus.index])errors.push('adaptive focus and active conversation disagree');
       if(focus&&state.v590Missions?.active)errors.push('adaptive focus and real-world mission are both active');
-      if(errors.length)console.error('French3000 P20 curriculum audit failed',errors);
+      if(errors.length)console.error('French P20 curriculum audit failed',errors);
       document.documentElement.dataset.curriculumAudit=errors.length?'failed':'passed';return errors;
     }
 
@@ -22881,7 +22881,7 @@ qui	who	A1	question word`;
 
     /* ================================================================
        v5.12.0 OPEN-WORLD FRENCH BRIDGE, PERSONAL CORPUS & AUTHENTIC TRANSFER
-       P21 bridges bundled French3000 material to learner-supplied French.
+       P21 bridges bundled French material to learner-supplied French.
        Raw pasted/imported text remains session-only; only aggregate reading
        telemetry is persisted. Passive exposure never becomes retrieval or
        vocabulary-SRS success.
@@ -22988,7 +22988,7 @@ qui	who	A1	question word`;
     }
     function v5120PanelHtml(){
       const stats=v5120Stats(),ui=state.v5120OpenWorldUi;
-      return '<section class="panel v5120-open-world"><div class="v5120-open-head"><div><p class="eyebrow">P21 open-world French</p><h3>Bring real French into your learning system</h3><p>Paste French from an article, message, transcript, study note, or other text you are allowed to use. French3000 maps it against your live 3,000-word mastery model and reuses the P14 lookup/practice tools.</p></div><div class="v5120-open-stats"><span><strong>'+stats.sessions+'</strong> sessions</span><span><strong>'+stats.words.toLocaleString()+'</strong> words</span><span><strong>'+stats.knownPct+'%</strong> avg known</span></div></div>'+
+      return '<section class="panel v5120-open-world"><div class="v5120-open-head"><div><p class="eyebrow">P21 open-world French</p><h3>Bring real French into your learning system</h3><p>Paste French from an article, message, transcript, study note, or other text you are allowed to use. French maps it against your live 3,000-word mastery model and reuses the P14 lookup/practice tools.</p></div><div class="v5120-open-stats"><span><strong>'+stats.sessions+'</strong> sessions</span><span><strong>'+stats.words.toLocaleString()+'</strong> words</span><span><strong>'+stats.knownPct+'%</strong> avg known</span></div></div>'+
         '<div class="v5120-input-grid"><label><span>Optional source label</span><input id="v5120-source" maxlength="120" value="'+escapeHtml(ui.source||'')+'" placeholder="e.g. article, church message, chat"></label><label class="v5120-text-label"><span>French text</span><textarea id="v5120-text" maxlength="'+V5120_MAX_TEXT_CHARS+'" placeholder="Collez votre texte français ici…">'+escapeHtml(ui.text||'')+'</textarea></label></div>'+
         '<div class="v5120-actions"><button class="primary" id="v5120-open-reader">Analyze & read</button><label class="secondary file-label" for="v5120-file">Open .txt / .md<input hidden id="v5120-file" type="file" accept=".txt,.md,text/plain,text/markdown"></label><button class="ghost" id="v5120-clear" '+(ui.text?'':'disabled')+'>Clear</button><span id="v5120-count">'+v550WordTokens(ui.text||'').length+' words</span></div>'+
         '<p class="v5120-privacy"><strong>Privacy:</strong> the raw text stays only in this page session. Backups store aggregate reading statistics, not the pasted/imported text or source label. Reading remains exposure-only unless you deliberately practice a mapped word.</p>'+v5120HistoryHtml()+'</section>';
@@ -23027,7 +23027,7 @@ qui	who	A1	question word`;
       const ui=state.v5120OpenWorldUi,analysis=v5120Analyze(ui.text),paragraphs=v5120Paragraphs(ui.text),reading={id:ui.sessionId||'openworld-current',targets:[]};
       if(analysis.words<V5120_MIN_WORDS){ui.reader=false;renderRead();return;}
       main.innerHTML='<div class="v550-reader-shell v5120-reader"><header class="v550-reader-bar"><button type="button" class="secondary" id="v5120-back">← Read</button><div><span>OPEN-WORLD · '+analysis.words+' words</span><strong>'+escapeHtml(ui.source||'Personal French text')+'</strong></div><button type="button" class="secondary" id="v5120-finish">Finish exposure</button></header>'+
-        '<section class="v550-reader-meta"><div><strong>'+analysis.knownPct+'%</strong><span>known</span></div><div><strong>'+analysis.mappedPct+'%</strong><span>mapped to French3000</span></div><div><strong>'+analysis.unmapped+'</strong><span>unmapped occurrences</span></div><div><strong>'+escapeHtml(analysis.band)+'</strong><span>reading load</span></div></section>'+
+        '<section class="v550-reader-meta"><div><strong>'+analysis.knownPct+'%</strong><span>known</span></div><div><strong>'+analysis.mappedPct+'%</strong><span>mapped to French</span></div><div><strong>'+analysis.unmapped+'</strong><span>unmapped occurrences</span></div><div><strong>'+escapeHtml(analysis.band)+'</strong><span>reading load</span></div></section>'+
         (analysis.effectivePct<82?'<div class="v550-overload"><strong>High support text</strong><span>This text is substantially above your current lexical comfort band. Read selectively, save repeated gaps, or choose an easier source.</span></div>':'')+
         '<section class="panel v5120-gap-panel"><div class="section-heading"><div><p class="eyebrow">Mapped gaps</p><h3>Words worth noticing</h3><p>These are mapped words in the text that are not currently known. Opening or saving them does not count as successful recall.</p></div><span>'+analysis.uniqueMapped+' unique mapped</span></div>'+v5120GapHtml(analysis)+'</section>'+
         '<article class="v550-reading-text v5120-reader-text">'+paragraphs.map(function(paragraph){return '<div class="v550-sentence"><p lang="fr">'+v550RenderWordChunk(paragraph,reading)+'</p></div>';}).join('')+'</article>'+
@@ -23080,7 +23080,7 @@ qui	who	A1	question word`;
       if(/"text"\s*:|"source"\s*:|"title"\s*:/i.test(serialized))errors.push('raw/source text leaked into persisted P21 state');
       if(typeof v550WordTokens!=='function'||typeof v550ResolveNote!=='function'||typeof v550OpenLookup!=='function')errors.push('P14 bridge primitive missing');
       if(v5120CleanText(state.v5120OpenWorldUi.text).length>V5120_MAX_TEXT_CHARS)errors.push('draft length cap failed');
-      if(errors.length)console.error('French3000 P21 open-world audit failed',errors);
+      if(errors.length)console.error('French P21 open-world audit failed',errors);
       document.documentElement.dataset.openWorldAudit=errors.length?'failed':'passed';return errors;
     }
     const v5120RunQaBase=v5100RunQa;
@@ -23430,7 +23430,7 @@ qui	who	A1	question word`;
       const normalized=v5130NormalizeOrchestrator(state.v5130Orchestrator||{});
       if(normalized.history.length>V5130_MAX_HISTORY)errors.push('history cap exceeded');
       if(!candidates.length)errors.push('no next-best activity available');
-      if(errors.length)console.error('French3000 P22 orchestrator audit failed',errors);
+      if(errors.length)console.error('French P22 orchestrator audit failed',errors);
       document.documentElement.dataset.orchestratorAudit=errors.length?'failed':'passed';return errors;
     }
     const v5130RunQaBase=v5100RunQa;
@@ -23907,7 +23907,7 @@ qui	who	A1	question word`;
       }
       const serialized=JSON.stringify(normalized);
       if(/v5120OpenWorldUi|"text"\s*:|"transcript"\s*:|"expected"\s*:/.test(serialized))errors.push('raw learning content leaked into P23 persistence');
-      if(errors.length)console.error('French3000 P23 composer audit failed',errors);
+      if(errors.length)console.error('French P23 composer audit failed',errors);
       document.documentElement.dataset.sessionComposerAudit=errors.length?'failed':'passed';return errors;
     }
     const v5140RunQaBase=v5100RunQa;
@@ -23945,7 +23945,7 @@ qui	who	A1	question word`;
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
       const ok=required.every(fn=>typeof fn==='function');
-      if(!ok)console.error(`French 3000 v${APP_VERSION}: canonical controller initialization failed.`);
+      if(!ok)console.error(`French v${APP_VERSION}: canonical controller initialization failed.`);
       return ok;
     }
     v380BootAudit();

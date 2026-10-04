@@ -1,6 +1,6 @@
 # P11 — Active Phrase Production, Transfer Drills & Usage Error Diagnosis
 
-French3000 v5.2.0
+French v5.2.0
 
 ## Purpose
 
@@ -40,7 +40,7 @@ P11 does not use an LLM to judge answers. It compares the typed answer against t
 - No answer
 - Different structure
 
-If the learner types another verified P10 frame for the same anchor, French3000 labels it as a neighboring verified pattern rather than claiming the French is invalid.
+If the learner types another verified P10 frame for the same anchor, French labels it as a neighboring verified pattern rather than claiming the French is invalid.
 
 ## Evidence and scheduling
 

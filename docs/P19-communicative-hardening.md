@@ -1,6 +1,6 @@
 # P19 — Communicative System Hardening, Evidence Calibration & Real-Device QA
 
-French3000 v5.10.0
+French v5.10.0
 
 ## Purpose
 

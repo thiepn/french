@@ -1,10 +1,10 @@
 # P10 — Verified Collocation & Phrase Corpus Expansion
 
-French3000 v5.1.0
+French v5.1.0
 
 ## Purpose
 
-P10 expands the P9 usage engine from a small pair of usage strings into a provenance-tagged lexical corpus. It is vocabulary-first: it trains how a known word combines with complements, prepositions, and fixed phrase partners without turning French3000 into a general grammar course.
+P10 expands the P9 usage engine from a small pair of usage strings into a provenance-tagged lexical corpus. It is vocabulary-first: it trains how a known word combines with complements, prepositions, and fixed phrase partners without turning French into a general grammar course.
 
 ## Corpus policy
 

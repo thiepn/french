@@ -1,4 +1,4 @@
-# French3000 P4 — Listening, Pronunciation & Audio Mastery
+# French P4 — Listening, Pronunciation & Audio Mastery
 
 Date: 2026-09-30  
 Release: v4.5.0 — P4 Listening, Pronunciation & Audio Mastery  
@@ -6,7 +6,7 @@ Baseline: v4.4.0 P3 Frictionless Study UX
 
 ## Goal
 
-P4 makes audio a first-class vocabulary skill without turning French3000 into a noisy language lab or weakening the existing FSRS model.
+P4 makes audio a first-class vocabulary skill without turning French into a noisy language lab or weakening the existing FSRS model.
 
 Listening remains an independently scheduled memory skill. Pronunciation work is intentionally practice-only unless the learner is answering a scheduled listening card.
 

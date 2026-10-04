@@ -1,4 +1,4 @@
-# French3000 P6 — Smart Words, Search & Vocabulary Discovery
+# French P6 — Smart Words, Search & Vocabulary Discovery
 
 Date: 2026-09-30  
 Release: v4.7.0 — P6 Smart Words, Search & Vocabulary Discovery  

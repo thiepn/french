@@ -1,11 +1,11 @@
 {
-  "id": "/french3000/",
-  "name": "French 3000",
-  "short_name": "French 3000",
+  "id": "/",
+  "name": "French",
+  "short_name": "French",
   "description": "French vocabulary training with spaced repetition, contextual reading and listening, spoken production, guided conversations, adaptive communicative curriculum, real-world missions, open-world French reading, unified cross-skill orchestration, adaptive multi-activity session composition, bounded outcome self-calibration, calibrated progress evidence, device QA, and offline support.",
   "lang": "en",
-  "start_url": "/french3000/",
-  "scope": "/french3000/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": [
     "standalone",
@@ -21,19 +21,19 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/french3000/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/french3000/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/french3000/maskable-icon.svg",
+      "src": "/maskable-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

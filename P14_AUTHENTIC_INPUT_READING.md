@@ -1,6 +1,6 @@
 # P14 — Authentic Input, Comprehensible Reading & Vocabulary-in-the-Wild Transfer
 
-French3000 v5.5.0
+French v5.5.0
 
 ## Purpose
 
@@ -55,11 +55,11 @@ Every bundled text records:
 - optional grammar notes;
 - post-reading retrieval questions.
 
-The bundled material is original French3000 learner content. P14 does not scrape or redistribute third-party copyrighted articles.
+The bundled material is original French learner content. P14 does not scrape or redistribute third-party copyrighted articles.
 
 ## Learner-specific vocabulary coverage
 
-P14 tokenizes each text and resolves surface forms against the current French3000 lexical catalog.
+P14 tokenizes each text and resolves surface forms against the current French lexical catalog.
 
 Resolution includes:
 

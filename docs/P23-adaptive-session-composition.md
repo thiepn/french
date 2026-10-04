@@ -1,10 +1,10 @@
 # P23 — Adaptive Session Composition, Outcome Feedback & Orchestrator Self-Calibration
 
-French3000 v5.14.0
+French v5.14.0
 
 ## Purpose
 
-P22 could choose the best single next activity across French3000.
+P22 could choose the best single next activity across French.
 
 P23 extends that into a short adaptive learning block:
 
@@ -69,7 +69,7 @@ Composition does not block manual access to any mode.
 
 Existing work still owns the learning state.
 
-A new P23 block cannot begin while French3000 has resumable work such as:
+A new P23 block cannot begin while French has resumable work such as:
 
 - a saved study session;
 - an active conversation;
@@ -295,7 +295,7 @@ Its self-calibration means:
 
 It does not mean:
 
-> French3000 has experimentally proven that activity A causes more learning than activity B.
+> French has experimentally proven that activity A causes more learning than activity B.
 
 This distinction is deliberate.
 

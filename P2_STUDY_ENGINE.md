@@ -1,4 +1,4 @@
-# French3000 P2 — Study Engine 2.0
+# French P2 — Study Engine 2.0
 
 Date: 2026-09-30  
 Release: v4.3.0 — P2 Study Engine 2.0  
@@ -12,7 +12,7 @@ P2 turns the existing advanced scheduling pieces into one coherent study engine 
 
 ### 1. FSRS-style memory state remains authoritative
 
-French3000 keeps the existing FSRS-5-compatible scheduler with:
+French keeps the existing FSRS-5-compatible scheduler with:
 
 - stability
 - difficulty

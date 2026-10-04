@@ -1,4 +1,4 @@
-# French3000 P5 — Progress & Vocabulary Intelligence
+# French P5 — Progress & Vocabulary Intelligence
 
 Date: 2026-09-30  
 Release: v4.6.0 — P5 Progress & Vocabulary Intelligence  

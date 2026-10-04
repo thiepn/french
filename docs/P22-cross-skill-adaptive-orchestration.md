@@ -1,10 +1,10 @@
 # P22 — Unified Cross-Skill Adaptive Orchestration & Next-Best-Activity Engine
 
-French3000 v5.13.0
+French v5.13.0
 
 ## Purpose
 
-P22 changes French3000 from a collection of individually adaptive learning modes into one coordinated learning system.
+P22 changes French from a collection of individually adaptive learning modes into one coordinated learning system.
 
 Before P22, each major subsystem already had its own evidence and recommendation logic:
 
@@ -278,7 +278,7 @@ It does **not** claim:
 - vocabulary mastery from launching an activity;
 - mission proficiency from unpracticed scenarios.
 
-It is an orchestration layer for choosing the next useful task from the evidence French3000 already owns.
+It is an orchestration layer for choosing the next useful task from the evidence French already owns.
 
 ## PWA
 

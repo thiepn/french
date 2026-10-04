@@ -1,6 +1,6 @@
 # P15 — Listening in Context, Connected Speech & Real-World Aural Vocabulary Transfer
 
-French3000 v5.6.0
+French v5.6.0
 
 ## Purpose
 
@@ -317,7 +317,7 @@ Playback uses device/browser speech synthesis:
 
 - no microphone is required;
 - no learner voice is recorded in P15;
-- French3000 does not upload listening activity;
+- French does not upload listening activity;
 - device-installed voices may work offline depending on the operating system/browser;
 - P15 makes no external audio request for the bundled listening corpus.
 

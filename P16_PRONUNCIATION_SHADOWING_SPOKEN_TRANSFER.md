@@ -1,10 +1,10 @@
 # P16 — Pronunciation, Shadowing & Spoken Production Transfer
 
-French3000 v5.7.0
+French v5.7.0
 
 ## Purpose
 
-P16 moves French3000 from typed active production into spoken production while preserving the app's evidence discipline.
+P16 moves French from typed active production into spoken production while preserving the app's evidence discipline.
 
 Its central rule is:
 
@@ -147,7 +147,7 @@ They are stored only as an in-memory Blob/Object URL for:
 They are not:
 
 - written into the P16 backup payload;
-- uploaded by French3000;
+- uploaded by French;
 - retained after leaving the Speak task.
 
 Abandoned recordings are explicitly discarded even when `MediaRecorder.stop()` finishes asynchronously after navigation.
@@ -335,7 +335,7 @@ The following remain bundled/offline-capable:
 
 Device/browser TTS availability determines model-audio offline behavior.
 
-Speech recognition is an optional enhancement and may require a network-backed browser/OS service. French3000 does not claim that STT is offline.
+Speech recognition is an optional enhancement and may require a network-backed browser/OS service. French does not claim that STT is offline.
 
 ## Release validation
 

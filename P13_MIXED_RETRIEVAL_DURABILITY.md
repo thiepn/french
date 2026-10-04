@@ -1,6 +1,6 @@
 # P13 — Mixed Retrieval, Interleaving & Durable Active-Vocabulary Mastery
 
-French3000 v5.4.0
+French v5.4.0
 
 ## Purpose
 

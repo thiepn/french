@@ -1,6 +1,6 @@
 # P12 — Real Sentence Production, Controlled Composition & Contextual Usage Transfer
 
-French3000 v5.3.0
+French v5.3.0
 
 ## Purpose
 

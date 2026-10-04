@@ -1,4 +1,4 @@
-# French3000 P3 — Frictionless Study UX
+# French P3 — Frictionless Study UX
 
 Date: 2026-09-30  
 Release: v4.4.0 — P3 Frictionless Study UX  

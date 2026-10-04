@@ -1,4 +1,4 @@
-# French3000 P1 — Vocabulary Database Audit
+# French P1 — Vocabulary Database Audit
 
 Date: 2026-09-30  
 Release: v4.2.1 — P1 Vocabulary Audit Verification  
@@ -24,7 +24,7 @@ The audit covers:
 
 ## Baseline findings
 
-The pinned source provides 3,000 usable records after French3000's production filtering, with no missing raw meaning, IPA, POS, or sentence-pair fields and no duplicate headword groups in the selected 3,000.
+The pinned source provides 3,000 usable records after French's production filtering, with no missing raw meaning, IPA, POS, or sentence-pair fields and no duplicate headword groups in the selected 3,000.
 
 The main defect was not structural completeness. It was learner relevance. Some source records selected a technically valid but inappropriate homograph or secondary sense. Examples included:
 
@@ -49,7 +49,7 @@ Prepared cards now preserve:
 - `sourceTags`
 - `sourceVerified`
 
-This allows QA to distinguish French3000's learner-facing curation from the pinned source data.
+This allows QA to distinguish French's learner-facing curation from the pinned source data.
 
 ### 2. Learner-first lexical curation
 
@@ -122,7 +122,7 @@ No user progress, review history, stable card IDs, CEFR bands, or frequency orde
 P1 makes the catalogue structurally safer and substantially improves the highest-value learner vocabulary, but the following remain ongoing editorial work rather than automatic guesses:
 
 1. Complete article/gender/plural metadata for the remaining nouns using a redistribution-compatible authoritative source.
-2. Expand manually validated example coverage for cards whose source examples are deliberately rejected by French3000's crafted-example filter.
+2. Expand manually validated example coverage for cards whose source examples are deliberately rejected by French's crafted-example filter.
 3. Expand collocation and verb-construction coverage beyond the current curated usage-pattern bank.
 4. Continue manual sense-priority review from frequency ranks 501–3000.
 5. Spot-check pronunciation/IPA against an authoritative pronunciation source when entries are edited.
@@ -132,10 +132,10 @@ These are non-blocking editorial queues; they should not be auto-filled from unc
 
 ### 7. Final POS normalization verification
 
-v4.2.1 closes one remaining source-schema mismatch: French3000 now normalizes source `art` records as determiners, `fp/mp` records as nouns, and `vr` records as verbs. This prevents common articles such as `le`, `la`, `les`, `un`, `une`, `des`, and `du` from falling into the generic “other” POS bucket.
+v4.2.1 closes one remaining source-schema mismatch: French now normalizes source `art` records as determiners, `fp/mp` records as nouns, and `vr` records as verbs. This prevents common articles such as `le`, `la`, `les`, `un`, `une`, `des`, and `du` from falling into the generic “other” POS bucket.
 
 The current two inline JavaScript programs both pass syntax validation after the final P1 changes.
 
 ## Release status
 
-v4.2.1 completes P1 while keeping French3000 focused as a vocabulary/SRS product and establishes the verified base for P2 — Study Engine 2.0.
+v4.2.1 completes P1 while keeping French focused as a vocabulary/SRS product and establishes the verified base for P2 — Study Engine 2.0.

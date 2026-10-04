@@ -1,6 +1,6 @@
 # P18 — Real-World Tasks, Scenario Chains & Functional French Independence
 
-French3000 v5.9.0
+French v5.9.0
 
 ## Purpose
 

@@ -1,17 +1,17 @@
 # P21 — Open-World French Bridge, Personal Corpus & Authentic Transfer
 
-French3000 v5.12.0
+French v5.12.0
 
 ## Purpose
 
-P21 closes the main gap left after P14–P20: French3000 can now work with French the learner actually encounters instead of limiting contextual reading to the bundled graded corpus.
+P21 closes the main gap left after P14–P20: French can now work with French the learner actually encounters instead of limiting contextual reading to the bundled graded corpus.
 
-The feature is deliberately not another generic AI/chat surface. It is a local-first bridge from learner-supplied French into the existing French3000 mastery model.
+The feature is deliberately not another generic AI/chat surface. It is a local-first bridge from learner-supplied French into the existing French mastery model.
 
-A learner can paste French from material they are allowed to use, or open a local `.txt` / `.md` file. French3000 then:
+A learner can paste French from material they are allowed to use, or open a local `.txt` / `.md` file. French then:
 
 - tokenizes the text with the existing P14 reading pipeline;
-- resolves mapped forms against the live French3000 lexicon;
+- resolves mapped forms against the live French lexicon;
 - compares those words with the learner's current mastery state;
 - highlights mapped gaps;
 - reuses the established P14 lookup, save and deliberate-practice actions;
@@ -21,7 +21,7 @@ A learner can paste French from material they are allowed to use, or open a loca
 
 Raw imported text is session-only.
 
-French3000 does **not** persist:
+French does **not** persist:
 
 - the pasted/imported text;
 - the optional source label;
@@ -82,7 +82,7 @@ Every mapped occurrence is classified as:
 
 - **known** — currently familiar by the live mastery model;
 - **learning** — already studied or carrying learning evidence;
-- **mapped-new** — present in the French3000 catalog but not yet learned;
+- **mapped-new** — present in the French catalog but not yet learned;
 - **unmapped** — not resolved to the current catalog.
 
 The reader reports:
