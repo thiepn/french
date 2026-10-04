@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.13.0';
-    const APP_RELEASE = 'P22 Unified Cross-Skill Adaptive Orchestration & Next-Best-Activity Engine';
+    const APP_VERSION = '5.14.0';
+    const APP_RELEASE = 'P23 Adaptive Session Composition, Outcome Feedback & Orchestrator Self-Calibration';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -23462,6 +23462,430 @@ qui	who	A1	question word`;
       v5130LoadOrchestrator();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.13.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.14.0 ADAPTIVE SESSION COMPOSITION, OUTCOME FEEDBACK &
+       ORCHESTRATOR SELF-CALIBRATION
+       P23 composes short cross-skill blocks from P22 candidates, observes
+       bounded evidence movement after completed work, and applies only small
+       learned ranking corrections after repeated observations.
+       ================================================================ */
+    const V5140_VERSION='5.14.0';
+    const V5140_RELEASE='P23 Adaptive Session Composition, Outcome Feedback & Orchestrator Self-Calibration';
+    const V5140_STORAGE_KEY='french3000-adaptive-session-composer-v1';
+    const V5140_SCHEMA=1;
+    const V5140_MAX_RUNS=120;
+    const V5140_MAX_STEPS=3;
+    const V5140_BUDGET_MINUTES=26;
+    const V5140_MIN_CALIBRATION_RUNS=3;
+    const V5140_ACTIVITY_MINUTES=Object.freeze({
+      retention:10,usage:7,phrase:7,sentence:8,reading:6,listening:6,speaking:8,conversation:10,mission:15,'open-world':8
+    });
+    const V5140_PREDECESSORS=Object.freeze({
+      retention:[],usage:['retention'],phrase:['usage','retention'],sentence:['phrase','usage'],
+      reading:['retention'],listening:['reading','retention'],speaking:['sentence','listening'],
+      conversation:['speaking','sentence'],mission:['conversation'],'open-world':['reading','retention']
+    });
+    const V5140_DOWNSTREAM=Object.freeze({
+      retention:['usage','reading'],usage:['phrase','sentence'],phrase:['sentence'],sentence:['speaking','conversation'],
+      reading:['listening','open-world'],listening:['speaking'],speaking:['conversation'],conversation:['mission'],
+      mission:[],'open-world':[]
+    });
+
+    state.v5140Composer=null;
+    state.v5140LastCompletedRun=null;
+
+    function v5140ActivitySkillId(activity){return activity==='open-world'?'exposure':activity;}
+    function v5140SafeNumber(value,min,max){return clamp(finiteNumber(value),min,max);}
+    function v5140NormalizePoint(raw){
+      if(!raw||typeof raw!=='object')return null;
+      return {
+        strength:v5140SafeNumber(raw.strength,0,1),confidence:v5140SafeNumber(raw.confidence,0,1),
+        readiness:clamp(Math.round(finiteNumber(raw.readiness)),0,100),
+        balance:clamp(Math.round(finiteNumber(raw.balance)),0,100),balanceReady:raw.balanceReady===true
+      };
+    }
+    function v5140NormalizeStep(raw,index=0){
+      if(!raw||typeof raw!=='object'||!V5130_ACTIVITY_IDS.includes(raw.activity))return null;
+      const status=['pending','active','done','skipped'].includes(raw.status)?raw.status:'pending';
+      return {
+        id:String(raw.id||('step-'+index)).slice(0,120),activity:raw.activity,label:String(raw.label||V5130_ACTIVITY_META[raw.activity]?.label||raw.activity).slice(0,180),
+        targetId:String(raw.targetId||'').slice(0,180),score:clamp(Math.round(finiteNumber(raw.score)),0,250),
+        minutes:clamp(Math.round(finiteNumber(raw.minutes,V5140_ACTIVITY_MINUTES[raw.activity]||8)),3,30),status:status,
+        launchedAt:clamp(finiteNumber(raw.launchedAt),0,now()+days(1)),completedAt:clamp(finiteNumber(raw.completedAt),0,now()+days(1)),
+        before:v5140NormalizePoint(raw.before),after:v5140NormalizePoint(raw.after),
+        deltaStrength:clamp(finiteNumber(raw.deltaStrength),-1,1),deltaConfidence:clamp(finiteNumber(raw.deltaConfidence),-1,1),
+        quality:raw.quality==null?null:clamp(finiteNumber(raw.quality),0,1),detail:String(raw.detail||'').slice(0,220)
+      };
+    }
+    function v5140NormalizeActive(raw){
+      if(!raw||typeof raw!=='object')return null;
+      const steps=(Array.isArray(raw.steps)?raw.steps:[]).slice(0,V5140_MAX_STEPS).map(v5140NormalizeStep).filter(Boolean);
+      if(!steps.length)return null;
+      const index=clamp(Math.floor(finiteNumber(raw.index)),0,Math.max(0,steps.length-1));
+      const targetActivity=V5130_ACTIVITY_IDS.includes(raw.targetActivity)?raw.targetActivity:steps[Math.min(index,steps.length-1)].activity;
+      return {
+        id:String(raw.id||'').slice(0,160),startedAt:clamp(finiteNumber(raw.startedAt),0,now()+days(1))||now(),
+        targetActivity:targetActivity,targetSkill:String(raw.targetSkill||v5140ActivitySkillId(targetActivity)).slice(0,60),
+        index:index,steps:steps,before:v5140NormalizePoint(raw.before)
+      };
+    }
+    function v5140NormalizeRun(raw){
+      if(!raw||typeof raw!=='object')return null;
+      const steps=(Array.isArray(raw.steps)?raw.steps:[]).slice(0,V5140_MAX_STEPS).map(v5140NormalizeStep).filter(Boolean);
+      if(!steps.length)return null;
+      const status=['completed','ended'].includes(raw.status)?raw.status:'completed';
+      return {
+        id:String(raw.id||'').slice(0,160),t:clamp(finiteNumber(raw.t),0,now()+days(1))||now(),
+        startedAt:clamp(finiteNumber(raw.startedAt),0,now()+days(1)),status:status,
+        targetActivity:V5130_ACTIVITY_IDS.includes(raw.targetActivity)?raw.targetActivity:steps[0].activity,
+        targetSkill:String(raw.targetSkill||'').slice(0,60),steps:steps,
+        before:v5140NormalizePoint(raw.before),after:v5140NormalizePoint(raw.after),
+        targetDelta:clamp(finiteNumber(raw.targetDelta),-1,1),readinessDelta:clamp(finiteNumber(raw.readinessDelta),-100,100),
+        balanceDelta:clamp(finiteNumber(raw.balanceDelta),-100,100),observation:clamp(finiteNumber(raw.observation),-.5,.5),
+        feedback:['useful','too-easy','too-hard','neutral',''].includes(raw.feedback)?String(raw.feedback||''):''
+      };
+    }
+    function v5140NormalizeComposer(raw){
+      const source=raw&&typeof raw==='object'?raw:{},runs=[];
+      for(const row of (Array.isArray(source.runs)?source.runs:[]).slice(-V5140_MAX_RUNS)){const normalized=v5140NormalizeRun(row);if(normalized)runs.push(normalized);}
+      return {schema:V5140_SCHEMA,active:v5140NormalizeActive(source.active),runs:runs};
+    }
+    function v5140LoadComposer(){
+      state.v5140Composer=v5140NormalizeComposer(state.v5140Composer||safeStorageRead(V5140_STORAGE_KEY)||{});
+      return state.v5140Composer;
+    }
+    function v5140SaveComposer(){
+      state.v5140Composer=v5140NormalizeComposer(state.v5140Composer||{});
+      safeStorageSet(V5140_STORAGE_KEY,state.v5140Composer);depthSchedulePersist?.();
+    }
+    v5140LoadComposer();
+
+    const v5140DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5140DepthStateSnapshotBase(),v5140Composer:v5140NormalizeComposer(state.v5140Composer||{})};};
+    const v5140DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5140DepthApplyImportedStateBase(saved);
+      state.v5140Composer=v5140NormalizeComposer(saved?.v5140Composer||safeStorageRead(V5140_STORAGE_KEY)||{});
+      v5140SaveComposer();return result;
+    };
+    const v5140DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5140DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5140Composer)state.v5140Composer=v5140NormalizeComposer(saved.v5140Composer);}catch{}
+      return result;
+    };
+
+    function v5140PointFor(activity){
+      const summary=v5130Summary(),skillId=v5140ActivitySkillId(activity),skill=summary.skills[skillId]||{strength:0,confidence:0};
+      return {strength:skill.strength,confidence:skill.confidence,readiness:summary.readiness,balance:summary.balance,balanceReady:summary.balanceReady};
+    }
+    function v5140FeedbackAdjustment(feedback){
+      if(feedback==='useful')return .12;
+      if(feedback==='too-easy')return -.05;
+      if(feedback==='too-hard')return -.1;
+      return 0;
+    }
+    function v5140Calibration(){
+      const result={};for(const id of V5130_ACTIVITY_IDS)result[id]={n:0,mean:0,bonus:0};
+      const completed=(state.v5140Composer?.runs||[]).filter(function(run){return run.status==='completed';}).slice(-60);
+      for(const id of V5130_ACTIVITY_IDS){
+        const observations=[];
+        for(const run of completed){
+          if(!run.steps.some(function(step){return step.activity===id&&step.status==='done';}))continue;
+          observations.push(clamp(run.observation+v5140FeedbackAdjustment(run.feedback),-.5,.5));
+        }
+        const recent=observations.slice(-20),n=recent.length;
+        const mean=n?recent.reduce(function(sum,value,index){const weight=.65+.35*((index+1)/n);return sum+value*weight;},0)/recent.reduce(function(sum,value,index){return sum+.65+.35*((index+1)/n);},0):0;
+        result[id]={n:n,mean:mean,bonus:n>=V5140_MIN_CALIBRATION_RUNS?clamp(Math.round(mean*14),-6,6):0};
+      }
+      return result;
+    }
+    function v5140CalibrationBonus(activity){return v5140Calibration()[activity]?.bonus||0;}
+
+    const v5140CandidatesBase=v5130Candidates;
+    v5130Candidates=function(){
+      const rows=v5140CandidatesBase();if(rows.length===1&&rows[0].kind&&rows[0].kind.startsWith('resume-'))return rows;
+      const calibration=v5140Calibration();
+      return rows.map(function(row){
+        const learned=calibration[row.id]?.bonus||0;
+        return {...row,score:clamp(row.score+learned,0,120),calibrationBonus:learned};
+      }).sort(function(a,b){return b.score-a.score||a.label.localeCompare(b.label);});
+    };
+    const v5140FactorHtmlBase=v5130FactorHtml;
+    v5130FactorHtml=function(candidate){
+      const html=v5140FactorHtmlBase(candidate),bonus=finiteNumber(candidate?.calibrationBonus);
+      return bonus?html+'<span>learned '+(bonus>0?'+':'')+bonus+'</span>':html;
+    };
+
+    function v5140CandidateSnapshot(candidate){
+      return {
+        activity:candidate.id,label:candidate.label,targetId:candidate.targetId||'',score:candidate.score,
+        minutes:V5140_ACTIVITY_MINUTES[candidate.id]||8,status:'pending',launchedAt:0,completedAt:0,
+        before:null,after:null,deltaStrength:0,deltaConfidence:0,quality:null,detail:''
+      };
+    }
+    function v5140CandidateMap(candidates){return new Map(candidates.filter(function(row){return row.kind==='activity';}).map(function(row){return [row.id,row];}));}
+    function v5140ComposeBlock(){
+      const candidates=v5130Candidates();
+      if(!candidates.length||candidates[0].kind!=='activity')return null;
+      const map=v5140CandidateMap(candidates),anchor=candidates[0],skills=v5130SkillMap(),selected=[],used=new Set(),budget=V5140_BUDGET_MINUTES;
+      let spent=0;
+      function add(candidate,position='end'){
+        if(!candidate||used.has(candidate.id)||selected.length>=V5140_MAX_STEPS)return false;
+        const minutes=V5140_ACTIVITY_MINUTES[candidate.id]||8;if(spent+minutes>budget&&selected.length)return false;
+        const snap=v5140CandidateSnapshot(candidate);if(position==='front')selected.unshift(snap);else selected.push(snap);
+        used.add(candidate.id);spent+=minutes;return true;
+      }
+      const predecessors=V5140_PREDECESSORS[anchor.id]||[];
+      const support=predecessors.map(function(id){return map.get(id);}).filter(Boolean).sort(function(a,b){
+        const as=skills[v5140ActivitySkillId(a.id)]?.strength||0,bs=skills[v5140ActivitySkillId(b.id)]?.strength||0;
+        return as-bs||b.score-a.score;
+      })[0];
+      if(support&&((anchor.factors?.readiness||0)<.68||(skills[v5140ActivitySkillId(support.id)]?.strength||0)<.55))add(support,'front');
+      add(anchor);
+      const downstream=(V5140_DOWNSTREAM[anchor.id]||[]).map(function(id){return map.get(id);}).filter(Boolean).sort(function(a,b){return b.score-a.score;})[0];
+      if(downstream&&(downstream.factors?.readiness||0)>=.34)add(downstream);
+      for(const candidate of candidates){
+        if(selected.length>=V5140_MAX_STEPS)break;
+        if(candidate.kind!=='activity'||used.has(candidate.id))continue;
+        add(candidate);
+      }
+      if(!selected.length)return null;
+      const anchorIndex=selected.findIndex(function(step){return step.activity===anchor.id;}),targetStep=selected[anchorIndex>=0?anchorIndex:0];
+      return {
+        id:'adaptive-block-'+Math.round(now()),startedAt:now(),targetActivity:targetStep.activity,targetSkill:v5140ActivitySkillId(targetStep.activity),
+        index:0,steps:selected,before:v5140PointFor(targetStep.activity)
+      };
+    }
+    function v5140CurrentStep(){const active=state.v5140Composer?.active;return active?.steps?.[active.index]||null;}
+    function v5140StepCandidate(step){
+      if(!step)return null;
+      return {id:step.activity,kind:'activity',label:step.label,targetId:step.targetId,score:step.score,factors:null,calibrationBonus:v5140CalibrationBonus(step.activity)};
+    }
+    function v5140StartBlock(){
+      if(state.v5140Composer?.active){showToast('An adaptive block is already in progress.');v5140LaunchCurrent();return;}
+      const resume=v5130ResumeCandidate();if(resume){showToast('Resume or finish the current work before starting a new adaptive block.');return;}
+      const block=v5140ComposeBlock();if(!block){showToast('Not enough launchable work is available for an adaptive block yet.');return;}
+      state.v5140Composer.active=block;state.v5140LastCompletedRun=null;v5140SaveComposer();v5140LaunchCurrent();
+    }
+    function v5140LaunchCurrent(){
+      const active=state.v5140Composer?.active,step=v5140CurrentStep();if(!active||!step)return;
+      if(step.status==='done'||step.status==='skipped'){showToast('This adaptive-block step is already complete.');return;}
+      if(step.status==='active'){
+        const resume=v5130ResumeCandidate();if(resume){v5130Launch(resume,'other');return;}
+      }
+      step.status='active';step.launchedAt=step.launchedAt||now();step.before=step.before||v5140PointFor(step.activity);v5140SaveComposer();
+      v5130Launch(v5140StepCandidate(step),'other');
+    }
+    function v5140CompletionQuality(activity,payload){
+      if(activity==='retention'||activity==='usage'||activity==='phrase'||activity==='sentence'){
+        const reviewed=finiteNumber(payload?.reviewed),correct=finiteNumber(payload?.correct);return reviewed?clamp(correct/reviewed,0,1):null;
+      }
+      if(activity==='listening'){
+        const attempts=(state.v560Listening?.attempts||[]).slice(-8),scored=attempts.filter(function(row){return typeof row.correct==='boolean';});
+        return scored.length?scored.filter(function(row){return row.correct;}).length/scored.length:null;
+      }
+      if(activity==='speaking'){
+        const attempts=(state.v570Speaking?.attempts||[]).slice(-10).filter(function(row){return row.reliable||row.manual;});
+        return attempts.length?attempts.filter(function(row){return row.correct;}).length/attempts.length:null;
+      }
+      if(activity==='conversation'){
+        const run=(state.v5110Curriculum?.focusRuns||[]).at(-1),rows=run?.results||[];
+        const measured=rows.filter(Boolean);return measured.length?measured.reduce(function(sum,row){return sum+clamp(finiteNumber(row.independentRate)/100,0,1);},0)/measured.length:null;
+      }
+      if(activity==='mission'){
+        const run=(state.v590Missions?.runs||[]).at(-1);return run?clamp(finiteNumber(run.independentRate)/100,0,1):null;
+      }
+      if(activity==='open-world'){
+        const row=(state.v5120OpenWorld?.sessions||[]).at(-1);return row?clamp(finiteNumber(row.knownPct)/100,0,1):null;
+      }
+      return null;
+    }
+    function v5140CompleteCurrent(activity,payload=null,detail=''){
+      const active=state.v5140Composer?.active,step=v5140CurrentStep();if(!active||!step||step.status!=='active'||step.activity!==activity)return false;
+      const after=v5140PointFor(activity),before=step.before||v5140PointFor(activity);
+      step.after=after;step.completedAt=now();step.status='done';step.deltaStrength=after.strength-before.strength;step.deltaConfidence=after.confidence-before.confidence;
+      step.quality=v5140CompletionQuality(activity,payload);step.detail=String(detail||'').slice(0,220);
+      if(active.index>=active.steps.length-1){v5140FinalizeBlock('completed');}
+      else{active.index++;v5140SaveComposer();showToast('Adaptive block step complete. Next activity is ready.');v5140RefreshBanner();}
+      return true;
+    }
+    function v5140FinalizeBlock(status='completed'){
+      const active=state.v5140Composer?.active;if(!active)return null;
+      const after=v5140PointFor(active.targetActivity),before=active.before||after,targetDelta=after.strength-before.strength,readinessDelta=after.readiness-before.readiness;
+      const balanceDelta=before.balanceReady&&after.balanceReady?after.balance-before.balance:0;
+      const observation=clamp(targetDelta*2+(readinessDelta/100)*.35+(balanceDelta/100)*.15,-.5,.5);
+      const run=v5140NormalizeRun({
+        id:active.id,t:now(),startedAt:active.startedAt,status:status,targetActivity:active.targetActivity,targetSkill:active.targetSkill,
+        steps:active.steps,before:before,after:after,targetDelta:targetDelta,readinessDelta:readinessDelta,balanceDelta:balanceDelta,observation:observation,feedback:''
+      });
+      if(run){state.v5140Composer.runs.push(run);if(state.v5140Composer.runs.length>V5140_MAX_RUNS)state.v5140Composer.runs=state.v5140Composer.runs.slice(-V5140_MAX_RUNS);state.v5140LastCompletedRun=run;}
+      state.v5140Composer.active=null;v5140SaveComposer();
+      if(status==='completed')showToast('Adaptive block complete. Outcome evidence recorded.');
+      v5140RefreshBanner();return run;
+    }
+    function v5140EndBlock(){
+      const active=state.v5140Composer?.active;if(!active)return;
+      v5140FinalizeBlock('ended');showToast('Adaptive block ended. Completed step evidence remains intact.');
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else v5140RefreshBanner();
+    }
+    function v5140ApplyFeedback(runId,feedback){
+      if(!['useful','too-easy','too-hard','neutral'].includes(feedback))return;
+      const run=(state.v5140Composer?.runs||[]).find(function(row){return row.id===runId;});if(!run)return;
+      run.feedback=feedback;state.v5140LastCompletedRun=run;v5140SaveComposer();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else v5140RefreshBanner();
+      showToast('Session-fit feedback saved. Calibration remains bounded.');
+    }
+
+    function v5140StepListHtml(active){
+      return '<div class="v5140-step-list">'+active.steps.map(function(step,index){
+        const cls=step.status==='done'?'done':index===active.index?'current':step.status;
+        return '<div class="'+cls+'"><span>'+(step.status==='done'?'✓':index+1)+'</span><div><strong>'+escapeHtml(step.label)+'</strong><small>'+step.minutes+' min · '+escapeHtml(V5130_ACTIVITY_META[step.activity]?.short||step.activity)+'</small></div></div>';
+      }).join('')+'</div>';
+    }
+    function v5140PlanPanel(){
+      const active=state.v5140Composer?.active;
+      if(active){
+        const step=v5140CurrentStep(),done=active.steps.filter(function(row){return row.status==='done';}).length,totalMinutes=active.steps.reduce(function(sum,row){return sum+row.minutes;},0);
+        return '<section class="v5140-plan active"><div class="v5140-plan-head"><div><p class="eyebrow">P23 adaptive block</p><h3>'+done+'/'+active.steps.length+' activities complete</h3><p>Target: '+escapeHtml(V5130_ACTIVITY_META[active.targetActivity]?.label||active.targetActivity)+' · ~'+totalMinutes+' min planned. Complete activities remain owned by their normal evidence systems.</p></div><div class="button-row"><button class="primary" id="v5140-current">'+(step?.status==='active'?'Resume':'Start next')+'</button><button class="secondary" id="v5140-end">End block</button></div></div>'+v5140StepListHtml(active)+'</section>';
+      }
+      const block=v5140ComposeBlock(),steps=block?.steps||[],minutes=steps.reduce(function(sum,row){return sum+row.minutes;},0);
+      if(!steps.length)return '<section class="v5140-plan"><div><p class="eyebrow">P23 adaptive block</p><h3>Finish current work first</h3><p>A new multi-activity block is composed only when no other resumable activity owns the learning state.</p></div></section>';
+      return '<section class="v5140-plan"><div class="v5140-plan-head"><div><p class="eyebrow">P23 adaptive block</p><h3>'+steps.length+' activities · ~'+minutes+' min</h3><p>Build one short session around the current P22 priority, with prerequisite support and downstream transfer when useful.</p></div><button class="primary" id="v5140-start">Start adaptive block</button></div>'+v5140StepListHtml({...block,index:0})+'</section>';
+    }
+    function v5140OutcomeHtml(run){
+      if(!run)return '';
+      const delta=Math.round(run.targetDelta*100),readiness=Math.round(run.readinessDelta),cal=v5140Calibration(),activities=[...new Set(run.steps.filter(function(row){return row.status==='done';}).map(function(row){return row.activity;}))];
+      return '<section class="v5140-outcome"><div><p class="eyebrow">P23 observed outcome</p><h3>'+(delta>0?'+':'')+delta+' pts target evidence · '+(readiness>0?'+':'')+readiness+' readiness</h3><p>This is observed evidence movement after the block, not a causal estimate of learning. Calibration changes remain small and require repeated completed blocks.</p></div><div class="v5140-outcome-cal">'+activities.map(function(id){const row=cal[id];return '<span><strong>'+(row.bonus>0?'+':'')+row.bonus+'</strong>'+escapeHtml(V5130_ACTIVITY_META[id]?.short||id)+' · n='+row.n+'</span>';}).join('')+'</div><div class="v5140-feedback"><span>Session fit</span><button data-v5140-feedback="useful" class="'+(run.feedback==='useful'?'active':'')+'">Useful</button><button data-v5140-feedback="neutral" class="'+(run.feedback==='neutral'?'active':'')+'">Neutral</button><button data-v5140-feedback="too-easy" class="'+(run.feedback==='too-easy'?'active':'')+'">Too easy</button><button data-v5140-feedback="too-hard" class="'+(run.feedback==='too-hard'?'active':'')+'">Too hard</button></div></section>';
+    }
+    function v5140BindPanels(){
+      $('#v5140-start')?.addEventListener('click',v5140StartBlock);
+      $('#v5140-current')?.addEventListener('click',v5140LaunchCurrent);
+      $('#v5140-end')?.addEventListener('click',v5140EndBlock);
+      main.querySelectorAll('[data-v5140-feedback]').forEach(function(button){button.addEventListener('click',function(){
+        const run=state.v5140LastCompletedRun||(state.v5140Composer?.runs||[]).at(-1);if(run)v5140ApplyFeedback(run.id,button.dataset.v5140Feedback);
+      });});
+    }
+    function v5140DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v5140-plan'))return;
+      const anchor=main.querySelector('.v5130-orchestrator');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5140PlanPanel()+v5140OutcomeHtml(state.v5140LastCompletedRun||(state.v5140Composer?.runs||[]).at(-1)));
+      else main.insertAdjacentHTML('afterbegin',v5140PlanPanel()+v5140OutcomeHtml(state.v5140LastCompletedRun||(state.v5140Composer?.runs||[]).at(-1)));
+      v5140BindPanels();
+    }
+    const v5140RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v5140RenderDashboardBase();v5140DecorateDashboard();return result;};
+
+    function v5140CalibrationPanel(){
+      const calibration=v5140Calibration(),runs=(state.v5140Composer?.runs||[]),completed=runs.filter(function(row){return row.status==='completed';});
+      const rows=V5130_ACTIVITY_IDS.map(function(id){
+        const row=calibration[id];return '<div><strong>'+escapeHtml(V5130_ACTIVITY_META[id]?.label||id)+'</strong><span>'+row.n+' observed block'+(row.n===1?'':'s')+'</span><b>'+(row.bonus>0?'+':'')+row.bonus+'</b></div>';
+      }).join('');
+      return '<section class="v5140-calibration"><div class="v5140-cal-head"><div><p class="eyebrow">P23 self-calibration</p><h3>Bounded outcome feedback</h3><p>Learned bonuses are limited to ±6 scheduler points and remain zero until an activity appears in at least '+V5140_MIN_CALIBRATION_RUNS+' completed adaptive blocks.</p></div><span><strong>'+completed.length+'</strong> completed blocks</span></div><div class="v5140-cal-grid">'+rows+'</div></section>';
+    }
+    function v5140DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5140-plan'))return;
+      const anchor=main.querySelector('.v5130-progress');
+      const html=v5140PlanPanel()+v5140CalibrationPanel()+v5140OutcomeHtml(state.v5140LastCompletedRun||(state.v5140Composer?.runs||[]).at(-1));
+      if(anchor)anchor.insertAdjacentHTML('afterend',html);else main.insertAdjacentHTML('afterbegin',html);
+      v5140BindPanels();
+    }
+    const v5140RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5140RenderProgressBase();v5140DecorateProgress();return result;};
+
+    function v5140BannerHtml(){
+      const active=state.v5140Composer?.active,step=v5140CurrentStep();if(!active||!step)return '';
+      const done=active.steps.filter(function(row){return row.status==='done';}).length;
+      return '<aside class="v5140-banner"><div><span>Adaptive block '+(done+1)+'/'+active.steps.length+'</span><strong>'+escapeHtml(step.label)+'</strong></div><div class="button-row"><button class="secondary" id="v5140-banner-current">'+(step.status==='active'?'Resume':'Start next')+'</button><button class="ghost" id="v5140-banner-home">Home</button></div></aside>';
+    }
+    function v5140RefreshBanner(){
+      document.querySelectorAll('.v5140-banner').forEach(function(node){node.remove();});
+      if(!state.v5140Composer?.active||['dashboard','progress'].includes(state.view))return;
+      main.insertAdjacentHTML('afterbegin',v5140BannerHtml());
+      $('#v5140-banner-current')?.addEventListener('click',v5140LaunchCurrent);
+      $('#v5140-banner-home')?.addEventListener('click',function(){setView('dashboard');});
+    }
+    function v5140WrapRenderer(name){
+      const base=window[name];if(typeof base!=='function')return;
+      window[name]=function(...args){const result=base.apply(this,args);v5140RefreshBanner();return result;};
+    }
+    ['renderStudy','renderRead','renderListen','renderSpeak','renderConversation','renderBrowse','renderLearned','renderSettings'].forEach(v5140WrapRenderer);
+
+    const v5140RecordCompletedSessionBase=recordCompletedSession;
+    recordCompletedSession=function(stats){
+      const result=v5140RecordCompletedSessionBase(stats);
+      const step=v5140CurrentStep();if(step&&['retention','usage','phrase','sentence'].includes(step.activity))v5140CompleteCurrent(step.activity,stats,'Study session completed');
+      return result;
+    };
+    const v5140FinishReadingBase=v550FinishReading;
+    v550FinishReading=function(reading){const result=v5140FinishReadingBase(reading);v5140CompleteCurrent('reading',{readingId:reading?.id},'Reading completed');return result;};
+    const v5140FinishListeningBase=v560FinishItem;
+    v560FinishItem=function(item){const result=v5140FinishListeningBase(item);v5140CompleteCurrent('listening',{itemId:item?.id},'Listening item completed');return result;};
+    const v5140AdvanceSpeakingBase=v570AdvanceAfterAttempt;
+    v570AdvanceAfterAttempt=function(){
+      const ids=state.v570SpeakUi.sessionIds||[],finishing=ids.length>0&&state.v570SpeakUi.sessionIndex+1>=ids.length;
+      const result=v5140AdvanceSpeakingBase();if(finishing)v5140CompleteCurrent('speaking',null,'Speak 10 completed');return result;
+    };
+    const v5140FinishFocusBase=v5110FinishFocusSet;
+    v5110FinishFocusSet=function(){const had=Boolean(state.v5110Curriculum?.focus),result=v5140FinishFocusBase();if(had)v5140CompleteCurrent('conversation',null,'Adaptive conversation set completed');return result;};
+    const v5140FinalizeMissionBase=v590FinalizeMission;
+    v590FinalizeMission=function(){const result=v5140FinalizeMissionBase();if(result)v5140CompleteCurrent('mission',result,'Real-world mission completed');return result;};
+    const v5140FinishOpenWorldBase=v5120FinishReader;
+    v5120FinishReader=function(){const active=Boolean(state.v5120OpenWorldUi?.reader),result=v5140FinishOpenWorldBase();if(active)v5140CompleteCurrent('open-world',null,'Open-world reading completed');return result;};
+
+    function v5140Audit(){
+      const errors=[],normalized=v5140NormalizeComposer(state.v5140Composer||{}),calibration=v5140Calibration();
+      if(normalized.runs.length>V5140_MAX_RUNS)errors.push('run cap exceeded');
+      if(normalized.active){
+        if(normalized.active.steps.length>V5140_MAX_STEPS)errors.push('active step cap exceeded');
+        if(normalized.active.index<0||normalized.active.index>=normalized.active.steps.length)errors.push('active index invalid');
+      }
+      for(const run of normalized.runs){
+        if(run.steps.length>V5140_MAX_STEPS)errors.push('run step cap exceeded');
+        if(!Number.isFinite(run.observation)||run.observation<-.5||run.observation>.5)errors.push('observation out of bounds');
+      }
+      for(const [id,row] of Object.entries(calibration)){
+        if(!V5130_ACTIVITY_IDS.includes(id))errors.push('unknown calibration activity '+id);
+        if(!Number.isFinite(row.bonus)||row.bonus<-6||row.bonus>6)errors.push('calibration bonus out of bounds '+id);
+        if(row.n<V5140_MIN_CALIBRATION_RUNS&&row.bonus!==0)errors.push('premature calibration '+id);
+      }
+      const serialized=JSON.stringify(normalized);
+      if(/v5120OpenWorldUi|"text"\s*:|"transcript"\s*:|"expected"\s*:/.test(serialized))errors.push('raw learning content leaked into P23 persistence');
+      if(errors.length)console.error('French3000 P23 composer audit failed',errors);
+      document.documentElement.dataset.sessionComposerAudit=errors.length?'failed':'passed';return errors;
+    }
+    const v5140RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5140RunQaBase(),errors=v5140Audit();
+      result.checks.push(v5100QaCheck('session-composer','Adaptive session composer & calibration integrity',errors.length?'fail':'pass',errors.length?errors.join(' · '):'≤3 composed activities · outcomes bounded · calibration gated at n≥3 · no raw learning content persisted'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p23-adaptive-session-calibration-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5140EnsureStyles(){
+      if(document.querySelector('#v5140-composer-style'))return;
+      const style=document.createElement('style');style.id='v5140-composer-style';
+      style.textContent='.v5140-plan,.v5140-outcome,.v5140-calibration{padding:.82rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);margin:.7rem 0}.v5140-plan.active{border-color:color-mix(in srgb,var(--blue) 42%,var(--line))}.v5140-plan-head,.v5140-cal-head{display:flex;justify-content:space-between;gap:.7rem;align-items:flex-start}.v5140-plan h3,.v5140-outcome h3,.v5140-calibration h3{margin:.06rem 0}.v5140-plan p,.v5140-outcome p,.v5140-calibration p{margin:0;color:var(--muted);font-size:.61rem;max-width:78ch}.v5140-step-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;margin-top:.58rem}.v5140-step-list>div{display:flex;gap:.4rem;align-items:center;padding:.46rem;border-radius:11px;background:var(--surface-muted);border:1px solid transparent}.v5140-step-list>div.current{border-color:var(--blue)}.v5140-step-list>div.done{opacity:.72}.v5140-step-list>div>span{display:grid;place-items:center;min-width:25px;height:25px;border-radius:999px;background:var(--surface-solid);font-size:.55rem;font-weight:900}.v5140-step-list strong,.v5140-step-list small{display:block}.v5140-step-list strong{font-size:.57rem;color:var(--navy)}.v5140-step-list small{font-size:.48rem;color:var(--muted)}.v5140-outcome{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;align-items:center}.v5140-outcome-cal{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end}.v5140-outcome-cal span,.v5140-cal-head>span{padding:.38rem .45rem;border-radius:10px;background:var(--surface-muted);font-size:.48rem;color:var(--muted)}.v5140-outcome-cal strong,.v5140-cal-head>span strong{display:block;color:var(--navy);font-size:.72rem}.v5140-feedback{grid-column:1/-1;display:flex;gap:.3rem;align-items:center;flex-wrap:wrap}.v5140-feedback>span{font-size:.5rem;color:var(--muted);font-weight:800}.v5140-feedback button{padding:.34rem .46rem;border-radius:9px}.v5140-feedback button.active{outline:2px solid var(--blue)}.v5140-cal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.28rem;margin-top:.55rem}.v5140-cal-grid>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.2rem .4rem;padding:.4rem;border-radius:10px;background:var(--surface-muted)}.v5140-cal-grid strong{font-size:.54rem;color:var(--navy)}.v5140-cal-grid span{font-size:.47rem;color:var(--muted)}.v5140-cal-grid b{grid-row:1/3;grid-column:2;align-self:center;font-size:.75rem;color:var(--navy)}.v5140-banner{display:flex;justify-content:space-between;gap:.5rem;align-items:center;padding:.48rem .6rem;margin:0 0 .55rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid)}.v5140-banner span,.v5140-banner strong{display:block}.v5140-banner span{font-size:.46rem;color:var(--blue);font-weight:900;text-transform:uppercase}.v5140-banner strong{font-size:.62rem;color:var(--navy)}@media(pointer:coarse){.v5140-plan button,.v5140-outcome button,.v5140-banner button{min-height:44px;touch-action:manipulation}}@media(max-width:720px){.v5140-plan-head,.v5140-cal-head{flex-direction:column}.v5140-step-list{grid-template-columns:1fr}.v5140-outcome{grid-template-columns:1fr}.v5140-outcome-cal{justify-content:flex-start}.v5140-cal-grid{grid-template-columns:1fr}.v5140-banner{align-items:flex-start;flex-direction:column;width:100%}.v5140-banner .button-row{width:100%}.v5140-banner button{flex:1}}';
+      document.head.append(style);
+    }
+    const v5140NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5140NormalizeSurfaceBase();document.documentElement.dataset.release='p23-adaptive-session-calibration';
+      document.documentElement.dataset.sessionComposer='cross-skill-block-v1';
+    };
+    const v5140InitBase=init;
+    init=async function(options){
+      v5140EnsureStyles();v5140LoadComposer();
+      const result=await v5140InitBase(options||{});
+      v5140LoadComposer();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();else v5140RefreshBanner();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.14.0';return result;
     };
 
 
