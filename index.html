@@ -22995,7 +22995,7 @@ qui	who	A1	question word`;
     }
     function v5120BindPanel(){
       const text=$('#v5120-text'),source=$('#v5120-source');
-      text?.addEventListener('input',function(){state.v5120OpenWorldUi.text=v5120CleanText(text.value);const count=$('#v5120-count');if(count)count.textContent=v550WordTokens(state.v5120OpenWorldUi.text).length+' words';});
+      text?.addEventListener('input',function(){state.v5120OpenWorldUi.text=v5120CleanText(text.value);state.v5120OpenWorldUi.sourceKind='paste';const count=$('#v5120-count');if(count)count.textContent=v550WordTokens(state.v5120OpenWorldUi.text).length+' words';});
       source?.addEventListener('input',function(){state.v5120OpenWorldUi.source=String(source.value||'').slice(0,120);});
       $('#v5120-clear')?.addEventListener('click',function(){state.v5120OpenWorldUi.text='';state.v5120OpenWorldUi.source='';state.v5120OpenWorldUi.sourceKind='paste';renderRead();});
       $('#v5120-open-reader')?.addEventListener('click',function(){
