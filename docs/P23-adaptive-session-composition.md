@@ -78,6 +78,8 @@ A new P23 block cannot begin while French3000 has resumable work such as:
 
 Once a P23 block exists, it owns the P22 recommendation slot. P22 therefore shows **Continue adaptive block** instead of recommending unrelated work in parallel.
 
+For reading, listening, speaking, and open-world steps, P23 first restores the current in-memory surface when possible. It does not restart an in-progress activity merely because the learner navigated to Home and pressed Resume.
+
 Ending the P23 block ends orchestration only. It does not silently delete or abort an underlying activity already started in its native subsystem.
 
 ## Completion ownership
@@ -301,6 +303,6 @@ This distinction is deliberate.
 
 P23 uses shell cache:
 
-- `french3000-shell-v32`
+- `french3000-shell-v33`
 
 The manifest now advertises adaptive multi-activity session composition and bounded outcome self-calibration.
