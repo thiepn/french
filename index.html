@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.15.0';
-    const APP_RELEASE = 'P24 Longitudinal Mastery Model & Forgetting Calibration';
+    const APP_VERSION = '5.16.0';
+    const APP_RELEASE = 'P25 CEFR Progression Engine & Promotion Gates';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -24314,6 +24314,377 @@ qui	who	A1	question word`;
       v5150LoadLongitudinal();v5150Invalidate();v5150CaptureSnapshot('startup');v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.15.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.16.0 CEFR PROGRESSION ENGINE & PROMOTION GATES
+       P25 turns the evidence map into conservative level-readiness gates.
+       Vocabulary labels alone never promote a learner. Each level requires
+       receptive, productive, interactive and functional evidence, and a
+       level with insufficient built-in task coverage cannot be promoted.
+       ================================================================ */
+    const V5160_VERSION='5.16.0';
+    const V5160_RELEASE='P25 CEFR Progression Engine & Promotion Gates';
+    const V5160_STORAGE_KEY='french-cefr-progression-v1';
+    const V5160_SCHEMA=1;
+    const V5160_LEVELS=Object.freeze(['A1','A2','B1','B2']);
+    const V5160_GATE_ORDER=Object.freeze(['lexical','transfer','reading','listening','speaking','interaction','mission']);
+    const V5160_GATE_META=Object.freeze({
+      lexical:{label:'Lexical retention',activity:'retention'},
+      transfer:{label:'Active transfer',activity:'sentence'},
+      reading:{label:'Reading',activity:'reading'},
+      listening:{label:'Listening',activity:'listening'},
+      speaking:{label:'Speaking',activity:'speaking'},
+      interaction:{label:'Interaction',activity:'conversation'},
+      mission:{label:'Functional missions',activity:'mission'}
+    });
+    const V5160_REQUIREMENTS=Object.freeze({
+      A1:{
+        lexical:{score:.50,confidence:.30},transfer:{score:.42,confidence:.22},reading:{score:.60,confidence:.32},
+        listening:{score:.56,confidence:.30},speaking:{score:.42,confidence:.25},interaction:{score:.46,confidence:.28},mission:{score:.70,confidence:.45}
+      },
+      A2:{
+        lexical:{score:.56,confidence:.38},transfer:{score:.49,confidence:.32},reading:{score:.64,confidence:.42},
+        listening:{score:.60,confidence:.40},speaking:{score:.49,confidence:.34},interaction:{score:.54,confidence:.38},mission:{score:.74,confidence:.48}
+      },
+      B1:{
+        lexical:{score:.60,confidence:.46},transfer:{score:.55,confidence:.40},reading:{score:.68,confidence:.50},
+        listening:{score:.64,confidence:.48},speaking:{score:.55,confidence:.42},interaction:{score:.60,confidence:.46},mission:{score:.78,confidence:.52}
+      },
+      B2:{
+        lexical:{score:.64,confidence:.52},transfer:{score:.60,confidence:.48},reading:{score:.72,confidence:.56},
+        listening:{score:.68,confidence:.54},speaking:{score:.60,confidence:.48},interaction:{score:.66,confidence:.52},mission:{score:.82,confidence:.58}
+      }
+    });
+
+    state.v5160Progression=null;
+    let v5160Cache={stamp:'',value:null};
+
+    function v5160NormalizePromotion(raw,level){
+      if(!raw||typeof raw!=='object')return null;
+      return {
+        level:level,earnedAt:clamp(finiteNumber(raw.earnedAt),0,now()+days(1))||0,
+        score:clamp(finiteNumber(raw.score),0,1),gateCount:clamp(Math.round(finiteNumber(raw.gateCount)),0,V5160_GATE_ORDER.length)
+      };
+    }
+    function v5160NormalizeProgression(raw){
+      const source=raw&&typeof raw==='object'?raw:{},promotions={};
+      for(const level of V5160_LEVELS){const row=v5160NormalizePromotion(source.promotions?.[level],level);if(row&&row.earnedAt)promotions[level]=row;}
+      return {schema:V5160_SCHEMA,promotions:promotions};
+    }
+    function v5160LoadProgression(){
+      state.v5160Progression=v5160NormalizeProgression(state.v5160Progression||safeStorageRead(V5160_STORAGE_KEY)||{});
+      return state.v5160Progression;
+    }
+    function v5160SaveProgression(){
+      state.v5160Progression=v5160NormalizeProgression(state.v5160Progression||{});
+      safeStorageSet(V5160_STORAGE_KEY,state.v5160Progression);depthSchedulePersist?.();
+    }
+    function v5160Invalidate(){v5160Cache={stamp:'',value:null};}
+    v5160LoadProgression();
+
+    const v5160DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5160DepthStateSnapshotBase(),v5160Progression:v5160NormalizeProgression(state.v5160Progression||{})};};
+    const v5160DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5160DepthApplyImportedStateBase(saved);
+      state.v5160Progression=v5160NormalizeProgression(saved?.v5160Progression||safeStorageRead(V5160_STORAGE_KEY)||{});
+      v5160Invalidate();v5160SaveProgression();return result;
+    };
+    const v5160DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5160DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5160Progression)state.v5160Progression=v5160NormalizeProgression(saved.v5160Progression);}catch{}
+      v5160Invalidate();return result;
+    };
+
+    function v5160Stamp(){
+      const review=state.reviewLog?.at(-1),conv=state.v5110Curriculum?.evidence?.at(-1),mission=state.v590Missions?.runs?.at(-1),
+        readingRows=Object.values(state.v550Reading?.history||{}),listeningRows=Object.values(state.v560Listening?.history||{});
+      const readingSignal=readingRows.reduce(function(sum,row){return sum+finiteNumber(row.lastOpenedAt)+finiteNumber(row.questionAttempts)*17+finiteNumber(row.questionCorrect)*31+finiteNumber(row.completionCount)*43;},0);
+      const listeningSignal=listeningRows.reduce(function(sum,row){return sum+finiteNumber(row.lastOpenedAt)+finiteNumber(row.questionAttempts)*17+finiteNumber(row.dictationAttempts)*23+finiteNumber(row.completionCount)*43;},0);
+      return [
+        dayKey(now()),state.reviewLog?.length||0,review?.t||0,readingSignal,listeningSignal,
+        state.v560Listening?.attempts?.length||0,state.v570Speaking?.attempts?.length||0,
+        state.v5110Curriculum?.evidence?.length||0,conv?.t||0,state.v590Missions?.runs?.length||0,mission?.t||0
+      ].join('|');
+    }
+    function v5160Rank(level){return V5160_LEVELS.indexOf(level);}
+    function v5160AtOrBelow(noteLevel,target){return v5160Rank(noteLevel)>=0&&v5160Rank(noteLevel)<=v5160Rank(target);}
+    function v5160Gate(id,score,confidence,detail,coverage=true,extra={}){
+      return {id:id,label:V5160_GATE_META[id].label,activity:V5160_GATE_META[id].activity,score:clamp(finiteNumber(score),0,1),confidence:clamp(finiteNumber(confidence),0,1),detail:String(detail||''),coverage:coverage!==false,...extra};
+    }
+    function v5160LevelContent(level){
+      const readings=V550_READINGS.filter(function(row){return row.level===level;});
+      const listening=V560_LISTENING_ITEMS.filter(function(row){return row.level===level;});
+      const scenarios=V580_SCENARIOS.filter(function(row){return row.level===level;});
+      const missions=V590_MISSIONS.filter(function(row){return String(row.level||'').includes(level);});
+      return {readings:readings,listening:listening,scenarios:scenarios,missions:missions,
+        promotionCoverage:readings.length>=3&&listening.length>=3&&scenarios.length>=3&&missions.length>=1};
+    }
+
+    function v5160LexicalGate(level){
+      const aggregate=v5150Aggregate(),profiles=aggregate.profiles.filter(function(row){return row.note?.level===level;});
+      const total=state.cards.filter(function(note){return note.core!==false&&note.level===level;}).length;
+      if(!total)return v5160Gate('lexical',0,0,'No core vocabulary is available for '+level+'.',false);
+      const retained=profiles.filter(function(row){return row.forecast[30]>=.65;}).length,
+        usable=profiles.filter(function(row){return ['USABLE','DURABLE'].includes(row.state);}).length,
+        started=profiles.length,avgConfidence=started?profiles.reduce(function(sum,row){return sum+row.confidence;},0)/started:0;
+      const score=clamp((retained/total)*.55+(usable/total)*.45,0,1);
+      const confidence=clamp((started/total)*.62+avgConfidence*.38,0,1);
+      return v5160Gate('lexical',score,confidence,retained+'/'+total+' 30d-retained · '+usable+' usable/durable',true,{retained:retained,usable:usable,total:total,started:started});
+    }
+    function v5160TransferGate(level){
+      const base=v540AggregateStats(state.cards).profiles.filter(function(row){return row.note?.level===level;}),total=state.cards.filter(function(note){return note.core!==false&&note.level===level;}).length||1;
+      const eligible=base.filter(function(row){return row.totalAttempts>0;}),avgActive=eligible.length?eligible.reduce(function(sum,row){return sum+row.active;},0)/eligible.length:0;
+      const independent=eligible.reduce(function(sum,row){
+        return sum+['recall','phrase','sentence','transfer'].reduce(function(inner,key){return inner+finiteNumber(row.dimensions?.[key]?.evidence?.independent);},0);
+      },0);
+      const coverage=clamp(eligible.length/total,0,1),score=clamp(avgActive*(.55+.45*Math.sqrt(coverage)),0,1);
+      const confidence=clamp(coverage*.55+Math.min(1,independent/Math.max(8,total*.03))*.45,0,1);
+      return v5160Gate('transfer',score,confidence,eligible.length+'/'+total+' vocabulary notes with active evidence · '+independent+' independent successes',true,{eligible:eligible.length,total:total,independent:independent});
+    }
+    function v5160ReadingGate(level){
+      const content=v5160LevelContent(level),available=content.readings.length;
+      if(available<3)return v5160Gate('reading',0,0,'Only '+available+' '+level+' reading texts exist; promotion evidence is incomplete.',false,{available:available});
+      const rows=content.readings.map(function(reading){return {reading:reading,h:state.v550Reading?.history?.[reading.id]||{}};}),completed=rows.filter(function(row){return row.h.completedAt;});
+      const attempts=rows.reduce(function(sum,row){return sum+finiteNumber(row.h.questionAttempts);},0),correct=rows.reduce(function(sum,row){return sum+finiteNumber(row.h.questionCorrect);},0);
+      const accuracy=attempts?correct/attempts:0,breadth=completed.length/available,score=clamp(accuracy*.62+breadth*.38,0,1);
+      const confidence=clamp(Math.min(1,attempts/Math.max(8,available*2))*.55+breadth*.45,0,1);
+      return v5160Gate('reading',score,confidence,completed.length+'/'+available+' texts completed · '+correct+'/'+attempts+' comprehension checks',true,{available:available,completed:completed.length,attempts:attempts,correct:correct});
+    }
+    function v5160ListeningGate(level){
+      const content=v5160LevelContent(level),available=content.listening.length;
+      if(available<3)return v5160Gate('listening',0,0,'Only '+available+' '+level+' listening items exist; promotion evidence is incomplete.',false,{available:available});
+      const ids=new Set(content.listening.map(function(row){return row.id;})),history=Object.entries(state.v560Listening?.history||{}).filter(function(pair){return ids.has(pair[0]);});
+      const completed=history.filter(function(pair){return pair[1].completedAt;}).length,attempts=(state.v560Listening?.attempts||[]).filter(function(row){return ids.has(row.itemId);});
+      const correct=attempts.filter(function(row){return row.correct;}).length,independent=attempts.filter(function(row){return row.correct&&row.support===0;}).length;
+      const accuracy=attempts.length?correct/attempts.length:0,indRate=correct?independent/correct:0,breadth=completed/available;
+      const score=clamp(accuracy*.42+indRate*.30+breadth*.28,0,1),confidence=clamp(Math.min(1,attempts.length/Math.max(10,available*2))*.55+breadth*.45,0,1);
+      return v5160Gate('listening',score,confidence,completed+'/'+available+' items completed · '+independent+' independent correct attempts',true,{available:available,completed:completed,attempts:attempts.length,independent:independent});
+    }
+    function v5160SpeakingGate(level){
+      const attempts=(state.v570Speaking?.attempts||[]).filter(function(row){return state.cardById.get(row.noteId)?.level===level&&row.reliable;});
+      const correct=attempts.filter(function(row){return row.correct;}),automated=attempts.filter(function(row){return !row.manual;}),
+        independent=attempts.filter(function(row){return row.correct&&!row.manual&&row.support===0&&!row.modelUsed&&!row.targetVisible;}).length,
+        notes=new Set(attempts.map(function(row){return row.noteId;}).filter(Boolean)).size;
+      const correctCredit=correct.reduce(function(sum,row){return sum+(row.manual?.55:1);},0),
+        accuracy=attempts.length?correctCredit/attempts.length:0,indRate=correct.length?independent/correct.length:0,breadth=clamp(notes/(level==='A1'?12:level==='A2'?16:20),0,1);
+      const score=clamp(accuracy*.45+indRate*.35+breadth*.20,0,1),
+        evidenceVolume=clamp((automated.length+Math.max(0,attempts.length-automated.length)*.45)/(level==='A1'?12:level==='A2'?16:20),0,1),
+        confidence=clamp(evidenceVolume*.62+breadth*.38,0,1);
+      return v5160Gate('speaking',score,confidence,Math.round(correctCredit*10)/10+'/'+attempts.length+' weighted correct · '+independent+' independent non-manual · '+notes+' vocabulary anchors',true,{attempts:attempts.length,correct:correct.length,independent:independent,notes:notes,automated:automated.length});
+    }
+    function v5160InteractionGate(level){
+      const content=v5160LevelContent(level),available=content.scenarios.length;
+      if(available<3)return v5160Gate('interaction',0,0,'Only '+available+' '+level+' conversation scenarios exist; promotion evidence is incomplete.',false,{available:available});
+      const evidence=(state.v5110Curriculum?.evidence||[]).filter(function(row){return row.level===level;}),success=evidence.filter(function(row){return row.success;}),independent=success.filter(function(row){return row.independent&&row.support===0&&!row.manual;});
+      const credit=evidence.length?evidence.reduce(function(sum,row){return sum+v5110EvidenceCredit(row);},0)/evidence.length:0,
+        indRate=success.length?independent.length/success.length:0,
+        functions=new Set(success.map(function(row){return row.function;})).size,
+        availableFunctions=new Set(content.scenarios.flatMap(function(row){return row.functions||[];})).size,
+        breadth=availableFunctions?clamp(functions/availableFunctions,0,1):0;
+      const score=clamp(credit*.45+indRate*.35+breadth*.20,0,1),
+        confidence=clamp(Math.min(1,evidence.length/(level==='A1'?12:level==='A2'?16:20))*.55+breadth*.30+Math.min(1,independent.length/8)*.15,0,1);
+      return v5160Gate('interaction',score,confidence,independent.length+' independent successful turns · '+functions+'/'+availableFunctions+' functions demonstrated',true,{available:available,attempts:evidence.length,independent:independent.length,functions:functions,availableFunctions:availableFunctions});
+    }
+    function v5160MissionGate(level){
+      const content=v5160LevelContent(level),missions=content.missions;
+      if(!missions.length)return v5160Gate('mission',0,0,'No '+level+' functional mission exists; promotion evidence is incomplete.',false,{available:0});
+      const ids=new Set(missions.map(function(row){return row.id;})),runs=(state.v590Missions?.runs||[]).filter(function(row){return ids.has(row.missionId)&&row.completed;}),
+        passes=runs.filter(function(row){return row.independentPass;}),covered=new Set(passes.map(function(row){return row.missionId;})).size,
+        unsupported=passes.filter(function(row){return row.fullyUnsupported;}).length;
+      const passRate=runs.length?passes.length/runs.length:0,breadth=covered/missions.length,independence=runs.length?runs.reduce(function(sum,row){return sum+row.independentRate;},0)/runs.length/100:0;
+      const score=clamp(passRate*.38+breadth*.37+independence*.25,0,1),confidence=clamp(Math.min(1,runs.length/Math.max(2,missions.length*2))*.55+breadth*.45,0,1);
+      return v5160Gate('mission',score,confidence,passes.length+'/'+runs.length+' independent passes · '+covered+'/'+missions.length+' mission types covered · '+unsupported+' unsupported',true,{available:missions.length,runs:runs.length,passes:passes.length,covered:covered});
+    }
+
+    function v5160LevelSnapshot(level){
+      const content=v5160LevelContent(level),requirements=V5160_REQUIREMENTS[level],gates={
+        lexical:v5160LexicalGate(level),transfer:v5160TransferGate(level),reading:v5160ReadingGate(level),listening:v5160ListeningGate(level),
+        speaking:v5160SpeakingGate(level),interaction:v5160InteractionGate(level),mission:v5160MissionGate(level)
+      };
+      let passed=0,covered=0,scoreSum=0,confidenceSum=0;
+      for(const id of V5160_GATE_ORDER){
+        const gate=gates[id],req=requirements[id];gate.requiredScore=req.score;gate.requiredConfidence=req.confidence;
+        gate.passed=gate.coverage&&gate.score>=req.score&&gate.confidence>=req.confidence;
+        gate.blocker=!gate.coverage?'coverage':gate.score<req.score?'score':gate.confidence<req.confidence?'confidence':'';
+        if(gate.coverage){covered++;scoreSum+=gate.score;confidenceSum+=gate.confidence;}if(gate.passed)passed++;
+      }
+      const coverageComplete=content.promotionCoverage&&covered===V5160_GATE_ORDER.length,allGates=passed===V5160_GATE_ORDER.length,
+        score=covered?scoreSum/covered:0,confidence=covered?confidenceSum/covered:0;
+      return {level:level,gates:gates,passedGates:passed,totalGates:V5160_GATE_ORDER.length,coverageComplete:coverageComplete,allGates:allGates,currentQualified:coverageComplete&&allGates,score:score,confidence:confidence,content:content};
+    }
+    function v5160Progression(){
+      const stamp=v5160Stamp();
+      if(v5160Cache.stamp===stamp&&v5160Cache.value)return v5160Cache.value;
+      const levels=V5160_LEVELS.map(v5160LevelSnapshot),map=Object.fromEntries(levels.map(function(row){return [row.level,row];}));
+      let previous=true;
+      for(const level of V5160_LEVELS){
+        const row=map[level];row.prerequisitePassed=previous;row.promotionReady=row.currentQualified&&previous;
+        previous=previous&&Boolean(state.v5160Progression?.promotions?.[level]||row.promotionReady);
+      }
+      const value={levels:levels,map:map};
+      v5160Cache={stamp:stamp,value:value};return value;
+    }
+    function v5160ReconcilePromotions(){
+      const progression=v5160Progression(),before=JSON.stringify(state.v5160Progression?.promotions||{});let priorEarned=true;
+      for(const level of V5160_LEVELS){
+        const row=progression.map[level],existing=state.v5160Progression.promotions[level];
+        if(!existing&&priorEarned&&row.currentQualified){
+          state.v5160Progression.promotions[level]={level:level,earnedAt:now(),score:row.score,gateCount:row.passedGates};
+          v5160Invalidate();
+        }
+        priorEarned=Boolean(state.v5160Progression.promotions[level]);
+      }
+      if(JSON.stringify(state.v5160Progression.promotions||{})!==before)v5160SaveProgression();
+      return v5160Progression();
+    }
+    function v5160HighestEarned(){
+      let earned='';for(const level of V5160_LEVELS)if(state.v5160Progression?.promotions?.[level])earned=level;else break;return earned;
+    }
+    function v5160StudyFrontier(){
+      const highest=v5160HighestEarned();if(!highest)return 'A1';
+      const i=v5160Rank(highest);return V5160_LEVELS[Math.min(i+1,V5160_LEVELS.length-1)];
+    }
+    function v5160WeakestGate(level){
+      const row=v5160Progression().map[level];if(!row)return null;
+      return V5160_GATE_ORDER.map(function(id){
+        const gate=row.gates[id],scoreGap=gate.coverage?Math.max(0,gate.requiredScore-gate.score):1,confidenceGap=gate.coverage?Math.max(0,gate.requiredConfidence-gate.confidence):1;
+        return {...gate,priority:(gate.coverage?scoreGap*.72+confidenceGap*.28:2)};
+      }).filter(function(gate){return !gate.passed;}).sort(function(a,b){return b.priority-a.priority||a.label.localeCompare(b.label);})[0]||null;
+    }
+
+    const v5160LevelPathBase=v490LevelPath;
+    v490LevelPath=function(){
+      const base=v5160LevelPathBase(),frontier=v5160StudyFrontier(),current=base.snapshots.find(function(row){return row.level===frontier;})||base.current;
+      return {...base,current:current};
+    };
+
+    const v5160CandidatesBase=v5130Candidates;
+    v5130Candidates=function(){
+      const rows=v5160CandidatesBase();if(!rows.length||rows.some(function(row){return row.kind&&row.kind.startsWith('resume-');}))return rows;
+      const frontier=v5160StudyFrontier(),weak=v5160WeakestGate(frontier);if(!weak)return rows;
+      const activity=weak.activity,boost=clamp(Math.round(8+weak.priority*8),0,16);
+      return rows.map(function(row){
+        if(row.id!==activity)return row;
+        return {...row,score:clamp(row.score+boost,0,120),cefrGateBoost:boost,cefrGateLabel:weak.label,
+          detail:row.detail+' · '+frontier+' gate: '+weak.label};
+      }).sort(function(a,b){return b.score-a.score||a.label.localeCompare(b.label);});
+    };
+    const v5160FactorHtmlBase=v5130FactorHtml;
+    v5130FactorHtml=function(candidate){
+      const html=v5160FactorHtmlBase(candidate),boost=finiteNumber(candidate?.cefrGateBoost);
+      return boost?html+'<span>'+escapeHtml(candidate.cefrGateLabel||'CEFR gate')+' +'+boost+'</span>':html;
+    };
+
+    function v5160Status(levelRow){
+      const earned=state.v5160Progression?.promotions?.[levelRow.level];
+      if(earned&&levelRow.currentQualified)return {key:'earned',label:'Promoted'};
+      if(earned&&!levelRow.currentQualified)return {key:'maintenance',label:'Promoted · maintenance needed'};
+      if(!levelRow.coverageComplete)return {key:'coverage',label:'Coverage incomplete'};
+      if(levelRow.promotionReady)return {key:'ready',label:'Promotion ready'};
+      if(!levelRow.prerequisitePassed)return {key:'locked',label:'Prior level required'};
+      return {key:'progress',label:levelRow.passedGates+'/'+levelRow.totalGates+' gates'};
+    }
+    function v5160GateHtml(gate){
+      const pct=Math.round(gate.score*100),conf=Math.round(gate.confidence*100),req=Math.round(gate.requiredScore*100);
+      return '<div class="v5160-gate '+(gate.passed?'pass':gate.coverage?'':'unavailable')+'"><div><strong>'+escapeHtml(gate.label)+'</strong><span>'+escapeHtml(gate.detail)+'</span></div><div class="v5160-gate-score"><b>'+pct+'%</b><small>need '+req+'% · evidence '+conf+'%</small></div></div>';
+    }
+    function v5160LevelCard(row,compact=false){
+      const status=v5160Status(row),weak=v5160WeakestGate(row.level),earned=state.v5160Progression?.promotions?.[row.level];
+      if(compact)return '<article class="v5160-level-mini '+status.key+'"><span>'+row.level+'</span><strong>'+escapeHtml(status.label)+'</strong><small>'+(weak?'Next: '+escapeHtml(weak.label):row.currentQualified?'All gates currently met':'No promotable evidence coverage')+'</small></article>';
+      return '<article class="v5160-level-card '+status.key+'"><header><span class="level-chip level-'+row.level.toLowerCase()+'">'+row.level+'</span><div><strong>'+escapeHtml(status.label)+'</strong><small>'+(earned?'first passed '+new Date(earned.earnedAt).toLocaleDateString():'internal evidence gate · not a CEFR certificate')+'</small></div><b>'+Math.round(row.score*100)+'%</b></header><div class="v5160-gates">'+V5160_GATE_ORDER.map(function(id){return v5160GateHtml(row.gates[id]);}).join('')+'</div>'+(row.coverageComplete?'':'<p class="v5160-coverage-note">French does not yet contain enough '+row.level+' reading, listening, conversation, and mission coverage to make a promotion claim at this level.</p>')+'</article>';
+    }
+    function v5160DashboardStrip(){
+      const p=v5160ReconcilePromotions(),frontier=v5160StudyFrontier(),row=p.map[frontier],weak=v5160WeakestGate(frontier),highest=v5160HighestEarned();
+      return '<section class="v5160-strip"><div><p class="eyebrow">P25 CEFR progression</p><strong>'+(highest?highest+' promoted · ':'')+frontier+' frontier</strong><span>'+(row.coverageComplete?row.passedGates+'/'+row.totalGates+' promotion gates currently met':'promotion coverage incomplete')+(weak?' · next: '+escapeHtml(weak.label):'')+'</span></div><div><span><b>'+Math.round(row.score*100)+'%</b> gate average</span><span><b>'+Math.round(row.confidence*100)+'%</b> evidence confidence</span></div></section>';
+    }
+    function v5160ProgressPanel(){
+      const p=v5160ReconcilePromotions(),frontier=v5160StudyFrontier(),row=p.map[frontier],weak=v5160WeakestGate(frontier);
+      return '<section class="v5160-panel"><div class="v5160-head"><div><p class="eyebrow">P25 CEFR progression engine</p><h3>Promotion requires balanced evidence</h3><p>Vocabulary coverage, active transfer, reading, listening, speaking, interaction, and functional missions are gated separately. A strong vocabulary score cannot compensate for missing productive evidence.</p></div><div class="v5160-frontier"><span>Current frontier</span><strong>'+frontier+'</strong><small>'+(weak?'weakest gate · '+escapeHtml(weak.label):row.currentQualified?'all gates met':'coverage constrained')+'</small></div></div><div class="v5160-level-grid">'+p.levels.map(function(level){return v5160LevelCard(level,false);}).join('')+'</div><p class="v5160-footnote">These are French-internal evidence gates aligned to CEFR-labelled content and communicative task difficulty. They are not an official CEFR examination, certificate, or guarantee of general proficiency. B2 promotion remains blocked until the app has adequate B2 input, interaction, and mission coverage.</p></section>';
+    }
+
+    function v5160DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v5160-strip'))return;
+      const anchor=main.querySelector('.v5150-strip')||main.querySelector('.v5140-plan')||main.querySelector('.v5130-orchestrator');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5160DashboardStrip());
+    }
+    const v5160RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v5160RenderDashboardBase();v5160DecorateDashboard();return result;};
+
+    function v5160DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5160-panel'))return;
+      const anchor=main.querySelector('.v5150-panel')||main.querySelector('.v5140-calibration')||main.querySelector('.v5130-progress');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5160ProgressPanel());else main.insertAdjacentHTML('afterbegin',v5160ProgressPanel());
+    }
+    const v5160RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5160RenderProgressBase();v5160DecorateProgress();return result;};
+
+    const v5160RecordCompletedSessionBase=recordCompletedSession;
+    recordCompletedSession=function(stats){const result=v5160RecordCompletedSessionBase(stats);v5160Invalidate();v5160ReconcilePromotions();return result;};
+    const v5160FinishReadingBase=v550FinishReading;
+    v550FinishReading=function(reading){const result=v5160FinishReadingBase(reading);v5160Invalidate();v5160ReconcilePromotions();return result;};
+    const v5160FinishListeningBase=v560FinishItem;
+    v560FinishItem=function(item){const result=v5160FinishListeningBase(item);v5160Invalidate();v5160ReconcilePromotions();return result;};
+    const v5160AdvanceSpeakingBase=v570AdvanceAfterAttempt;
+    v570AdvanceAfterAttempt=function(){const result=v5160AdvanceSpeakingBase();v5160Invalidate();v5160ReconcilePromotions();return result;};
+    const v5160FinishFocusBase=v5110FinishFocusSet;
+    v5110FinishFocusSet=function(){const result=v5160FinishFocusBase();v5160Invalidate();v5160ReconcilePromotions();return result;};
+    const v5160FinalizeMissionBase=v590FinalizeMission;
+    v590FinalizeMission=function(){const result=v5160FinalizeMissionBase();v5160Invalidate();v5160ReconcilePromotions();return result;};
+
+    function v5160Audit(){
+      const errors=[],p=v5160Progression();
+      for(const level of V5160_LEVELS){
+        const row=p.map[level];
+        if(row.passedGates<0||row.passedGates>V5160_GATE_ORDER.length)errors.push(level+' gate count invalid');
+        for(const id of V5160_GATE_ORDER){
+          const gate=row.gates[id];
+          if(!Number.isFinite(gate.score)||gate.score<0||gate.score>1)errors.push(level+' '+id+' score out of bounds');
+          if(!Number.isFinite(gate.confidence)||gate.confidence<0||gate.confidence>1)errors.push(level+' '+id+' confidence out of bounds');
+          if(gate.passed&&(!gate.coverage||gate.score<gate.requiredScore||gate.confidence<gate.requiredConfidence))errors.push(level+' '+id+' false pass');
+        }
+        if(row.currentQualified&&!row.coverageComplete)errors.push(level+' qualified without content coverage');
+      }
+      const b2=p.map.B2;if(b2.coverageComplete)errors.push('B2 unexpectedly promotable without B2 communicative corpus');
+      const promotions=state.v5160Progression?.promotions||{};let prior=true;
+      for(const level of V5160_LEVELS){if(promotions[level]&&!prior)errors.push(level+' promotion stored before prerequisite');prior=prior&&Boolean(promotions[level]);}
+      const serialized=JSON.stringify(v5160NormalizeProgression(state.v5160Progression||{}));
+      if(/"text"\s*:|"transcript"\s*:|"expected"\s*:|"answer"\s*:/i.test(serialized))errors.push('raw learning content leaked into P25 persistence');
+      if(errors.length)console.error('French P25 CEFR progression audit failed',errors.slice(0,30));
+      document.documentElement.dataset.cefrProgressionAudit=errors.length?'failed':'passed';return errors;
+    }
+    const v5160RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5160RunQaBase(),errors=v5160Audit();
+      result.checks.push(v5100QaCheck('cefr-progression','CEFR progression & promotion gates',errors.length?'fail':'pass',errors.length?errors.slice(0,8).join(' · '):'7 independent gates · prerequisite ordering · no compensatory averaging · B2 coverage block · promotion history privacy-minimal'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p25-cefr-progression-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5160EnsureStyles(){
+      if(document.querySelector('#v5160-cefr-style'))return;
+      const style=document.createElement('style');style.id='v5160-cefr-style';
+      style.textContent='.v5160-strip,.v5160-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0}.v5160-strip{display:flex;justify-content:space-between;gap:.75rem;align-items:center;padding:.68rem .78rem}.v5160-strip>div:first-child{display:grid;gap:.06rem}.v5160-strip p,.v5160-strip strong,.v5160-strip span{margin:0}.v5160-strip>div:first-child>strong{font-size:.72rem;color:var(--navy)}.v5160-strip>div:first-child>span{font-size:.5rem;color:var(--muted)}.v5160-strip>div:last-child{display:flex;gap:.3rem;flex-wrap:wrap}.v5160-strip>div:last-child span{padding:.35rem .42rem;border-radius:9px;background:var(--surface-muted);font-size:.48rem;color:var(--muted)}.v5160-strip b{color:var(--navy)}.v5160-panel{padding:.82rem}.v5160-panel h3{margin:.06rem 0}.v5160-panel p{color:var(--muted)}.v5160-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5160-head>div:first-child p{margin:0;font-size:.61rem;max-width:82ch}.v5160-frontier{display:grid;min-width:140px;padding:.48rem;border-radius:11px;background:var(--surface-muted);text-align:right}.v5160-frontier span{font-size:.46rem;color:var(--muted);text-transform:uppercase;font-weight:900}.v5160-frontier strong{font-size:1.18rem;color:var(--navy)}.v5160-frontier small{font-size:.45rem;color:var(--blue)}.v5160-level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.42rem;margin-top:.62rem}.v5160-level-card{padding:.58rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted)}.v5160-level-card.earned,.v5160-level-card.ready{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}.v5160-level-card.maintenance{border-color:color-mix(in srgb,var(--red) 42%,var(--line))}.v5160-level-card.coverage{opacity:.82}.v5160-level-card header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.45rem;align-items:center;margin-bottom:.38rem}.v5160-level-card header div{display:grid}.v5160-level-card header strong{font-size:.58rem;color:var(--navy)}.v5160-level-card header small{font-size:.44rem;color:var(--muted)}.v5160-level-card header>b{font-size:.78rem;color:var(--navy)}.v5160-gates{display:grid;gap:.22rem}.v5160-gate{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.35rem;align-items:center;padding:.34rem .4rem;border-radius:9px;background:var(--surface-solid)}.v5160-gate.pass{box-shadow:inset 3px 0 color-mix(in srgb,var(--green) 75%,transparent)}.v5160-gate.unavailable{box-shadow:inset 3px 0 color-mix(in srgb,var(--red) 65%,transparent)}.v5160-gate>div:first-child{display:grid}.v5160-gate strong{font-size:.51rem;color:var(--navy)}.v5160-gate span{font-size:.43rem;color:var(--muted)}.v5160-gate-score{display:grid;text-align:right}.v5160-gate-score b{font-size:.58rem;color:var(--navy)}.v5160-gate-score small{font-size:.4rem;color:var(--muted)}.v5160-coverage-note,.v5160-footnote{font-size:.47rem!important;margin:.45rem 0 0!important}.v5160-coverage-note{color:var(--red)!important}@media(max-width:760px){.v5160-strip,.v5160-head{align-items:flex-start;flex-direction:column}.v5160-level-grid{grid-template-columns:1fr}.v5160-frontier{width:100%;text-align:left}}';
+      document.head.append(style);
+    }
+    const v5160NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5160NormalizeSurfaceBase();document.documentElement.dataset.release='p25-cefr-progression';
+      document.documentElement.dataset.cefrProgression='balanced-promotion-gates-v1';
+    };
+    const v5160InitBase=init;
+    init=async function(options){
+      v5160EnsureStyles();v5160LoadProgression();
+      const result=await v5160InitBase(options||{});
+      v5160LoadProgression();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.16.0';return result;
     };
 
 
