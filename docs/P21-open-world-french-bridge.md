@@ -203,7 +203,7 @@ A failure is surfaced in the existing Settings QA panel.
 
 P21 uses shell cache:
 
-- `french3000-shell-v29`
+- `french3000-shell-v30`
 
 The web-app manifest now advertises the open-world personal French reading bridge.
 
