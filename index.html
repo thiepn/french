@@ -26770,12 +26770,14 @@ qui	who	A1	question word`;
         return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
       }):[];
       const fluencyMaintenance=v5200Snapshot();
+      const benchmarkPassedLevels=new Set((state.v5190Benchmark?.history||[]).filter(function(item){return item?.passed===true;}).map(function(item){return item.level;})).size;
+      const maintenanceDueLevels=fluencyMaintenance.levels.filter(function(item){return item.maintenanceNeeded;}).length;
       const maintenanceNeeded=Boolean((highest&&progression.map[highest]&&!progression.map[highest].currentQualified)||fluencyMaintenance.maintenanceNeeded);
       return THIEPN_LANGUAGE_READ_MODEL_API.createLanguageReadModel({
         generatedAt:new Date().toISOString(),
         appId:'french',
         languageId:'french',
-        producerRevision:'french-p8-read-model-v1',
+        producerRevision:'french-p8-read-model-v2',
         presentation:{displayName:'French',nativeName:'Français',appRoute:location.origin+'/'},
         enrollment:{status:'active',targetBand:state.studyPlan?.targetLevel||frontier},
         workload:{
@@ -26793,7 +26795,10 @@ qui	who	A1	question word`;
         },
         progress:{metrics:[
           {id:'vocabulary-mastered',label:'Vocabulary mastered',current:total.mastered,total:total.total,unit:'cards'},
-          {id:'target-curriculum-mastered',label:(state.studyPlan?.targetLevel||frontier)+' target curriculum',current:finiteNumber(plan.stats?.mastered),total:finiteNumber(plan.targetMastered),unit:'cards'}
+          {id:'target-curriculum-mastered',label:(state.studyPlan?.targetLevel||frontier)+' target curriculum',current:finiteNumber(plan.stats?.mastered),total:finiteNumber(plan.targetMastered),unit:'cards'},
+          {id:'functional-benchmark-levels',label:'Functional benchmark levels passed',current:benchmarkPassedLevels,total:V5200_LEVELS.length,unit:'levels'},
+          {id:'long-term-transfer-levels',label:'Long-term transfer levels',current:fluencyMaintenance.longTermLevels.length,total:V5200_LEVELS.length,unit:'levels'},
+          {id:'maintenance-due-levels',label:'Functional maintenance due',current:maintenanceDueLevels,total:V5200_LEVELS.length,unit:'levels'}
         ]},
         proficiency:{
           framework:'THIEPN French internal CEFR-aligned gates',
