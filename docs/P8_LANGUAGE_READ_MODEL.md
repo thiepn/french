@@ -22,6 +22,7 @@ The producer reads existing French state only:
 - P22/P23 `coachSnapshot()` for the recommended next action;
 - the target-date study-plan snapshot;
 - P25 `v5160Progression()` / current frontier / promotion history;
+- P28 fixed functional-benchmark history and P29 longitudinal maintenance snapshots;
 - the current review-log timestamp for freshness/state revision.
 
 It does not alter those systems.
@@ -34,6 +35,7 @@ The emitted snapshot contains:
 - today and seven-day activity counts;
 - streak and last-study timestamp;
 - vocabulary and target-curriculum progress counters;
+- functional benchmark levels passed, long-term-transfer levels, and maintenance-due levels;
 - internal CEFR-aligned gate dimensions;
 - highest internally promoted band and current frontier;
 - the coach's existing recommended action.
@@ -69,3 +71,16 @@ French remains authoritative for content, review scheduling, mastery, CEFR gates
 P8 only produces a Hub-facing projection.
 
 Authenticated cross-device persistence of this projection is deferred to P9.
+
+
+## Producer refresh after P30
+
+The P8 envelope remains `p8-read-model-v1`; no transport/schema change was required.
+
+French producer revision `french-p8-read-model-v2` additionally projects the current P28/P29 longitudinal functional evidence as labelled Hub progress metrics:
+
+- functional benchmark levels passed;
+- long-term transfer levels;
+- functional maintenance due.
+
+P30's B2 corpus unlock flows through the existing P25 frontier and P28/P29 systems rather than becoming a separate Hub proficiency claim.
