@@ -80,6 +80,20 @@ The P35 stable-channel marker is now asserted synchronously before the asynchron
 
 This does not bypass startup acceptance: the browser suite still waits for the core study surface to leave its loading state before declaring a successful boot.
 
+### Acceptance now follows the current public UI
+
+A second diagnostic run showed that several remaining failures were obsolete test assumptions rather than product failures:
+
+- Firefox had fully rendered the application while `waitForFunction` remained pending, so readiness now uses visible DOM/locator assertions rather than animation-frame polling.
+- Words is verified through the accessible **Search vocabulary** searchbox rather than the removed `#browse-search` control.
+- Progress is verified through its current intelligence heading rather than legacy backup controls.
+- Backup export/import is exercised in **Settings → Data**, where those controls now live.
+- First-run onboarding saves the already-selected defaults directly instead of pressing a shortcut that intentionally rerenders the dialog during the automation click sequence.
+
+These changes preserve the same acceptance intent while targeting the product that is actually shipped.
+
+The P35 workflow also cancels superseded runs for the same branch/ref so obsolete browser matrices do not consume runner capacity after a defect-only patch.
+
 ## Automated acceptance matrix
 
 P35 uses Playwright 1.63.0 and runs five local profiles:
