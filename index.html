@@ -28453,6 +28453,20 @@ qui	who	A1	question word`;
        proficiency, curriculum, or account authority changes.
        ================================================================ */
     const P35_RELEASE='P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening';
+
+    /* Firefox/WebKit can occasionally leave an empty IndexedDB snapshot cursor
+       pending even though the primary state read completed. P35 keeps startup
+       local-first by bounding that recovery-only lookup just like every other
+       startup storage read. A timed-out recovery mirror must never block the
+       usable embedded starter catalog. */
+    const p35LatestDepthSnapshotBase=v404LatestDepthSnapshot;
+    v404LatestDepthSnapshot=async function(){
+      const result=await v362SettledWithin(p35LatestDepthSnapshotBase(),V362_LOCAL_TIMEOUT);
+      if(result.ok)return result.value;
+      if(result.timeout)state.v362StorageDegraded=true;
+      return null;
+    };
+
     const p35NormalizeSurfaceBase=v420NormalizeSurface;
     v420NormalizeSurface=function(){
       p35NormalizeSurfaceBase();
