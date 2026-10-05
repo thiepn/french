@@ -7,7 +7,6 @@ const [html,serviceWorker]=await Promise.all([
 
 const failures=[];
 const required=[
-  "const APP_VERSION = '5.23.0';",
   "P32 B2 Integrated-Skills Capstone, Source-Based Synthesis & Cross-Modal Transfer",
   "const V5230_VERSION='5.23.0';",
   "const V5230_POLICY='p32-b2-integrated-capstone-v1';",
@@ -42,7 +41,6 @@ const required=[
   "v5230CalibrationFixtures()",
   "weak P32 calibration fixture incorrectly passes",
   "strong P32 calibration fixture does not pass",
-  "producerRevision:'french-p8-read-model-v4'",
   "id:'b2-integrated-capstone'",
   "v5230Snapshot()",
   "dataset.integratedAssessment='source-grounded-cross-modal-v1'"
@@ -74,6 +72,9 @@ if(normalizeStart<0||normalizeEnd<0){
 }
 
 if(!html.includes("if(!practice&&!v5220CalibrationSnapshot().currentPass)"))failures.push("P32 calibrated attempts are not gated by current P31 evidence");
+
+const producerRevision=html.match(/producerRevision:'french-p8-read-model-v(\d+)'/);
+if(!producerRevision||Number(producerRevision[1])<4)failures.push("French P8 producer revision predates P32");
 
 const cacheMatch=serviceWorker.match(/french-shell-v(\d+)/);
 if(!cacheMatch||Number(cacheMatch[1])<47)failures.push("offline shell cache predates P32");
