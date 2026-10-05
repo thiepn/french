@@ -1,0 +1,23 @@
+name: P32 integrated skills capstone
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/verify-integrated-capstone-p32.mjs
+      - run: node scripts/verify-open-production-p31.mjs
+      - run: node scripts/verify-b2-corpus-p30.mjs
+      - run: node scripts/verify-language-platform-p7.mjs
+      - run: node scripts/verify-language-read-model-p8.mjs
