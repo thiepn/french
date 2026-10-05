@@ -25534,7 +25534,7 @@ qui	who	A1	question word`;
       if(!run||!spec)return null;
       const independence=clamp(finiteNumber(run.independentRate)/100,0,1),evidence=clamp(finiteNumber(run.averageEvidence),0,1),
         intent=clamp(finiteNumber(run.averageIntentConfidence),0,1),task=run.completed?1:0,
-        support=run.supportMax===0?1:run.supportMax<=spec.maxSupport?.8:0;
+        support=run.supportMax===0?1:run.supportMax<=spec.maxSupport?0.8:0;
       const score=clamp(independence*.35+evidence*.25+intent*.2+task*.15+support*.05,0,1);
       const passed=run.completed===true&&run.independentPass===true&&run.independentRate>=spec.minIndependentRate&&
         run.manualAccepts===0&&run.supportMax<=spec.maxSupport&&run.averageEvidence>=spec.minEvidence&&run.averageIntentConfidence>=spec.minIntent;
