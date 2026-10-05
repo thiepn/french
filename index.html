@@ -3068,6 +3068,7 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
     <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
   <script src="./vendor/thiepn-languages-consumer-contract.js"></script>
+  <script src="./vendor/thiepn-languages-read-model.js"></script>
   <script>
   (() => {
     'use strict';
@@ -3076,6 +3077,7 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
     const APP_RELEASE = 'P27 Curriculum Coverage & Content Quality Audit';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
+    const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
     const THIEPN_LANGUAGES_COMPAT = THIEPN_LANGUAGES_API?.createReadOnlyConsumerDescriptor({
       appId:'french',
       languageId:'french',
@@ -25870,6 +25872,100 @@ qui	who	A1	question word`;
     };
 
 
+    function thiepnFrenchReadModelNextAction(coach,total,plan){
+      let kind='study',priority=50;
+      if(coach.leeches>0){kind='practice';priority=94;}
+      else if(total.due>Math.max(20,state.settings.dailyReviewLimit)){kind='review';priority=92;}
+      else if(coach.preset==='weakness'){kind='practice';priority=86;}
+      else if(total.due>0){kind='review';priority=82;}
+      else if(coach.preset==='roadmap'&&plan.focus){kind='course';priority=72;}
+      else if(coach.preset==='production'||coach.preset==='listening'){kind='practice';priority=62;}
+      return {
+        id:'french-'+String(coach.preset||'daily'),
+        label:String(coach.headline||'Continue French'),
+        kind:kind,
+        priority:priority,
+        reason:String(coach.reason||'Continue the authoritative French study plan.'),
+        route:location.origin+'/'
+      };
+    }
+
+    function thiepnFrenchLanguageReadModel(){
+      if(!THIEPN_LANGUAGE_READ_MODEL_API?.createLanguageReadModel)throw new Error('P8 read-model API unavailable');
+      const total=overallStats(),today=todayStats(),week=rollingStats(7),streak=studyStreak(),coach=coachSnapshot(),plan=studyPlanSnapshot();
+      const progression=v5160ReconcilePromotions(),highest=v5160HighestEarned(),frontier=v5160StudyFrontier(),row=progression.map[frontier],weak=v5160WeakestGate(frontier);
+      const last=state.reviewLog?.at(-1),newItems=Math.max(0,state.settings.dailyNewLimit-today.newSeen);
+      const practiceItems=coach.preset==='weakness'?Math.min(20,Math.max(coach.difficult,coach.leeches)):0;
+      const courseItems=coach.preset==='roadmap'&&plan.focus?1:0;
+      const dimensions=row?V5160_GATE_ORDER.map(function(id){
+        const gate=row.gates[id];
+        return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
+      }):[];
+      const maintenanceNeeded=Boolean(highest&&progression.map[highest]&&!progression.map[highest].currentQualified);
+      return THIEPN_LANGUAGE_READ_MODEL_API.createLanguageReadModel({
+        generatedAt:new Date().toISOString(),
+        appId:'french',
+        languageId:'french',
+        producerRevision:'french-p8-read-model-v1',
+        presentation:{displayName:'French',nativeName:'Français',appRoute:location.origin+'/'},
+        enrollment:{status:'active',targetBand:state.studyPlan?.targetLevel||frontier},
+        workload:{
+          dueItems:total.due,
+          newItems:newItems,
+          practiceItems:practiceItems,
+          courseItems:courseItems,
+          totalItems:total.due+newItems+practiceItems+courseItems
+        },
+        activity:{
+          todayEvents:today.reviewed,
+          sevenDayEvents:week.reviewed,
+          streakDays:streak,
+          lastStudiedAt:last?.t?new Date(last.t).toISOString():null
+        },
+        progress:{metrics:[
+          {id:'vocabulary-mastered',label:'Vocabulary mastered',current:total.mastered,total:total.total,unit:'cards'},
+          {id:'target-curriculum-mastered',label:(state.studyPlan?.targetLevel||frontier)+' target curriculum',current:finiteNumber(plan.stats?.mastered),total:finiteNumber(plan.targetMastered),unit:'cards'}
+        ]},
+        proficiency:{
+          framework:'THIEPN French internal CEFR-aligned gates',
+          claim:'internal',
+          ...(highest?{currentBand:highest}:{}),
+          ...(frontier?{frontierBand:frontier}:{}),
+          maintenanceNeeded:maintenanceNeeded,
+          dimensions:dimensions
+        },
+        nextAction:thiepnFrenchReadModelNextAction(coach,total,plan),
+        source:{
+          stateRevision:String(state.reviewLog?.length||0)+':'+String(last?.t||0)+':'+String(state.profile?.xp||0),
+          contentVersion:APP_VERSION
+        }
+      });
+    }
+
+    function thiepnFrenchPublishLanguageReadModel(){
+      const model=thiepnFrenchLanguageReadModel();
+      window.dispatchEvent(new CustomEvent('thiepn-language-read-model',{detail:model}));
+      return model;
+    }
+
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_LANGUAGE_READ_MODEL',{
+      value:Object.freeze({
+        version:'p8-read-model-v1',
+        getSnapshot:thiepnFrenchLanguageReadModel,
+        publish:thiepnFrenchPublishLanguageReadModel
+      }),
+      writable:false,
+      configurable:false
+    });
+
+    const thiepnLanguageReadModelInitBase=init;
+    init=async function(options){
+      const result=await thiepnLanguageReadModelInitBase(options||{});
+      try{thiepnFrenchPublishLanguageReadModel();}catch(error){console.error('French: P8 language read-model projection failed.',error);}
+      return result;
+    };
+
+
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
       const ok=required.every(fn=>typeof fn==='function');
@@ -25878,9 +25974,13 @@ qui	who	A1	question word`;
         && THIEPN_LANGUAGES_COMPAT?.authority?.memory==='consumer'
         && THIEPN_LANGUAGES_COMPAT?.capabilities?.sharedStateAuthoritative===false
         && THIEPN_LANGUAGES_COMPAT?.capabilities?.consumerWritesSharedState===false;
+      const readModelOk=THIEPN_LANGUAGE_READ_MODEL_API?.readModelVersion==='p8-read-model-v1'
+        && typeof THIEPN_LANGUAGE_READ_MODEL_API?.createLanguageReadModel==='function'
+        && typeof globalThis.THIEPN_FRENCH_LANGUAGE_READ_MODEL?.getSnapshot==='function';
       if(!ok)console.error(`French v${APP_VERSION}: canonical controller initialization failed.`);
       if(!platformOk)console.error('French: THIEPN Languages P7 read-only compatibility contract failed.',THIEPN_LANGUAGES_VALIDATION.issues||[]);
-      return ok&&platformOk;
+      if(!readModelOk)console.error('French: THIEPN Languages P8 read-model contract unavailable.');
+      return ok&&platformOk&&readModelOk;
     }
 
     v380BootAudit();

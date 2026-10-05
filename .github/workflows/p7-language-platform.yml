@@ -1,4 +1,4 @@
-name: P7 language platform compatibility
+name: Language platform compatibility
 
 on:
   push:
@@ -17,3 +17,4 @@ jobs:
         with:
           node-version: 24
       - run: node scripts/verify-language-platform-p7.mjs
+      - run: node scripts/verify-language-read-model-p8.mjs
