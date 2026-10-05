@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.19.0';
-    const APP_RELEASE = 'P28 Real-World Transfer & Functional Fluency Benchmarking';
+    const APP_VERSION = '5.20.0';
+    const APP_RELEASE = 'P29 Functional Fluency Consolidation, Maintenance & Long-Term Transfer';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -25481,7 +25481,8 @@ qui	who	A1	question word`;
         score:clamp(finiteNumber(row.score),0,1),independentRate:clamp(Math.round(finiteNumber(row.independentRate)),0,100),
         averageEvidence:clamp(finiteNumber(row.averageEvidence),0,1),averageIntentConfidence:clamp(finiteNumber(row.averageIntentConfidence),0,1),
         supportMax:clamp(Math.floor(finiteNumber(row.supportMax)),0,3),manualAccepts:clamp(Math.floor(finiteNumber(row.manualAccepts)),0,60),
-        successfulTurns:clamp(Math.floor(finiteNumber(row.successfulTurns)),0,200)
+        successfulTurns:clamp(Math.floor(finiteNumber(row.successfulTurns)),0,200),
+        contextSignature:String(row.contextSignature||'').slice(0,480)
       };
     }
     function v5190NormalizeAttempt(row){
@@ -25538,10 +25539,11 @@ qui	who	A1	question word`;
       const score=clamp(independence*.35+evidence*.25+intent*.2+task*.15+support*.05,0,1);
       const passed=run.completed===true&&run.independentPass===true&&run.independentRate>=spec.minIndependentRate&&
         run.manualAccepts===0&&run.supportMax<=spec.maxSupport&&run.averageEvidence>=spec.minEvidence&&run.averageIntentConfidence>=spec.minIntent;
+      const contextSignature=(run.scenarioResults||[]).map(function(row){return String(row.scenarioId||'')+':'+String(row.variant??'');}).join('|');
       return {
         missionId:run.missionId,runId:run.id,passed:passed,score:score,independentRate:run.independentRate,
         averageEvidence:run.averageEvidence,averageIntentConfidence:run.averageIntentConfidence,supportMax:run.supportMax,
-        manualAccepts:run.manualAccepts,successfulTurns:run.successfulTurns
+        manualAccepts:run.manualAccepts,successfulTurns:run.successfulTurns,contextSignature:contextSignature
       };
     }
     function v5190FinishAttempt(passed){
@@ -25713,6 +25715,236 @@ qui	who	A1	question word`;
       v5190Load();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='progress')renderProgress();else if(state.view==='conversation')renderConversation();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.19.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.20.0 FUNCTIONAL FLUENCY CONSOLIDATION, MAINTENANCE & LONG-TERM TRANSFER
+       P29 derives durability from P28 benchmark history. It does not
+       create a second proficiency authority and never infers that
+       ability has disappeared merely because evidence is old.
+       ================================================================ */
+    const V5200_VERSION='5.20.0';
+    const V5200_RELEASE='P29 Functional Fluency Consolidation, Maintenance & Long-Term Transfer';
+    const V5200_POLICY='p29-functional-maintenance-v1';
+    const V5200_CONSOLIDATION_DAYS=7;
+    const V5200_MAINTENANCE_DAYS=30;
+    const V5200_LONG_TERM_DAYS=60;
+    const V5200_STALE_GRACE_DAYS=30;
+    const V5200_LEVELS=Object.freeze(['A1','A2','B1']);
+
+    function v5200Passes(level){
+      return (state.v5190Benchmark?.history||[])
+        .filter(function(row){return row.level===level&&row.passed===true&&finiteNumber(row.completedAt)>0;})
+        .slice().sort(function(a,b){return a.completedAt-b.completedAt;});
+    }
+    function v5200Attempts(level){
+      return (state.v5190Benchmark?.history||[])
+        .filter(function(row){return row.level===level&&finiteNumber(row.completedAt)>0;})
+        .slice().sort(function(a,b){return a.completedAt-b.completedAt;});
+    }
+    function v5200AttemptContext(attempt){
+      if(!attempt)return '';
+      return (attempt.missionResults||[]).map(function(row){
+        const signature=String(row.contextSignature||'').trim();
+        return signature?String(row.missionId)+'['+signature+']':'';
+      }).filter(Boolean).join('||');
+    }
+    function v5200SpacedPasses(level){
+      const passes=v5200Passes(level);if(!passes.length)return [];
+      const result=[passes[0]];
+      for(const pass of passes.slice(1)){
+        const previous=result.at(-1);
+        if(pass.completedAt-previous.completedAt>=days(V5200_CONSOLIDATION_DAYS))result.push(pass);
+      }
+      return result;
+    }
+    function v5200LevelStatus(level,at=now()){
+      const passes=v5200Passes(level),attempts=v5200Attempts(level),spaced=v5200SpacedPasses(level),
+        latestPass=passes.at(-1)||null,latestAttempt=attempts.at(-1)||null,
+        contexts=[...new Set(passes.map(v5200AttemptContext).filter(Boolean))],
+        baseline=passes[0]||null,active=state.v5190Benchmark?.active?.level===level;
+      if(!latestPass){
+        return {level:level,key:active?'retesting':'unestablished',label:active?'Benchmark in progress':'No benchmark pass yet',
+          passed:false,maintenanceNeeded:false,active:active,passCount:0,spacedPasses:0,distinctContexts:0,nextDueAt:null,latestPassAt:null,longTerm:false,consolidated:false,transferConfirmed:false};
+      }
+      const failedAfterPass=Boolean(latestAttempt&&!latestAttempt.passed&&latestAttempt.completedAt>latestPass.completedAt);
+      const consolidated=spaced.length>=2;
+      const transferConfirmed=contexts.length>=2;
+      const longTerm=spaced.length>=3&&baseline&&latestPass.completedAt-baseline.completedAt>=days(V5200_LONG_TERM_DAYS)&&transferConfirmed;
+      const nextDueAt=latestPass.completedAt+days(consolidated?V5200_MAINTENANCE_DAYS:V5200_CONSOLIDATION_DAYS);
+      const staleAt=nextDueAt+days(V5200_STALE_GRACE_DAYS);
+      let key,label,maintenanceNeeded=false;
+      if(active){key='retesting';label='Re-test in progress';}
+      else if(failedAfterPass){key='requalification';label='Requalification needed';maintenanceNeeded=true;}
+      else if(at>=staleAt){key='evidence-stale';label='Evidence stale';maintenanceNeeded=true;}
+      else if(at>=nextDueAt){key=consolidated?(longTerm?'long-term-due':'maintenance-due'):'consolidation-due';label=consolidated?'Maintenance re-test due':'Consolidation re-test due';maintenanceNeeded=true;}
+      else if(longTerm){key='long-term';label='Long-term transfer maintained';}
+      else if(consolidated&&transferConfirmed){key='maintained-transfer';label='Consolidated across contexts';}
+      else if(consolidated){key='consolidated';label='Consolidated; vary contexts next';}
+      else{key='consolidating';label='Initial pass; delayed re-test pending';}
+      return {
+        level:level,key:key,label:label,passed:true,maintenanceNeeded:maintenanceNeeded,active:active,
+        passCount:passes.length,spacedPasses:spaced.length,distinctContexts:contexts.length,
+        latestPassAt:latestPass.completedAt,baselineAt:baseline.completedAt,nextDueAt:nextDueAt,staleAt:staleAt,
+        latestAttemptPassed:latestAttempt?.passed===true,failedAfterPass:failedAfterPass,
+        consolidated:consolidated,transferConfirmed:transferConfirmed,longTerm:longTerm,
+        spanDays:baseline?Math.floor((latestPass.completedAt-baseline.completedAt)/days(1)):0
+      };
+    }
+    function v5200Snapshot(at=now()){
+      const levels=V5200_LEVELS.map(function(level){return v5200LevelStatus(level,at);});
+      const tracked=levels.filter(function(row){return row.passed;});
+      const actionable=levels.filter(function(row){return row.maintenanceNeeded;}).sort(function(a,b){
+        const severity={requalification:4,'evidence-stale':3,'maintenance-due':2,'long-term-due':2,'consolidation-due':1};
+        return (severity[b.key]||0)-(severity[a.key]||0)||V5200_LEVELS.indexOf(b.level)-V5200_LEVELS.indexOf(a.level);
+      });
+      const highest=V5200_LEVELS.slice().reverse().find(function(level){return levels.find(function(row){return row.level===level&&row.passed;});})||null;
+      return {
+        schema:'thiepn-french-functional-maintenance',schemaVersion:1,policy:V5200_POLICY,generatedAt:new Date(at).toISOString(),
+        levels:levels,highestTrackedLevel:highest,maintenanceNeeded:actionable.length>0,nextAction:actionable[0]||null,
+        longTermLevels:levels.filter(function(row){return row.longTerm;}).map(function(row){return row.level;}),
+        comparisonPolicy:{oldEvidenceMeansAbilityLost:false,practiceCountsAsMaintenance:false,failedRetestSupersedesOlderPass:false}
+      };
+    }
+    function v5200Date(value){
+      if(!value)return '—';
+      try{return new Intl.DateTimeFormat(undefined,{dateStyle:'medium'}).format(new Date(value));}
+      catch{return new Date(value).toLocaleDateString();}
+    }
+    function v5200RelativeDue(row){
+      if(!row?.nextDueAt)return 'No scheduled re-test';
+      const delta=row.nextDueAt-now(),amount=Math.ceil(Math.abs(delta)/days(1));
+      if(delta>0)return 'Next re-test '+(amount===0?'today':'in '+amount+' day'+(amount===1?'':'s'));
+      if(Math.abs(delta)<days(1))return 'Re-test due today';
+      return amount+' day'+(amount===1?'':'s')+' overdue';
+    }
+    function v5200Retest(level){
+      const row=v5200LevelStatus(level);
+      if(!row.passed){showToast('Earn a P28 '+level+' benchmark pass before maintenance tracking begins.');return;}
+      if(state.v5190Benchmark?.active){v5190StartBenchmark(state.v5190Benchmark.active.level);return;}
+      v5190StartBenchmark(level);
+    }
+
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_FLUENCY_MAINTENANCE',{
+      value:Object.freeze({version:V5200_POLICY,getSnapshot:v5200Snapshot,getLevel:v5200LevelStatus}),
+      writable:false,configurable:false
+    });
+
+    const v5200CoachSnapshotBase=coachSnapshot;
+    coachSnapshot=function(){
+      const snapshot=v5200CoachSnapshotBase(),maintenance=v5200Snapshot(),action=maintenance.nextAction;
+      if(!action)return {...snapshot,maintenance:maintenance};
+      const urgentReview=snapshot.leeches>0||snapshot.total.due>Math.max(20,state.settings.dailyReviewLimit*.5);
+      if(urgentReview)return {...snapshot,maintenance:maintenance};
+      return {...snapshot,maintenance:maintenance,preset:'maintenance',
+        headline:'Re-test '+action.level+' functional fluency',
+        reason:action.key==='requalification'
+          ?'Your latest '+action.level+' benchmark attempt did not pass. Re-test before treating the older pass as current evidence.'
+          :action.key==='evidence-stale'
+            ?'Your '+action.level+' benchmark evidence is older than the maintenance window. A fresh fixed-task re-test will update the evidence.'
+            :action.label+'. '+v5200RelativeDue(action)+'.'};
+    };
+    const v5200ApplySessionPresetBase=applySessionPreset;
+    applySessionPreset=function(name){
+      if(name==='maintenance'){
+        const action=v5200Snapshot().nextAction;
+        if(action){v5200Retest(action.level);return;}
+      }
+      return v5200ApplySessionPresetBase(name);
+    };
+
+    function v5200LevelCard(row){
+      const due=row.nextDueAt?v5200Date(row.nextDueAt):'—',
+        contextDetail=row.passCount?(row.distinctContexts+' verified context pattern'+(row.distinctContexts===1?'':'s')):'No context evidence',
+        button=row.maintenanceNeeded?'<button class="primary" type="button" data-v5200-retest="'+row.level+'">Run re-test</button>':
+          row.passed?'<button class="secondary" type="button" disabled>'+escapeHtml(v5200RelativeDue(row))+'</button>':'<button class="secondary" type="button" data-v5200-open-benchmark="'+row.level+'">Open P28 benchmark</button>';
+      return '<article class="v5200-level '+escapeHtml(row.key)+'"><header><span class="level-chip level-'+row.level.toLowerCase()+'">'+row.level+'</span><strong>'+escapeHtml(row.label)+'</strong></header>'+
+        '<div class="v5200-metrics"><span><b>'+row.passCount+'</b> passes</span><span><b>'+row.spacedPasses+'</b> spaced passes</span><span><b>'+row.distinctContexts+'</b> contexts</span><span><b>'+row.spanDays+'</b> day span</span></div>'+
+        '<p>'+(row.passed?'Latest pass '+escapeHtml(v5200Date(row.latestPassAt))+' · next evidence checkpoint '+escapeHtml(due)+'.':'P29 begins only after a successful P28 benchmark.')+'</p>'+
+        '<small>'+escapeHtml(contextDetail)+(row.longTerm?' · long-term criterion met':row.consolidated?' · consolidation criterion met':'')+'. Old evidence becoming stale means evidence is stale, not that ability is assumed lost.</small>'+button+'</article>';
+    }
+    function v5200ProgressPanel(){
+      const snapshot=v5200Snapshot(),tracked=snapshot.levels.filter(function(row){return row.passed;}),
+        due=snapshot.levels.filter(function(row){return row.maintenanceNeeded;}).length;
+      return '<section class="v5200-panel"><div class="v5200-head"><div><p class="eyebrow">P29 fluency maintenance</p><h3>Prove that functional ability survives time and context change</h3><p>P29 reuses P28 benchmark passes as the only functional-fluency evidence. A first pass starts consolidation; later passes must be delayed, and long-term transfer additionally requires repeated evidence across at least 60 days and multiple scenario-variant patterns.</p></div><div class="v5200-summary"><span><strong>'+tracked.length+'</strong> tracked levels</span><span><strong>'+due+'</strong> due</span><span><strong>'+snapshot.longTermLevels.length+'</strong> long-term</span></div></div>'+
+        '<div class="v5200-rules"><span><b>'+V5200_CONSOLIDATION_DAYS+'d</b> minimum delayed consolidation</span><span><b>'+V5200_MAINTENANCE_DAYS+'d</b> recurring maintenance window</span><span><b>'+V5200_LONG_TERM_DAYS+'d</b> minimum long-term span</span><span><b>2+</b> distinct variant patterns for long-term transfer</span></div>'+
+        '<div class="v5200-grid">'+snapshot.levels.map(v5200LevelCard).join('')+'</div>'+
+        '<p class="v5200-note">P29 never converts ordinary practice into maintenance evidence, never averages away a failed P28 re-test, and never treats an expired evidence window as proof that the learner has lost the language.</p></section>';
+    }
+    function v5200BindProgress(){
+      main.querySelectorAll('[data-v5200-retest]').forEach(function(button){button.addEventListener('click',function(){v5200Retest(button.dataset.v5200Retest);});});
+      main.querySelectorAll('[data-v5200-open-benchmark]').forEach(function(button){button.addEventListener('click',function(){v5190StartBenchmark(button.dataset.v5200OpenBenchmark);});});
+    }
+    function v5200DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5200-panel'))return;
+      const anchor=main.querySelector('.v5190-panel')||main.querySelector('.v5180-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5200ProgressPanel());else main.insertAdjacentHTML('beforeend',v5200ProgressPanel());
+      v5200BindProgress();
+    }
+    const v5200RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5200RenderProgressBase();v5200DecorateProgress();return result;};
+
+    function v5200DashboardCard(){
+      const snapshot=v5200Snapshot(),action=snapshot.nextAction;if(!action)return '';
+      return '<section class="v5200-dashboard"><div><p class="eyebrow">P29 maintenance due</p><h3>'+escapeHtml(action.level+' · '+action.label)+'</h3><p>'+escapeHtml(action.key==='evidence-stale'?'The evidence window is stale; this does not mean ability is assumed lost. Run a fresh P28 battery to renew it.':v5200RelativeDue(action)+'. A fresh P28 battery is required; ordinary practice does not reset maintenance.')+'</p></div><button class="primary" id="v5200-dashboard-retest">Run '+escapeHtml(action.level)+' re-test</button></section>';
+    }
+    function v5200DecorateDashboard(){
+      if(state.view!=='dashboard'||main.querySelector('.v5200-dashboard'))return;
+      const html=v5200DashboardCard();if(!html)return;
+      const anchor=main.querySelector('.v590-dashboard-card')||main.querySelector('.v580-dashboard-card')||main.firstElementChild;
+      if(anchor)anchor.insertAdjacentHTML('afterend',html);else main.insertAdjacentHTML('afterbegin',html);
+      $('#v5200-dashboard-retest')?.addEventListener('click',function(){const action=v5200Snapshot().nextAction;if(action)v5200Retest(action.level);});
+    }
+    const v5200RenderDashboardBase=renderDashboard;
+    renderDashboard=function(){const result=v5200RenderDashboardBase();v5200DecorateDashboard();return result;};
+
+    function v5200Audit(){
+      const errors=[];
+      if(V5200_CONSOLIDATION_DAYS<7)errors.push('consolidation spacing is too short');
+      if(V5200_MAINTENANCE_DAYS<=V5200_CONSOLIDATION_DAYS)errors.push('maintenance window must exceed consolidation spacing');
+      if(V5200_LONG_TERM_DAYS<V5200_MAINTENANCE_DAYS*2)errors.push('long-term span must cover at least two maintenance windows');
+      if(V5200_LEVELS.includes('B2'))errors.push('B2 maintenance cannot exist before a P28 B2 benchmark exists');
+      const snapshot=v5200Snapshot();
+      for(const row of snapshot.levels){
+        if(row.longTerm&&(!row.consolidated||!row.transferConfirmed||row.spanDays<V5200_LONG_TERM_DAYS))errors.push(row.level+' false long-term status');
+        if(row.maintenanceNeeded&&!['consolidation-due','maintenance-due','long-term-due','evidence-stale','requalification'].includes(row.key))errors.push(row.level+' invalid maintenance-needed state');
+        if(row.nextDueAt&&row.latestPassAt&&row.nextDueAt<=row.latestPassAt)errors.push(row.level+' invalid due date');
+      }
+      if(errors.length)console.error('French P29 fluency maintenance audit failed',errors);
+      document.documentElement.dataset.fluencyMaintenance=errors.length?'failed':'delayed-transfer-evidence-v1';return errors;
+    }
+    const v5200RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5200RunQaBase(),errors=v5200Audit();
+      result.checks.push(v5100QaCheck('fluency-maintenance','Functional fluency consolidation, maintenance & long-term transfer',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):'7-day consolidation · 30-day maintenance · 60-day long-term span · variant diversity · stale evidence is not inferred ability loss'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + '+V5200_POLICY;
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5200EnsureStyles(){
+      if(document.querySelector('#v5200-maintenance-style'))return;
+      const style=document.createElement('style');style.id='v5200-maintenance-style';
+      style.textContent='.v5200-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5200-head{display:flex;justify-content:space-between;gap:.85rem;align-items:flex-start}.v5200-head h3,.v5200-dashboard h3{margin:.08rem 0}.v5200-head p,.v5200-dashboard p{margin:0;color:var(--muted);font-size:.62rem;max-width:82ch}.v5200-summary{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end}.v5200-summary span,.v5200-rules span,.v5200-metrics span{padding:.4rem .48rem;border-radius:10px;background:var(--surface-muted);font-size:.49rem;color:var(--muted)}.v5200-summary strong,.v5200-rules b,.v5200-metrics b{display:block;color:var(--navy);font-size:.72rem}.v5200-rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3rem;margin-top:.62rem}.v5200-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin-top:.5rem}.v5200-level{display:grid;gap:.42rem;padding:.68rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted)}.v5200-level header{display:flex;justify-content:space-between;gap:.45rem;align-items:center}.v5200-level header strong{font-size:.52rem;color:var(--muted);text-align:right}.v5200-level.maintenance-due,.v5200-level.long-term-due,.v5200-level.consolidation-due{border-color:color-mix(in srgb,var(--gold) 48%,var(--line))}.v5200-level.evidence-stale,.v5200-level.requalification{border-color:color-mix(in srgb,var(--red) 45%,var(--line))}.v5200-level.long-term,.v5200-level.maintained-transfer{border-color:color-mix(in srgb,var(--green) 42%,var(--line))}.v5200-metrics{display:grid;grid-template-columns:1fr 1fr;gap:.24rem}.v5200-level p,.v5200-level small{margin:0;color:var(--muted);font-size:.5rem;line-height:1.45}.v5200-note{margin:.58rem 0 0!important;color:var(--muted)!important;font-size:.49rem!important}.v5200-dashboard{display:flex;justify-content:space-between;align-items:center;gap:.7rem;padding:.75rem .82rem;border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--gold) 6%,var(--surface-solid));margin-bottom:.65rem}@media(max-width:950px){.v5200-grid{grid-template-columns:1fr 1fr}.v5200-rules{grid-template-columns:1fr 1fr}}@media(max-width:700px){.v5200-head{flex-direction:column}.v5200-summary{justify-content:flex-start}.v5200-grid{grid-template-columns:1fr}.v5200-dashboard{align-items:stretch;flex-direction:column}.v5200-dashboard button{width:100%}}';
+      document.head.append(style);
+    }
+    const v5200NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5200NormalizeSurfaceBase();document.documentElement.dataset.release='p29-functional-fluency-maintenance';
+      document.documentElement.dataset.longTermTransfer='delayed-spaced-variant-evidence-v1';
+    };
+    const v5200InitBase=init;
+    init=async function(options){
+      v5200EnsureStyles();
+      const result=await v5200InitBase(options||{});
+      v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.20.0';return result;
     };
 
 
@@ -26154,6 +26386,7 @@ qui	who	A1	question word`;
       let kind='study',priority=50;
       if(coach.leeches>0){kind='practice';priority=94;}
       else if(total.due>Math.max(20,state.settings.dailyReviewLimit)){kind='review';priority=92;}
+      else if(coach.preset==='maintenance'){kind='maintain';priority=89;}
       else if(coach.preset==='weakness'){kind='practice';priority=86;}
       else if(total.due>0){kind='review';priority=82;}
       else if(coach.preset==='roadmap'&&plan.focus){kind='course';priority=72;}
@@ -26179,7 +26412,8 @@ qui	who	A1	question word`;
         const gate=row.gates[id];
         return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
       }):[];
-      const maintenanceNeeded=Boolean(highest&&progression.map[highest]&&!progression.map[highest].currentQualified);
+      const fluencyMaintenance=v5200Snapshot();
+      const maintenanceNeeded=Boolean((highest&&progression.map[highest]&&!progression.map[highest].currentQualified)||fluencyMaintenance.maintenanceNeeded);
       return THIEPN_LANGUAGE_READ_MODEL_API.createLanguageReadModel({
         generatedAt:new Date().toISOString(),
         appId:'french',
