@@ -14,13 +14,13 @@ const required=[
   "missions:Object.freeze(['daily-errands'])",
   "missions:Object.freeze(['arrival-day','social-day'])",
   "missions:Object.freeze(['customer-problems','independent-living'])",
+  "missions:Object.freeze(['advanced-workplace','public-reasoning'])",
   "run.t<active.startedAt",
   "run.independentRate>=spec.minIndependentRate",
   "run.manualAccepts===0",
   "run.supportMax<=spec.maxSupport",
   "run.averageEvidence>=spec.minEvidence",
   "run.averageIntentConfidence>=spec.minIntent",
-  "if(V5190_SPECS.B2)errors.push",
   "v5190Benchmark:v5190NormalizeState",
   "functional-benchmark",
   "p28-functional-benchmark-v1"
@@ -33,7 +33,8 @@ if(!html.includes("document.documentElement.dataset.functionalFluency='fixed-tas
 if(!html.includes("practice runs outside a benchmark never count"))failures.push("practice/benchmark separation copy missing");
 const cacheMatch=serviceWorker.match(/french-shell-v(\d+)/);
 if(!cacheMatch||Number(cacheMatch[1])<42)failures.push("offline shell cache predates P28");
-if(/B2:Object\.freeze\(\{/.test(html))failures.push("B2 benchmark was enabled despite incomplete audited coverage");
+if(!html.includes("if(level==='B2'&&(!v5180LevelCoverage('B2').promotionCoverage||v5180LevelHasDefect('B2')))"))failures.push("B2 runtime audit gate missing");
+if(!html.includes("minIndependentRate:88,minEvidence:.68,minIntent:.68,maxSupport:1"))failures.push("B2 benchmark thresholds missing");
 
 console.log(JSON.stringify({
   schema:"thiepn-french-p28-functional-benchmark-smoke",
