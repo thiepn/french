@@ -2,35 +2,33 @@ import { test, expect } from '@playwright/test';
 
 const EXPECTED_TITLE = 'French — Adaptive language learning';
 const EXPECTED_SUBTITLE = 'Adaptive French · vocabulary, grammar, listening, speaking & transfer';
+const EXPECTED_BACKUP = 'french-complete-backup-v5.24.0.json';
+
+async function completeOnboardingIfNeeded(page) {
+  const onboarding = page.locator('#v385-onboarding');
+  if (!(await onboarding.isVisible().catch(() => false))) return;
+  await onboarding.getByRole('button', { name: 'Save & start' }).click();
+  await expect(onboarding).toBeHidden({ timeout: 15000 });
+}
 
 async function waitForStableBoot(page) {
-  await page.waitForFunction(() => {
-    const main = document.querySelector('#main');
-    if (!main) return false;
-    if (main.querySelector('.loading-screen')) return false;
-    const text = String(main.textContent || '');
-    if (/French could not start|Vocabulary could not be loaded/i.test(text)) return false;
-    return Boolean(main.querySelector('h1,h2') || document.querySelector('#v385-onboarding[open]'));
-  }, null, { timeout: 60000 });
+  const main = page.locator('#main');
+  await expect(main).toBeVisible();
+  await expect(main.locator('.loading-screen')).toHaveCount(0, { timeout: 30000 });
+  await expect(page.locator('#main h1, #main h2, #v385-onboarding[open]').first()).toBeVisible({ timeout: 30000 });
 
-  await page.waitForFunction(
-    () => document.documentElement.dataset.release === 'p35-stable-release',
-    null,
-    { timeout: 15000 }
-  );
+  await expect(page.locator('html')).toHaveAttribute('data-release', 'p35-stable-release', { timeout: 15000 });
+  await expect(page.locator('html')).toHaveAttribute('data-release-channel', 'stable');
+  await expect(page.locator('html')).toHaveAttribute('data-release-acceptance', 'browser-device-defect-only');
+  await expect(page.locator('html')).toHaveAttribute('data-product-scope', 'adaptive-language-learning');
+  await expect(page.locator('html')).toHaveAttribute('data-app-version', '5.24.0');
 
-  await expect(page.locator('#main')).toBeVisible();
   await expect(page).toHaveTitle(EXPECTED_TITLE);
   await expect(page.locator('.brand-copy span')).toHaveText(EXPECTED_SUBTITLE);
   await expect(page.locator('body')).not.toContainText('Vocabulary could not be loaded');
   await expect(page.locator('body')).not.toContainText('French could not start');
 
-  const onboarding = page.locator('#v385-onboarding');
-  if (await onboarding.isVisible().catch(() => false)) {
-    await onboarding.locator('#v385-defaults').click();
-    await onboarding.locator('#v385-start').click();
-    await expect(onboarding).toBeHidden();
-  }
+  await completeOnboardingIfNeeded(page);
 }
 
 async function boot(page) {
@@ -43,6 +41,15 @@ async function openView(page, view) {
   await expect(button).toBeVisible();
   await button.click();
   await expect(button).toHaveAttribute('aria-current', 'page');
+}
+
+async function openDataSettings(page) {
+  await openView(page, 'settings');
+  const dataTab = page.getByRole('tab', { name: 'Data', exact: true });
+  await expect(dataTab).toBeVisible();
+  await dataTab.click();
+  await expect(dataTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('heading', { name: 'Data & recovery' })).toBeVisible();
 }
 
 test('stable shell boots, identifies itself correctly, and core navigation remains usable', async ({ page }) => {
@@ -83,19 +90,21 @@ test('stable shell boots, identifies itself correctly, and core navigation remai
   expect(overflow.body).toBeLessThanOrEqual(2);
 
   await openView(page, 'browse');
-  await expect(page.locator('#browse-search')).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Search vocabulary' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Words', exact: true })).toBeVisible();
 
   await openView(page, 'progress');
-  await expect(page.locator('#export-progress')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'What you know, what is fragile, what to do next' })).toBeVisible();
 
   await openView(page, 'dashboard');
-  await expect(page.locator('#main')).toBeVisible();
+  await expect(page.locator('#main h1, #main h2').first()).toBeVisible();
 
   expect(pageErrors).toEqual([]);
 });
 
 test('manifest, static shell, and release metadata expose the full stable product', async ({ page }) => {
-  await boot(page);
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveTitle(EXPECTED_TITLE);
 
   const metadata = await page.evaluate(async () => {
     const [manifestResponse, releaseResponse, shellResponse] = await Promise.all([
@@ -174,13 +183,13 @@ test('progress backup exports and malformed imports fail safely', async ({ page 
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
 
   await boot(page);
-  await openView(page, 'progress');
+  await openDataSettings(page);
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.locator('#export-progress').click()
+    page.locator('#v371-export-backup').click()
   ]);
-  expect(download.suggestedFilename()).toBe('french-progress.json');
+  expect(download.suggestedFilename()).toBe(EXPECTED_BACKUP);
 
   const dialogPromise = new Promise(resolve => {
     page.once('dialog', async dialog => {
@@ -190,7 +199,7 @@ test('progress backup exports and malformed imports fail safely', async ({ page 
     });
   });
 
-  await page.locator('#import-progress').setInputFiles({
+  await page.locator('#v371-import-backup').setInputFiles({
     name: 'broken-progress.json',
     mimeType: 'application/json',
     buffer: Buffer.from('{not-valid-json', 'utf8')
@@ -217,8 +226,8 @@ test('corrupt settings and missing speech recognition do not break startup', asy
 
   await expect(page.locator('#main')).toBeVisible();
   await expect(page.locator('body')).not.toContainText('Vocabulary could not be loaded');
-  await openView(page, 'progress');
-  await expect(page.locator('#export-progress')).toBeVisible();
+  await openDataSettings(page);
+  await expect(page.locator('#v371-export-backup')).toBeVisible();
 
   expect(pageErrors).toEqual([]);
 });
