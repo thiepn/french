@@ -43,6 +43,8 @@ The offline evaluator measures only observable features:
 | Lexical range | Content-word diversity plus a conservative lexical-sophistication proxy |
 | Structural complexity | Sentence development, subordinate structures, and conditional-form evidence |
 
+To reduce generic template gaming, every prompt also defines topic-anchor groups. At least two of three topic groups must be represented before a calibrated task can pass.
+
 The evaluator also records:
 
 - word count;
@@ -123,6 +125,8 @@ Persistent/synced state contains only:
 - timing;
 - pass/fail status;
 - evaluator version.
+
+A stored pass is current only when it was produced by the active evaluator version; future rubric revisions therefore cannot silently inherit old calibration evidence.
 
 The textarea exists only in transient UI memory. Closing or reloading can therefore discard an unfinished draft.
 
