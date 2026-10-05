@@ -74,6 +74,12 @@ The acceptance suite now tests the current public contract instead:
 
 Changing stale selectors is test maintenance. It does not change learner behavior or reduce the release criteria.
 
+### Release identity is independent of account connectivity
+
+The P35 stable-channel marker is now asserted synchronously before the asynchronous account initialization chain. Optional account CDN/auth latency therefore cannot delay or suppress the app's release identity.
+
+This does not bypass startup acceptance: the browser suite still waits for the core study surface to leave its loading state before declaring a successful boot.
+
 ## Automated acceptance matrix
 
 P35 uses Playwright 1.63.0 and runs five local profiles:
