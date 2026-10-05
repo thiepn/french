@@ -25451,7 +25451,7 @@ qui	who	A1	question word`;
         return {
           userId:typeof raw.userId==='string'?raw.userId:'',
           enabled:raw.enabled===true,
-          revision:Number.isFinite(Number(raw.revision))?Number(raw.revision):null,
+          revision:raw.revision===null||raw.revision===undefined?null:(Number.isFinite(Number(raw.revision))?Number(raw.revision):null),
           localHash:typeof raw.localHash==='string'?raw.localHash:'',
           syncedAt:Number.isFinite(Number(raw.syncedAt))?Number(raw.syncedAt):0
         };
@@ -25662,7 +25662,7 @@ qui	who	A1	question word`;
         account.busy=true;account.error='';thiepnAccountRender();
         const client=account.client||await thiepnAccountLoadClient();
         sessionStorage.setItem(THIEPN_ACCOUNT_RETURN_KEY,'settings');
-        const redirectTo=location.origin+location.pathname+'?thiepn_auth=1';
+        const redirectTo=location.origin+location.pathname;
         const response=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo}});
         if(response.error)throw response.error;
       }catch(error){
