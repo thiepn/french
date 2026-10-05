@@ -3067,12 +3067,26 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
+  <script src="./vendor/thiepn-languages-consumer-contract.js"></script>
   <script>
   (() => {
     'use strict';
 
     const APP_VERSION = '5.18.0';
     const APP_RELEASE = 'P27 Curriculum Coverage & Content Quality Audit';
+    const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
+    const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
+    const THIEPN_LANGUAGES_COMPAT = THIEPN_LANGUAGES_API?.createReadOnlyConsumerDescriptor({
+      appId:'french',
+      languageId:'french',
+      consumerRevision:THIEPN_LANGUAGES_SOURCE_BASELINE
+    }) || null;
+    const THIEPN_LANGUAGES_VALIDATION = THIEPN_LANGUAGES_API?.validateReadOnlyConsumerDescriptor(THIEPN_LANGUAGES_COMPAT) || {ok:false,issues:['P7 browser contract unavailable']};
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_LANGUAGE_PLATFORM',{
+      value:THIEPN_LANGUAGES_COMPAT,
+      writable:false,
+      configurable:false
+    });
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -25859,9 +25873,16 @@ qui	who	A1	question word`;
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
       const ok=required.every(fn=>typeof fn==='function');
+      const platformOk=THIEPN_LANGUAGES_VALIDATION.ok===true
+        && THIEPN_LANGUAGES_COMPAT?.integrationMode==='read-only'
+        && THIEPN_LANGUAGES_COMPAT?.authority?.memory==='consumer'
+        && THIEPN_LANGUAGES_COMPAT?.capabilities?.sharedStateAuthoritative===false
+        && THIEPN_LANGUAGES_COMPAT?.capabilities?.consumerWritesSharedState===false;
       if(!ok)console.error(`French v${APP_VERSION}: canonical controller initialization failed.`);
-      return ok;
+      if(!platformOk)console.error('French: THIEPN Languages P7 read-only compatibility contract failed.',THIEPN_LANGUAGES_VALIDATION.issues||[]);
+      return ok&&platformOk;
     }
+
     v380BootAudit();
 
 
