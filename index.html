@@ -26349,32 +26349,56 @@ qui	who	A1	question word`;
       Object.freeze({
         id:'prod-work-hybrid',kind:'argumentation',title:'A balanced workplace position',minWords:110,targetWords:150,
         prompt:"Votre université envisage d'imposer trois jours de présence sur le campus à tous les employés. Rédigez une réponse nuancée : prenez position, donnez des raisons, traitez une objection, proposez une condition ou un compromis, puis concluez.",
-        required:Object.freeze(['position','reason','counter','condition','synthesis'])
+        required:Object.freeze(['position','reason','counter','condition','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['universite','campus','presence']),Object.freeze(['employe','equipe','service']),
+          Object.freeze(['jour','teletravail','distance','flexible'])
+        ])
       }),
       Object.freeze({
         id:'prod-city-mobility',kind:'argumentation',title:'A contested public policy',minWords:110,targetWords:150,
         prompt:"Une ville veut fortement limiter la voiture dans le centre. Défendez une position qui tienne compte à la fois de l'environnement et des personnes qui disposent de peu d'alternatives. Présentez un argument, une objection, une conséquence possible et une recommandation finale.",
-        required:Object.freeze(['position','reason','counter','consequence','synthesis'])
+        required:Object.freeze(['position','reason','counter','consequence','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['ville','centre','voiture','circulation']),Object.freeze(['transport','bus','metro','alternative']),
+          Object.freeze(['pollution','environnement','air','mobilite'])
+        ])
       }),
       Object.freeze({
         id:'prod-media-claim',kind:'evaluation',title:'Evaluate a disputed claim',minWords:110,targetWords:150,
         prompt:"Un article affirme qu'une étude « prouve » qu'une nouvelle méthode double les résultats. Expliquez ce qu'il faudrait vérifier avant d'accepter cette conclusion, nuancez le degré de certitude, puis formulez une conclusion responsable.",
-        required:Object.freeze(['evidence','qualifier','reason','uncertainty','synthesis'])
+        required:Object.freeze(['evidence','qualifier','reason','uncertainty','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['article','etude','publication']),Object.freeze(['resultat','donnee','chiffre','source']),
+          Object.freeze(['preuve','conclusion','causalite','methode'])
+        ])
       }),
       Object.freeze({
         id:'prod-project-crisis',kind:'decision',title:'Reason through a project crisis',minWords:110,targetWords:150,
         prompt:"Un projet important a du retard, le budget est presque épuisé et toutes les fonctions prévues ne peuvent plus être livrées. Recommandez une décision, comparez au moins deux options, expliquez les conséquences probables et justifiez le compromis.",
-        required:Object.freeze(['position','contrast','consequence','condition','synthesis'])
+        required:Object.freeze(['position','contrast','consequence','condition','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['projet','retard','delai']),Object.freeze(['budget','cout','moyen']),
+          Object.freeze(['fonction','perimetre','livrer','qualite'])
+        ])
       }),
       Object.freeze({
         id:'prod-team-conflict',kind:'mediation',title:'Mediate competing priorities',minWords:110,targetWords:150,
         prompt:"Deux équipes sont en conflit : l'une veut ajouter des demandes urgentes, l'autre veut geler complètement le projet. Reformulez équitablement les deux positions, nuancez leurs hypothèses, proposez un compromis et expliquez pourquoi les deux parties devraient l'accepter.",
-        required:Object.freeze(['mediation','qualifier','counter','persuasion','synthesis'])
+        required:Object.freeze(['mediation','qualifier','counter','persuasion','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['equipe','collegue','partie']),Object.freeze(['demande','urgence','priorite']),
+          Object.freeze(['projet','perimetre','charge','compromis'])
+        ])
       }),
       Object.freeze({
         id:'prod-priority-choice',kind:'synthesis',title:'Synthesize a difficult priority decision',minWords:110,targetWords:150,
         prompt:"Une association ne peut financer entièrement qu'un seul de deux projets : l'un aiderait beaucoup de personnes, l'autre un groupe plus petit mais dans une situation plus urgente. Analysez le dilemme, mettez les critères en balance, proposez un compromis ou une décision et concluez clairement.",
-        required:Object.freeze(['contrast','reason','qualifier','mediation','synthesis'])
+        required:Object.freeze(['contrast','reason','qualifier','mediation','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['association','projet','budget']),Object.freeze(['personne','groupe','urgence']),
+          Object.freeze(['priorite','impact','cout','compromis'])
+        ])
       })
     ]);
     const V5220_PROMPT_BY_ID=new Map(V5220_PROMPTS.map(function(row){return [row.id,row];}));
@@ -26402,7 +26426,8 @@ qui	who	A1	question word`;
           cohesion:clamp(finiteNumber(axes.cohesion),0,1),range:clamp(finiteNumber(axes.range),0,1),complexity:clamp(finiteNumber(axes.complexity),0,1)
         },
         familyHits:Array.isArray(row.familyHits)?row.familyHits.filter(function(x){return Object.prototype.hasOwnProperty.call(V5220_MARKERS,x);}).slice(0,20):[],
-        repetitionPenalty:clamp(finiteNumber(row.repetitionPenalty,1),0,1),evaluator:V5220_EVALUATOR
+        topicCoverage:clamp(finiteNumber(row.topicCoverage),0,1),
+        repetitionPenalty:clamp(finiteNumber(row.repetitionPenalty,1),0,1),evaluator:String(row.evaluator||V5220_EVALUATOR).slice(0,80)
       };
     }
     function v5220NormalizeAttempt(row){
@@ -26412,7 +26437,7 @@ qui	who	A1	question word`;
         id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1)),
         completedAt:clamp(finiteNumber(row.completedAt),0,now()+days(1)),passed:row.passed===true,
         score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),tasks:tasks,
-        evaluator:V5220_EVALUATOR,policy:V5220_POLICY
+        evaluator:String(row.evaluator||V5220_EVALUATOR).slice(0,80),policy:V5220_POLICY
       };
     }
     function v5220NormalizeActive(row){
@@ -26470,7 +26495,11 @@ qui	who	A1	question word`;
     function v5220EvaluateText(prompt,text,durationMs=0){
       const raw=String(text||'').trim(),folded=v580Fold(raw),words=v580Words(raw),sentences=v5220SentenceList(raw),hits=v5220MarkerHits(folded);
       const requiredHits=prompt.required.filter(function(family){return hits[family]>0;}).length;
-      const task=prompt.required.length?requiredHits/prompt.required.length:0;
+      const rhetoricalCoverage=prompt.required.length?requiredHits/prompt.required.length:0;
+      const topicGroups=Array.isArray(prompt.anchors)?prompt.anchors:[],topicHits=topicGroups.filter(function(group){
+        return group.some(function(anchor){return v5220HasMarker(folded,anchor);});
+      }).length,topicCoverage=topicGroups.length?topicHits/topicGroups.length:1;
+      const task=clamp(rhetoricalCoverage*.75+topicCoverage*.25,0,1);
       const argumentFamilies=['position','reason','example','counter','evidence','consequence','synthesis'];
       const nuanceFamilies=['qualifier','concession','uncertainty','condition','contrast'];
       const cohesionFamilies=['reason','example','counter','condition','consequence','synthesis','sequence','contrast'];
@@ -26499,7 +26528,7 @@ qui	who	A1	question word`;
       const lengthPenalty=words.length>=prompt.minWords?1:clamp(words.length/prompt.minWords,0,1);
       score=clamp(score*lengthPenalty*(.72+.28*repetitionPenalty),0,1);
       const confidence=clamp(lengthCoverage*.28+sentenceCoverage*.15+task*.22+Math.min(1,familyBreadth/8)*.20+frenchSignal*.15,0,1);
-      const passed=words.length>=prompt.minWords&&sentences.length>=4&&task>=.60&&argument>=.42&&nuance>=.35&&cohesion>=.35&&
+      const passed=words.length>=prompt.minWords&&sentences.length>=4&&topicCoverage>=.67&&task>=.60&&argument>=.42&&nuance>=.35&&cohesion>=.35&&
         score>=.58&&confidence>=.66&&repetitionPenalty>=.80;
       const band=score>=.74&&confidence>=.76?'strong-structured-evidence':passed?'calibrated-structured-pass':score>=.43?'developing':'insufficient-evidence';
       return {
@@ -26507,7 +26536,7 @@ qui	who	A1	question word`;
         wordCount:words.length,sentenceCount:sentences.length,durationMs:clamp(finiteNumber(durationMs),0,7200000),
         axes:{task:task,argument:argument,nuance:nuance,cohesion:cohesion,range:range,complexity:complexity},
         familyHits:Object.entries(hits).filter(function(pair){return pair[1]>0;}).map(function(pair){return pair[0];}),
-        repetitionPenalty:repetitionPenalty,evaluator:V5220_EVALUATOR
+        topicCoverage:topicCoverage,repetitionPenalty:repetitionPenalty,evaluator:V5220_EVALUATOR
       };
     }
     function v5220SelectQueue(){
@@ -26520,7 +26549,7 @@ qui	who	A1	question word`;
     function v5220CalibrationSnapshot(at=now()){
       const latest=v5220Latest(),active=state.v5220Production?.active||null;
       const ageDays=latest?.completedAt?Math.floor((at-latest.completedAt)/days(1)):null;
-      const currentPass=Boolean(latest?.passed&&ageDays!==null&&ageDays<=V5220_VALID_DAYS);
+      const currentPass=Boolean(latest?.passed&&latest.evaluator===V5220_EVALUATOR&&ageDays!==null&&ageDays<=V5220_VALID_DAYS);
       const stale=Boolean(latest?.passed&&!currentPass);
       return {
         schema:'thiepn-french-b2-open-production-calibration',schemaVersion:1,policy:V5220_POLICY,evaluator:V5220_EVALUATOR,
@@ -26570,6 +26599,7 @@ qui	who	A1	question word`;
     }
     function v5220Suggestions(result,prompt){
       const suggestions=[];
+      if(result.topicCoverage<.67)suggestions.push('Stay closer to the specific topic instead of relying on a generic argument template.');
       if(result.axes.task<.7)suggestions.push('Cover more of the required rhetorical moves: '+prompt.required.map(function(x){return x.replace(/-/g,' ');}).join(', ')+'.');
       if(result.axes.argument<.5)suggestions.push('Make the reasoning chain more explicit with reasons, evidence/examples, consequences, or a counter-position.');
       if(result.axes.nuance<.45)suggestions.push('Add qualification or concession instead of presenting the issue as absolute.');
@@ -26721,6 +26751,8 @@ qui	who	A1	question word`;
       if(level==='B2'){
         const calibration=v5220CalibrationSnapshot();
         if(!calibration.currentPass){
+          const activeBenchmark=state.v5190Benchmark?.active,activeMission=state.v590Missions?.active,activeConversation=state.v580Conversation?.active;
+          if((activeBenchmark&&activeBenchmark.level!=='B2')||activeMission||activeConversation)return v5220StartBenchmarkBase(level);
           showToast('B2 benchmark requires a current P31 open-production calibration first.');
           v5220StartAssessment({pendingBenchmark:true});return;
         }
