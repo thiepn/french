@@ -7,7 +7,7 @@ const [html,serviceWorker]=await Promise.all([
 
 const failures=[];
 const required=[
-  "const APP_VERSION = '5.19.0';",
+  "const V5190_VERSION='5.19.0';",
   "P28 Real-World Transfer & Functional Fluency Benchmarking",
   "const V5190_STORAGE_KEY='french-functional-benchmarks-v1';",
   "A1:Object.freeze({",
@@ -31,7 +31,8 @@ for(const token of required){
 }
 if(!html.includes("document.documentElement.dataset.functionalFluency='fixed-task-fresh-evidence-v1'"))failures.push("functional-fluency release marker missing");
 if(!html.includes("practice runs outside a benchmark never count"))failures.push("practice/benchmark separation copy missing");
-if(!serviceWorker.includes("french-shell-v42"))failures.push("offline shell cache was not advanced for P28");
+const cacheMatch=serviceWorker.match(/french-shell-v(\\d+)/);
+if(!cacheMatch||Number(cacheMatch[1])<42)failures.push("offline shell cache predates P28");
 if(/B2:Object\.freeze\(\{/.test(html))failures.push("B2 benchmark was enabled despite incomplete audited coverage");
 
 console.log(JSON.stringify({
