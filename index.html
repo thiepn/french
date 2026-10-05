@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.20.0';
-    const APP_RELEASE = 'P29 Functional Fluency Consolidation, Maintenance & Long-Term Transfer';
+    const APP_VERSION = '5.21.0';
+    const APP_RELEASE = 'P30 B2 Communicative Corpus Expansion, Advanced Functional Coverage & Benchmark Unlock';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -19208,7 +19208,110 @@ qui	who	A1	question word`;
           {id:'q1',prompt:"Que faut-il prévoir d'abord ?",options:['Les dépenses fixes.','Les vacances de dix ans.','Les cadeaux uniquement.'],answer:0,target:'prévoir'},
           {id:'q2',prompt:"Pourquoi certaines personnes mettent-elles de l'argent de côté ?",options:["Pour éviter de tout dépenser.","Pour payer plus cher.","Pour arrêter de travailler."],answer:0,target:'éviter'}
         ]
-      }
+
+,
+      {
+        id:'read-b2-teletravail',title:'Réorganiser le travail hybride',level:'B2',type:'informational',minutes:6,topic:'work-study',register:'formal',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate article',license:'Bundled original content',
+        targets:['nuancer','enjeu','mettre en place','tenir compte','à condition que'],phrases:[{text:'tenir compte des contraintes',frame:'tenir compte de + nom'},{text:'à condition que',frame:'à condition que + subjonctif'}],
+        sentences:[
+          {fr:"Une entreprise qui généralise le télétravail gagne parfois en souplesse, mais elle ne résout pas automatiquement les problèmes d'organisation.",en:'A company that generalizes remote work sometimes gains flexibility, but it does not automatically solve organizational problems.'},
+          {fr:"Le principal enjeu consiste à distinguer les tâches qui exigent une présence commune de celles qui peuvent être réalisées à distance sans perte de qualité.",en:'The main issue is to distinguish tasks that require people to be together from those that can be done remotely without loss of quality.'},
+          {fr:"Certains salariés souhaitent davantage d'autonomie, tandis que d'autres craignent que les échanges informels deviennent plus rares.",en:'Some employees want more autonomy, while others fear that informal exchanges will become less frequent.'},
+          {fr:"Une politique équilibrée doit donc tenir compte des contraintes familiales, du besoin de coordination et des différences entre métiers.",en:'A balanced policy must therefore take family constraints, coordination needs, and differences between jobs into account.'},
+          {fr:"Le travail hybride peut être efficace à condition que les règles soient prévisibles et que les équipes puissent les réévaluer régulièrement.",en:'Hybrid work can be effective provided that the rules are predictable and teams can reassess them regularly.',grammar:'à condition que normally introduces the subjunctive.'},
+          {fr:"Autrement dit, la question n'est pas de choisir entre bureau et domicile, mais de définir dans quelles conditions chaque option fonctionne le mieux.",en:'In other words, the issue is not choosing between office and home, but defining under which conditions each option works best.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quelle idée centrale le texte défend-il ?",options:["Le télétravail doit remplacer totalement le bureau.","Il faut adapter l'organisation aux tâches et aux contraintes.","Les échanges informels ne servent à rien."],answer:1,target:'tenir compte'},
+          {id:'q2',prompt:"Quelle condition est donnée pour qu'un système hybride fonctionne ?",options:["Des règles prévisibles et réévaluables.","Aucune présence commune.","Le même nombre de jours pour tous."],answer:0,target:'à condition que'}
+        ]
+      },
+      {
+        id:'read-b2-logement',title:'Densifier sans dégrader le quartier',level:'B2',type:'argumentative',minutes:6,topic:'home',register:'formal',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate article',license:'Bundled original content',
+        targets:['compromis','préserver','densité','cependant','dans la mesure où'],phrases:[{text:'trouver un compromis',frame:'trouver un compromis entre A et B'},{text:'dans la mesure où',frame:'dans la mesure où + proposition'}],
+        sentences:[
+          {fr:"Dans les villes où les loyers augmentent rapidement, construire davantage de logements paraît indispensable.",en:'In cities where rents rise rapidly, building more housing seems essential.'},
+          {fr:"Cependant, la densification peut susciter une opposition lorsqu'elle réduit les espaces verts ou modifie brutalement le caractère d'un quartier.",en:'However, densification can provoke opposition when it reduces green space or abruptly changes a neighborhood’s character.'},
+          {fr:"Les habitants ne défendent pas tous les mêmes priorités : certains insistent sur l'accessibilité des prix, d'autres sur la qualité de vie.",en:'Residents do not all defend the same priorities: some emphasize affordability, others quality of life.'},
+          {fr:"Un projet crédible doit reconnaître cette tension au lieu de présenter une seule solution comme évidente.",en:'A credible project must recognize this tension instead of presenting a single solution as obvious.'},
+          {fr:"Des bâtiments plus hauts peuvent être acceptables dans la mesure où ils financent aussi des équipements publics et préservent des zones végétalisées.",en:'Taller buildings can be acceptable insofar as they also finance public facilities and preserve green areas.',grammar:'dans la mesure où introduces a condition or limitation.'},
+          {fr:"Le débat porte donc moins sur le principe de construire que sur le compromis entre quantité, prix, mobilité et environnement.",en:'The debate is therefore less about the principle of building than about the compromise between quantity, price, mobility, and environment.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi certains habitants s'opposent-ils à la densification ?",options:["Parce qu'elle peut réduire les espaces verts ou changer le quartier.","Parce qu'ils veulent tous des loyers plus élevés.","Parce qu'ils refusent tout équipement public."],answer:0,target:'préserver'},
+          {id:'q2',prompt:"Quelle approche le texte recommande-t-il ?",options:["Ignorer les désaccords.","Chercher un compromis entre plusieurs objectifs.","Construire uniquement en périphérie."],answer:1,target:'compromis'}
+        ]
+      },
+      {
+        id:'read-b2-algorithmes',title:'Quand un algorithme recommande à notre place',level:'B2',type:'informational',minutes:6,topic:'communication',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate article',license:'Bundled original content',
+        targets:['biais','fiable','influencer','remettre en question','dans quelle mesure'],phrases:[{text:'remettre en question',frame:'remettre en question + nom'},{text:'dans quelle mesure',frame:'dans quelle mesure + inversion / proposition'}],
+        sentences:[
+          {fr:"Les systèmes de recommandation sélectionnent une partie des vidéos, articles ou produits que nous voyons en ligne.",en:'Recommendation systems select some of the videos, articles, or products we see online.'},
+          {fr:"Ils peuvent nous faire gagner du temps, mais leur efficacité ne signifie pas nécessairement qu'ils soient neutres.",en:'They can save us time, but their effectiveness does not necessarily mean they are neutral.'},
+          {fr:"Un algorithme apprend à partir de données passées ; si ces données contiennent des biais, certaines recommandations peuvent les reproduire.",en:'An algorithm learns from past data; if that data contains biases, some recommendations may reproduce them.'},
+          {fr:"Il faut donc distinguer une prédiction statistiquement fiable d'une décision souhaitable sur le plan social.",en:'We must therefore distinguish a statistically reliable prediction from a socially desirable decision.'},
+          {fr:"La question est aussi de savoir dans quelle mesure nos propres choix sont influencés par ce qui nous est présenté en premier.",en:'The question is also to know to what extent our own choices are influenced by what is shown to us first.'},
+          {fr:"Comprendre ces mécanismes permet de profiter des outils numériques tout en gardant la possibilité de remettre leurs suggestions en question.",en:'Understanding these mechanisms allows us to benefit from digital tools while retaining the ability to question their suggestions.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi une recommandation efficace n'est-elle pas forcément neutre ?",options:["Parce qu'elle peut reproduire des biais présents dans les données.","Parce qu'un algorithme ne peut jamais calculer.","Parce que les utilisateurs refusent toute recommandation."],answer:0,target:'biais'},
+          {id:'q2',prompt:"Quelle distinction le texte juge importante ?",options:["Entre vitesse et couleur.","Entre prédiction fiable et décision souhaitable.","Entre ordinateur et téléphone."],answer:1,target:'fiable'}
+        ]
+      },
+      {
+        id:'read-b2-prevention',title:'Prévenir plutôt que seulement réparer',level:'B2',type:'argumentative',minutes:6,topic:'health',register:'formal',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate article',license:'Bundled original content',
+        targets:['prévention','coût','à long terme','convaincre','pour autant'],phrases:[{text:'à long terme',frame:'à long terme'},{text:'pour autant',frame:'ne ... pas pour autant'}],
+        sentences:[
+          {fr:"Les politiques de santé consacrent beaucoup de moyens au traitement des maladies, ce qui reste évidemment indispensable.",en:'Health policies devote substantial resources to treating illnesses, which obviously remains essential.'},
+          {fr:"Investir dans la prévention peut pourtant réduire certains coûts à long terme, notamment lorsque des risques sont détectés plus tôt.",en:'Investing in prevention can nevertheless reduce some costs in the long term, particularly when risks are detected earlier.'},
+          {fr:"Cela ne signifie pas pour autant que chaque campagne de prévention soit efficace.",en:'That does not mean, however, that every prevention campaign is effective.'},
+          {fr:"Pour convaincre, un message doit être compréhensible, crédible et adapté aux personnes auxquelles il s'adresse.",en:'To persuade, a message must be understandable, credible, and adapted to the people it addresses.'},
+          {fr:"Des mesures trop générales peuvent manquer leur cible, tandis que des interventions mieux ciblées coûtent parfois davantage au départ.",en:'Measures that are too general can miss their target, while better-targeted interventions sometimes cost more initially.'},
+          {fr:"L'évaluation doit donc comparer les résultats réels, les coûts et les effets inattendus plutôt que se limiter aux intentions.",en:'Evaluation must therefore compare actual results, costs, and unintended effects rather than limit itself to intentions.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi la prévention peut-elle être intéressante ?",options:["Elle peut réduire certains coûts à long terme.","Elle remplace tous les traitements.","Elle ne demande aucune évaluation."],answer:0,target:'à long terme'},
+          {id:'q2',prompt:"Que faut-il faire pour évaluer une mesure ?",options:["Examiner uniquement les intentions.","Comparer résultats, coûts et effets inattendus.","Supposer qu'elle fonctionne."],answer:1,target:'coût'}
+        ]
+      },
+      {
+        id:'read-b2-transports',title:'Rendre la mobilité plus équitable',level:'B2',type:'argumentative',minutes:6,topic:'travel',register:'formal',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate article',license:'Bundled original content',
+        targets:['équitable','incitation','contraindre','alternative','conséquence'],phrases:[{text:'mettre en place une incitation',frame:'mettre en place + nom'},{text:'faute d’alternative',frame:"faute de + nom"}],
+        sentences:[
+          {fr:"Réduire la circulation automobile en centre-ville peut améliorer la qualité de l'air et rendre l'espace public plus agréable.",en:'Reducing car traffic in city centers can improve air quality and make public space more pleasant.'},
+          {fr:"Une restriction uniforme risque néanmoins de pénaliser davantage les personnes qui vivent loin des transports collectifs.",en:'A uniform restriction may nevertheless penalize people who live far from public transport more heavily.'},
+          {fr:"Certains conducteurs utilisent leur voiture par préférence, tandis que d'autres le font faute d'alternative réaliste.",en:'Some drivers use their cars by preference, while others do so for lack of a realistic alternative.'},
+          {fr:"Une politique plus équitable pourrait combiner des restrictions progressives, de meilleures liaisons et des incitations financières.",en:'A fairer policy could combine gradual restrictions, better connections, and financial incentives.'},
+          {fr:"Il faut également anticiper les conséquences sur les commerces, les travailleurs de nuit et les personnes à mobilité réduite.",en:'The consequences for shops, night workers, and people with reduced mobility must also be anticipated.'},
+          {fr:"L'objectif n'est donc pas seulement de contraindre les comportements, mais de rendre les alternatives suffisamment crédibles pour permettre un vrai choix.",en:'The goal is therefore not only to constrain behavior, but to make alternatives credible enough to allow a real choice.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Quel risque présente une restriction uniforme ?",options:["Elle peut pénaliser ceux qui ont peu d'alternatives.","Elle augmente toujours le nombre de voitures.","Elle supprime les transports publics."],answer:0,target:'alternative'},
+          {id:'q2',prompt:"Quelle combinaison est proposée ?",options:["Restrictions progressives, meilleures liaisons et incitations.","Interdiction immédiate sans alternative.","Uniquement des parkings moins chers."],answer:0,target:'incitation'}
+        ]
+      },
+      {
+        id:'read-b2-association',title:'Décider quand les priorités s'opposent',level:'B2',type:'story',minutes:6,topic:'people',register:'neutral',authenticity:'graded',
+        sourceLabel:'Original French upper-intermediate case study',license:'Bundled original content',
+        targets:['arbitrer','priorité','consensus','renoncer','mettre en balance'],phrases:[{text:'mettre en balance',frame:'mettre en balance A et B'},{text:'parvenir à un consensus',frame:'parvenir à + nom'}],
+        sentences:[
+          {fr:"Une petite association dispose d'un budget suffisant pour lancer un seul de deux projets cette année.",en:'A small association has enough budget to launch only one of two projects this year.'},
+          {fr:"Le premier toucherait beaucoup de personnes rapidement, tandis que le second aiderait un groupe plus restreint mais confronté à des besoins plus urgents.",en:'The first would reach many people quickly, while the second would help a smaller group facing more urgent needs.'},
+          {fr:"Au début de la réunion, chaque équipe défend sa priorité comme si les deux projets étaient incompatibles sur tous les points.",en:'At the start of the meeting, each team defends its priority as if the two projects were incompatible in every respect.'},
+          {fr:"La présidente propose alors de mettre en balance l'impact, l'urgence, le coût et la possibilité de reporter une partie du travail.",en:'The chair then suggests weighing impact, urgency, cost, and the possibility of postponing part of the work.'},
+          {fr:"Les participants acceptent finalement de renoncer à certaines dépenses secondaires afin de préserver une action minimale dans les deux domaines.",en:'Participants ultimately agree to give up some secondary expenses in order to preserve a minimum action in both areas.'},
+          {fr:"Ils ne sont pas tous entièrement satisfaits, mais ils parviennent à un consensus qu'ils jugent plus équitable que les deux options initiales.",en:'They are not all entirely satisfied, but they reach a consensus they consider fairer than the two initial options.'}
+        ],
+        questions:[
+          {id:'q1',prompt:"Pourquoi la décision est-elle difficile ?",options:["Deux priorités importantes se disputent un budget limité.","Personne ne veut lancer de projet.","Le budget est illimité."],answer:0,target:'priorité'},
+          {id:'q2',prompt:"Comment le groupe parvient-il à un accord ?",options:["En supprimant les deux projets.","En mettant plusieurs critères en balance et en faisant un compromis.","En laissant une seule personne décider sans discussion."],answer:1,target:'consensus'}
+        ]
+      }      }
     ]);
     const V550_READING_BY_ID=new Map(V550_READINGS.map(function(item){return [item.id,item];}));
 
@@ -21018,7 +21121,7 @@ qui	who	A1	question word`;
     const V580_STORAGE_KEY='french3000-conversation-v1';
     const V580_SCHEMA=1;
     const V580_MAX_SESSIONS=600;
-    const V580_LEVEL_WORDS=Object.freeze({A1:3,A2:5,B1:7});
+    const V580_LEVEL_WORDS=Object.freeze({A1:3,A2:5,B1:7,B2:10});
     const V580_DURATION_LABELS=Object.freeze({quick:'Quick · 1–2 min',standard:'Standard · 3–5 min',challenge:'Challenge · 5–8 min'});
     V490_PATH_FOCI.add('conversation');
 
@@ -21326,7 +21429,148 @@ qui	who	A1	question word`;
           ]},
           end:{end:true,npc:'Avec plaisir. Bonne journée !'}
         }
-      }
+
+,
+      {
+        id:'work-policy-debate',title:'Defend a workplace policy',level:'B2',duration:'challenge',setting:'Management meeting',
+        goal:'Evaluate a proposal, qualify its limits, answer an objection, explore consequences, negotiate a condition, and synthesize the decision.',
+        functions:['evaluate','qualify','persuade','hypothesize','negotiate','synthesize'],
+        targets:['cependant','dans la mesure où','à condition que','conséquence','compromis','en revanche'],
+        requiredGoals:['evaluation','nuance','objection','consequence','condition','summary'],start:'evaluation',variantCount:4,
+        nodes:{
+          evaluation:{npcVariants:['Nous envisageons trois jours de télétravail par semaine. Quel est votre avis ?','La direction propose de réduire les réunions en présentiel. Comment évaluez-vous cette idée ?','Nous voulons rendre les horaires plus flexibles. Quels seraient les principaux avantages et risques ?','Un système hybride permanent est proposé. Quels critères faut-il examiner ?'],hint:'Evaluate the proposal with at least one benefit and one limitation.',phrases:["Cette mesure peut améliorer la flexibilité, mais elle risque aussi de compliquer la coordination.","L'idée est intéressante, à condition de distinguer les tâches qui exigent une présence commune."],rules:[
+            v580Rule([['peut','pourrait','avantage','intéressant','interessant'],['mais','cependant','risque','limite','à condition','a condition']],'nuance','evaluation','evaluate',"Cette mesure peut améliorer la flexibilité, mais elle risque de compliquer la coordination.",{minWords:10})
+          ]},
+          nuance:{npc:'Vous semblez favorable, mais pas sans réserve. Pouvez-vous préciser ?',hint:'Qualify the claim rather than taking an absolute position.',phrases:["Je suis plutôt favorable, dans la mesure où les équipes gardent des moments communs.","Cela dépend surtout des fonctions ; la même règle ne convient pas nécessairement à tous."],rules:[
+            v580Rule([['dans la mesure','cela dépend','ca depend','pas nécessairement','pas necessairement','plutôt','plutot']],'objection','nuance','qualify',"Je suis favorable dans la mesure où les équipes gardent des moments communs.",{minWords:9})
+          ]},
+          objection:{npc:"Certains responsables disent pourtant que la productivité baisse dès qu'on travaille à distance.",hint:'Respond persuasively without pretending the objection is irrelevant.',phrases:["Cette inquiétude est légitime, mais on devrait comparer des résultats mesurables plutôt que supposer une baisse automatique.","Je comprends l'objection ; néanmoins, des objectifs clairs permettraient de vérifier si elle se confirme."],rules:[
+            v580Rule([['je comprends','légitime','legitime','néanmoins','neanmoins','cependant','mais'],['résultat','resultat','mesurer','vérifier','verifier','comparer','objectif']],'consequence','objection','persuade',"Je comprends l'objection, mais il faudrait comparer des résultats mesurables.",{minWords:11})
+          ]},
+          consequence:{npc:'Que se passerait-il si nous appliquions la même règle à tous les services ?',hint:'Explore a plausible consequence using conditional reasoning.',phrases:["Si la même règle s'appliquait partout, certains services pourraient perdre en efficacité.","On risquerait de créer des inégalités entre les postes si les contraintes réelles n'étaient pas prises en compte."],rules:[
+            v580Rule([['si'],['pourrait','risquerait','serait','aurait','perdrait','créerait','creerait']],'condition','consequence','hypothesize',"Si la même règle s'appliquait partout, certains services pourraient perdre en efficacité.",{minWords:10})
+          ]},
+          condition:{npc:'Quelle condition proposeriez-vous pour avancer ?',hint:'Negotiate a concrete safeguard or compromise.',phrases:["Je proposerais une période d'essai de trois mois, à condition qu'on évalue ensuite les résultats.","On pourrait accepter le principe, mais prévoir une exception pour les équipes qui ont besoin d'une présence quotidienne."],rules:[
+            v580Rule([['je proposerais','on pourrait','accepter','compromis','à condition','a condition'],['évaluer','evaluer','exception','période','periode','résultat','resultat','équipe','equipe']],'summary','condition','negotiate',"Je proposerais une période d'essai, à condition qu'on évalue ensuite les résultats.",{minWords:10})
+          ]},
+          summary:{npc:'Très bien. Résumez la position que nous pouvons retenir.',hint:'Synthesize the balanced conclusion.',phrases:["Nous pouvons retenir le travail hybride, mais avec des règles adaptées aux métiers, une période d'essai et une évaluation commune.","En résumé, le principe est accepté à condition de préserver la coordination et de mesurer les effets."],rules:[
+            v580Rule([['en résumé','en resume','nous pouvons retenir','le principe'],['mais','à condition','a condition','avec']],'end','summary','synthesize',"En résumé, le principe est accepté à condition de préserver la coordination et de mesurer les effets.",{minWords:11})
+          ]},
+          end:{end:true,npc:'Merci. La proposition sera reformulée sur cette base.'}
+        }
+      },
+      {
+        id:'civic-transport-debate',title:'Debate a city transport policy',level:'B2',duration:'challenge',setting:'Public consultation',
+        goal:'Evaluate a public policy, nuance competing interests, persuade with reasons, mediate disagreement, and synthesize a workable compromise.',
+        functions:['evaluate','qualify','persuade','mediate','hypothesize','synthesize'],
+        targets:['équitable','restriction','alternative','en revanche','à long terme','compromis'],
+        requiredGoals:['evaluation','nuance','case','mediation','consequence','summary'],start:'evaluation',variantCount:4,
+        nodes:{
+          evaluation:{npcVariants:["La ville veut limiter fortement les voitures dans le centre. Comment jugez-vous cette mesure ?","Un péage urbain est envisagé. Quels effets faut-il examiner ?","La municipalité veut supprimer une partie des places de stationnement. Est-ce une bonne politique ?","Les tarifs de stationnement augmenteraient pour financer les transports publics. Qu'en pensez-vous ?"],hint:'Evaluate both the intended benefit and a distributional risk.',phrases:["La mesure peut réduire la pollution, mais elle risque d'être injuste pour ceux qui n'ont pas d'alternative.","L'objectif est pertinent, cependant il faut examiner qui supportera réellement le coût."],rules:[
+            v580Rule([['peut','objectif','pertinent','utile'],['mais','cependant','risque','coût','cout','injuste','équitable','equitable']],'nuance','evaluation','evaluate',"La mesure peut réduire la pollution, mais elle risque d'être injuste pour ceux qui n'ont pas d'alternative.",{minWords:11})
+          ]},
+          nuance:{npc:'Faut-il donc renoncer à la mesure ?',hint:'Reject the false binary and qualify your position.',phrases:["Pas forcément ; je pense qu'elle est défendable si des alternatives crédibles existent.","Je ne dirais pas qu'il faut renoncer, mais plutôt adapter la mesure selon les quartiers et les horaires."],rules:[
+            v580Rule([['pas forcément','pas forcement','je ne dirais pas','plutôt','plutot','si'],['adapter','alternative','quartier','horaire','condition']],'case','nuance','qualify',"Pas forcément ; elle est défendable si des alternatives crédibles existent.",{minWords:9})
+          ]},
+          case:{npc:'Convainquez un habitant qui pense que cette politique ne fera que compliquer sa vie.',hint:'Make a persuasive case with a concrete safeguard.',phrases:["Je comprends cette crainte, mais si l'offre de bus augmente réellement, vous pourriez avoir une alternative moins coûteuse.","La restriction serait plus acceptable si les recettes servaient directement à améliorer les transports des quartiers périphériques."],rules:[
+            v580Rule([['je comprends','acceptable','mais','si'],['transport','bus','recette','alternative','quartier','améliorer','ameliorer']],'mediation','case','persuade',"Je comprends cette crainte, mais la mesure serait plus acceptable si les transports étaient améliorés.",{minWords:11})
+          ]},
+          mediation:{npc:"Un autre participant répond que toute exception affaiblira la politique. Comment rapprochez-vous les deux positions ?",hint:'Mediate by naming the legitimate concern on each side and a shared criterion.',phrases:["Les deux positions cherchent un système efficace ; on peut limiter les exceptions dans le temps tout en protégeant les personnes sans solution réaliste.","On pourrait définir des critères transparents : l'objectif reste la réduction du trafic, mais sans pénaliser ceux qui n'ont aucune alternative."],rules:[
+            v580Rule([['les deux','on pourrait','critère','critere','objectif commun','tout en'],['exception','alternative','trafic','protéger','proteger','efficace']],'consequence','mediation','mediate',"On pourrait définir des critères transparents tout en gardant l'objectif de réduction du trafic.",{minWords:12})
+          ]},
+          consequence:{npc:'Et si les transports publics ne s'amélioraient pas assez vite ?',hint:'Hypothesize about consequences and adjustment.',phrases:["Dans ce cas, la restriction risquerait d'être perçue comme punitive et il faudrait ralentir son calendrier.","Si l'offre restait insuffisante, on devrait reporter certaines étapes plutôt que maintenir le même rythme."],rules:[
+            v580Rule([['si','dans ce cas'],['risquerait','faudrait','devrait','reporter','ralentir','punitive']],'summary','consequence','hypothesize',"Si l'offre restait insuffisante, il faudrait ralentir le calendrier.",{minWords:10})
+          ]},
+          summary:{npc:'Quelle recommandation finale formulez-vous ?',hint:'Synthesize the compromise in one balanced recommendation.',phrases:["Je recommande une réduction progressive du trafic, liée à des objectifs mesurables d'amélioration des transports et à des exceptions ciblées.","En résumé, la politique peut avancer si elle combine contrainte, alternatives crédibles et suivi public des résultats."],rules:[
+            v580Rule([['je recommande','en résumé','en resume'],['progressif','alternative','résultat','resultat','suivi','exception','transport']],'end','summary','synthesize',"En résumé, la politique peut avancer si elle combine contrainte, alternatives crédibles et suivi des résultats.",{minWords:12})
+          ]},
+          end:{end:true,npc:'Merci. Votre proposition sera ajoutée au compte rendu.'}
+        }
+      },
+      {
+        id:'project-crisis',title:'Resolve a project crisis',level:'B2',duration:'challenge',setting:'Project review',
+        goal:'Diagnose a project failure, evaluate options, hypothesize consequences, negotiate trade-offs, mediate priorities, and conclude.',
+        functions:['explain','evaluate','hypothesize','negotiate','mediate','synthesize'],
+        targets:['priorité','délai','risque','renoncer','compromis','conséquence'],
+        requiredGoals:['diagnosis','options','consequence','tradeoff','mediation','summary'],start:'diagnosis',variantCount:4,
+        nodes:{
+          diagnosis:{npcVariants:["Le projet a deux semaines de retard et le budget est presque épuisé. Comment expliquez-vous la situation ?","Un fournisseur vient d'annuler une livraison essentielle. Quelle est votre lecture de la situation ?","L'équipe a découvert un défaut important avant le lancement. Que faut-il comprendre d'abord ?","Deux tâches critiques ne peuvent pas être terminées à temps. Comment diagnostiquez-vous le problème ?"],hint:'Explain the problem structurally rather than blaming one person.',phrases:["Le retard vient surtout du fait que plusieurs dépendances ont été sous-estimées, pas d'une seule erreur individuelle.","Le principal problème est que nous avons gardé trop de priorités alors que les ressources ont diminué."],rules:[
+            v580Rule([['problème','principal','vient','parce que','du fait que'],['retard','priorité','priorite','ressource','dépendance','dependance','budget','risque']],'options','diagnosis','explain',"Le principal problème est que nous avons gardé trop de priorités alors que les ressources ont diminué.",{minWords:11})
+          ]},
+          options:{npc:'Nous pouvons réduire le périmètre, repousser la date ou demander davantage de moyens. Comment évaluez-vous ces options ?',hint:'Compare trade-offs explicitly.',phrases:["Repousser la date protège la qualité mais augmente les coûts ; réduire le périmètre limite le délai mais oblige à renoncer à certaines fonctions.","Demander plus de moyens peut aider, cependant cela ne résout pas les dépendances les plus lentes."],rules:[
+            v580Rule([['mais','cependant','en revanche'],['date','coût','cout','périmètre','perimetre','moyen','qualité','qualite','délai','delai']],'consequence','options','evaluate',"Repousser la date protège la qualité mais augmente les coûts, tandis que réduire le périmètre limite le délai.",{minWords:12})
+          ]},
+          consequence:{npc:'Que se passerait-il si nous gardions le plan actuel ?',hint:'State a plausible conditional consequence.',phrases:["Si nous gardions le plan actuel, nous risquerions de livrer en retard avec une qualité insuffisante.","On pourrait respecter certaines fonctions, mais le risque d'épuiser l'équipe augmenterait."],rules:[
+            v580Rule([['si','pourrait','risquerait','augmenterait','serait'],['retard','qualité','qualite','risque','équipe','equipe']],'tradeoff','consequence','hypothesize',"Si nous gardions le plan actuel, nous risquerions de livrer en retard avec une qualité insuffisante.",{minWords:10})
+          ]},
+          tradeoff:{npc:'Quelle concession êtes-vous prêt à proposer ?',hint:'Negotiate a specific trade-off.',phrases:["Je proposerais de reporter deux fonctions secondaires afin de préserver la date et les éléments critiques.","Nous pourrions accepter une semaine de délai en échange d'un contrôle qualité complet."],rules:[
+            v580Rule([['je proposerais','nous pourrions','accepter','en échange','afin de'],['reporter','délai','delai','fonction','qualité','qualite','date']],'mediation','tradeoff','negotiate',"Je proposerais de reporter deux fonctions secondaires afin de préserver les éléments critiques.",{minWords:10})
+          ]},
+          mediation:{npc:"L'équipe technique veut plus de temps ; la direction refuse de déplacer la date. Comment rapprocher les priorités ?",hint:'Mediate by identifying shared interests and a bounded compromise.',phrases:["Les deux parties veulent éviter un échec visible ; on peut donc maintenir la date pour un périmètre réduit et planifier le reste ensuite.","On pourrait conserver la date publique tout en limitant la première version aux fonctions réellement stables."],rules:[
+            v580Rule([['les deux','on peut','on pourrait','tout en'],['date','périmètre','perimetre','fonction','stable','reste','échec','echec']],'summary','mediation','mediate',"Les deux parties veulent éviter un échec ; on peut maintenir la date avec un périmètre réduit.",{minWords:11})
+          ]},
+          summary:{npc:'Formulez le plan final en une recommandation.',hint:'Synthesize diagnosis, trade-off, and next step.',phrases:["Nous réduisons le périmètre de la première version, gardons la date et réévaluons les fonctions reportées après le lancement.","En résumé, nous protégeons les éléments critiques maintenant et fixons une seconde étape pour le reste."],rules:[
+            v580Rule([['en résumé','en resume','nous réduisons','nous gardons','nous protégeons','nous protegeons'],['maintenant','ensuite','après','apres','étape','etape','reste','report']],'end','summary','synthesize',"En résumé, nous protégeons les éléments critiques maintenant et fixons une seconde étape pour le reste.",{minWords:11})
+          ]},
+          end:{end:true,npc:'D’accord. Nous documentons cette décision et les critères de suivi.'}
+        }
+      },
+      {
+        id:'media-claim',title:'Assess a disputed media claim',level:'B2',duration:'challenge',setting:'Editorial discussion',
+        goal:'Evaluate evidence, qualify certainty, explain limitations, justify a conclusion, and synthesize what can responsibly be claimed.',
+        functions:['evaluate','qualify','explain','justify','persuade','synthesize'],
+        targets:['source','preuve','fiable','biais','incertain','conclusion'],
+        requiredGoals:['evidence','certainty','limits','reason','case','summary'],start:'evidence',variantCount:4,
+        nodes:{
+          evidence:{npcVariants:["Une publication affirme qu'une étude prouve que le nouveau programme double les résultats. Que vérifiez-vous ?","Un article viral dit qu'un produit est sans risque. Comment évaluez-vous cette affirmation ?","Deux médias donnent des chiffres très différents sur le même sujet. Par quoi commencez-vous ?","Une vidéo cite un sondage pour affirmer que tout le public est d'accord. Que faut-il examiner ?"],hint:'Evaluate source quality and what the evidence actually measures.',phrases:["Je vérifierais la source originale, la méthode et ce que les chiffres mesurent réellement.","Il faut d'abord savoir si la source est fiable et si les données soutiennent exactement cette conclusion."],rules:[
+            v580Rule([['source','méthode','methode','donnée','donnee','preuve','fiable','échantillon','echantillon'],['vérifier','verifier','examiner','mesurer','soutiennent']],'certainty','evidence','evaluate',"Je vérifierais la source originale, la méthode et ce que les chiffres mesurent réellement.",{minWords:10})
+          ]},
+          certainty:{npc:'Supposons que les chiffres soient exacts. Peut-on reprendre le titre tel quel ?',hint:'Qualify certainty and avoid overclaiming.',phrases:["Pas nécessairement : les chiffres peuvent être exacts sans prouver une relation de cause à effet.","On peut dire que l'étude observe une association, mais pas qu'elle démontre à elle seule la cause."],rules:[
+            v580Rule([['pas nécessairement','pas necessairement','on peut dire','mais pas','sans prouver','à elle seule','a elle seule']],'limits','certainty','qualify',"Les chiffres peuvent être exacts sans prouver une relation de cause à effet.",{minWords:10})
+          ]},
+          limits:{npc:"Expliquez cette limite à quelqu'un qui n'a pas de formation statistique.",hint:'Explain the limitation clearly.',phrases:["Deux phénomènes peuvent évoluer ensemble pour plusieurs raisons ; cela ne montre pas automatiquement que l'un provoque l'autre.","L'étude peut repérer un lien sans avoir éliminé toutes les autres explications possibles."],rules:[
+            v580Rule([['cela ne','sans','plusieurs raisons','autre explication','lien'],['provoque','cause','montrer','éliminé','elimine','automatiquement']],'reason','limits','explain',"Un lien statistique ne montre pas automatiquement que l'un des phénomènes provoque l'autre.",{minWords:11})
+          ]},
+          reason:{npc:'Quelle conclusion vous paraît alors justifiée ?',hint:'Justify a narrower conclusion.',phrases:["Je dirais que les résultats sont intéressants mais qu'ils doivent être confirmés par d'autres travaux.","La conclusion raisonnable est qu'il existe un signal, pas encore une preuve définitive."],rules:[
+            v580Rule([['je dirais','conclusion','raisonnable','parce que','puisque'],['intéressant','interessant','confirmer','signal','preuve','définitive','definitive']],'case','reason','justify',"La conclusion raisonnable est qu'il existe un signal, pas encore une preuve définitive.",{minWords:10})
+          ]},
+          case:{npc:"L'éditeur veut pourtant un titre très affirmatif. Convainquez-le de rester précis.",hint:'Persuade using credibility and long-term consequences.',phrases:["Un titre plus prudent protège notre crédibilité : si nous affirmons davantage que les données, nous risquons de tromper les lecteurs.","Être précis n'affaiblit pas l'article ; cela montre que nous distinguons ce qui est établi de ce qui reste incertain."],rules:[
+            v580Rule([['crédibilité','credibilite','précis','precis','lecteur','tromper','incertain'],['risque','montre','protège','protege','n affaiblit pas','ne affaiblit pas']],'summary','case','persuade',"Un titre plus prudent protège notre crédibilité et évite d'affirmer davantage que les données.",{minWords:11})
+          ]},
+          summary:{npc:'Donnez la formulation finale.',hint:'Synthesize evidence and uncertainty in one responsible claim.',phrases:["L'étude observe une amélioration importante, mais ses résultats ne suffisent pas encore à établir une causalité générale.","En résumé, les données soutiennent une association prometteuse qui doit encore être confirmée."],rules:[
+            v580Rule([['en résumé','en resume','l étude','letude','les données','les donnees'],['mais','association','causalité','causalite','confirmer','suffisent']],'end','summary','synthesize',"En résumé, les données soutiennent une association prometteuse qui doit encore être confirmée.",{minWords:11})
+          ]},
+          end:{end:true,npc:'Très bien. Cette formulation distingue clairement résultat et interprétation.'}
+        }
+      },
+      {
+        id:'team-conflict',title:'Mediate a team conflict',level:'B2',duration:'challenge',setting:'Team mediation',
+        goal:'Represent opposing positions fairly, qualify assumptions, explore consequences, negotiate a compromise, persuade both sides, and synthesize commitments.',
+        functions:['mediate','qualify','hypothesize','negotiate','persuade','synthesize'],
+        targets:['désaccord','priorité','reconnaître','compromis','si','engagement'],
+        requiredGoals:['positions','nuance','consequence','compromise','case','summary'],start:'positions',variantCount:4,
+        nodes:{
+          positions:{npcVariants:["Deux collègues se reprochent mutuellement les retards du projet. Comment reformulez-vous leurs positions ?","L'équipe commerciale veut ajouter des demandes ; l'équipe technique veut geler le périmètre. Comment présentez-vous le désaccord ?","Deux responsables ne sont pas d'accord sur la priorité du trimestre. Comment résumez-vous leurs préoccupations ?","Une équipe veut aller vite, l'autre veut davantage de contrôle. Comment formulez-vous le conflit sans prendre parti ?"],hint:'Mediate by representing both sides fairly.',phrases:["D'un côté, l'équipe veut protéger le délai ; de l'autre, elle veut éviter une solution fragile. Les deux préoccupations sont légitimes.","Les deux parties cherchent à réussir le projet, mais elles donnent un poids différent à la vitesse et au risque."],rules:[
+            v580Rule([['d un côté','dun côté','d un cote','les deux','de l autre','mais'],['équipe','equipe','priorité','priorite','risque','délai','delai','vitesse','qualité','qualite']],'nuance','positions','mediate',"Les deux parties cherchent à réussir le projet, mais elles donnent un poids différent à la vitesse et au risque.",{minWords:12})
+          ]},
+          nuance:{npc:'Quelle hypothèse de chaque camp mérite d'être nuancée ?',hint:'Identify an assumption that may be too absolute.',phrases:["L'équipe technique suppose peut-être que toute nouvelle demande est dangereuse, ce qui n'est pas nécessairement vrai.","Le service commercial semble penser que chaque demande est urgente, alors que certaines peuvent attendre."],rules:[
+            v580Rule([['peut-être','peut etre','pas nécessairement','pas necessairement','semble','alors que'],['suppose','pense','urgent','attendre','dangereux','demande']],'consequence','nuance','qualify',"Le service commercial semble penser que chaque demande est urgente, alors que certaines peuvent attendre.",{minWords:10})
+          ]},
+          consequence:{npc:'Que risque-t-il de se passer si personne ne change de position ?',hint:'Hypothesize about the likely consequence.',phrases:["Si chacun maintient sa position, le conflit risque de retarder les décisions et de réduire la confiance.","On pourrait perdre du temps à négocier chaque détail au lieu de définir des critères communs."],rules:[
+            v580Rule([['si','pourrait','risque','risquerait'],['conflit','retard','décision','decision','confiance','temps','critère','critere']],'compromise','consequence','hypothesize',"Si chacun maintient sa position, le conflit risque de retarder les décisions et de réduire la confiance.",{minWords:10})
+          ]},
+          compromise:{npc:'Proposez un compromis concret.',hint:'Negotiate a bounded compromise with a rule for future cases.',phrases:["On pourrait geler le périmètre principal tout en réservant une petite capacité aux demandes réellement urgentes.","Je propose un seuil commun : toute nouvelle demande doit remplacer une priorité existante, sauf urgence clairement justifiée."],rules:[
+            v580Rule([['on pourrait','je propose','compromis','tout en','sauf'],['priorité','priorite','urgence','demande','capacité','capacite','remplacer','périmètre','perimetre']],'case','compromise','negotiate',"On pourrait geler le périmètre principal tout en réservant une petite capacité aux demandes urgentes.",{minWords:11})
+          ]},
+          case:{npc:'Pourquoi les deux parties devraient-elles accepter ?',hint:'Persuade by connecting the compromise to each side’s interest.',phrases:["Cette règle protège la stabilité recherchée par l'équipe technique tout en laissant une marge pour les besoins commerciaux vraiment prioritaires.","Chacun obtient une garantie importante : la charge reste contrôlée et les urgences ne sont pas bloquées automatiquement."],rules:[
+            v580Rule([['protège','protege','garantie','chacun','tout en'],['stabilité','stabilite','charge','urgence','prioritaire','marge','besoin']],'summary','case','persuade',"Cette règle protège la stabilité tout en laissant une marge pour les besoins réellement prioritaires.",{minWords:11})
+          ]},
+          summary:{npc:'Résumez les engagements convenus.',hint:'Synthesize the agreement and the decision rule.',phrases:["Nous gardons le périmètre principal stable, toute nouvelle demande doit être priorisée explicitement, et une exception exige une justification commune.","En résumé, les deux équipes utiliseront les mêmes critères et réexamineront le compromis après le prochain cycle."],rules:[
+            v580Rule([['en résumé','en resume','nous gardons','les deux équipes','les deux equipes'],['critère','critere','priorité','priorite','exception','réexaminer','reexaminer','cycle']],'end','summary','synthesize',"En résumé, les deux équipes utiliseront les mêmes critères et réexamineront le compromis après le prochain cycle.",{minWords:11})
+          ]},
+          end:{end:true,npc:'Parfait. Les critères et les responsabilités sont maintenant explicites.'}
+        }
+      }      }
     ]);
     const V580_SCENARIO_BY_ID=new Map(V580_SCENARIOS.map(function(row){return [row.id,row];}));
     const V580_REPAIR_PHRASES=Object.freeze(['pardon','pouvez vous répéter','pouvez vous repeter','vous pouvez répéter','vous pouvez repeter','je n ai pas compris','je nai pas compris','plus lentement','qu est ce que ça veut dire','qu est ce que ca veut dire']);
@@ -21348,7 +21592,7 @@ qui	who	A1	question word`;
       if(!row||typeof row!=='object'||!V580_SCENARIO_BY_ID.has(row.scenarioId))return null;
       return {
         id:String(row.id||'').slice(0,120),t:clamp(finiteNumber(row.t),0,now()+days(1)),scenarioId:row.scenarioId,
-        level:['A1','A2','B1'].includes(row.level)?row.level:V580_SCENARIO_BY_ID.get(row.scenarioId).level,
+        level:['A1','A2','B1','B2'].includes(row.level)?row.level:V580_SCENARIO_BY_ID.get(row.scenarioId).level,
         variant:clamp(Math.floor(finiteNumber(row.variant)),0,20),sessionType:row.sessionType==='conversation5'?'conversation5':'scenario',
         batchId:String(row.batchId||'').slice(0,120),turns:clamp(Math.floor(finiteNumber(row.turns)),0,60),
         successfulTurns:clamp(Math.floor(finiteNumber(row.successfulTurns)),0,60),independentTurns:clamp(Math.floor(finiteNumber(row.independentTurns)),0,60),
@@ -21483,7 +21727,7 @@ qui	who	A1	question word`;
           level:note.level,pos:posGroup(note.pos),theme:note.theme||'general',practice:'spoken',correct:true,xp:0,practiceOnly:true,
           conversationPractice:true,conversationScenarioId:scenario.id,conversationFunction:result.func||'',conversationSupport:support,conversationIndependent:support===0&&!manual,
           conversationIntentConfidence:result.confidence||0,conversationManual:manual===true,conversationTarget:target,
-          mixedModality:'speaking',mixedKind:'conversation',mixedDifficulty:scenario.level==='B1'?4:scenario.level==='A2'?3:2,
+          mixedModality:'speaking',mixedKind:'conversation',mixedDifficulty:scenario.level==='B2'?5:scenario.level==='B1'?4:scenario.level==='A2'?3:2,
           mixedExposureKeys:['word:'+note.id,'sound:'+note.id],mixedFirstAttempt:support===0&&!manual,mixedSupportLevel:support
         });
       }
@@ -21881,7 +22125,20 @@ qui	who	A1	question word`;
         goal:'Handle travel disruption, arrange a repair, and explain a problem under realistic conversational pressure.',
         scenarios:['travel-delay','apartment-repair','past-event'],
         functions:['problem-report','compare','choose','justify','negotiate','clarify','narrate','confirm']
-      }
+
+,
+      {
+        id:'advanced-workplace',title:'Lead an advanced workplace decision',level:'B2',estimated:'20–28 min',
+        goal:'Diagnose a difficult project, defend a nuanced policy, and mediate competing team priorities before reaching a defensible decision.',
+        scenarios:['project-crisis','work-policy-debate','team-conflict'],
+        functions:['explain','evaluate','qualify','hypothesize','negotiate','mediate','persuade','synthesize']
+      },
+      {
+        id:'public-reasoning',title:'Reason through a contested public issue',level:'B2',estimated:'20–28 min',
+        goal:'Assess evidence, debate a public policy, and mediate competing interests without reducing the issue to a false binary.',
+        scenarios:['media-claim','civic-transport-debate','team-conflict'],
+        functions:['evaluate','qualify','justify','persuade','hypothesize','mediate','synthesize']
+      }      }
     ]);
     const V590_MISSION_BY_ID=new Map(V590_MISSIONS.map(function(row){return [row.id,row];}));
 
@@ -22471,9 +22728,12 @@ qui	who	A1	question word`;
       alternative:{label:'Offer alternative',group:'Planning & opinion'},negotiate:{label:'Negotiate',group:'Planning & opinion'},
       recommend:{label:'Recommend',group:'Planning & opinion'},compare:{label:'Compare',group:'Planning & opinion'},
       justify:{label:'Justify',group:'Planning & opinion'},
-      narrate:{label:'Narrate past events',group:'Narrative'},sequence:{label:'Sequence events',group:'Narrative'}
+      narrate:{label:'Narrate past events',group:'Narrative'},sequence:{label:'Sequence events',group:'Narrative'},
+      evaluate:{label:'Evaluate evidence / options',group:'Advanced reasoning'},qualify:{label:'Qualify a claim',group:'Advanced reasoning'},
+      hypothesize:{label:'Explore consequences',group:'Advanced reasoning'},persuade:{label:'Build a persuasive case',group:'Advanced reasoning'},
+      mediate:{label:'Mediate viewpoints',group:'Advanced reasoning'},synthesize:{label:'Synthesize & conclude',group:'Advanced reasoning'}
     });
-    const V5110_GROUP_ORDER=Object.freeze(['Foundation','Interaction','Problem solving','Planning & opinion','Narrative']);
+    const V5110_GROUP_ORDER=Object.freeze(['Foundation','Interaction','Problem solving','Planning & opinion','Narrative','Advanced reasoning']);
 
     state.v5110Ui=state.v5110Ui&&typeof state.v5110Ui==='object'?state.v5110Ui:{lastFocusRun:null};
 
@@ -22481,7 +22741,7 @@ qui	who	A1	question word`;
       if(!row||typeof row!=='object'||!V580_SCENARIO_BY_ID.has(row.scenarioId)||!V5110_FUNCTION_META[row.function])return null;
       return {
         id:String(row.id||'').slice(0,140),t:clamp(finiteNumber(row.t),0,now()+days(1)),scenarioId:row.scenarioId,
-        function:row.function,level:['A1','A2','B1'].includes(row.level)?row.level:V580_SCENARIO_BY_ID.get(row.scenarioId).level,
+        function:row.function,level:['A1','A2','B1','B2'].includes(row.level)?row.level:V580_SCENARIO_BY_ID.get(row.scenarioId).level,
         variant:clamp(Math.floor(finiteNumber(row.variant)),0,20),nodeId:String(row.nodeId||'').slice(0,100),
         success:row.success===true,repair:row.repair===true,support:clamp(Math.floor(finiteNumber(row.support)),0,3),
         manual:row.manual===true,independent:row.independent===true,confidence:clamp(finiteNumber(row.confidence),0,1),
@@ -22579,9 +22839,9 @@ qui	who	A1	question word`;
     }
     function v5110Profiles(){return Object.keys(V5110_FUNCTION_META).map(v5110FunctionProfile);}
     function v5110LevelCeiling(){
-      const started=v540AggregateStats(state.cards).started||0;return started>=650?'B1':started>=180?'A2':'A1';
+      const started=v540AggregateStats(state.cards).started||0;return started>=1400?'B2':started>=650?'B1':started>=180?'A2':'A1';
     }
-    function v5110LevelRank(level){return ({A1:1,A2:2,B1:3})[level]||1;}
+    function v5110LevelRank(level){return ({A1:1,A2:2,B1:3,B2:4})[level]||1;}
     function v5110ScenarioScore(scenario){
       const profiles=scenario.functions.map(v5110FunctionProfile),need=profiles.length?profiles.reduce(function(sum,p){return sum+(1-p.score);},0)/profiles.length:0;
       const unseen=profiles.length?profiles.filter(function(p){return p.attempts===0;}).length/profiles.length:0,readiness=v580ScenarioReadiness(scenario),desirable=clamp(1-Math.abs(.68-readiness)/.68,0,1);
@@ -22773,7 +23033,7 @@ qui	who	A1	question word`;
 
     function v5110CurriculumStage(){
       const ceiling=v5110LevelCeiling(),profiles=v5110Profiles(),secure=profiles.filter(function(row){return row.status==='secure';}).length,functional=profiles.filter(function(row){return ['functional','secure'].includes(row.status);}).length;
-      return {level:ceiling,label:ceiling==='A1'?'Foundation communication':ceiling==='A2'?'Everyday independence':'Independent problem solving',secure:secure,functional:functional,total:profiles.length};
+      return {level:ceiling,label:ceiling==='A1'?'Foundation communication':ceiling==='A2'?'Everyday independence':ceiling==='B1'?'Independent problem solving':'Advanced reasoning & mediation',secure:secure,functional:functional,total:profiles.length};
     }
     function v5110WeakFunctions(limit=5){
       return v5110Profiles().sort(function(a,b){
@@ -24486,9 +24746,9 @@ qui	who	A1	question word`;
         independent=attempts.filter(function(row){return row.correct&&!row.manual&&row.support===0&&!row.modelUsed&&!row.targetVisible;}).length,
         notes=new Set(attempts.map(function(row){return row.noteId;}).filter(Boolean)).size;
       const correctCredit=correct.reduce(function(sum,row){return sum+(row.manual?.55:1);},0),
-        accuracy=attempts.length?correctCredit/attempts.length:0,indRate=correct.length?independent/correct.length:0,breadth=clamp(notes/(level==='A1'?12:level==='A2'?16:20),0,1);
+        accuracy=attempts.length?correctCredit/attempts.length:0,indRate=correct.length?independent/correct.length:0,breadth=clamp(notes/(level==='A1'?12:level==='A2'?16:level==='B1'?20:24),0,1);
       const score=clamp(accuracy*.45+indRate*.35+breadth*.20,0,1),
-        evidenceVolume=clamp((automated.length+Math.max(0,attempts.length-automated.length)*.45)/(level==='A1'?12:level==='A2'?16:20),0,1),
+        evidenceVolume=clamp((automated.length+Math.max(0,attempts.length-automated.length)*.45)/(level==='A1'?12:level==='A2'?16:level==='B1'?20:24),0,1),
         confidence=clamp(evidenceVolume*.62+breadth*.38,0,1);
       return v5160Gate('speaking',score,confidence,Math.round(correctCredit*10)/10+'/'+attempts.length+' weighted correct · '+independent+' independent non-manual · '+notes+' vocabulary anchors',true,{attempts:attempts.length,correct:correct.length,independent:independent,notes:notes,automated:automated.length});
     }
@@ -24502,7 +24762,7 @@ qui	who	A1	question word`;
         availableFunctions=new Set(content.scenarios.flatMap(function(row){return row.functions||[];})).size,
         breadth=availableFunctions?clamp(functions/availableFunctions,0,1):0;
       const score=clamp(credit*.45+indRate*.35+breadth*.20,0,1),
-        confidence=clamp(Math.min(1,evidence.length/(level==='A1'?12:level==='A2'?16:20))*.55+breadth*.30+Math.min(1,independent.length/8)*.15,0,1);
+        confidence=clamp(Math.min(1,evidence.length/(level==='A1'?12:level==='A2'?16:level==='B1'?20:28))*.55+breadth*.30+Math.min(1,independent.length/(level==='B2'?10:8))*.15,0,1);
       return v5160Gate('interaction',score,confidence,independent.length+' independent successful turns · '+functions+'/'+availableFunctions+' functions demonstrated',true,{available:available,attempts:evidence.length,independent:independent.length,functions:functions,availableFunctions:availableFunctions});
     }
     function v5160MissionGate(level){
@@ -24664,7 +24924,7 @@ qui	who	A1	question word`;
         }
         if(row.currentQualified&&!row.coverageComplete)errors.push(level+' qualified without content coverage');
       }
-      const b2=p.map.B2;if(b2.coverageComplete)errors.push('B2 unexpectedly promotable without B2 communicative corpus');
+      const b2=p.map.B2;if(!b2.coverageComplete)errors.push('B2 communicative corpus incomplete after P30');
       const promotions=state.v5160Progression?.promotions||{};let prior=true;
       for(const level of V5160_LEVELS){if(promotions[level]&&!prior)errors.push(level+' promotion stored before prerequisite');prior=prior&&Boolean(promotions[level]);}
       const serialized=JSON.stringify(v5160NormalizeProgression(state.v5160Progression||{}));
@@ -24675,7 +24935,7 @@ qui	who	A1	question word`;
     const v5160RunQaBase=v5100RunQa;
     v5100RunQa=function(){
       const result=v5160RunQaBase(),errors=v5160Audit();
-      result.checks.push(v5100QaCheck('cefr-progression','CEFR progression & promotion gates',errors.length?'fail':'pass',errors.length?errors.slice(0,8).join(' · '):'7 independent gates · prerequisite ordering · no compensatory averaging · B2 coverage block · promotion history privacy-minimal'));
+      result.checks.push(v5100QaCheck('cefr-progression','CEFR progression & promotion gates',errors.length?'fail':'pass',errors.length?errors.slice(0,8).join(' · '):'7 independent gates · prerequisite ordering · no compensatory averaging · B2 coverage enabled · promotion history privacy-minimal'));
       result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
       result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
       result.status=result.fail?'fail':result.warn?'warn':'pass';
@@ -25470,6 +25730,12 @@ qui	who	A1	question word`;
         description:'Resolve customer and independent-living problems across multi-step conversations.',
         missions:Object.freeze(['customer-problems','independent-living']),
         minIndependentRate:85,minEvidence:.62,minIntent:.62,maxSupport:1
+      }),
+      B2:Object.freeze({
+        level:'B2',title:'Advanced reasoning and mediation',
+        description:'Evaluate evidence, defend nuanced positions, negotiate trade-offs, and mediate competing priorities across complex task chains.',
+        missions:Object.freeze(['advanced-workplace','public-reasoning']),
+        minIndependentRate:88,minEvidence:.68,minIntent:.68,maxSupport:1
       })
     });
     state.v5190Ui=state.v5190Ui&&typeof state.v5190Ui==='object'?state.v5190Ui:{last:null};
@@ -25584,6 +25850,7 @@ qui	who	A1	question word`;
     }
     function v5190StartBenchmark(level){
       const spec=V5190_SPECS[level];if(!spec)return;
+      if(level==='B2'&&(!v5180LevelCoverage('B2').promotionCoverage||v5180LevelHasDefect('B2'))){showToast('B2 benchmark is locked because the audited B2 communicative corpus is incomplete.');return;}
       const active=state.v5190Benchmark?.active;
       if(active){
         if(active.level===level){v5190LaunchExpected();return;}
@@ -25620,11 +25887,10 @@ qui	who	A1	question word`;
     }
     function v5190ProgressPanel(){
       const active=state.v5190Benchmark?.active,history=state.v5190Benchmark?.history||[],passes=history.filter(function(row){return row.passed;}),
-        highest=['B1','A2','A1'].find(function(level){return passes.some(function(row){return row.level===level;});})||'—';
+        highest=['B2','B1','A2','A1'].find(function(level){return passes.some(function(row){return row.level===level;});})||'—';
       return '<section class="v5190-panel"><div class="v5190-head"><div><p class="eyebrow">P28 functional fluency benchmark</p><h3>Test transfer under a fixed real-world task battery</h3><p>Benchmarks are separate from practice mastery. Only fresh deterministic mission runs launched inside the attempt count, and every required mission must clear hard independence, support, intent, and evidence gates.</p></div><div class="v5190-summary"><span><strong>'+passes.length+'</strong> passes</span><span><strong>'+highest+'</strong> highest passed</span><span><strong>'+history.length+'</strong> attempts</span></div></div>'+
         (active?'<div class="v5190-active"><div><strong>'+active.level+' benchmark in progress</strong><span>Mission '+(active.index+1)+'/'+V5190_SPECS[active.level].missions.length+' · '+escapeHtml(V590_MISSION_BY_ID.get(v5190ExpectedMission(active))?.title||v5190ExpectedMission(active))+'</span></div><div class="button-row"><button class="primary" id="v5190-continue">Continue</button><button class="secondary" id="v5190-cancel">Cancel</button></div></div>':'')+
-        '<div class="v5190-grid">'+['A1','A2','B1'].map(v5190LevelCard).join('')+
-        '<article class="v5190-level locked"><header><span class="level-chip level-b2">B2</span><strong>Unavailable</strong></header><h4>Upper-intermediate benchmark</h4><p>P27 currently reports insufficient B2 communicative corpus coverage. P28 does not invent a benchmark from incomplete material.</p><small>Add and audit B2 readings, listening, conversation scenarios, and functional missions before enabling this level.</small></article></div>'+
+        '<div class="v5190-grid">'+['A1','A2','B1','B2'].map(v5190LevelCard).join('')+'</div>'+
         '<p class="v5190-note">A P28 pass is an internal functional benchmark on the app’s fixed tasks, not an accredited CEFR certificate and not proof of unrestricted real-world proficiency.</p></section>';
     }
     function v5190BindProgress(){
@@ -25680,7 +25946,7 @@ qui	who	A1	question word`;
         if(spec.maxSupport>1)errors.push(level+' benchmark permits excessive support');
       }
       if(thresholds.some(function(value,index){return index&&value<thresholds[index-1];}))errors.push('benchmark independence thresholds are not monotonic');
-      if(V5190_SPECS.B2)errors.push('B2 benchmark must remain unavailable until audited B2 mission coverage exists');
+      const b2Coverage=v5180LevelCoverage('B2');if(!V5190_SPECS.B2||!b2Coverage.promotionCoverage||v5180LevelHasDefect('B2'))errors.push('B2 benchmark unlocked without clean audited B2 coverage');
       const active=state.v5190Benchmark?.active;if(active&&!v5190ExpectedMission(active))errors.push('active benchmark has no expected mission');
       if(errors.length)console.error('French P28 functional benchmark audit failed',errors);
       document.documentElement.dataset.functionalBenchmark=errors.length?'failed':'standardized-fixed-task-v1';return errors;
@@ -25689,7 +25955,7 @@ qui	who	A1	question word`;
     v5100RunQa=function(){
       const result=v5190RunQaBase(),errors=v5190Audit();
       result.checks.push(v5100QaCheck('functional-benchmark','Real-world transfer & functional fluency benchmark',errors.length?'fail':'pass',
-        errors.length?errors.slice(0,8).join(' · '):'A1/A2/B1 fixed task batteries · fresh-attempt evidence only · B2 explicitly unavailable'));
+        errors.length?errors.slice(0,8).join(' · '):'A1/A2/B1/B2 fixed task batteries · fresh-attempt evidence only · B2 gated by audited P30 corpus'));
       result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
       result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
       result.status=result.fail?'fail':result.warn?'warn':'pass';
@@ -25732,7 +25998,7 @@ qui	who	A1	question word`;
     const V5200_MAINTENANCE_DAYS=30;
     const V5200_LONG_TERM_DAYS=60;
     const V5200_STALE_GRACE_DAYS=30;
-    const V5200_LEVELS=Object.freeze(['A1','A2','B1']);
+    const V5200_LEVELS=Object.freeze(['A1','A2','B1','B2']);
 
     function v5200Passes(level){
       return (state.v5190Benchmark?.history||[])
@@ -25905,7 +26171,6 @@ qui	who	A1	question word`;
       if(V5200_CONSOLIDATION_DAYS<7)errors.push('consolidation spacing is too short');
       if(V5200_MAINTENANCE_DAYS<=V5200_CONSOLIDATION_DAYS)errors.push('maintenance window must exceed consolidation spacing');
       if(V5200_LONG_TERM_DAYS<V5200_MAINTENANCE_DAYS*2)errors.push('long-term span must cover at least two maintenance windows');
-      if(V5200_LEVELS.includes('B2'))errors.push('B2 maintenance cannot exist before a P28 B2 benchmark exists');
       const snapshot=v5200Snapshot();
       for(const row of snapshot.levels){
         if(row.longTerm&&(!row.consolidated||!row.transferConfirmed||row.spanDays<V5200_LONG_TERM_DAYS))errors.push(row.level+' false long-term status');
@@ -25945,6 +26210,101 @@ qui	who	A1	question word`;
       v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.20.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.21.0 B2 COMMUNICATIVE CORPUS EXPANSION, ADVANCED FUNCTIONAL
+       COVERAGE & BENCHMARK UNLOCK
+       ================================================================ */
+    const V5210_VERSION='5.21.0';
+    const V5210_RELEASE='P30 B2 Communicative Corpus Expansion, Advanced Functional Coverage & Benchmark Unlock';
+    const V5210_ADVANCED_FUNCTIONS=Object.freeze(['evaluate','qualify','hypothesize','persuade','mediate','synthesize']);
+    const V5210_B2_MIN=Object.freeze({readings:6,listening:6,scenarios:5,missions:2,functionContexts:2});
+
+    function v5210B2Snapshot(){
+      const coverage=v5180LevelCoverage('B2'),advanced=Object.fromEntries(V5210_ADVANCED_FUNCTIONS.map(function(fn){
+        return [fn,V580_SCENARIOS.filter(function(row){return row.level==='B2'&&(row.functions||[]).includes(fn);}).length];
+      }));
+      const spec=V5190_SPECS.B2||null,defective=v5180LevelHasDefect('B2');
+      const counts={
+        readings:V550_READINGS.filter(function(row){return row.level==='B2';}).length,
+        listening:V560_LISTENING_ITEMS.filter(function(row){return row.level==='B2';}).length,
+        scenarios:V580_SCENARIOS.filter(function(row){return row.level==='B2';}).length,
+        missions:V590_MISSIONS.filter(function(row){return v5180MissionLevel(row,'B2');}).length
+      };
+      const advancedReady=V5210_ADVANCED_FUNCTIONS.every(function(fn){return (advanced[fn]||0)>=V5210_B2_MIN.functionContexts;});
+      const corpusReady=counts.readings>=V5210_B2_MIN.readings&&counts.listening>=V5210_B2_MIN.listening&&counts.scenarios>=V5210_B2_MIN.scenarios&&counts.missions>=V5210_B2_MIN.missions;
+      const benchmarkReady=Boolean(spec&&corpusReady&&coverage.promotionCoverage&&!defective&&advancedReady);
+      return {schema:'thiepn-french-p30-b2-corpus',schemaVersion:1,counts:counts,advancedFunctionContexts:advanced,coverage:coverage,defective:defective,advancedReady:advancedReady,corpusReady:corpusReady,benchmarkReady:benchmarkReady};
+    }
+
+    function v5210ProgressPanel(){
+      const s=v5210B2Snapshot(),status=s.benchmarkReady?'B2 benchmark unlocked':'B2 corpus incomplete';
+      return '<section class="v5210-panel"><div class="v5210-head"><div><p class="eyebrow">P30 B2 expansion</p><h3>'+escapeHtml(status)+'</h3><p>B2 now measures advanced reasoning rather than merely harder vocabulary: evaluating evidence, qualifying claims, hypothesizing consequences, persuading, mediating viewpoints, and synthesizing decisions.</p></div><span class="v5210-status '+(s.benchmarkReady?'pass':'fail')+'">'+(s.benchmarkReady?'Audited & unlocked':'Locked')+'</span></div>'+
+        '<div class="v5210-counts"><span><strong>'+s.counts.readings+'</strong> readings</span><span><strong>'+s.counts.listening+'</strong> listening</span><span><strong>'+s.counts.scenarios+'</strong> scenarios</span><span><strong>'+s.counts.missions+'</strong> missions</span><span><strong>'+V5210_ADVANCED_FUNCTIONS.filter(function(fn){return s.advancedFunctionContexts[fn]>=V5210_B2_MIN.functionContexts;}).length+'/'+V5210_ADVANCED_FUNCTIONS.length+'</strong> advanced functions multi-context</span></div>'+
+        '<div class="v5210-functions">'+V5210_ADVANCED_FUNCTIONS.map(function(fn){return '<span><b>'+escapeHtml(V5110_FUNCTION_META[fn].label)+'</b>'+s.advancedFunctionContexts[fn]+' B2 contexts</span>';}).join('')+'</div>'+
+        '<p class="v5210-note">B2 promotion still requires every P25 gate and the prerequisite levels. P30 only removes the former structural content block and supplies a valid P28 task battery.</p></section>';
+    }
+    function v5210DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5210-panel'))return;
+      const anchor=main.querySelector('.v5200-panel')||main.querySelector('.v5190-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5210ProgressPanel());else main.insertAdjacentHTML('beforeend',v5210ProgressPanel());
+    }
+    const v5210RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5210RenderProgressBase();v5210DecorateProgress();return result;};
+
+    function v5210Audit(){
+      const s=v5210B2Snapshot(),errors=[];
+      if(s.counts.readings<V5210_B2_MIN.readings)errors.push('B2 readings '+s.counts.readings+'/'+V5210_B2_MIN.readings);
+      if(s.counts.listening<V5210_B2_MIN.listening)errors.push('B2 listening '+s.counts.listening+'/'+V5210_B2_MIN.listening);
+      if(s.counts.scenarios<V5210_B2_MIN.scenarios)errors.push('B2 scenarios '+s.counts.scenarios+'/'+V5210_B2_MIN.scenarios);
+      if(s.counts.missions<V5210_B2_MIN.missions)errors.push('B2 missions '+s.counts.missions+'/'+V5210_B2_MIN.missions);
+      for(const fn of V5210_ADVANCED_FUNCTIONS)if((s.advancedFunctionContexts[fn]||0)<V5210_B2_MIN.functionContexts)errors.push(fn+' lacks multi-context B2 coverage');
+      if(s.defective)errors.push('P27 reports a structural B2 content defect');
+      if(!s.coverage.promotionCoverage)errors.push('P27 B2 promotion coverage is incomplete');
+      if(!V5190_SPECS.B2)errors.push('P28 B2 benchmark specification missing');
+      else{
+        if(V5190_SPECS.B2.minIndependentRate<=V5190_SPECS.B1.minIndependentRate)errors.push('B2 independence threshold must exceed B1');
+        if(V5190_SPECS.B2.minEvidence<=V5190_SPECS.B1.minEvidence)errors.push('B2 evidence threshold must exceed B1');
+        if(V5190_SPECS.B2.minIntent<=V5190_SPECS.B1.minIntent)errors.push('B2 intent threshold must exceed B1');
+        if((V5190_SPECS.B2.missions||[]).some(function(id){return !V590_MISSION_BY_ID.has(id)||!v5180MissionLevel(V590_MISSION_BY_ID.get(id),'B2');}))errors.push('P28 B2 benchmark references a non-B2 mission');
+      }
+      if(!V5200_LEVELS.includes('B2'))errors.push('P29 does not track B2 maintenance');
+      if(errors.length)console.error('French P30 B2 corpus audit failed',errors);
+      document.documentElement.dataset.b2Corpus=errors.length?'failed':'audited-benchmark-ready-v1';return errors;
+    }
+    const v5210RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5210RunQaBase(),errors=v5210Audit(),s=v5210B2Snapshot();
+      result.checks.push(v5100QaCheck('b2-corpus','B2 communicative corpus & benchmark unlock',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):s.counts.readings+' readings · '+s.counts.listening+' listening · '+s.counts.scenarios+' scenarios · '+s.counts.missions+' missions · 6 advanced functions in 2+ contexts'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p30-b2-corpus-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5210EnsureStyles(){
+      if(document.querySelector('#v5210-b2-style'))return;
+      const style=document.createElement('style');style.id='v5210-b2-style';
+      style.textContent='.v5210-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5210-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5210-head h3{margin:.08rem 0}.v5210-head p{margin:0;color:var(--muted);font-size:.62rem;max-width:82ch}.v5210-status{padding:.32rem .5rem;border-radius:999px;background:var(--surface-muted);font-size:.55rem;font-weight:850;color:var(--muted);white-space:nowrap}.v5210-status.pass{color:var(--green)}.v5210-status.fail{color:var(--red)}.v5210-counts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.3rem;margin-top:.6rem}.v5210-counts span,.v5210-functions span{padding:.42rem .5rem;border-radius:10px;background:var(--surface-muted);font-size:.5rem;color:var(--muted)}.v5210-counts strong,.v5210-functions b{display:block;color:var(--navy);font-size:.72rem}.v5210-functions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3rem;margin-top:.35rem}.v5210-note{margin:.58rem 0 0!important;color:var(--muted)!important;font-size:.49rem!important}@media(max-width:850px){.v5210-counts{grid-template-columns:1fr 1fr}.v5210-functions{grid-template-columns:1fr 1fr}}@media(max-width:620px){.v5210-head{flex-direction:column}.v5210-counts,.v5210-functions{grid-template-columns:1fr}}';
+      document.head.append(style);
+    }
+    const v5210NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5210NormalizeSurfaceBase();document.documentElement.dataset.release='p30-b2-corpus-benchmark-unlock';
+      document.documentElement.dataset.b2Benchmark='audited-advanced-functional-v1';
+    };
+    const v5210InitBase=init;
+    init=async function(options){
+      v5210EnsureStyles();
+      const result=await v5210InitBase(options||{});
+      v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='progress')renderProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.21.0';return result;
     };
 
 
