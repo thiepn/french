@@ -3071,8 +3071,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.17.0';
-    const APP_RELEASE = 'P26 Weakness Diagnosis & Targeted Remediation';
+    const APP_VERSION = '5.18.0';
+    const APP_RELEASE = 'P27 Curriculum Coverage & Content Quality Audit';
     const DATA_SCHEMA = 3;
     const PINNED_BLOB_SHA = '14beb3f21e908a471fe213c99ebc776bd11a5222';
     const SOURCE_ENDPOINTS = [
@@ -25109,6 +25109,315 @@ qui	who	A1	question word`;
       v5170Load();v5170Invalidate();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();else if(state.view==='study')renderStudy();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.17.0';return result;
+    };
+
+
+    /* ================================================================
+       v5.18.0 CURRICULUM COVERAGE & CONTENT QUALITY AUDIT
+       P27 audits the curriculum itself rather than learner performance.
+       It combines the earlier lexical QA with CEFR, domain, modality,
+       communicative-function, verified-usage and exercise reachability
+       checks. Coverage gaps warn; broken content/reference integrity fails.
+       ================================================================ */
+    const V5180_VERSION='5.18.0';
+    const V5180_RELEASE='P27 Curriculum Coverage & Content Quality Audit';
+    const V5180_LEVELS=Object.freeze(['A1','A2','B1','B2']);
+    const V5180_DOMAIN_KEYS=Object.freeze([...VALID_THEMES].filter(function(value){return value!=='ALL'&&value!=='general';}));
+    const V5180_PROMOTION_MIN=Object.freeze({readings:3,listening:3,scenarios:3,missions:1});
+    let v5180AuditCache={signature:'',report:null};
+
+    function v5180Ids(items){return (items||[]).map(function(row){return String(row?.id||'');}).filter(Boolean);}
+    function v5180DuplicateValues(values){
+      const counts=new Map(),dupes=[];
+      for(const value of values){const key=String(value||'').trim();if(!key)continue;counts.set(key,(counts.get(key)||0)+1);}
+      for(const [key,count] of counts)if(count>1)dupes.push({value:key,count:count});
+      return dupes.sort(function(a,b){return b.count-a.count||a.value.localeCompare(b.value);});
+    }
+    function v5180Percent(n,d){return d?Math.round(n/d*100):0;}
+    function v5180LevelCards(level){return (state.cards||[]).filter(function(card){return card.core!==false&&card.level===level&&!card.userCreated;});}
+    function v5180MissionLevel(mission,level){return String(mission?.level||'').split(/[–-]/).map(function(x){return x.trim();}).includes(level);}
+    function v5180ScenarioFunctions(level){
+      return V580_SCENARIOS.filter(function(row){return row.level===level;}).flatMap(function(row){return row.functions||[];});
+    }
+    function v5180PhraseRecordsForLevel(level){
+      const keys=new Set(v5180LevelCards(level).flatMap(function(card){return v510CardKeys(card);}));
+      return V510_CORPUS.filter(function(record){return keys.has(normalizeWord(record.anchor).replace(/’/g,"'"));});
+    }
+    function v5180SentenceRowsForLevel(level){
+      return V530_SENTENCE_EXERCISES.filter(function(exercise){
+        const note=v530ExerciseNote(exercise,state.cards);return note?.level===level;
+      });
+    }
+    function v5180LevelCoverage(level){
+      const cards=v5180LevelCards(level),readings=V550_READINGS.filter(function(row){return row.level===level;}),
+        listening=V560_LISTENING_ITEMS.filter(function(row){return row.level===level;}),
+        scenarios=V580_SCENARIOS.filter(function(row){return row.level===level;}),
+        missions=V590_MISSIONS.filter(function(row){return v5180MissionLevel(row,level);}),
+        phrases=v5180PhraseRecordsForLevel(level),sentences=v5180SentenceRowsForLevel(level),
+        functions=[...new Set(v5180ScenarioFunctions(level))];
+      const domains=Object.fromEntries(V5180_DOMAIN_KEYS.map(function(theme){return [theme,cards.filter(function(card){return card.theme===theme;}).length];}));
+      const domainZeros=Object.entries(domains).filter(function(pair){return pair[1]===0;}).map(function(pair){return pair[0];});
+      const modality={
+        vocabulary:cards.length>0,
+        readings:readings.length>=V5180_PROMOTION_MIN.readings,
+        listening:listening.length>=V5180_PROMOTION_MIN.listening,
+        scenarios:scenarios.length>=V5180_PROMOTION_MIN.scenarios,
+        missions:missions.length>=V5180_PROMOTION_MIN.missions
+      };
+      const coveragePct=v5180Percent(Object.values(modality).filter(Boolean).length,Object.keys(modality).length);
+      return {
+        level:level,cards:cards.length,readings:readings.length,listening:listening.length,scenarios:scenarios.length,missions:missions.length,
+        verifiedPhraseRecords:phrases.filter(function(row){return row.tier==='verified';}).length,sentenceExercises:sentences.length,
+        functions:functions.length,domains:domains,domainZeros:domainZeros,modality:modality,coveragePct:coveragePct,
+        promotionCoverage:modality.readings&&modality.listening&&modality.scenarios&&modality.missions
+      };
+    }
+
+    function v5180ReadingDefects(){
+      const defects=[],warnings=[],ids=v5180DuplicateValues(v5180Ids(V550_READINGS)),titles=v5180DuplicateValues(V550_READINGS.map(function(row){return normalizeTyped(row.title);}));
+      for(const row of ids)defects.push('duplicate reading id: '+row.value);
+      for(const row of titles)warnings.push('duplicate reading title: '+row.value);
+      for(const reading of V550_READINGS){
+        if(!V5180_LEVELS.includes(reading.level))defects.push('reading '+reading.id+' has invalid CEFR level');
+        if(!Array.isArray(reading.sentences)||!reading.sentences.length)defects.push('reading '+reading.id+' has no sentences');
+        for(const sentence of reading.sentences||[])if(!String(sentence.fr||'').trim()||!String(sentence.en||'').trim())defects.push('reading '+reading.id+' has an incomplete bilingual sentence');
+        if(!Array.isArray(reading.questions)||reading.questions.length<2)warnings.push('reading '+reading.id+' has fewer than 2 comprehension checks');
+        for(const q of reading.questions||[]){
+          if(!Array.isArray(q.options)||!q.options.length||!Number.isInteger(q.answer)||q.answer<0||q.answer>=q.options.length)defects.push('reading '+reading.id+' has an invalid question answer');
+        }
+      }
+      const bodyGroups=new Map();
+      for(const reading of V550_READINGS){
+        const key=normalizeTyped((reading.sentences||[]).map(function(s){return s.fr;}).join(' '));if(!key)continue;
+        if(!bodyGroups.has(key))bodyGroups.set(key,[]);bodyGroups.get(key).push(reading.id);
+      }
+      for(const ids2 of bodyGroups.values())if(ids2.length>1)warnings.push('duplicate reading body: '+ids2.join(', '));
+      return {defects:[...new Set(defects)],warnings:[...new Set(warnings)]};
+    }
+    function v5180ListeningDefects(){
+      const defects=[],warnings=[],ids=v5180DuplicateValues(v5180Ids(V560_LISTENING_ITEMS));let synthesized=0;
+      for(const row of ids)defects.push('duplicate listening id: '+row.value);
+      for(const item of V560_LISTENING_ITEMS){
+        if(!V550_READING_BY_ID.has(item.readingId))defects.push('listening '+item.id+' references missing reading '+item.readingId);
+        if(!V5180_LEVELS.includes(item.level))defects.push('listening '+item.id+' has invalid CEFR level');
+        if(!Array.isArray(item.segments)||!item.segments.length)defects.push('listening '+item.id+' has no audio segments');
+        if(item.source==='speechSynthesis'&&!item.audioUrl)synthesized++;
+      }
+      if(synthesized)warnings.push(synthesized+'/'+V560_LISTENING_ITEMS.length+' listening items rely on synthesized speech');
+      return {defects:[...new Set(defects)],warnings:[...new Set(warnings)],synthesized:synthesized};
+    }
+    function v5180ConversationDefects(){
+      const defects=[],warnings=[],ids=v5180DuplicateValues(v5180Ids(V580_SCENARIOS)),registered=new Set(Object.keys(V5110_FUNCTION_META));
+      for(const row of ids)defects.push('duplicate scenario id: '+row.value);
+      for(const scenario of V580_SCENARIOS){
+        if(!V5180_LEVELS.includes(scenario.level))defects.push('scenario '+scenario.id+' has invalid CEFR level');
+        if(!scenario.start||!scenario.nodes?.[scenario.start])defects.push('scenario '+scenario.id+' has invalid start node');
+        if(!(scenario.functions||[]).length)warnings.push('scenario '+scenario.id+' declares no communicative functions');
+        for(const fn of scenario.functions||[])if(!registered.has(fn))defects.push('scenario '+scenario.id+' uses unregistered function '+fn);
+      }
+      const contexts={};
+      for(const fn of Object.keys(V5110_FUNCTION_META))contexts[fn]=V580_SCENARIOS.filter(function(scenario){return (scenario.functions||[]).includes(fn);}).length;
+      for(const [fn,count] of Object.entries(contexts))if(count===0)warnings.push('communicative function has no scenario: '+fn);else if(count===1)warnings.push('single-context communicative function: '+fn);
+      return {defects:[...new Set(defects)],warnings:[...new Set(warnings)],contexts:contexts};
+    }
+    function v5180MissionDefects(){
+      const defects=[],warnings=[],ids=v5180DuplicateValues(v5180Ids(V590_MISSIONS));
+      for(const row of ids)defects.push('duplicate mission id: '+row.value);
+      for(const mission of V590_MISSIONS){
+        if(!(mission.scenarios||[]).length)defects.push('mission '+mission.id+' has no scenarios');
+        for(const scenarioId of mission.scenarios||[])if(!V580_SCENARIO_BY_ID.has(scenarioId))defects.push('mission '+mission.id+' references missing scenario '+scenarioId);
+        if(!(mission.functions||[]).length)warnings.push('mission '+mission.id+' declares no functions');
+      }
+      return {defects:[...new Set(defects)],warnings:[...new Set(warnings)]};
+    }
+    function v5180ExerciseDefects(){
+      const defects=[],warnings=[],sentenceIds=v5180DuplicateValues(v5180Ids(V530_SENTENCE_EXERCISES)),corpusIds=v5180DuplicateValues(v5180Ids(V510_CORPUS));
+      for(const row of sentenceIds)defects.push('duplicate sentence exercise id: '+row.value);
+      for(const row of corpusIds)defects.push('duplicate usage-corpus id: '+row.value);
+      let unreachable=0,unmatchedCorpus=0;
+      for(const exercise of V530_SENTENCE_EXERCISES){
+        if(!exercise.prompt||!exercise.expected||!exercise.frame){defects.push('sentence exercise '+exercise.id+' is incomplete');continue;}
+        const note=v530ExerciseNote(exercise,state.cards),record=v530RecordForExercise(exercise);
+        if(!note||!record){unreachable++;warnings.push('sentence exercise unreachable: '+exercise.id);}
+      }
+      for(const record of V510_CORPUS){
+        const matched=(state.cards||[]).some(function(card){return v510CardKeys(card).includes(normalizeWord(record.anchor).replace(/’/g,"'"));});
+        if(!matched){unmatchedCorpus++;warnings.push('usage corpus anchor not in catalog: '+record.anchor);}
+      }
+      return {defects:[...new Set(defects)],warnings:[...new Set(warnings)],unreachableSentenceExercises:unreachable,unmatchedCorpusRecords:unmatchedCorpus};
+    }
+    function v5180VocabularyQuality(){
+      const cards=(state.cards||[]).filter(function(card){return card.core!==false&&!card.userCreated;}),lexical=typeof v396BuildAudit==='function'?v396BuildAudit():null,
+        nouns=cards.filter(function(card){return posGroup(card.pos)==='noun';}),
+        verifiedUsage=cards.filter(function(card){return v510CorpusFor(card).some(function(row){return row.tier==='verified';});}).length,
+        mappedLessons=cards.filter(function(card){return Array.isArray(card.coursebookLessons)&&card.coursebookLessons.length;}).length;
+      return {
+        cards:cards.length,critical:lexical?.content?.criticalCount||0,warnings:lexical?.content?.warningCount||0,
+        duplicateGroups:lexical?.content?.possibleDuplicateGroups||0,
+        exampleCoverage:v5180Percent(cards.filter(function(card){return card.exampleFr&&card.exampleEn;}).length,cards.length),
+        ipaCoverage:v5180Percent(cards.filter(function(card){return card.ipa;}).length,cards.length),
+        articleCoverage:v5180Percent(nouns.filter(function(card){return card.article;}).length,nouns.length),
+        genderCoverage:v5180Percent(nouns.filter(function(card){return card.gender;}).length,nouns.length),
+        verifiedUsageCoverage:v5180Percent(verifiedUsage,cards.length),verifiedUsageWords:verifiedUsage,
+        lessonCoverage:v5180Percent(mappedLessons,cards.length),mappedLessons:mappedLessons,
+        issueCounts:lexical?.issueCounts||{}
+      };
+    }
+    function v5180GrammarCoverage(){
+      const lessons=V32_LESSONS||[],topics=Object.values(V34_TOPICS||{}).flat(),normalized=topics.map(normalizeTyped),unique=new Set(normalized);
+      const duplicateTopics=normalized.length-unique.size;
+      return {lessons:lessons.length,checkpointTopics:topics.length,uniqueCheckpointTopics:unique.size,duplicateCheckpointTopics:duplicateTopics};
+    }
+    function v5180Signature(){
+      return [
+        APP_VERSION,state.cards?.length||0,state.loadSource||'',state.dataMeta?.generatedAt||'',
+        V550_READINGS.length,V560_LISTENING_ITEMS.length,V580_SCENARIOS.length,V590_MISSIONS.length,V510_CORPUS.length,V530_SENTENCE_EXERCISES.length
+      ].join('|');
+    }
+    function v5180BuildAudit(force=false){
+      const signature=v5180Signature();if(!force&&v5180AuditCache.signature===signature&&v5180AuditCache.report)return v5180AuditCache.report;
+      const levels=V5180_LEVELS.map(v5180LevelCoverage),reading=v5180ReadingDefects(),listening=v5180ListeningDefects(),
+        conversation=v5180ConversationDefects(),missions=v5180MissionDefects(),exercises=v5180ExerciseDefects(),vocabulary=v5180VocabularyQuality(),grammar=v5180GrammarCoverage();
+      const defects=[...reading.defects,...listening.defects,...conversation.defects,...missions.defects,...exercises.defects];
+      if(vocabulary.critical)defects.push(vocabulary.critical+' critical lexical finding'+(vocabulary.critical===1?'':'s'));
+      const coverageGaps=[],warnings=[...reading.warnings,...listening.warnings,...conversation.warnings,...missions.warnings,...exercises.warnings];
+      for(const level of levels){
+        if(level.cards===0)coverageGaps.push(level.level+' has no core vocabulary');
+        if(level.readings<V5180_PROMOTION_MIN.readings)coverageGaps.push(level.level+' reading coverage '+level.readings+'/'+V5180_PROMOTION_MIN.readings);
+        if(level.listening<V5180_PROMOTION_MIN.listening)coverageGaps.push(level.level+' listening coverage '+level.listening+'/'+V5180_PROMOTION_MIN.listening);
+        if(level.scenarios<V5180_PROMOTION_MIN.scenarios)coverageGaps.push(level.level+' conversation coverage '+level.scenarios+'/'+V5180_PROMOTION_MIN.scenarios);
+        if(level.missions<V5180_PROMOTION_MIN.missions)coverageGaps.push(level.level+' mission coverage '+level.missions+'/'+V5180_PROMOTION_MIN.missions);
+        if(level.domainZeros.length)warnings.push(level.level+' zero-vocabulary domains: '+level.domainZeros.join(', '));
+      }
+      if(vocabulary.exampleCoverage<90)warnings.push('validated/example-pair coverage below 90%: '+vocabulary.exampleCoverage+'%');
+      if(vocabulary.articleCoverage<95)warnings.push('noun article coverage below 95%: '+vocabulary.articleCoverage+'%');
+      if(vocabulary.genderCoverage<95)warnings.push('noun gender coverage below 95%: '+vocabulary.genderCoverage+'%');
+      if(vocabulary.ipaCoverage<80)warnings.push('IPA coverage below 80%: '+vocabulary.ipaCoverage+'%');
+      const levelCoverageAverage=levels.length?levels.reduce(function(sum,row){return sum+row.coveragePct;},0)/levels.length:0,
+        qualitySignals=[vocabulary.exampleCoverage,vocabulary.articleCoverage,vocabulary.genderCoverage,Math.min(100,vocabulary.ipaCoverage),Math.min(100,levelCoverageAverage)],
+        healthScore=Math.round(qualitySignals.reduce(function(sum,x){return sum+x;},0)/qualitySignals.length);
+      const status=defects.length?'fail':coverageGaps.length||warnings.length?'warn':'pass';
+      const report={
+        version:APP_VERSION,release:V5180_RELEASE,generatedAt:new Date().toISOString(),status:status,healthScore:healthScore,
+        source:String(state.loadSource||'unknown'),levels:levels,vocabulary:vocabulary,grammar:grammar,
+        contentCounts:{readings:V550_READINGS.length,listening:V560_LISTENING_ITEMS.length,scenarios:V580_SCENARIOS.length,missions:V590_MISSIONS.length,verifiedUsageCorpus:V510_CORPUS.filter(function(row){return row.tier==='verified';}).length,sentenceExercises:V530_SENTENCE_EXERCISES.length},
+        defects:[...new Set(defects)],coverageGaps:[...new Set(coverageGaps)],warnings:[...new Set(warnings)],
+        functionContexts:conversation.contexts,exerciseReachability:{unreachableSentenceExercises:exercises.unreachableSentenceExercises,unmatchedCorpusRecords:exercises.unmatchedCorpusRecords}
+      };
+      state.v5180CurriculumAudit=report;v5180AuditCache={signature:signature,report:report};return report;
+    }
+    function v5180LevelHasDefect(level){
+      const lexical=typeof v396BuildAudit==='function'?v396BuildAudit():null,criticalIds=new Set(lexical?.criticalIds||[]);
+      if(v5180LevelCards(level).some(function(card){return criticalIds.has(card.id);} ))return true;
+      for(const reading of V550_READINGS.filter(function(row){return row.level===level;})){
+        if(!Array.isArray(reading.sentences)||!reading.sentences.length)return true;
+        if((reading.sentences||[]).some(function(sentence){return !String(sentence.fr||'').trim()||!String(sentence.en||'').trim();}))return true;
+        if((reading.questions||[]).some(function(q){return !Array.isArray(q.options)||!q.options.length||!Number.isInteger(q.answer)||q.answer<0||q.answer>=q.options.length;}))return true;
+      }
+      for(const item of V560_LISTENING_ITEMS.filter(function(row){return row.level===level;})){
+        if(!V550_READING_BY_ID.has(item.readingId)||!Array.isArray(item.segments)||!item.segments.length)return true;
+      }
+      const registered=new Set(Object.keys(V5110_FUNCTION_META));
+      for(const scenario of V580_SCENARIOS.filter(function(row){return row.level===level;})){
+        if(!scenario.start||!scenario.nodes?.[scenario.start])return true;
+        if((scenario.functions||[]).some(function(fn){return !registered.has(fn);}))return true;
+      }
+      for(const mission of V590_MISSIONS.filter(function(row){return v5180MissionLevel(row,level);})){
+        if(!(mission.scenarios||[]).length||(mission.scenarios||[]).some(function(id){return !V580_SCENARIO_BY_ID.has(id);} ))return true;
+      }
+      return false;
+    }
+
+    /* P25 may promote only from content whose structural audit is clean.
+       Coverage gaps continue to be represented by P25's own modality gates. */
+    const v5180LevelContentBase=v5160LevelContent;
+    v5160LevelContent=function(level){
+      const base=v5180LevelContentBase(level),critical=v5180LevelHasDefect(level);
+      return {...base,promotionCoverage:base.promotionCoverage&&!critical,curriculumAuditClean:!critical};
+    };
+
+    function v5180IssueList(items,limit=7){
+      return (items||[]).slice(0,limit).map(function(item){return '<li>'+escapeHtml(item)+'</li>';}).join('');
+    }
+    function v5180LevelCard(row){
+      const gap=!row.promotionCoverage,status=gap?'gap':'ready';
+      return '<article class="v5180-level '+status+'"><header><span class="level-chip level-'+row.level.toLowerCase()+'">'+row.level+'</span><strong>'+row.coveragePct+'%</strong></header><div class="v5180-level-grid"><span><b>'+row.cards+'</b> vocab</span><span><b>'+row.readings+'</b> read</span><span><b>'+row.listening+'</b> listen</span><span><b>'+row.scenarios+'</b> conversations</span><span><b>'+row.missions+'</b> missions</span><span><b>'+row.functions+'</b> functions</span><span><b>'+row.verifiedPhraseRecords+'</b> phrase records</span><span><b>'+row.sentenceExercises+'</b> sentences</span></div>'+(row.domainZeros.length?'<small>Zero-vocabulary domains: '+escapeHtml(row.domainZeros.map(function(x){return THEME_LABELS[x]||x;}).join(', '))+'</small>':'<small>No zero-vocabulary everyday-domain cells.</small>')+'</article>';
+    }
+    function v5180ProgressPanel(){
+      const r=v5180BuildAudit(),statusLabel=r.status==='fail'?'Structural/content defects':r.coverageGaps.length?'Coverage gaps remain':'Curriculum checks clean';
+      return '<section class="v5180-panel"><div class="v5180-head"><div><p class="eyebrow">P27 curriculum audit</p><h3>Coverage and content quality</h3><p>This audits what French is capable of teaching and measuring. It is separate from your personal mastery and from P25 promotion evidence.</p></div><div class="v5180-score '+r.status+'"><strong>'+r.healthScore+'</strong><span>curriculum health</span><small>'+escapeHtml(statusLabel)+'</small></div></div><div class="v5180-levels">'+r.levels.map(v5180LevelCard).join('')+'</div><div class="v5180-quality"><span><strong>'+r.vocabulary.exampleCoverage+'%</strong> examples</span><span><strong>'+r.vocabulary.ipaCoverage+'%</strong> IPA</span><span><strong>'+r.vocabulary.articleCoverage+'%</strong> noun articles</span><span><strong>'+r.vocabulary.genderCoverage+'%</strong> noun gender</span><span><strong>'+r.vocabulary.verifiedUsageCoverage+'%</strong> verified usage anchors</span><span><strong>'+r.grammar.uniqueCheckpointTopics+'</strong> grammar/checkpoint topics</span></div>'+((r.defects.length||r.coverageGaps.length)?'<div class="v5180-findings">'+(r.defects.length?'<div><strong>Defects</strong><ul>'+v5180IssueList(r.defects)+'</ul></div>':'')+(r.coverageGaps.length?'<div><strong>Coverage gaps</strong><ul>'+v5180IssueList(r.coverageGaps)+'</ul></div>':'')+'</div>':'')+'<p class="v5180-footnote">Warnings identify editorial or coverage work; they do not mark learner answers wrong. Structural defects can block a P25 level from using affected curriculum evidence. Current B2 gaps remain explicit rather than being hidden behind vocabulary counts.</p></section>';
+    }
+    function v5180DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5180-panel'))return;
+      const anchor=main.querySelector('.v5170-panel')||main.querySelector('.v5160-panel')||main.querySelector('.v5150-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5180ProgressPanel());else main.insertAdjacentHTML('beforeend',v5180ProgressPanel());
+    }
+    const v5180RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5180RenderProgressBase();v5180DecorateProgress();return result;};
+
+    function v5180SettingsHtml(){
+      const r=v5180BuildAudit(),topWarnings=r.warnings.slice(0,10);
+      return '<section class="v5180-settings" id="v5180-curriculum-health"><div class="v5180-settings-head"><div><p class="eyebrow">P27 curriculum QA</p><h4>Curriculum coverage & content integrity</h4><p>Machine-checkable audit across vocabulary metadata, CEFR bands, everyday domains, reading/listening, conversations, missions, functions, phrase corpus, and sentence exercises.</p></div><span class="v5180-status '+r.status+'">'+(r.status==='fail'?'Needs correction':r.status==='warn'?'Coverage/editorial work':'Passed')+'</span></div><div class="v5180-settings-grid"><span><strong>'+r.defects.length+'</strong> defects</span><span><strong>'+r.coverageGaps.length+'</strong> coverage gaps</span><span><strong>'+r.warnings.length+'</strong> warnings</span><span><strong>'+r.exerciseReachability.unreachableSentenceExercises+'</strong> unreachable sentences</span><span><strong>'+r.exerciseReachability.unmatchedCorpusRecords+'</strong> unmatched phrase records</span><span><strong>'+r.vocabulary.duplicateGroups+'</strong> lexical duplicate groups</span></div>'+(topWarnings.length?'<details><summary>Top audit warnings</summary><ul>'+v5180IssueList(topWarnings,10)+'</ul></details>':'')+'<div class="button-row"><button class="secondary" id="v5180-export">Export curriculum audit</button><button class="secondary" id="v5180-rerun">Re-run curriculum checks</button></div></section>';
+    }
+    function v5180BindSettings(){
+      $('#v5180-export')?.addEventListener('click',function(){downloadBlob(JSON.stringify(v5180BuildAudit(true),null,2),appExportName('french-curriculum-audit','json'),'application/json');showToast('Curriculum audit exported.');});
+      $('#v5180-rerun')?.addEventListener('click',function(){v5180AuditCache={signature:'',report:null};v396AuditCache=null;renderSettings();showToast('Curriculum checks refreshed.');});
+    }
+    function v5180DecorateSettings(){
+      if(state.view!=='settings'||main.querySelector('#v5180-curriculum-health'))return;
+      const stack=main.querySelector('[data-v371-panel="data"] .v371-data-stack');
+      if(stack){
+        const release=stack.querySelector('#v396-release-health');if(release)release.insertAdjacentHTML('afterend',v5180SettingsHtml());else stack.insertAdjacentHTML('afterbegin',v5180SettingsHtml());
+      }else main.insertAdjacentHTML('beforeend',v5180SettingsHtml());
+      v5180BindSettings();
+    }
+    const v5180RenderSettingsBase=renderSettings;
+    renderSettings=function(){const result=v5180RenderSettingsBase();v5180DecorateSettings();return result;};
+
+    function v5180Audit(){
+      const r=v5180BuildAudit(true),errors=[];
+      if(r.defects.length)errors.push(...r.defects.slice(0,12));
+      for(const level of r.levels){
+        if(level.cards<0||level.coveragePct<0||level.coveragePct>100)errors.push(level.level+' invalid coverage metrics');
+        if(level.readings!==V550_READINGS.filter(function(row){return row.level===level.level;}).length)errors.push(level.level+' reading count mismatch');
+        if(level.listening!==V560_LISTENING_ITEMS.filter(function(row){return row.level===level.level;}).length)errors.push(level.level+' listening count mismatch');
+      }
+      if(r.contentCounts.listening!==V560_LISTENING_ITEMS.length)errors.push('listening audit count mismatch');
+      if(r.exerciseReachability.unreachableSentenceExercises>V530_SENTENCE_EXERCISES.length)errors.push('unreachable exercise count invalid');
+      document.documentElement.dataset.curriculumAudit=errors.length?'failed':r.coverageGaps.length||r.warnings.length?'warning':'passed';
+      return errors;
+    }
+    const v5180RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5180RunQaBase(),r=v5180BuildAudit(),errors=v5180Audit(),warningCount=r.coverageGaps.length+r.warnings.length,
+        status=errors.length?'fail':warningCount?'warn':'pass';
+      result.checks.push(v5100QaCheck('curriculum-quality','Curriculum coverage & content quality',status,
+        errors.length?errors.slice(0,8).join(' · '):warningCount?r.coverageGaps.length+' coverage gaps · '+r.warnings.length+' editorial/coverage warnings':'CEFR/modalities/domains/functions/exercises/content integrity passed'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p27-curriculum-audit-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5180EnsureStyles(){
+      if(document.querySelector('#v5180-curriculum-style'))return;
+      const style=document.createElement('style');style.id='v5180-curriculum-style';
+      style.textContent='.v5180-panel,.v5180-settings{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.82rem}.v5180-head,.v5180-settings-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}.v5180-head h3,.v5180-settings h4{margin:.06rem 0}.v5180-head p,.v5180-settings-head p{margin:0;color:var(--muted);font-size:.6rem;max-width:84ch}.v5180-score{display:grid;min-width:130px;padding:.48rem;border-radius:11px;background:var(--surface-muted);text-align:right}.v5180-score strong{font-size:1.25rem;color:var(--navy)}.v5180-score span,.v5180-score small{font-size:.45rem;color:var(--muted)}.v5180-score.fail strong{color:var(--red)}.v5180-levels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.34rem;margin-top:.6rem}.v5180-level{padding:.5rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted)}.v5180-level.gap{border-color:color-mix(in srgb,var(--red) 32%,var(--line))}.v5180-level header{display:flex;justify-content:space-between;align-items:center}.v5180-level header>strong{font-size:.72rem;color:var(--navy)}.v5180-level-grid{display:grid;grid-template-columns:1fr 1fr;gap:.14rem;margin-top:.36rem}.v5180-level-grid span{font-size:.41rem;color:var(--muted)}.v5180-level-grid b{color:var(--navy)}.v5180-level>small{display:block;margin-top:.34rem;font-size:.4rem;color:var(--muted)}.v5180-quality,.v5180-settings-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.28rem;margin-top:.55rem}.v5180-quality span,.v5180-settings-grid span{padding:.4rem;border-radius:9px;background:var(--surface-muted);font-size:.43rem;color:var(--muted)}.v5180-quality strong,.v5180-settings-grid strong{display:block;font-size:.65rem;color:var(--navy)}.v5180-findings{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-top:.55rem}.v5180-findings>div{padding:.48rem;border:1px solid var(--line);border-radius:11px}.v5180-findings strong{font-size:.52rem;color:var(--navy)}.v5180-findings ul,.v5180-settings ul{margin:.3rem 0 0;padding-left:1rem;font-size:.45rem;color:var(--muted)}.v5180-footnote{font-size:.47rem!important;margin:.55rem 0 0!important;color:var(--muted)!important}.v5180-status{padding:.3rem .45rem;border-radius:999px;background:var(--surface-muted);font-size:.47rem;font-weight:850;color:var(--muted)}.v5180-status.fail{color:var(--red)}.v5180-status.pass{color:var(--green)}.v5180-settings details{margin-top:.5rem}.v5180-settings summary{cursor:pointer;font-size:.5rem;font-weight:800;color:var(--navy)}@media(max-width:1000px){.v5180-levels{grid-template-columns:1fr 1fr}.v5180-quality,.v5180-settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:650px){.v5180-head,.v5180-settings-head{flex-direction:column}.v5180-score{width:100%;text-align:left}.v5180-levels,.v5180-findings{grid-template-columns:1fr}.v5180-quality,.v5180-settings-grid{grid-template-columns:1fr 1fr}}';
+      document.head.append(style);
+    }
+    const v5180NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5180NormalizeSurfaceBase();document.documentElement.dataset.release='p27-curriculum-audit';
+      document.documentElement.dataset.curriculumQuality='coverage-integrity-v1';
+    };
+    const v5180InitBase=init;
+    init=async function(options){
+      v5180EnsureStyles();
+      const result=await v5180InitBase(options||{});
+      v5180AuditCache={signature:'',report:null};v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='dashboard')renderDashboard();else if(state.view==='progress')renderProgress();else if(state.view==='settings')renderSettings();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.18.0';return result;
     };
 
 
