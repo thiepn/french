@@ -99,3 +99,12 @@ French producer revision `french-p8-read-model-v3` adds one privacy-minimal aggr
 The producer reads this signal from `v5220CalibrationSnapshot()`. It never exports learner response text, rubric-axis detail, drafts, or prompt content.
 
 P25 remains the proficiency authority. P31 only strengthens the B2 transfer evidence that P25 consumes.
+
+
+## P33 oral calibration projection
+
+French producer revision `french-p8-read-model-v5` adds one aggregate progress metric:
+
+- `b2-spontaneous-oral-calibration` — 1 when the current P33 oral calibration is valid, otherwise 0.
+
+The shared schema remains `p8-read-model-v1`. No transcript, audio, ASR segments, prompt response, or detailed oral rubric data is exported to Hub.
