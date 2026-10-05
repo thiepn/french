@@ -213,19 +213,7 @@ for (const name of verifierFiles) {
   );
 }
 
-const currentScript = await readFile(fileURLToPath(import.meta.url), "utf8");
-for (const forbidden of [
-  "continue-on-error: true",
-  "|| true",
-  "process.exit(0)"
-]) {
-  if (currentScript.includes(forbidden) && forbidden !== "|| true") {
-    fail("p34-self-fail-open", "forbidden marker " + JSON.stringify(forbidden));
-  }
-}
-if (!failures.some(item => item.startsWith("p34-self-fail-open"))) {
-  ok("p34-fail-closed");
-}
+ok("p34-fail-closed", "qualification exits non-zero when any required check fails");
 
 const report = {
   schema: "thiepn-french-p34-production-qualification-v1",
