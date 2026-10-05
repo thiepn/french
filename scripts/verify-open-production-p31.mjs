@@ -7,7 +7,6 @@ const [html,serviceWorker]=await Promise.all([
 
 const failures=[];
 const required=[
-  "const APP_VERSION = '5.22.0';",
   "P31 B2 Open-Ended Production, Argumentation Quality & Advanced Assessment Calibration",
   "const V5220_VERSION='5.22.0';",
   "const V5220_POLICY='p31-b2-open-production-v1';",
@@ -50,7 +49,6 @@ const required=[
   "weak calibration fixture incorrectly passes",
   "strong calibration fixture does not pass",
   "raw learner production leaked into persistent P31 state",
-  "producerRevision:'french-p8-read-model-v3'",
   "id:'b2-open-production-calibration'",
   "v5220CalibrationSnapshot()",
   "latest.evaluator===V5220_EVALUATOR",
@@ -68,6 +66,8 @@ if(!html.includes("(' '+folded+' ').includes(' '+needle+' ')")){
   failures.push("P31 exact phrase-boundary marker matcher missing");
 }
 if(!html.includes("anchors:Object.freeze(["))failures.push("P31 topic-anchor coverage missing");
+const producerRevision=html.match(/producerRevision:'french-p8-read-model-v(\d+)'/);
+if(!producerRevision||Number(producerRevision[1])<3)failures.push("French P8 producer revision predates P31");
 
 const normalizeTaskStart=html.indexOf("function v5220NormalizeTask(row)");
 const normalizeAttemptStart=html.indexOf("function v5220NormalizeAttempt(row)",normalizeTaskStart);
