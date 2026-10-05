@@ -26454,10 +26454,13 @@ qui	who	A1	question word`;
       return result;
     };
 
+    function v5220HasMarker(folded,marker){
+      const needle=v580Fold(marker);return Boolean(needle)&&(' '+folded+' ').includes(' '+needle+' ');
+    }
     function v5220MarkerHits(folded){
       const hits={};
       for(const [family,markers] of Object.entries(V5220_MARKERS)){
-        hits[family]=markers.filter(function(marker){return v580Has(folded,marker);}).length;
+        hits[family]=markers.filter(function(marker){return v5220HasMarker(folded,marker);}).length;
       }
       return hits;
     }
@@ -26481,7 +26484,7 @@ qui	who	A1	question word`;
       const sophistication=clamp(longUnique/Math.max(8,unique.size*.32),0,1);
       const range=clamp(ttrScore*.68+sophistication*.32,0,1);
       const clauseMarkers=['qui','que','dont','lorsque','tandis que','alors que','afin que','bien que','meme si','puisque','si'];
-      const clauseCount=clauseMarkers.reduce(function(sum,marker){return sum+(v580Has(folded,marker)?1:0);},0);
+      const clauseCount=clauseMarkers.reduce(function(sum,marker){return sum+(v5220HasMarker(folded,marker)?1:0);},0);
       const conditional=words.filter(function(word){return /(rais|rait|rions|riez|raient)$/.test(word);}).length;
       const avgSentence=sentences.length?words.length/sentences.length:0;
       const sentenceBand=avgSentence>=10&&avgSentence<=30?1:avgSentence>=7&&avgSentence<=36?.65:.3;
