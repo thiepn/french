@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.18.0';
-    const APP_RELEASE = 'P27 Curriculum Coverage & Content Quality Audit';
+    const APP_VERSION = '5.19.0';
+    const APP_RELEASE = 'P28 Real-World Transfer & Functional Fluency Benchmarking';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -25436,6 +25436,284 @@ qui	who	A1	question word`;
       const badge=$('.version-badge');if(badge)badge.textContent='v5.18.0';return result;
     };
 
+
+
+
+    /* ================================================================
+       v5.19.0 REAL-WORLD TRANSFER & FUNCTIONAL FLUENCY BENCHMARKING
+       P28 turns the deterministic P18 mission engine into explicit,
+       level-scoped benchmark attempts. Only mission runs started inside
+       an active benchmark count. Practice history never silently grants
+       a benchmark pass, and B2 remains unavailable until P27 coverage
+       is sufficient.
+       ================================================================ */
+    const V5190_VERSION='5.19.0';
+    const V5190_RELEASE='P28 Real-World Transfer & Functional Fluency Benchmarking';
+    const V5190_STORAGE_KEY='french-functional-benchmarks-v1';
+    const V5190_SCHEMA=1;
+    const V5190_MAX_HISTORY=80;
+    const V5190_SPECS=Object.freeze({
+      A1:Object.freeze({
+        level:'A1',title:'Essential everyday independence',
+        description:'Complete a stable everyday transaction chain with minimal support.',
+        missions:Object.freeze(['daily-errands']),
+        minIndependentRate:80,minEvidence:.55,minIntent:.55,maxSupport:1
+      }),
+      A2:Object.freeze({
+        level:'A2',title:'Everyday problem-solving independence',
+        description:'Handle arrival logistics and a social planning chain independently across distinct contexts.',
+        missions:Object.freeze(['arrival-day','social-day']),
+        minIndependentRate:82,minEvidence:.58,minIntent:.58,maxSupport:1
+      }),
+      B1:Object.freeze({
+        level:'B1',title:'Independent real-world problem solving',
+        description:'Resolve customer and independent-living problems across multi-step conversations.',
+        missions:Object.freeze(['customer-problems','independent-living']),
+        minIndependentRate:85,minEvidence:.62,minIntent:.62,maxSupport:1
+      })
+    });
+    state.v5190Ui=state.v5190Ui&&typeof state.v5190Ui==='object'?state.v5190Ui:{last:null};
+
+    function v5190NormalizeMissionResult(row){
+      if(!row||typeof row!=='object'||!V590_MISSION_BY_ID.has(row.missionId))return null;
+      return {
+        missionId:String(row.missionId),runId:String(row.runId||'').slice(0,140),passed:row.passed===true,
+        score:clamp(finiteNumber(row.score),0,1),independentRate:clamp(Math.round(finiteNumber(row.independentRate)),0,100),
+        averageEvidence:clamp(finiteNumber(row.averageEvidence),0,1),averageIntentConfidence:clamp(finiteNumber(row.averageIntentConfidence),0,1),
+        supportMax:clamp(Math.floor(finiteNumber(row.supportMax)),0,3),manualAccepts:clamp(Math.floor(finiteNumber(row.manualAccepts)),0,60),
+        successfulTurns:clamp(Math.floor(finiteNumber(row.successfulTurns)),0,200)
+      };
+    }
+    function v5190NormalizeAttempt(row){
+      if(!row||typeof row!=='object'||!V5190_SPECS[row.level])return null;
+      const spec=V5190_SPECS[row.level],results=(Array.isArray(row.missionResults)?row.missionResults:[]).map(v5190NormalizeMissionResult).filter(Boolean).slice(0,spec.missions.length);
+      return {
+        id:String(row.id||'').slice(0,140),level:row.level,startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1)),
+        completedAt:clamp(finiteNumber(row.completedAt),0,now()+days(1)),passed:row.passed===true,
+        score:clamp(finiteNumber(row.score),0,1),missionResults:results,policy:'p28-functional-benchmark-v1'
+      };
+    }
+    function v5190NormalizeActive(row){
+      if(!row||typeof row!=='object'||!V5190_SPECS[row.level])return null;
+      const spec=V5190_SPECS[row.level],index=clamp(Math.floor(finiteNumber(row.index)),0,spec.missions.length-1),
+        results=(Array.isArray(row.missionResults)?row.missionResults:[]).map(v5190NormalizeMissionResult).filter(Boolean).slice(0,index);
+      return {id:String(row.id||'').slice(0,140),level:row.level,startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1))||now(),index:index,missionResults:results};
+    }
+    function v5190NormalizeState(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history=[];
+      for(const row of (Array.isArray(source.history)?source.history:[]).slice(-V5190_MAX_HISTORY)){const normalized=v5190NormalizeAttempt(row);if(normalized)history.push(normalized);}
+      return {schema:V5190_SCHEMA,active:v5190NormalizeActive(source.active),history:history};
+    }
+    function v5190Load(){state.v5190Benchmark=v5190NormalizeState(state.v5190Benchmark||safeStorageRead(V5190_STORAGE_KEY)||{});return state.v5190Benchmark;}
+    function v5190Save(){
+      state.v5190Benchmark=v5190NormalizeState(state.v5190Benchmark||{});
+      safeStorageSet(V5190_STORAGE_KEY,state.v5190Benchmark);depthSchedulePersist?.();return state.v5190Benchmark;
+    }
+    v5190Load();
+
+    const v5190DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5190DepthStateSnapshotBase(),v5190Benchmark:v5190NormalizeState(state.v5190Benchmark||{})};};
+    const v5190DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5190DepthApplyImportedStateBase(saved);
+      state.v5190Benchmark=v5190NormalizeState(saved?.v5190Benchmark||safeStorageRead(V5190_STORAGE_KEY)||{});
+      v5190Save();return result;
+    };
+    const v5190DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5190DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5190Benchmark)state.v5190Benchmark=v5190NormalizeState(saved.v5190Benchmark);}catch{}
+      return result;
+    };
+
+    function v5190ExpectedMission(active=state.v5190Benchmark?.active){
+      if(!active)return null;const spec=V5190_SPECS[active.level];return spec?.missions?.[active.index]||null;
+    }
+    function v5190EvaluateRun(run,level){
+      const spec=V5190_SPECS[level];
+      if(!run||!spec)return null;
+      const independence=clamp(finiteNumber(run.independentRate)/100,0,1),evidence=clamp(finiteNumber(run.averageEvidence),0,1),
+        intent=clamp(finiteNumber(run.averageIntentConfidence),0,1),task=run.completed?1:0,
+        support=run.supportMax===0?1:run.supportMax<=spec.maxSupport?.8:0;
+      const score=clamp(independence*.35+evidence*.25+intent*.2+task*.15+support*.05,0,1);
+      const passed=run.completed===true&&run.independentPass===true&&run.independentRate>=spec.minIndependentRate&&
+        run.manualAccepts===0&&run.supportMax<=spec.maxSupport&&run.averageEvidence>=spec.minEvidence&&run.averageIntentConfidence>=spec.minIntent;
+      return {
+        missionId:run.missionId,runId:run.id,passed:passed,score:score,independentRate:run.independentRate,
+        averageEvidence:run.averageEvidence,averageIntentConfidence:run.averageIntentConfidence,supportMax:run.supportMax,
+        manualAccepts:run.manualAccepts,successfulTurns:run.successfulTurns
+      };
+    }
+    function v5190FinishAttempt(passed){
+      const active=state.v5190Benchmark?.active;if(!active)return null;
+      const results=active.missionResults.slice(),score=results.length?results.reduce(function(sum,row){return sum+row.score;},0)/results.length:0,
+        attempt=v5190NormalizeAttempt({id:active.id,level:active.level,startedAt:active.startedAt,completedAt:now(),passed:passed===true,score:score,missionResults:results});
+      state.v5190Benchmark.history.push(attempt);
+      if(state.v5190Benchmark.history.length>V5190_MAX_HISTORY)state.v5190Benchmark.history=state.v5190Benchmark.history.slice(-V5190_MAX_HISTORY);
+      state.v5190Benchmark.active=null;state.v5190Ui.last=attempt;v5190Save();return attempt;
+    }
+    function v5190CaptureMissionRun(run){
+      const active=state.v5190Benchmark?.active;if(!active||!run)return null;
+      const expected=v5190ExpectedMission(active);
+      if(run.missionId!==expected||run.t<active.startedAt)return null;
+      const result=v5190EvaluateRun(run,active.level);if(!result)return null;
+      active.missionResults.push(result);
+      if(!result.passed){return v5190FinishAttempt(false);}
+      const spec=V5190_SPECS[active.level];
+      if(active.index>=spec.missions.length-1)return v5190FinishAttempt(true);
+      active.index++;v5190Save();state.v5190Ui.last={kind:'step',level:active.level,missionResult:result,nextMission:v5190ExpectedMission(active)};return result;
+    }
+    function v5190CancelBenchmark(){
+      if(!state.v5190Benchmark?.active)return;
+      const activeMission=state.v590Missions?.active;
+      if(activeMission&&activeMission.missionId===v5190ExpectedMission())v590EndMission();
+      state.v5190Benchmark.active=null;state.v5190Ui.last=null;v5190Save();showToast('Benchmark cancelled. Practice evidence was preserved.');
+      if(state.view==='progress')renderProgress();else if(state.view==='conversation')renderConversation();
+    }
+    function v5190LaunchExpected(){
+      const active=state.v5190Benchmark?.active;if(!active)return;
+      const expected=v5190ExpectedMission(active);
+      if(state.v590Missions?.active){
+        if(state.v590Missions.active.missionId===expected){setView('conversation',{focus:false});v590ResumeMission();return;}
+        showToast('Finish the active mission before continuing the benchmark.');return;
+      }
+      if(state.v580Conversation?.active){showToast('Finish or end the active conversation before continuing the benchmark.');return;}
+      setView('conversation',{focus:false});v590StartMission(expected);
+    }
+    function v5190StartBenchmark(level){
+      const spec=V5190_SPECS[level];if(!spec)return;
+      const active=state.v5190Benchmark?.active;
+      if(active){
+        if(active.level===level){v5190LaunchExpected();return;}
+        showToast(active.level+' benchmark is already in progress. Finish or cancel it first.');return;
+      }
+      if(state.v590Missions?.active||state.v580Conversation?.active){showToast('Finish the current conversation or mission before starting a benchmark.');return;}
+      state.v5190Benchmark.active={id:'benchmark-'+Math.round(now())+'-'+level.toLowerCase(),level:level,startedAt:now(),index:0,missionResults:[]};
+      state.v5190Ui.last=null;v5190Save();v5190LaunchExpected();
+    }
+
+    const v5190StartMissionBase=v590StartMission;
+    v590StartMission=function(id){
+      const active=state.v5190Benchmark?.active,expected=v5190ExpectedMission(active);
+      if(active&&id!==expected){showToast('Benchmark in progress. Complete '+active.level+' benchmark or cancel it before starting another mission.');return;}
+      return v5190StartMissionBase(id);
+    };
+    const v5190FinalizeMissionBase=v590FinalizeMission;
+    v590FinalizeMission=function(){
+      const run=v5190FinalizeMissionBase();if(run)v5190CaptureMissionRun(run);return run;
+    };
+
+    function v5190Latest(level){return (state.v5190Benchmark?.history||[]).filter(function(row){return row.level===level;}).at(-1)||null;}
+    function v5190Best(level){return (state.v5190Benchmark?.history||[]).filter(function(row){return row.level===level&&row.passed;}).sort(function(a,b){return b.score-a.score||b.completedAt-a.completedAt;})[0]||null;}
+    function v5190Readiness(spec){
+      const values=spec.missions.map(function(id){const mission=V590_MISSION_BY_ID.get(id);return mission?v590MissionReadiness(mission):0;});
+      return values.length?Math.round(values.reduce(function(sum,x){return sum+x;},0)/values.length*100):0;
+    }
+    function v5190LevelCard(level){
+      const spec=V5190_SPECS[level],latest=v5190Latest(level),best=v5190Best(level),active=state.v5190Benchmark?.active,
+        isActive=active?.level===level,readiness=v5190Readiness(spec),status=isActive?'In progress':best?'Passed':latest?'Not yet passed':'Not attempted',
+        score=best?Math.round(best.score*100)+'%':latest?Math.round(latest.score*100)+'%':'—',
+        action=isActive?'Continue benchmark':active?'Benchmark busy':'Start benchmark';
+      return '<article class="v5190-level '+(best?'pass':isActive?'active':'')+'"><header><span class="level-chip level-'+level.toLowerCase()+'">'+level+'</span><strong>'+escapeHtml(status)+'</strong></header><h4>'+escapeHtml(spec.title)+'</h4><p>'+escapeHtml(spec.description)+'</p><div class="v5190-meta"><span><b>'+spec.missions.length+'</b> mission'+(spec.missions.length===1?'':'s')+'</span><span><b>'+spec.minIndependentRate+'%</b> independence</span><span><b>'+Math.round(spec.minEvidence*100)+'%</b> evidence</span><span><b>'+readiness+'%</b> practice readiness</span></div><small>Best benchmark score: '+score+'. One failed required mission ends the attempt; practice runs outside a benchmark never count.</small><button class="'+(isActive?'primary':'secondary')+'" type="button" data-v5190-start="'+level+'" '+(active&&!isActive?'disabled':'')+'>'+action+'</button></article>';
+    }
+    function v5190ProgressPanel(){
+      const active=state.v5190Benchmark?.active,history=state.v5190Benchmark?.history||[],passes=history.filter(function(row){return row.passed;}),
+        highest=['B1','A2','A1'].find(function(level){return passes.some(function(row){return row.level===level;});})||'—';
+      return '<section class="v5190-panel"><div class="v5190-head"><div><p class="eyebrow">P28 functional fluency benchmark</p><h3>Test transfer under a fixed real-world task battery</h3><p>Benchmarks are separate from practice mastery. Only fresh deterministic mission runs launched inside the attempt count, and every required mission must clear hard independence, support, intent, and evidence gates.</p></div><div class="v5190-summary"><span><strong>'+passes.length+'</strong> passes</span><span><strong>'+highest+'</strong> highest passed</span><span><strong>'+history.length+'</strong> attempts</span></div></div>'+
+        (active?'<div class="v5190-active"><div><strong>'+active.level+' benchmark in progress</strong><span>Mission '+(active.index+1)+'/'+V5190_SPECS[active.level].missions.length+' · '+escapeHtml(V590_MISSION_BY_ID.get(v5190ExpectedMission(active))?.title||v5190ExpectedMission(active))+'</span></div><div class="button-row"><button class="primary" id="v5190-continue">Continue</button><button class="secondary" id="v5190-cancel">Cancel</button></div></div>':'')+
+        '<div class="v5190-grid">'+['A1','A2','B1'].map(v5190LevelCard).join('')+
+        '<article class="v5190-level locked"><header><span class="level-chip level-b2">B2</span><strong>Unavailable</strong></header><h4>Upper-intermediate benchmark</h4><p>P27 currently reports insufficient B2 communicative corpus coverage. P28 does not invent a benchmark from incomplete material.</p><small>Add and audit B2 readings, listening, conversation scenarios, and functional missions before enabling this level.</small></article></div>'+
+        '<p class="v5190-note">A P28 pass is an internal functional benchmark on the app’s fixed tasks, not an accredited CEFR certificate and not proof of unrestricted real-world proficiency.</p></section>';
+    }
+    function v5190BindProgress(){
+      main.querySelectorAll('[data-v5190-start]').forEach(function(button){button.addEventListener('click',function(){v5190StartBenchmark(button.dataset.v5190Start);});});
+      $('#v5190-continue')?.addEventListener('click',v5190LaunchExpected);
+      $('#v5190-cancel')?.addEventListener('click',v5190CancelBenchmark);
+    }
+    function v5190DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5190-panel'))return;
+      const anchor=main.querySelector('.v5180-panel')||main.querySelector('.v5170-panel')||main.querySelector('.v5160-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5190ProgressPanel());else main.insertAdjacentHTML('beforeend',v5190ProgressPanel());
+      v5190BindProgress();
+    }
+    const v5190RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5190RenderProgressBase();v5190DecorateProgress();return result;};
+
+    function v5190ConversationStatus(){
+      const active=state.v5190Benchmark?.active,last=state.v5190Ui.last;
+      if(active){
+        const spec=V5190_SPECS[active.level],mission=V590_MISSION_BY_ID.get(v5190ExpectedMission(active));
+        return '<section class="v5190-conversation active"><div><p class="eyebrow">P28 '+active.level+' benchmark</p><strong>Mission '+(active.index+1)+'/'+spec.missions.length+' · '+escapeHtml(mission?.title||'Functional task')+'</strong><span>Hints/support remain available, but using too much support can fail the benchmark gate.</span></div><div class="button-row"><button class="primary" id="v5190-conversation-continue">Continue benchmark</button><button class="secondary" id="v5190-conversation-cancel">Cancel benchmark</button></div></section>';
+      }
+      if(last?.policy==='p28-functional-benchmark-v1'){
+        return '<section class="v5190-conversation '+(last.passed?'pass':'fail')+'"><div><p class="eyebrow">P28 benchmark complete</p><strong>'+last.level+' · '+(last.passed?'Passed':'Not yet passed')+'</strong><span>'+Math.round(last.score*100)+'% benchmark score · '+last.missionResults.length+' mission result'+(last.missionResults.length===1?'':'s')+'.</span></div><button class="secondary" id="v5190-open-progress">View benchmark history</button></section>';
+      }
+      return '';
+    }
+    function v5190DecorateConversation(){
+      if(state.view!=='conversation'||main.querySelector('.v5190-conversation'))return;
+      const html=v5190ConversationStatus();if(!html)return;
+      const result=main.querySelector('.v590-result-card')||main.querySelector('.v590-missions')||main.firstElementChild;
+      if(result)result.insertAdjacentHTML(result.classList.contains('v590-result-card')?'afterend':'beforebegin',html);else main.insertAdjacentHTML('afterbegin',html);
+      $('#v5190-conversation-continue')?.addEventListener('click',v5190LaunchExpected);
+      $('#v5190-conversation-cancel')?.addEventListener('click',v5190CancelBenchmark);
+      $('#v5190-open-progress')?.addEventListener('click',function(){setView('progress');});
+    }
+    const v5190RenderConversationBase=renderConversation;
+    renderConversation=function(){const result=v5190RenderConversationBase();v5190DecorateConversation();return result;};
+
+    function v5190Audit(){
+      const errors=[],ids=new Set(),levels=Object.keys(V5190_SPECS),thresholds=[];
+      for(const level of levels){
+        const spec=V5190_SPECS[level];thresholds.push(spec.minIndependentRate);
+        if(ids.has(level))errors.push('duplicate benchmark level '+level);ids.add(level);
+        if(!Array.isArray(spec.missions)||!spec.missions.length)errors.push(level+' benchmark has no missions');
+        for(const missionId of spec.missions){
+          const mission=V590_MISSION_BY_ID.get(missionId);
+          if(!mission)errors.push(level+' benchmark missing mission '+missionId);
+          else if(!v5180MissionLevel(mission,level))errors.push(level+' benchmark mission level mismatch '+missionId);
+        }
+        if(spec.minIndependentRate<80||spec.minIndependentRate>100)errors.push(level+' independence threshold invalid');
+        if(spec.minEvidence<.5||spec.minEvidence>1||spec.minIntent<.5||spec.minIntent>1)errors.push(level+' evidence threshold invalid');
+        if(spec.maxSupport>1)errors.push(level+' benchmark permits excessive support');
+      }
+      if(thresholds.some(function(value,index){return index&&value<thresholds[index-1];}))errors.push('benchmark independence thresholds are not monotonic');
+      if(V5190_SPECS.B2)errors.push('B2 benchmark must remain unavailable until audited B2 mission coverage exists');
+      const active=state.v5190Benchmark?.active;if(active&&!v5190ExpectedMission(active))errors.push('active benchmark has no expected mission');
+      if(errors.length)console.error('French P28 functional benchmark audit failed',errors);
+      document.documentElement.dataset.functionalBenchmark=errors.length?'failed':'standardized-fixed-task-v1';return errors;
+    }
+    const v5190RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5190RunQaBase(),errors=v5190Audit();
+      result.checks.push(v5100QaCheck('functional-benchmark','Real-world transfer & functional fluency benchmark',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):'A1/A2/B1 fixed task batteries · fresh-attempt evidence only · B2 explicitly unavailable'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + p28-functional-benchmark-v1';
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5190EnsureStyles(){
+      if(document.querySelector('#v5190-benchmark-style'))return;
+      const style=document.createElement('style');style.id='v5190-benchmark-style';
+      style.textContent='.v5190-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5190-head{display:flex;justify-content:space-between;gap:.85rem;align-items:flex-start}.v5190-head h3{margin:.08rem 0}.v5190-head p{margin:0;color:var(--muted);font-size:.64rem;max-width:82ch}.v5190-summary{display:flex;gap:.3rem;flex-wrap:wrap;justify-content:flex-end}.v5190-summary span,.v5190-meta span{padding:.4rem .48rem;border-radius:10px;background:var(--surface-muted);font-size:.5rem;color:var(--muted)}.v5190-summary strong,.v5190-meta b{display:block;color:var(--navy);font-size:.74rem}.v5190-active,.v5190-conversation{display:flex;justify-content:space-between;align-items:center;gap:.7rem;margin:.6rem 0;padding:.65rem .7rem;border:1px solid color-mix(in srgb,var(--blue) 36%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface-solid))}.v5190-active strong,.v5190-active span,.v5190-conversation strong,.v5190-conversation span{display:block}.v5190-active strong,.v5190-conversation strong{color:var(--navy);font-size:.69rem}.v5190-active span,.v5190-conversation span{color:var(--muted);font-size:.54rem;margin-top:.12rem}.v5190-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-top:.6rem}.v5190-level{display:grid;gap:.42rem;padding:.68rem;border:1px solid var(--line);border-radius:13px;background:var(--surface-muted)}.v5190-level.pass{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}.v5190-level.active{border-color:color-mix(in srgb,var(--blue) 45%,var(--line))}.v5190-level.locked{opacity:.72}.v5190-level header{display:flex;justify-content:space-between;gap:.5rem;align-items:center}.v5190-level header strong{font-size:.55rem;color:var(--muted)}.v5190-level h4{margin:0;color:var(--navy);font-size:.75rem}.v5190-level p,.v5190-level small{margin:0;color:var(--muted);font-size:.52rem;line-height:1.45}.v5190-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25rem}.v5190-note{margin:.58rem 0 0!important;color:var(--muted)!important;font-size:.5rem!important}.v5190-conversation{margin:.6rem 0}.v5190-conversation.pass{border-color:color-mix(in srgb,var(--green) 45%,var(--line));background:color-mix(in srgb,var(--green) 6%,var(--surface-solid))}.v5190-conversation.fail{border-color:color-mix(in srgb,var(--red) 38%,var(--line));background:color-mix(in srgb,var(--red) 5%,var(--surface-solid))}.v5190-conversation .eyebrow{margin:0 0 .12rem!important}@media(max-width:850px){.v5190-head{flex-direction:column}.v5190-summary{justify-content:flex-start}.v5190-grid{grid-template-columns:1fr}.v5190-meta{grid-template-columns:1fr 1fr}}@media(max-width:620px){.v5190-active,.v5190-conversation{align-items:stretch;flex-direction:column}.v5190-active .button-row,.v5190-conversation .button-row{display:grid;grid-template-columns:1fr}.v5190-active button,.v5190-conversation button,.v5190-level button{width:100%}}';
+      document.head.append(style);
+    }
+    const v5190NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5190NormalizeSurfaceBase();document.documentElement.dataset.release='p28-functional-fluency-benchmark';
+      document.documentElement.dataset.functionalFluency='fixed-task-fresh-evidence-v1';
+    };
+    const v5190InitBase=init;
+    init=async function(options){
+      v5190EnsureStyles();v5190Load();
+      const result=await v5190InitBase(options||{});
+      v5190Load();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='progress')renderProgress();else if(state.view==='conversation')renderConversation();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.19.0';return result;
+    };
 
 
     /* THIEPN Account — guest-first auth + revision-safe cloud sync. */
