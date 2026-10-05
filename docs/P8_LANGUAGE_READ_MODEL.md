@@ -86,3 +86,16 @@ French producer revision `french-p8-read-model-v2` additionally projects the cur
 P30's B2 corpus unlock flows through the existing P25 frontier and P28/P29 systems rather than becoming a separate Hub proficiency claim.
 
 Verification continues to use the unchanged `p8-read-model-v1` privacy and authority guarantees.
+
+
+## Producer refresh after P31
+
+The shared envelope still remains `p8-read-model-v1`.
+
+French producer revision `french-p8-read-model-v3` adds one privacy-minimal aggregate metric:
+
+- `b2-open-production-calibration` — 1 when the current P31 B2 open-production calibration is valid, otherwise 0.
+
+The producer reads this signal from `v5220CalibrationSnapshot()`. It never exports learner response text, rubric-axis detail, drafts, or prompt content.
+
+P25 remains the proficiency authority. P31 only strengthens the B2 transfer evidence that P25 consumes.

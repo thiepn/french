@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.21.0';
-    const APP_RELEASE = 'P30 B2 Communicative Corpus Expansion, Advanced Functional Coverage & Benchmark Unlock';
+    const APP_VERSION = '5.22.0';
+    const APP_RELEASE = 'P31 B2 Open-Ended Production, Argumentation Quality & Advanced Assessment Calibration';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -26305,6 +26305,544 @@ qui	who	A1	question word`;
     };
 
 
+
+    /* ================================================================
+       v5.22.0 B2 OPEN-ENDED PRODUCTION, ARGUMENTATION QUALITY &
+       ADVANCED ASSESSMENT CALIBRATION
+       P31 adds a conservative offline assessment layer for responses
+       that cannot be reduced to one accepted phrase or intent. It only
+       scores observable structural evidence and abstains from claiming
+       full grammatical/semantic accuracy when the evidence is weak.
+       ================================================================ */
+    const V5220_VERSION='5.22.0';
+    const V5220_RELEASE='P31 B2 Open-Ended Production, Argumentation Quality & Advanced Assessment Calibration';
+    const V5220_POLICY='p31-b2-open-production-v1';
+    const V5220_EVALUATOR='b2-open-production-rubric-v1';
+    const V5220_STORAGE_KEY='french-b2-open-production-v1';
+    const V5220_SCHEMA=1;
+    const V5220_MAX_HISTORY=80;
+    const V5220_VALID_DAYS=35;
+    const V5220_MIN_ASSESSMENT_SCORE=.62;
+    const V5220_MIN_ASSESSMENT_CONFIDENCE=.68;
+
+    const V5220_MARKERS=Object.freeze({
+      position:Object.freeze(['a mon avis','je pense','je considere','je dirais','selon moi','je suis favorable','je suis oppose','ma position']),
+      reason:Object.freeze(['parce que','car','puisque','en effet','la raison','cela s explique']),
+      example:Object.freeze(['par exemple','notamment','on peut citer','prenons','un exemple']),
+      counter:Object.freeze(['cependant','pourtant','neanmoins','en revanche','certes','mais','d un autre cote']),
+      condition:Object.freeze(['a condition','dans la mesure','pourvu que','a moins que','si']),
+      consequence:Object.freeze(['donc','par consequent','cela pourrait','risque de','entrainer','aurait pour consequence','ainsi']),
+      qualifier:Object.freeze(['pas necessairement','dans une certaine mesure','selon le contexte','cela depend','en partie','plutot']),
+      uncertainty:Object.freeze(['peut etre','probablement','il semble','on peut supposer','il est possible','pourrait']),
+      concession:Object.freeze(['bien que','meme si','certes','il est vrai','je reconnais','malgre']),
+      synthesis:Object.freeze(['en resume','en conclusion','au total','finalement','je recommande','nous pouvons retenir']),
+      evidence:Object.freeze(['donnee','source','preuve','resultat','chiffre','etude','methode','echantillon']),
+      mediation:Object.freeze(['les deux','d un cote','de l autre','point commun','compromis','chacun','les deux parties']),
+      persuasion:Object.freeze(['je recommande','il faut','devrait','serait preferable','nous devrions','pour convaincre']),
+      sequence:Object.freeze(['d abord','ensuite','puis','enfin','dans un premier temps']),
+      contrast:Object.freeze(['mais','cependant','pourtant','neanmoins','en revanche','tandis que','alors que'])
+    });
+    const V5220_AXIS_LABELS=Object.freeze({
+      task:'Task coverage',argument:'Argumentation',nuance:'Nuance',cohesion:'Cohesion',range:'Lexical range',complexity:'Structural complexity'
+    });
+    const V5220_PROMPTS=Object.freeze([
+      Object.freeze({
+        id:'prod-work-hybrid',kind:'argumentation',title:'A balanced workplace position',minWords:110,targetWords:150,
+        prompt:"Votre université envisage d'imposer trois jours de présence sur le campus à tous les employés. Rédigez une réponse nuancée : prenez position, donnez des raisons, traitez une objection, proposez une condition ou un compromis, puis concluez.",
+        required:Object.freeze(['position','reason','counter','condition','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['universite','campus','presence']),Object.freeze(['employe','equipe','service']),
+          Object.freeze(['jour','teletravail','distance','flexible'])
+        ])
+      }),
+      Object.freeze({
+        id:'prod-city-mobility',kind:'argumentation',title:'A contested public policy',minWords:110,targetWords:150,
+        prompt:"Une ville veut fortement limiter la voiture dans le centre. Défendez une position qui tienne compte à la fois de l'environnement et des personnes qui disposent de peu d'alternatives. Présentez un argument, une objection, une conséquence possible et une recommandation finale.",
+        required:Object.freeze(['position','reason','counter','consequence','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['ville','centre','voiture','circulation']),Object.freeze(['transport','bus','metro','alternative']),
+          Object.freeze(['pollution','environnement','air','mobilite'])
+        ])
+      }),
+      Object.freeze({
+        id:'prod-media-claim',kind:'evaluation',title:'Evaluate a disputed claim',minWords:110,targetWords:150,
+        prompt:"Un article affirme qu'une étude « prouve » qu'une nouvelle méthode double les résultats. Expliquez ce qu'il faudrait vérifier avant d'accepter cette conclusion, nuancez le degré de certitude, puis formulez une conclusion responsable.",
+        required:Object.freeze(['evidence','qualifier','reason','uncertainty','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['article','etude','publication']),Object.freeze(['resultat','donnee','chiffre','source']),
+          Object.freeze(['preuve','conclusion','causalite','methode'])
+        ])
+      }),
+      Object.freeze({
+        id:'prod-project-crisis',kind:'decision',title:'Reason through a project crisis',minWords:110,targetWords:150,
+        prompt:"Un projet important a du retard, le budget est presque épuisé et toutes les fonctions prévues ne peuvent plus être livrées. Recommandez une décision, comparez au moins deux options, expliquez les conséquences probables et justifiez le compromis.",
+        required:Object.freeze(['position','contrast','consequence','condition','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['projet','retard','delai']),Object.freeze(['budget','cout','moyen']),
+          Object.freeze(['fonction','perimetre','livrer','qualite'])
+        ])
+      }),
+      Object.freeze({
+        id:'prod-team-conflict',kind:'mediation',title:'Mediate competing priorities',minWords:110,targetWords:150,
+        prompt:"Deux équipes sont en conflit : l'une veut ajouter des demandes urgentes, l'autre veut geler complètement le projet. Reformulez équitablement les deux positions, nuancez leurs hypothèses, proposez un compromis et expliquez pourquoi les deux parties devraient l'accepter.",
+        required:Object.freeze(['mediation','qualifier','counter','persuasion','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['equipe','collegue','partie']),Object.freeze(['demande','urgence','priorite']),
+          Object.freeze(['projet','perimetre','charge','compromis'])
+        ])
+      }),
+      Object.freeze({
+        id:'prod-priority-choice',kind:'synthesis',title:'Synthesize a difficult priority decision',minWords:110,targetWords:150,
+        prompt:"Une association ne peut financer entièrement qu'un seul de deux projets : l'un aiderait beaucoup de personnes, l'autre un groupe plus petit mais dans une situation plus urgente. Analysez le dilemme, mettez les critères en balance, proposez un compromis ou une décision et concluez clairement.",
+        required:Object.freeze(['contrast','reason','qualifier','mediation','synthesis']),
+        anchors:Object.freeze([
+          Object.freeze(['association','projet','budget']),Object.freeze(['personne','groupe','urgence']),
+          Object.freeze(['priorite','impact','cout','compromis'])
+        ])
+      })
+    ]);
+    const V5220_PROMPT_BY_ID=new Map(V5220_PROMPTS.map(function(row){return [row.id,row];}));
+    const V5220_SETS=Object.freeze([
+      Object.freeze(['prod-work-hybrid','prod-media-claim']),
+      Object.freeze(['prod-city-mobility','prod-team-conflict']),
+      Object.freeze(['prod-project-crisis','prod-priority-choice'])
+    ]);
+    const V5220_STOPWORDS=new Set(('a au aux avec ce ces dans de des du elle en et eux il ils je la le les leur lui ma mais me meme mes moi mon ne nos notre nous on ou par pas pour que qui sa se ses son sur ta te tes toi ton tu un une vos votre vous y est sont ai as avons avez ont etre avoir plus tres aussi comme si car donc puis alors tout tous toute toutes').split(/\s+/));
+
+    state.v5220Ui=state.v5220Ui&&typeof state.v5220Ui==='object'?state.v5220Ui:{
+      phase:'write',feedback:null,summary:null,practice:false,practicePromptId:'',pendingBenchmark:false,taskStartedAt:0
+    };
+
+    function v5220NormalizeTask(row){
+      if(!row||typeof row!=='object'||!V5220_PROMPT_BY_ID.has(row.promptId))return null;
+      const axes=row.axes&&typeof row.axes==='object'?row.axes:{};
+      return {
+        promptId:row.promptId,kind:String(row.kind||V5220_PROMPT_BY_ID.get(row.promptId).kind).slice(0,40),
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),passed:row.passed===true,
+        wordCount:clamp(Math.floor(finiteNumber(row.wordCount)),0,1000),sentenceCount:clamp(Math.floor(finiteNumber(row.sentenceCount)),0,100),
+        durationMs:clamp(finiteNumber(row.durationMs),0,7200000),
+        axes:{
+          task:clamp(finiteNumber(axes.task),0,1),argument:clamp(finiteNumber(axes.argument),0,1),nuance:clamp(finiteNumber(axes.nuance),0,1),
+          cohesion:clamp(finiteNumber(axes.cohesion),0,1),range:clamp(finiteNumber(axes.range),0,1),complexity:clamp(finiteNumber(axes.complexity),0,1)
+        },
+        familyHits:Array.isArray(row.familyHits)?row.familyHits.filter(function(x){return Object.prototype.hasOwnProperty.call(V5220_MARKERS,x);}).slice(0,20):[],
+        topicCoverage:clamp(finiteNumber(row.topicCoverage),0,1),
+        repetitionPenalty:clamp(finiteNumber(row.repetitionPenalty,1),0,1),evaluator:String(row.evaluator||V5220_EVALUATOR).slice(0,80)
+      };
+    }
+    function v5220NormalizeAttempt(row){
+      if(!row||typeof row!=='object')return null;
+      const tasks=(Array.isArray(row.tasks)?row.tasks:[]).map(v5220NormalizeTask).filter(Boolean).slice(0,2);
+      return {
+        id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1)),
+        completedAt:clamp(finiteNumber(row.completedAt),0,now()+days(1)),passed:row.passed===true,
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),tasks:tasks,
+        evaluator:String(row.evaluator||V5220_EVALUATOR).slice(0,80),policy:V5220_POLICY
+      };
+    }
+    function v5220NormalizeActive(row){
+      if(!row||typeof row!=='object'||!Array.isArray(row.queue))return null;
+      const queue=row.queue.filter(function(id){return V5220_PROMPT_BY_ID.has(id);}).slice(0,2);if(queue.length!==2)return null;
+      const results=(Array.isArray(row.results)?row.results:[]).map(v5220NormalizeTask).filter(Boolean).slice(0,queue.length);
+      const index=clamp(Math.floor(finiteNumber(row.index)),0,queue.length);
+      return {id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1))||now(),queue:queue,index:index,results:results};
+    }
+    function v5220NormalizeState(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history=[];
+      for(const row of (Array.isArray(source.history)?source.history:[]).slice(-V5220_MAX_HISTORY)){
+        const normalized=v5220NormalizeAttempt(row);if(normalized)history.push(normalized);
+      }
+      return {schema:V5220_SCHEMA,active:v5220NormalizeActive(source.active),history:history};
+    }
+    function v5220Load(){
+      state.v5220Production=v5220NormalizeState(state.v5220Production||safeStorageRead(V5220_STORAGE_KEY)||{});
+      return state.v5220Production;
+    }
+    function v5220Save(){
+      state.v5220Production=v5220NormalizeState(state.v5220Production||{});
+      safeStorageSet(V5220_STORAGE_KEY,state.v5220Production);depthSchedulePersist?.();return state.v5220Production;
+    }
+    v5220Load();
+
+    const v5220DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5220DepthStateSnapshotBase(),v5220Production:v5220NormalizeState(state.v5220Production||{})};};
+    const v5220DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5220DepthApplyImportedStateBase(saved);
+      state.v5220Production=v5220NormalizeState(saved?.v5220Production||safeStorageRead(V5220_STORAGE_KEY)||{});
+      v5220Save();return result;
+    };
+    const v5220DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5220DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5220Production)state.v5220Production=v5220NormalizeState(saved.v5220Production);}catch{}
+      return result;
+    };
+
+    function v5220HasMarker(folded,marker){
+      const needle=v580Fold(marker);return Boolean(needle)&&(' '+folded+' ').includes(' '+needle+' ');
+    }
+    function v5220MarkerHits(folded){
+      const hits={};
+      for(const [family,markers] of Object.entries(V5220_MARKERS)){
+        hits[family]=markers.filter(function(marker){return v5220HasMarker(folded,marker);}).length;
+      }
+      return hits;
+    }
+    function v5220SentenceList(text){
+      return String(text||'').split(/[.!?]+/).map(function(row){return row.trim();}).filter(Boolean);
+    }
+    function v5220EvaluateText(prompt,text,durationMs=0){
+      const raw=String(text||'').trim(),folded=v580Fold(raw),words=v580Words(raw),sentences=v5220SentenceList(raw),hits=v5220MarkerHits(folded);
+      const requiredHits=prompt.required.filter(function(family){return hits[family]>0;}).length;
+      const rhetoricalCoverage=prompt.required.length?requiredHits/prompt.required.length:0;
+      const topicGroups=Array.isArray(prompt.anchors)?prompt.anchors:[],topicHits=topicGroups.filter(function(group){
+        return group.some(function(anchor){return v5220HasMarker(folded,anchor);});
+      }).length,topicCoverage=topicGroups.length?topicHits/topicGroups.length:1;
+      const task=clamp(rhetoricalCoverage*.75+topicCoverage*.25,0,1);
+      const argumentFamilies=['position','reason','example','counter','evidence','consequence','synthesis'];
+      const nuanceFamilies=['qualifier','concession','uncertainty','condition','contrast'];
+      const cohesionFamilies=['reason','example','counter','condition','consequence','synthesis','sequence','contrast'];
+      const argument=argumentFamilies.filter(function(family){return hits[family]>0;}).length/argumentFamilies.length;
+      const nuance=nuanceFamilies.filter(function(family){return hits[family]>0;}).length/nuanceFamilies.length;
+      const cohesion=cohesionFamilies.filter(function(family){return hits[family]>0;}).length/cohesionFamilies.length;
+      const content=words.filter(function(word){return word.length>2&&!V5220_STOPWORDS.has(word);});
+      const unique=new Set(content),ttr=content.length?unique.size/content.length:0;
+      const ttrScore=clamp((ttr-.32)/.38,0,1);
+      const longUnique=[...unique].filter(function(word){return word.length>=8;}).length;
+      const sophistication=clamp(longUnique/Math.max(8,unique.size*.32),0,1);
+      const range=clamp(ttrScore*.68+sophistication*.32,0,1);
+      const clauseMarkers=['qui','que','dont','lorsque','tandis que','alors que','afin que','bien que','meme si','puisque','si'];
+      const clauseCount=clauseMarkers.reduce(function(sum,marker){return sum+(v5220HasMarker(folded,marker)?1:0);},0);
+      const conditional=words.filter(function(word){return /(rais|rait|rions|riez|raient)$/.test(word);}).length;
+      const avgSentence=sentences.length?words.length/sentences.length:0;
+      const sentenceBand=avgSentence>=10&&avgSentence<=30?1:avgSentence>=7&&avgSentence<=36?.65:.3;
+      const complexity=clamp(sentenceBand*.38+Math.min(1,clauseCount/4)*.42+Math.min(1,conditional/2)*.20,0,1);
+      const normalizedSentences=sentences.map(v580Fold).filter(Boolean),uniqueSentences=new Set(normalizedSentences);
+      const repetitionPenalty=normalizedSentences.length?clamp(uniqueSentences.size/normalizedSentences.length,0,1):0;
+      const lengthCoverage=clamp(words.length/Math.max(prompt.minWords,prompt.targetWords||prompt.minWords),0,1);
+      const sentenceCoverage=clamp(sentences.length/5,0,1);
+      const familyBreadth=Object.values(hits).filter(function(value){return value>0;}).length;
+      const frenchSignal=Math.max(.35,v580FrenchLikelihood(raw));
+      let score=clamp(task*.24+argument*.22+nuance*.18+cohesion*.14+range*.12+complexity*.10,0,1);
+      const lengthPenalty=words.length>=prompt.minWords?1:clamp(words.length/prompt.minWords,0,1);
+      score=clamp(score*lengthPenalty*(.72+.28*repetitionPenalty),0,1);
+      const confidence=clamp(lengthCoverage*.28+sentenceCoverage*.15+task*.22+Math.min(1,familyBreadth/8)*.20+frenchSignal*.15,0,1);
+      const passed=words.length>=prompt.minWords&&sentences.length>=4&&topicCoverage>=.67&&task>=.60&&argument>=.42&&nuance>=.35&&cohesion>=.35&&
+        score>=.58&&confidence>=.66&&repetitionPenalty>=.80;
+      const band=score>=.74&&confidence>=.76?'strong-structured-evidence':passed?'calibrated-structured-pass':score>=.43?'developing':'insufficient-evidence';
+      return {
+        promptId:prompt.id,kind:prompt.kind,score:score,confidence:confidence,passed:passed,band:band,
+        wordCount:words.length,sentenceCount:sentences.length,durationMs:clamp(finiteNumber(durationMs),0,7200000),
+        axes:{task:task,argument:argument,nuance:nuance,cohesion:cohesion,range:range,complexity:complexity},
+        familyHits:Object.entries(hits).filter(function(pair){return pair[1]>0;}).map(function(pair){return pair[0];}),
+        topicCoverage:topicCoverage,repetitionPenalty:repetitionPenalty,evaluator:V5220_EVALUATOR
+      };
+    }
+    function v5220SelectQueue(){
+      const index=(state.v5220Production?.history?.length||0)%V5220_SETS.length;
+      return V5220_SETS[index].slice();
+    }
+    function v5220Latest(){
+      return (state.v5220Production?.history||[]).slice().sort(function(a,b){return b.completedAt-a.completedAt;})[0]||null;
+    }
+    function v5220CalibrationSnapshot(at=now()){
+      const latest=v5220Latest(),active=state.v5220Production?.active||null;
+      const ageDays=latest?.completedAt?Math.floor((at-latest.completedAt)/days(1)):null;
+      const currentPass=Boolean(latest?.passed&&latest.evaluator===V5220_EVALUATOR&&ageDays!==null&&ageDays<=V5220_VALID_DAYS);
+      const stale=Boolean(latest?.passed&&!currentPass);
+      return {
+        schema:'thiepn-french-b2-open-production-calibration',schemaVersion:1,policy:V5220_POLICY,evaluator:V5220_EVALUATOR,
+        currentPass:currentPass,stale:stale,active:Boolean(active),latest:latest,
+        score:latest?.score||0,confidence:latest?.confidence||0,ageDays:ageDays,
+        validUntil:latest?.passed?latest.completedAt+days(V5220_VALID_DAYS):null,
+        attempts:state.v5220Production?.history?.length||0
+      };
+    }
+
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_B2_PRODUCTION',{
+      value:Object.freeze({version:V5220_POLICY,getSnapshot:v5220CalibrationSnapshot,evaluate:function(promptId,text){const prompt=V5220_PROMPT_BY_ID.get(promptId);return prompt?v5220EvaluateText(prompt,text):null;}}),
+      writable:false,configurable:false
+    });
+
+    function v5220AssessmentPass(tasks){
+      if(!Array.isArray(tasks)||tasks.length!==2||tasks.some(function(row){return !row?.passed;}))return {passed:false,score:0,confidence:0};
+      const score=tasks.reduce(function(sum,row){return sum+row.score;},0)/tasks.length;
+      const confidence=tasks.reduce(function(sum,row){return sum+row.confidence;},0)/tasks.length;
+      return {passed:score>=V5220_MIN_ASSESSMENT_SCORE&&confidence>=V5220_MIN_ASSESSMENT_CONFIDENCE,score:score,confidence:confidence};
+    }
+    function v5220StartAssessment(options={}){
+      const practice=options.practice===true;
+      state.v5220Ui.practice=practice;state.v5220Ui.feedback=null;state.v5220Ui.summary=null;
+      state.v5220Ui.pendingBenchmark=options.pendingBenchmark===true;
+      state.v5220Ui.taskStartedAt=now();state.v5220Ui.phase='write';
+      if(practice){
+        const offset=(state.v5220Production?.history?.length||0)+1;
+        state.v5220Ui.practicePromptId=V5220_PROMPTS[offset%V5220_PROMPTS.length].id;
+      }else if(!state.v5220Production.active){
+        state.v5220Production.active={id:'b2-production-'+Math.round(now()),startedAt:now(),queue:v5220SelectQueue(),index:0,results:[]};
+        v5220Save();
+      }
+      v5220EnsureDialog();v5220RenderDialog();
+      const dialog=$('#v5220-dialog');if(dialog&&!dialog.open)dialog.showModal();
+    }
+    function v5220CurrentPrompt(){
+      if(state.v5220Ui.practice)return V5220_PROMPT_BY_ID.get(state.v5220Ui.practicePromptId)||V5220_PROMPTS[0];
+      const active=state.v5220Production?.active;if(!active)return null;
+      return V5220_PROMPT_BY_ID.get(active.queue[active.index])||null;
+    }
+    function v5220AxisGrid(result){
+      return '<div class="v5220-axis-grid">'+Object.keys(V5220_AXIS_LABELS).map(function(id){
+        const value=clamp(finiteNumber(result.axes?.[id]),0,1);
+        return '<span><b>'+escapeHtml(V5220_AXIS_LABELS[id])+'</b>'+Math.round(value*100)+'%</span>';
+      }).join('')+'</div>';
+    }
+    function v5220Suggestions(result,prompt){
+      const suggestions=[];
+      if(result.topicCoverage<.67)suggestions.push('Stay closer to the specific topic instead of relying on a generic argument template.');
+      if(result.axes.task<.7)suggestions.push('Cover more of the required rhetorical moves: '+prompt.required.map(function(x){return x.replace(/-/g,' ');}).join(', ')+'.');
+      if(result.axes.argument<.5)suggestions.push('Make the reasoning chain more explicit with reasons, evidence/examples, consequences, or a counter-position.');
+      if(result.axes.nuance<.45)suggestions.push('Add qualification or concession instead of presenting the issue as absolute.');
+      if(result.axes.cohesion<.45)suggestions.push('Connect the argument with clearer contrast, cause, consequence, condition, and conclusion markers.');
+      if(result.axes.range<.45)suggestions.push('Use a wider range of precise content words and avoid repeating the same wording.');
+      if(result.axes.complexity<.45)suggestions.push('Combine ideas with subordinate or conditional structures rather than only short independent clauses.');
+      if(result.wordCount<prompt.minWords)suggestions.push('Develop the response further; this task needs at least '+prompt.minWords+' words.');
+      return suggestions.slice(0,4);
+    }
+    function v5220BandLabel(result){
+      return result.band==='strong-structured-evidence'?'Strong structured evidence':
+        result.band==='calibrated-structured-pass'?'Calibrated structural pass':
+        result.band==='developing'?'Developing evidence':'Insufficient evidence';
+    }
+    function v5220WriteHtml(prompt){
+      const active=state.v5220Production?.active,step=state.v5220Ui.practice?1:Math.min(2,(active?.index||0)+1);
+      const scaffold=state.v5220Ui.practice?'<div class="v5220-scaffold"><strong>Practice scaffold</strong><span>'+prompt.required.map(function(x){return escapeHtml(x.replace(/-/g,' '));}).join(' → ')+'</span><small>This scaffold makes the run practice-only. It cannot become calibration evidence.</small></div>':'';
+      const attestation=state.v5220Ui.practice?'':'<label class="v5220-attest"><input type="checkbox" id="v5220-independent"> I wrote this response without a translator, AI-generated answer, model response, or notes.</label>';
+      return '<div class="v5220-dialog-head"><div><p class="eyebrow">P31 '+(state.v5220Ui.practice?'practice':'calibrated assessment · task '+step+'/2')+'</p><h2>'+escapeHtml(prompt.title)+'</h2><span>'+escapeHtml(prompt.kind)+' · target '+prompt.targetWords+' words · minimum '+prompt.minWords+'</span></div><button type="button" class="v5220-close" id="v5220-close" aria-label="Close">×</button></div>'+
+        '<div class="v5220-prompt" lang="fr">'+escapeHtml(prompt.prompt)+'</div>'+scaffold+
+        '<textarea id="v5220-response" rows="11" lang="fr" spellcheck="true" placeholder="Écrivez votre réponse en français…"></textarea>'+
+        '<div class="v5220-compose-meta"><span id="v5220-word-count">0 words</span><span>No model answer is shown before submission.</span></div>'+
+        attestation+
+        '<div class="button-row"><button class="primary" id="v5220-submit" type="button">'+(state.v5220Ui.practice?'Evaluate practice':'Submit independent response')+'</button>'+
+        (!state.v5220Ui.practice?'<button class="secondary" id="v5220-end" type="button">End assessment</button>':'')+'</div>';
+    }
+    function v5220FeedbackHtml(result,prompt){
+      const suggestions=v5220Suggestions(result,prompt);
+      return '<div class="v5220-dialog-head"><div><p class="eyebrow">P31 response analysis</p><h2>'+escapeHtml(v5220BandLabel(result))+'</h2><span>'+result.wordCount+' words · '+result.sentenceCount+' sentences</span></div><button type="button" class="v5220-close" id="v5220-close" aria-label="Close">×</button></div>'+
+        '<div class="v5220-score-row"><span><strong>'+Math.round(result.score*100)+'%</strong> structural score</span><span><strong>'+Math.round(result.confidence*100)+'%</strong> evaluator confidence</span><span><strong>'+(result.passed?'Pass':'Not yet')+'</strong> task gate</span></div>'+
+        v5220AxisGrid(result)+
+        '<div class="v5220-feedback"><strong>What to improve</strong>'+(suggestions.length?'<ul>'+suggestions.map(function(x){return '<li>'+escapeHtml(x)+'</li>';}).join('')+'</ul>':'<p>The observable structural gates are satisfied. Continue to the next independent task.</p>')+'</div>'+
+        '<p class="v5220-disclaimer">This evaluator measures observable structure and language-range proxies. It does not claim to verify every grammatical choice, factual claim, or semantic nuance.</p>'+
+        '<div class="button-row">'+(state.v5220Ui.practice?'<button class="primary" id="v5220-practice-again" type="button">Another practice prompt</button><button class="secondary" id="v5220-close-result" type="button">Close</button>':
+          '<button class="primary" id="v5220-next" type="button">Continue to task 2</button><button class="secondary" id="v5220-close-result" type="button">Close for now</button>')+'</div>';
+    }
+    function v5220SummaryHtml(summary){
+      const result=summary.attempt,canContinue=state.v5220Ui.pendingBenchmark&&result.passed;
+      return '<div class="v5220-dialog-head"><div><p class="eyebrow">P31 calibrated assessment complete</p><h2>'+(result.passed?'Calibration passed':'Calibration not yet passed')+'</h2><span>Two independent open-ended B2 tasks</span></div><button type="button" class="v5220-close" id="v5220-close" aria-label="Close">×</button></div>'+
+        '<div class="v5220-score-row"><span><strong>'+Math.round(result.score*100)+'%</strong> mean structural score</span><span><strong>'+Math.round(result.confidence*100)+'%</strong> mean confidence</span><span><strong>'+(result.passed?'Current for '+V5220_VALID_DAYS+' days':'Re-test required')+'</strong></span></div>'+
+        '<div class="v5220-summary-tasks">'+result.tasks.map(function(task){const prompt=V5220_PROMPT_BY_ID.get(task.promptId);return '<span><b>'+escapeHtml(prompt?.title||task.promptId)+'</b>'+Math.round(task.score*100)+'% · '+(task.passed?'pass':'not yet')+'</span>';}).join('')+'</div>'+
+        '<p class="v5220-disclaimer">A pass is conservative internal evidence that your response structure is sufficiently developed to continue B2 assessment. It is not a certified CEFR writing score and does not replace P25/P28 functional evidence.</p>'+
+        '<div class="button-row">'+(canContinue?'<button class="primary" id="v5220-continue-benchmark" type="button">Continue to B2 benchmark</button>':'<button class="primary" id="v5220-close-result" type="button">Close</button>')+
+        (!result.passed?'<button class="secondary" id="v5220-retry" type="button">Start a new assessment</button>':'')+'</div>';
+    }
+    function v5220RenderDialog(){
+      const body=$('#v5220-dialog-body');if(!body)return;
+      if(state.v5220Ui.phase==='summary'&&state.v5220Ui.summary){body.innerHTML=v5220SummaryHtml(state.v5220Ui.summary);}
+      else if(state.v5220Ui.phase==='feedback'&&state.v5220Ui.feedback){
+        const prompt=V5220_PROMPT_BY_ID.get(state.v5220Ui.feedback.promptId);body.innerHTML=v5220FeedbackHtml(state.v5220Ui.feedback,prompt);
+      }else{
+        const prompt=v5220CurrentPrompt();if(!prompt){body.innerHTML='<p>No production prompt is available.</p>';return;}
+        state.v5220Ui.taskStartedAt=now();body.innerHTML=v5220WriteHtml(prompt);
+      }
+      v5220BindDialog();
+    }
+    function v5220FinishAssessment(){
+      const active=state.v5220Production?.active;if(!active)return null;
+      const outcome=v5220AssessmentPass(active.results),attempt=v5220NormalizeAttempt({
+        id:active.id,startedAt:active.startedAt,completedAt:now(),passed:outcome.passed,score:outcome.score,confidence:outcome.confidence,tasks:active.results
+      });
+      state.v5220Production.history.push(attempt);
+      if(state.v5220Production.history.length>V5220_MAX_HISTORY)state.v5220Production.history=state.v5220Production.history.slice(-V5220_MAX_HISTORY);
+      state.v5220Production.active=null;v5220Save();v5160Invalidate();v5160ReconcilePromotions();
+      state.v5220Ui.summary={attempt:attempt};state.v5220Ui.phase='summary';return attempt;
+    }
+    function v5220Submit(){
+      const prompt=v5220CurrentPrompt(),textarea=$('#v5220-response');if(!prompt||!textarea)return;
+      const text=textarea.value.trim();
+      if(!state.v5220Ui.practice&&!$('#v5220-independent')?.checked){showToast('Confirm that the response was written independently before submitting.');return;}
+      const result=v5220EvaluateText(prompt,text,now()-finiteNumber(state.v5220Ui.taskStartedAt,now()));
+      if(state.v5220Ui.practice){
+        state.v5220Ui.feedback=result;state.v5220Ui.phase='feedback';v5220RenderDialog();return;
+      }
+      const active=state.v5220Production?.active;if(!active)return;
+      active.results.push(v5220NormalizeTask(result));active.index++;v5220Save();
+      if(active.index>=active.queue.length){
+        v5220FinishAssessment();v5220RenderDialog();if(state.view==='progress')renderProgress();return;
+      }
+      state.v5220Ui.feedback=result;state.v5220Ui.phase='feedback';v5220RenderDialog();
+    }
+    function v5220CloseDialog(){const dialog=$('#v5220-dialog');if(dialog?.open)dialog.close();}
+    function v5220CancelAssessment(){
+      state.v5220Production.active=null;v5220Save();state.v5220Ui.pendingBenchmark=false;state.v5220Ui.phase='write';state.v5220Ui.feedback=null;v5220CloseDialog();
+      if(state.view==='progress')renderProgress();
+    }
+    function v5220BindDialog(){
+      const textarea=$('#v5220-response');
+      const updateCount=function(){if(!textarea)return;const count=v580Words(textarea.value).length,node=$('#v5220-word-count');if(node)node.textContent=count+' word'+(count===1?'':'s');};
+      textarea?.addEventListener('input',updateCount);updateCount();
+      $('#v5220-submit')?.addEventListener('click',v5220Submit);
+      $('#v5220-close')?.addEventListener('click',v5220CloseDialog);
+      $('#v5220-close-result')?.addEventListener('click',v5220CloseDialog);
+      $('#v5220-end')?.addEventListener('click',v5220CancelAssessment);
+      $('#v5220-next')?.addEventListener('click',function(){state.v5220Ui.phase='write';state.v5220Ui.feedback=null;v5220RenderDialog();});
+      $('#v5220-practice-again')?.addEventListener('click',function(){
+        const current=V5220_PROMPTS.findIndex(function(row){return row.id===state.v5220Ui.practicePromptId;});
+        state.v5220Ui.practicePromptId=V5220_PROMPTS[(current+1)%V5220_PROMPTS.length].id;state.v5220Ui.phase='write';state.v5220Ui.feedback=null;v5220RenderDialog();
+      });
+      $('#v5220-retry')?.addEventListener('click',function(){state.v5220Ui.phase='write';state.v5220Ui.summary=null;v5220StartAssessment({pendingBenchmark:state.v5220Ui.pendingBenchmark});});
+      $('#v5220-continue-benchmark')?.addEventListener('click',function(){
+        state.v5220Ui.pendingBenchmark=false;v5220CloseDialog();v5220StartBenchmarkBase('B2');
+      });
+    }
+    function v5220EnsureDialog(){
+      if($('#v5220-dialog'))return;
+      document.body.insertAdjacentHTML('beforeend','<dialog id="v5220-dialog" class="v5220-dialog"><div id="v5220-dialog-body"></div></dialog>');
+      const dialog=$('#v5220-dialog');dialog?.addEventListener('cancel',function(event){event.preventDefault();v5220CloseDialog();});
+    }
+
+    function v5220StatusLabel(snapshot){
+      if(snapshot.active)return 'Assessment in progress';
+      if(snapshot.currentPass)return 'Current calibration';
+      if(snapshot.stale)return 'Calibration stale';
+      if(snapshot.latest)return 'Recalibration needed';
+      return 'Not yet calibrated';
+    }
+    function v5220ProgressPanel(){
+      const s=v5220CalibrationSnapshot(),latest=s.latest;
+      return '<section class="v5220-panel"><div class="v5220-head"><div><p class="eyebrow">P31 B2 open production</p><h3>'+escapeHtml(v5220StatusLabel(s))+'</h3><p>Two independent open-ended tasks test observable argument structure, nuance, cohesion, lexical range, and structural complexity. Low-confidence evidence does not become a B2 claim.</p></div><span class="v5220-status '+(s.currentPass?'pass':s.active?'active':'')+'">'+(s.currentPass?'Calibrated':s.active?'In progress':'Evidence required')+'</span></div>'+
+        '<div class="v5220-progress-grid"><span><strong>'+(latest?Math.round(latest.score*100)+'%':'—')+'</strong> latest score</span><span><strong>'+(latest?Math.round(latest.confidence*100)+'%':'—')+'</strong> confidence</span><span><strong>'+s.attempts+'</strong> assessments</span><span><strong>'+(s.validUntil?v5200Date(s.validUntil):'—')+'</strong> valid until</span></div>'+
+        '<p class="v5220-note">P31 stores only prompt IDs and rubric metrics—not your response text. A current pass is required for B2 P25 transfer qualification and before a B2 P28 benchmark can begin or pass.</p>'+
+        '<div class="button-row"><button class="primary" id="v5220-start" type="button">'+(s.active?'Resume calibrated assessment':s.currentPass?'Run fresh calibration':'Start calibrated assessment')+'</button><button class="secondary" id="v5220-practice" type="button">Practice open response</button></div></section>';
+    }
+    function v5220DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5220-panel'))return;
+      const anchor=main.querySelector('.v5210-panel')||main.querySelector('.v5200-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5220ProgressPanel());else main.insertAdjacentHTML('beforeend',v5220ProgressPanel());
+      $('#v5220-start')?.addEventListener('click',function(){v5220StartAssessment();});
+      $('#v5220-practice')?.addEventListener('click',function(){v5220StartAssessment({practice:true});});
+    }
+    const v5220RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5220RenderProgressBase();v5220DecorateProgress();return result;};
+
+    const v5220TransferGateBase=v5160TransferGate;
+    v5160TransferGate=function(level){
+      const gate=v5220TransferGateBase(level);if(level!=='B2')return gate;
+      const calibration=v5220CalibrationSnapshot();
+      gate.openProductionRequired=true;gate.openProductionCurrent=calibration.currentPass;
+      gate.openProductionScore=calibration.score;gate.openProductionConfidence=calibration.confidence;
+      gate.detail+=' · P31 open production '+(calibration.currentPass?'current '+Math.round(calibration.score*100)+'%':'required');
+      if(!calibration.currentPass){gate.coverage=false;return gate;}
+      gate.score=Math.min(gate.score,calibration.score);gate.confidence=Math.min(gate.confidence,calibration.confidence);
+      return gate;
+    };
+
+    const v5220StartBenchmarkBase=v5190StartBenchmark;
+    v5190StartBenchmark=function(level){
+      if(level==='B2'){
+        const calibration=v5220CalibrationSnapshot();
+        if(!calibration.currentPass){
+          const activeBenchmark=state.v5190Benchmark?.active,activeMission=state.v590Missions?.active,activeConversation=state.v580Conversation?.active;
+          if((activeBenchmark&&activeBenchmark.level!=='B2')||activeMission||activeConversation)return v5220StartBenchmarkBase(level);
+          showToast('B2 benchmark requires a current P31 open-production calibration first.');
+          v5220StartAssessment({pendingBenchmark:true});return;
+        }
+      }
+      return v5220StartBenchmarkBase(level);
+    };
+    const v5220FinishBenchmarkBase=v5190FinishAttempt;
+    v5190FinishAttempt=function(passed){
+      const active=state.v5190Benchmark?.active;
+      if(active?.level==='B2'&&passed===true&&!v5220CalibrationSnapshot().currentPass){
+        showToast('B2 benchmark cannot pass without current P31 open-production calibration.');
+        return v5220FinishBenchmarkBase(false);
+      }
+      return v5220FinishBenchmarkBase(passed);
+    };
+
+    const v5220CoachSnapshotBase=coachSnapshot;
+    coachSnapshot=function(){
+      const snapshot=v5220CoachSnapshotBase(),calibration=v5220CalibrationSnapshot();
+      if(snapshot.preset==='maintenance')return {...snapshot,productionCalibration:calibration};
+      const urgent=snapshot.leeches>0||snapshot.total.due>Math.max(20,state.settings.dailyReviewLimit*.5);
+      if(urgent)return {...snapshot,productionCalibration:calibration};
+      if(v5160StudyFrontier()==='B2'&&!calibration.currentPass){
+        return {...snapshot,productionCalibration:calibration,preset:'advanced-production',
+          headline:'Calibrate B2 open-ended production',
+          reason:calibration.stale?'Your previous P31 calibration is older than '+V5220_VALID_DAYS+' days. Refresh it before relying on B2 production evidence.':
+            'B2 progression now requires two independent open-ended responses with calibrated structural evidence.'};
+      }
+      return {...snapshot,productionCalibration:calibration};
+    };
+    const v5220ApplySessionPresetBase=applySessionPreset;
+    applySessionPreset=function(name){
+      if(name==='advanced-production'){v5220StartAssessment();return;}
+      return v5220ApplySessionPresetBase(name);
+    };
+
+    function v5220CalibrationFixtures(){
+      const prompt=V5220_PROMPT_BY_ID.get('prod-work-hybrid');
+      const weak="Je pense que cette idée est bonne. Le travail est important et les employés peuvent venir. Mais parfois c'est difficile. En conclusion, je suis d'accord.";
+      const strong="À mon avis, une règle commune peut faciliter la coordination, parce que les équipes savent quand elles peuvent travailler ensemble. Cependant, imposer exactement trois jours à tout le monde n'est pas nécessairement équitable : certains métiers exigent une présence régulière, tandis que d'autres peuvent fonctionner efficacement à distance. Par exemple, une équipe qui accueille des étudiants n'a pas les mêmes contraintes qu'un service qui travaille surtout sur des dossiers numériques. Même si la direction veut une règle simple, je pense qu'il faut tenir compte de ces différences. Si les objectifs sont clairs, on pourrait demander deux jours communs et laisser le troisième flexible. Cette solution réduirait le risque d'isolement tout en préservant une partie de l'autonomie. En conclusion, je recommande un cadre commun, à condition qu'il puisse être adapté selon les fonctions et réévalué après quelques mois.";
+      return {weak:v5220EvaluateText(prompt,weak),strong:v5220EvaluateText(prompt,strong)};
+    }
+    function v5220Audit(){
+      const errors=[],fixtures=v5220CalibrationFixtures(),serialized=JSON.stringify(v5220NormalizeState(state.v5220Production||{}));
+      if(V5220_PROMPTS.length<6)errors.push('fewer than six B2 open-production prompts');
+      if(V5220_SETS.some(function(set){return set.length!==2||new Set(set).size!==2||set.some(function(id){return !V5220_PROMPT_BY_ID.has(id);});}))errors.push('invalid two-task assessment set');
+      if(V5220_VALID_DAYS>45||V5220_VALID_DAYS<28)errors.push('B2 production validity window outside maintenance-compatible range');
+      if(fixtures.weak.passed)errors.push('weak calibration fixture incorrectly passes');
+      if(!fixtures.strong.passed)errors.push('strong calibration fixture does not pass');
+      if(fixtures.strong.score<=fixtures.weak.score||fixtures.strong.confidence<=fixtures.weak.confidence)errors.push('calibration fixtures are not ordered');
+      if(/"text"\s*:|"response"\s*:|"draft"\s*:/i.test(serialized))errors.push('raw learner production leaked into persistent P31 state');
+      const gate=v5160TransferGate('B2');
+      if(gate.openProductionRequired!==true)errors.push('P25 B2 transfer gate is not linked to P31');
+      if(typeof V5190_SPECS.B2!=='object')errors.push('P28 B2 benchmark missing');
+      if(errors.length)console.error('French P31 open-production audit failed',errors);
+      document.documentElement.dataset.b2OpenProduction=errors.length?'failed':'confidence-calibrated-v1';return errors;
+    }
+    const v5220RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5220RunQaBase(),errors=v5220Audit();
+      result.checks.push(v5100QaCheck('b2-open-production','B2 open-ended production & argumentation calibration',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):'2-task independent assessment · 6-axis structural rubric · confidence/abstention · privacy-minimal persistence · P25/P28 integration'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + '+V5220_POLICY;
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5220EnsureStyles(){
+      if(document.querySelector('#v5220-production-style'))return;
+      const style=document.createElement('style');style.id='v5220-production-style';
+      style.textContent='.v5220-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5220-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5220-head h3{margin:.08rem 0}.v5220-head p{margin:0;color:var(--muted);font-size:.62rem;max-width:82ch}.v5220-status{padding:.32rem .5rem;border-radius:999px;background:var(--surface-muted);font-size:.55rem;font-weight:850;color:var(--muted);white-space:nowrap}.v5220-status.pass{color:var(--green)}.v5220-status.active{color:var(--blue)}.v5220-progress-grid,.v5220-score-row,.v5220-axis-grid,.v5220-summary-tasks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3rem;margin-top:.6rem}.v5220-progress-grid span,.v5220-score-row span,.v5220-axis-grid span,.v5220-summary-tasks span{padding:.45rem .5rem;border-radius:10px;background:var(--surface-muted);font-size:.51rem;color:var(--muted)}.v5220-progress-grid strong,.v5220-score-row strong,.v5220-axis-grid b,.v5220-summary-tasks b{display:block;color:var(--navy);font-size:.72rem}.v5220-note{margin:.58rem 0!important;color:var(--muted)!important;font-size:.5rem!important}.v5220-dialog{width:min(760px,calc(100vw - 28px));max-height:92vh;border:1px solid var(--line);border-radius:18px;background:var(--surface-solid);color:var(--text);padding:0;box-shadow:0 24px 80px rgba(0,0,0,.22)}.v5220-dialog::backdrop{background:rgba(20,28,42,.48);backdrop-filter:blur(4px)}#v5220-dialog-body{padding:1rem}.v5220-dialog-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5220-dialog-head h2{margin:.08rem 0}.v5220-dialog-head span{color:var(--muted);font-size:.58rem}.v5220-close{border:0;background:transparent;color:var(--muted);font-size:1.4rem;padding:.1rem .35rem}.v5220-prompt{margin:.85rem 0;padding:.8rem;border-radius:13px;background:var(--surface-muted);font-size:.82rem;line-height:1.58}.v5220-dialog textarea{width:100%;resize:vertical;min-height:220px;padding:.75rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid);color:var(--text);font:inherit;line-height:1.55}.v5220-compose-meta{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin:.3rem 0 .55rem;color:var(--muted);font-size:.52rem}.v5220-attest{display:flex;gap:.45rem;align-items:flex-start;padding:.58rem;border:1px solid var(--line);border-radius:10px;font-size:.58rem;color:var(--muted);margin-bottom:.65rem}.v5220-scaffold,.v5220-feedback{display:grid;gap:.25rem;margin:.55rem 0;padding:.65rem;border-radius:12px;background:var(--surface-muted);font-size:.58rem}.v5220-scaffold span,.v5220-scaffold small{color:var(--muted)}.v5220-feedback ul{margin:.2rem 0 0;padding-left:1rem;color:var(--muted)}.v5220-feedback p{margin:.2rem 0;color:var(--muted)}.v5220-disclaimer{font-size:.53rem;color:var(--muted);line-height:1.45;margin:.65rem 0}.v5220-score-row{grid-template-columns:repeat(3,minmax(0,1fr))}.v5220-axis-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.v5220-summary-tasks{grid-template-columns:1fr 1fr}@media(max-width:720px){.v5220-head,.v5220-dialog-head{flex-direction:column}.v5220-progress-grid,.v5220-score-row,.v5220-axis-grid,.v5220-summary-tasks{grid-template-columns:1fr 1fr}.v5220-dialog{width:calc(100vw - 16px)}.v5220-dialog textarea{min-height:190px}}';
+      document.head.append(style);
+    }
+    const v5220NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5220NormalizeSurfaceBase();document.documentElement.dataset.release='p31-b2-open-production';
+      document.documentElement.dataset.advancedAssessment='confidence-calibrated-v1';
+    };
+    const v5220InitBase=init;
+    init=async function(options){
+      v5220EnsureStyles();v5220EnsureDialog();v5220Load();
+      const result=await v5220InitBase(options||{});
+      v5220Load();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='progress')renderProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.22.0';return result;
+    };
+
+
     /* THIEPN Account — guest-first auth + revision-safe cloud sync. */
     const THIEPN_ACCOUNT_SUPABASE_URL='https://hycegznamzjhwinegaai.supabase.co';
     const THIEPN_ACCOUNT_PUBLISHABLE_KEY='sb_publishable_1rZzRPzfLMaAH5pIgCwIjA_19UPMIsR';
@@ -26744,6 +27282,7 @@ qui	who	A1	question word`;
       if(coach.leeches>0){kind='practice';priority=94;}
       else if(total.due>Math.max(20,state.settings.dailyReviewLimit)){kind='review';priority=92;}
       else if(coach.preset==='maintenance'){kind='maintain';priority=89;}
+      else if(coach.preset==='advanced-production'){kind='practice';priority=84;}
       else if(coach.preset==='weakness'){kind='practice';priority=86;}
       else if(total.due>0){kind='review';priority=82;}
       else if(coach.preset==='roadmap'&&plan.focus){kind='course';priority=72;}
@@ -26769,7 +27308,7 @@ qui	who	A1	question word`;
         const gate=row.gates[id];
         return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
       }):[];
-      const fluencyMaintenance=v5200Snapshot();
+      const fluencyMaintenance=v5200Snapshot(),openProduction=v5220CalibrationSnapshot();
       const benchmarkPassedLevels=new Set((state.v5190Benchmark?.history||[]).filter(function(item){return item?.passed===true;}).map(function(item){return item.level;})).size;
       const maintenanceDueLevels=fluencyMaintenance.levels.filter(function(item){return item.maintenanceNeeded;}).length;
       const maintenanceNeeded=Boolean((highest&&progression.map[highest]&&!progression.map[highest].currentQualified)||fluencyMaintenance.maintenanceNeeded);
@@ -26777,7 +27316,7 @@ qui	who	A1	question word`;
         generatedAt:new Date().toISOString(),
         appId:'french',
         languageId:'french',
-        producerRevision:'french-p8-read-model-v2',
+        producerRevision:'french-p8-read-model-v3',
         presentation:{displayName:'French',nativeName:'Français',appRoute:location.origin+'/'},
         enrollment:{status:'active',targetBand:state.studyPlan?.targetLevel||frontier},
         workload:{
@@ -26798,7 +27337,8 @@ qui	who	A1	question word`;
           {id:'target-curriculum-mastered',label:(state.studyPlan?.targetLevel||frontier)+' target curriculum',current:finiteNumber(plan.stats?.mastered),total:finiteNumber(plan.targetMastered),unit:'cards'},
           {id:'functional-benchmark-levels',label:'Functional benchmark levels passed',current:benchmarkPassedLevels,total:V5200_LEVELS.length,unit:'levels'},
           {id:'long-term-transfer-levels',label:'Long-term transfer levels',current:fluencyMaintenance.longTermLevels.length,total:V5200_LEVELS.length,unit:'levels'},
-          {id:'maintenance-due-levels',label:'Functional maintenance due',current:maintenanceDueLevels,total:V5200_LEVELS.length,unit:'levels'}
+          {id:'maintenance-due-levels',label:'Functional maintenance due',current:maintenanceDueLevels,total:V5200_LEVELS.length,unit:'levels'},
+          {id:'b2-open-production-calibration',label:'B2 open-production calibration',current:openProduction.currentPass?1:0,total:1,unit:'assessment'}
         ]},
         proficiency:{
           framework:'THIEPN French internal CEFR-aligned gates',
