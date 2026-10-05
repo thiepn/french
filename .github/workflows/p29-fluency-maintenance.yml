@@ -1,0 +1,22 @@
+name: P29 fluency maintenance
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/verify-fluency-maintenance-p29.mjs
+      - run: node scripts/verify-functional-benchmark-p28.mjs
+      - run: node scripts/verify-language-platform-p7.mjs
+      - run: node scripts/verify-language-read-model-p8.mjs
