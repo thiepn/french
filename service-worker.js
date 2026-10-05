@@ -8,7 +8,8 @@ const APP_SHELL = [
   './icon-512.png',
   './maskable-icon.svg',
   './vendor/thiepn-languages-consumer-contract.js',
-  './vendor/thiepn-languages-read-model.js'
+  './vendor/thiepn-languages-read-model.js',
+  './vendor/thiepn-languages-dashboard.js'
 ];
 
 self.addEventListener('install', event => {
