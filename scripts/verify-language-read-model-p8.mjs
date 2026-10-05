@@ -24,6 +24,11 @@ if(!html.includes("THIEPN_FRENCH_LANGUAGE_READ_MODEL"))failures.push("French P8 
 if(!html.includes("THIEPN_LANGUAGE_READ_MODEL_API?.readModelVersion==='p8-read-model-v1'"))failures.push("P8 boot contract guard missing");
 if(!producer.includes("coachSnapshot()"))failures.push("French next action is not sourced from the authoritative coach");
 if(!producer.includes("v5160ReconcilePromotions()"))failures.push("French proficiency projection is not sourced from P25");
+if(!producer.includes("v5200Snapshot()"))failures.push("French maintenance projection is not sourced from P29");
+if(!producer.includes("functional-benchmark-levels"))failures.push("French functional benchmark progress metric missing");
+if(!producer.includes("long-term-transfer-levels"))failures.push("French long-term transfer progress metric missing");
+if(!producer.includes("maintenance-due-levels"))failures.push("French maintenance-due progress metric missing");
+if(!producer.includes("producerRevision:'french-p8-read-model-v2'"))failures.push("French P8 producer revision is stale");
 for(const forbidden of ["studyEvents","memoryTraces","privateDocuments","privateVocabulary","privateSentences","accountId","userId"]){
   if(producer.includes(forbidden))failures.push("forbidden raw/private field in producer: "+forbidden);
 }
