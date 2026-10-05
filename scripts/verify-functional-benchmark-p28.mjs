@@ -31,7 +31,7 @@ for(const token of required){
 }
 if(!html.includes("document.documentElement.dataset.functionalFluency='fixed-task-fresh-evidence-v1'"))failures.push("functional-fluency release marker missing");
 if(!html.includes("practice runs outside a benchmark never count"))failures.push("practice/benchmark separation copy missing");
-const cacheMatch=serviceWorker.match(/french-shell-v(\\d+)/);
+const cacheMatch=serviceWorker.match(/french-shell-v(\d+)/);
 if(!cacheMatch||Number(cacheMatch[1])<42)failures.push("offline shell cache predates P28");
 if(/B2:Object\.freeze\(\{/.test(html))failures.push("B2 benchmark was enabled despite incomplete audited coverage");
 
