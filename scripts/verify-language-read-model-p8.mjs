@@ -28,7 +28,9 @@ if(!producer.includes("v5200Snapshot()"))failures.push("French maintenance proje
 if(!producer.includes("functional-benchmark-levels"))failures.push("French functional benchmark progress metric missing");
 if(!producer.includes("long-term-transfer-levels"))failures.push("French long-term transfer progress metric missing");
 if(!producer.includes("maintenance-due-levels"))failures.push("French maintenance-due progress metric missing");
-if(!producer.includes("producerRevision:'french-p8-read-model-v2'"))failures.push("French P8 producer revision is stale");
+if(!producer.includes("producerRevision:'french-p8-read-model-v3'"))failures.push("French P8 producer revision is stale");
+if(!producer.includes("b2-open-production-calibration"))failures.push("French B2 open-production calibration progress metric missing");
+if(!producer.includes("v5220CalibrationSnapshot()"))failures.push("French B2 open-production projection is not sourced from P31");
 for(const forbidden of ["studyEvents","memoryTraces","privateDocuments","privateVocabulary","privateSentences","accountId","userId"]){
   if(producer.includes(forbidden))failures.push("forbidden raw/private field in producer: "+forbidden);
 }
