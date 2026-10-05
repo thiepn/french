@@ -43,6 +43,37 @@ The stable surface is now:
 
 The manifest and HTML description now represent the full product rather than only its original flashcard layer.
 
+## Defects found by the first browser run
+
+The first P35 browser matrix did its job and exposed two additional release issues.
+
+### Cross-browser startup recovery
+
+The earlier startup-reliability layer correctly bounded the primary IndexedDB reads, but a later recovery path could call the daily snapshot cursor without the same deadline.
+
+On Firefox and WebKit, an empty or delayed recovery cursor could therefore leave a cold start on **Opening French** indefinitely even though the embedded starter catalog was available.
+
+P35 now bounds the recovery-only snapshot lookup with the same local startup deadline. If that mirror does not respond, French marks storage as degraded and continues with its normal local fallback instead of blocking startup.
+
+This is a product defect fix, not a test relaxation.
+
+### Acceptance harness drift
+
+The first P35 tests also assumed historical DOM details that are no longer part of the canonical interface:
+
+- runtime presence of `.version-badge`, although the current UI intentionally removes the visible badge after hydration;
+- the pre-v3.8 navigation structure;
+- no first-run setup dialog.
+
+The acceptance suite now tests the current public contract instead:
+
+- stable release datasets and metadata;
+- current accessible **Primary navigation** buttons;
+- the static pre-hydration `v5.24.0` release identity;
+- first-run setup completion through the real onboarding controls.
+
+Changing stale selectors is test maintenance. It does not change learner behavior or reduce the release criteria.
+
 ## Automated acceptance matrix
 
 P35 uses Playwright 1.63.0 and runs five local profiles:
