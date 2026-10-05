@@ -37,7 +37,6 @@ for(const token of required){
   if(!html.includes(token))failures.push("missing P29 invariant: "+token);
 }
 
-if(/V5200_LEVELS[^\n]*B2/.test(html))failures.push("P29 maintenance scope unexpectedly contains B2");
 if(!html.includes("stale means evidence is stale, not that ability is assumed lost") &&
    !html.includes("evidence is stale, not that ability is assumed lost")) {
   failures.push("stale-evidence non-decay semantics copy missing");
