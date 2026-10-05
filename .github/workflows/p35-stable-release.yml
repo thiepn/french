@@ -1,0 +1,98 @@
+name: P35 stable release acceptance
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Re-run full qualification including P35
+        run: node scripts/verify-production-p34.mjs
+
+  browser-local:
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pinned Playwright
+        run: npm install --no-save @playwright/test@1.63.0
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Start local release candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/french-p35-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/release.json >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/french-p35-server.log
+          exit 1
+      - name: Run desktop and mobile-emulation acceptance
+        run: npx playwright test --config tests/playwright.p35.config.mjs
+      - name: Preserve browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-p35-local-browser-${{ github.sha }}
+          path: test-results/p35
+          if-no-files-found: ignore
+          retention-days: 30
+
+  live-production:
+    if: github.event_name == 'push'
+    needs: browser-local
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      P35_BASE_URL: https://french.thiepn.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Wait for GitHub Pages to expose P35
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker='P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening'
+          for attempt in $(seq 1 60); do
+            if curl -fsS --max-time 15 https://french.thiepn.dev/ | grep -Fq "$marker"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "P35 marker did not reach production."
+          exit 1
+      - name: Install pinned Playwright
+        run: npm install --no-save @playwright/test@1.63.0
+      - name: Install production browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run live desktop-engine acceptance
+        run: npx playwright test --config tests/playwright.p35.config.mjs --project=chromium-desktop --project=firefox-desktop --project=webkit-desktop
+      - name: Preserve live failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-p35-live-browser-${{ github.sha }}
+          path: test-results/p35
+          if-no-files-found: ignore
+          retention-days: 30

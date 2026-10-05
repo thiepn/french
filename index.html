@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#14213d">
-  <meta name="description" content="Focused local-first French vocabulary flashcards with spaced repetition, contextual examples, independent memory skills, resilient storage, and centralized settings.">
+  <meta name="description" content="Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <title>French — Vocabulary flashcards</title>
+  <title>French — Adaptive language learning</title>
   <style>
     :root {
       color-scheme: light;
@@ -3023,7 +3023,7 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
       <div class="topbar-inner">
         <div class="brand" aria-label="French home">
           <div class="brand-mark" aria-hidden="true">FR</div>
-          <div class="brand-copy"><strong>French <small class="version-badge">v4.1.4</small></strong><span>Focused French vocabulary and spaced repetition</span></div>
+          <div class="brand-copy"><strong>French <small class="version-badge">v5.24.0</small></strong><span>Adaptive French · vocabulary, grammar, listening, speaking &amp; transfer</span></div>
         </div>
         <nav class="nav" aria-label="Main navigation">
           <button class="nav-button active" data-view="dashboard">Dashboard</button>
@@ -14509,9 +14509,9 @@ qui	who	A1	question word`;
       delete document.documentElement.dataset.releaseCandidate;
       delete document.documentElement.dataset.featureFreeze;
       const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${APP_VERSION}`;
-      const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='3,000-word vocabulary trainer';
+      const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='Adaptive French · vocabulary, grammar, listening, speaking & transfer';
       const hero=main?.querySelector('.hero-panel .eyebrow');if(hero)hero.textContent=(hero.textContent||'').replace(/French v\d+\.\d+\.\d+/i,`French v${APP_VERSION}`);
-      document.title='French — Vocabulary flashcards';
+      document.title='French — Adaptive language learning';document.querySelector('meta[name="description"]')?.setAttribute('content','Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.');
     }
     const v420RenderDashboardBase=renderDashboard;renderDashboard=function(){const r=v420RenderDashboardBase();v420NormalizeSurface();return r;};
     const v420RenderBrowseBase=renderBrowse;renderBrowse=function(focusSearch=false){const r=v420RenderBrowseBase(focusSearch);v420NormalizeSurface();return r;};
@@ -28442,6 +28442,33 @@ qui	who	A1	question word`;
     init=async function(options){
       const result=await thiepnLanguageReadModelInitBase(options||{});
       try{thiepnFrenchPublishLanguageReadModel();}catch(error){console.error('French: P8 language read-model projection failed.',error);}
+      return result;
+    };
+
+
+    /* ================================================================
+       P35 STABLE RELEASE, LIVE BROWSER/DEVICE ACCEPTANCE & DEFECT-ONLY
+       HARDENING
+       Release-only surface normalization. No learning, scheduler,
+       proficiency, curriculum, or account authority changes.
+       ================================================================ */
+    const P35_RELEASE='P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening';
+    const p35NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      p35NormalizeSurfaceBase();
+      document.documentElement.dataset.release='p35-stable-release';
+      document.documentElement.dataset.releaseChannel='stable';
+      document.documentElement.dataset.releaseAcceptance='browser-device-defect-only';
+      document.documentElement.dataset.productScope='adaptive-language-learning';
+      const badge=document.querySelector('.version-badge');if(badge)badge.textContent=`v${APP_VERSION}`;
+      const sub=document.querySelector('.brand-copy span');if(sub)sub.textContent='Adaptive French · vocabulary, grammar, listening, speaking & transfer';
+      document.title='French — Adaptive language learning';
+      document.querySelector('meta[name="description"]')?.setAttribute('content','Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.');
+    };
+    const p35InitBase=init;
+    init=async function(options){
+      const result=await p35InitBase(options||{});
+      v420NormalizeSurface();
       return result;
     };
 

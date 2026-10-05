@@ -1,0 +1,9 @@
+{
+  "app": "French",
+  "appVersion": "5.24.0",
+  "phase": "P35",
+  "channel": "stable",
+  "release": "Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening",
+  "learnerLogic": "frozen-from-p33",
+  "qualification": "p34-plus-p35-browser-acceptance"
+}
