@@ -3069,6 +3069,7 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   </div>
   <script src="./vendor/thiepn-languages-consumer-contract.js"></script>
   <script src="./vendor/thiepn-languages-read-model.js"></script>
+  <script src="./vendor/thiepn-languages-dashboard.js"></script>
   <script>
   (() => {
     'use strict';
@@ -3078,6 +3079,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
+    const THIEPN_LANGUAGE_DASHBOARD_API = globalThis.THIEPN_LANGUAGE_DASHBOARD;
+    const THIEPN_CORE_GATEWAY_URL = 'https://api.thiepn.dev';
     const THIEPN_LANGUAGES_COMPAT = THIEPN_LANGUAGES_API?.createReadOnlyConsumerDescriptor({
       appId:'french',
       languageId:'french',
@@ -28338,6 +28341,40 @@ qui	who	A1	question word`;
       await thiepnAccountInit();return result;
     };
 
+    async function thiepnFrenchCoreAccessToken(){
+      const account=state.thiepnAccount,meta=thiepnAccountReadMeta();
+      if(!account.client||!account.user||!meta?.enabled||meta.userId!==account.user.id)return null;
+      const response=await thiepnAccountWithTimeout(account.client.auth.getSession(),8000,'Account session lookup timed out.');
+      if(response?.error)throw response.error;
+      return response?.data?.session?.access_token||null;
+    }
+    async function thiepnFrenchPublishLanguageDashboard(){
+      if(!THIEPN_LANGUAGE_DASHBOARD_API?.createCoreLanguageDashboardClient)return null;
+      const token=await thiepnFrenchCoreAccessToken();
+      if(!token)return null;
+      const client=THIEPN_LANGUAGE_DASHBOARD_API.createCoreLanguageDashboardClient({
+        baseUrl:THIEPN_CORE_GATEWAY_URL,
+        getAccessToken:function(){return token;}
+      });
+      return client.publish(thiepnFrenchLanguageReadModel());
+    }
+    function thiepnFrenchScheduleLanguageDashboardPublish(){
+      queueMicrotask(function(){
+        thiepnFrenchPublishLanguageDashboard().catch(function(error){
+          console.warn('French: P9 language dashboard publish unavailable.',error);
+        });
+      });
+    }
+    const thiepnAccountReconcileP9Base=thiepnAccountReconcile;
+    thiepnAccountReconcile=async function(options){
+      const result=await thiepnAccountReconcileP9Base(options||{});
+      const account=state.thiepnAccount,meta=thiepnAccountReadMeta();
+      if(account.user&&meta?.enabled&&meta.userId===account.user.id&&account.status==='synced'){
+        thiepnFrenchScheduleLanguageDashboardPublish();
+      }
+      return result;
+    };
+
 
     function thiepnFrenchReadModelNextAction(coach,total,plan){
       let kind='study',priority=50;
@@ -28432,7 +28469,8 @@ qui	who	A1	question word`;
       value:Object.freeze({
         version:'p8-read-model-v1',
         getSnapshot:thiepnFrenchLanguageReadModel,
-        publish:thiepnFrenchPublishLanguageReadModel
+        publish:thiepnFrenchPublishLanguageReadModel,
+        publishDashboard:thiepnFrenchPublishLanguageDashboard
       }),
       writable:false,
       configurable:false
@@ -28484,10 +28522,14 @@ qui	who	A1	question word`;
       const readModelOk=THIEPN_LANGUAGE_READ_MODEL_API?.readModelVersion==='p8-read-model-v1'
         && typeof THIEPN_LANGUAGE_READ_MODEL_API?.createLanguageReadModel==='function'
         && typeof globalThis.THIEPN_FRENCH_LANGUAGE_READ_MODEL?.getSnapshot==='function';
+      const dashboardOk=THIEPN_LANGUAGE_DASHBOARD_API?.contractVersion==='p9-dashboard-v1'
+        && typeof THIEPN_LANGUAGE_DASHBOARD_API?.createCoreLanguageDashboardClient==='function'
+        && typeof globalThis.THIEPN_FRENCH_LANGUAGE_READ_MODEL?.publishDashboard==='function';
       if(!ok)console.error(`French v${APP_VERSION}: canonical controller initialization failed.`);
       if(!platformOk)console.error('French: THIEPN Languages P7 read-only compatibility contract failed.',THIEPN_LANGUAGES_VALIDATION.issues||[]);
       if(!readModelOk)console.error('French: THIEPN Languages P8 read-model contract unavailable.');
-      return ok&&platformOk&&readModelOk;
+      if(!dashboardOk)console.error('French: THIEPN Languages P9 dashboard transport unavailable.');
+      return ok&&platformOk&&readModelOk&&dashboardOk;
     }
 
     v380BootAudit();
