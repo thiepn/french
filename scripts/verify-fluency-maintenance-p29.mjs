@@ -7,13 +7,13 @@ const [html,serviceWorker]=await Promise.all([
 
 const failures=[];
 const required=[
-  "const APP_VERSION = '5.20.0';",
+  "const V5200_VERSION='5.20.0';",
   "P29 Functional Fluency Consolidation, Maintenance & Long-Term Transfer",
   "const V5200_CONSOLIDATION_DAYS=7;",
   "const V5200_MAINTENANCE_DAYS=30;",
   "const V5200_LONG_TERM_DAYS=60;",
   "const V5200_STALE_GRACE_DAYS=30;",
-  "const V5200_LEVELS=Object.freeze(['A1','A2','B1']);",
+  "const V5200_LEVELS=Object.freeze(['A1','A2','B1','B2']);",
   "row.level===level&&row.passed===true",
   "pass.completedAt-previous.completedAt>=days(V5200_CONSOLIDATION_DAYS)",
   "contexts.length>=2",
@@ -41,7 +41,8 @@ if(!html.includes("stale means evidence is stale, not that ability is assumed lo
    !html.includes("evidence is stale, not that ability is assumed lost")) {
   failures.push("stale-evidence non-decay semantics copy missing");
 }
-if(!serviceWorker.includes("french-shell-v43"))failures.push("offline shell cache was not advanced to v43");
+const cacheMatch=serviceWorker.match(/french-shell-v(\d+)/);
+if(!cacheMatch||Number(cacheMatch[1])<43)failures.push("offline shell cache predates P29");
 
 const mainMarker="<script>\n  (() => {\n    'use strict';";
 const start=html.indexOf(mainMarker);
