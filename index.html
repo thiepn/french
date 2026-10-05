@@ -25421,6 +25421,441 @@ qui	who	A1	question word`;
     };
 
 
+
+    /* THIEPN Account — guest-first auth + revision-safe cloud sync. */
+    const THIEPN_ACCOUNT_SUPABASE_URL='https://hycegznamzjhwinegaai.supabase.co';
+    const THIEPN_ACCOUNT_PUBLISHABLE_KEY='sb_publishable_1rZzRPzfLMaAH5pIgCwIjA_19UPMIsR';
+    const THIEPN_ACCOUNT_MODULE_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm';
+    const THIEPN_ACCOUNT_APP_SLUG='french';
+    const THIEPN_ACCOUNT_SYNC_META_KEY='french-thiepn-sync-v1';
+    const THIEPN_ACCOUNT_DEVICE_KEY='french-thiepn-device-id-v1';
+    const THIEPN_ACCOUNT_RETURN_KEY='french-thiepn-auth-return-v1';
+    const THIEPN_ACCOUNT_AUTH_STORAGE_KEY='thiepn-account-french-auth-v1';
+    const THIEPN_ACCOUNT_SYNC_DELAY=4500;
+
+    state.thiepnAccount={
+      client:null,user:null,ready:false,loading:false,busy:false,status:'guest',
+      error:'',lastSyncedAt:0,conflict:null,syncTimer:null,applying:false,authSubscription:null
+    };
+
+    function thiepnAccountWithTimeout(promise,ms,message){
+      return Promise.race([
+        promise,
+        new Promise(function(_,reject){setTimeout(function(){reject(new Error(message||'Request timed out.'));},ms);})
+      ]);
+    }
+    function thiepnAccountReadMeta(){
+      try{
+        const raw=JSON.parse(localStorage.getItem(THIEPN_ACCOUNT_SYNC_META_KEY)||'null');
+        if(!raw||typeof raw!=='object')return null;
+        return {
+          userId:typeof raw.userId==='string'?raw.userId:'',
+          enabled:raw.enabled===true,
+          revision:Number.isFinite(Number(raw.revision))?Number(raw.revision):null,
+          localHash:typeof raw.localHash==='string'?raw.localHash:'',
+          syncedAt:Number.isFinite(Number(raw.syncedAt))?Number(raw.syncedAt):0
+        };
+      }catch{return null;}
+    }
+    function thiepnAccountWriteMeta(meta){
+      try{localStorage.setItem(THIEPN_ACCOUNT_SYNC_META_KEY,JSON.stringify(meta));}catch{}
+      state.thiepnAccount.lastSyncedAt=Number(meta?.syncedAt)||0;
+      return meta;
+    }
+    function thiepnAccountDeviceId(){
+      try{
+        const existing=localStorage.getItem(THIEPN_ACCOUNT_DEVICE_KEY);
+        if(existing)return existing;
+        const value=crypto?.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),function(n){return n.toString(16).padStart(2,'0');}).join('');
+        localStorage.setItem(THIEPN_ACCOUNT_DEVICE_KEY,value);return value;
+      }catch{return 'browser-'+Math.random().toString(36).slice(2);}
+    }
+    function thiepnAccountSnapshot(){return depthStateSnapshot();}
+    function thiepnAccountStableStringify(value){
+      if(value===null||typeof value!=='object')return JSON.stringify(value);
+      if(Array.isArray(value))return '['+value.map(thiepnAccountStableStringify).join(',')+']';
+      const keys=Object.keys(value).filter(function(key){return key!=='updatedAt';}).sort();
+      return '{'+keys.map(function(key){return JSON.stringify(key)+':'+thiepnAccountStableStringify(value[key]);}).join(',')+'}';
+    }
+    async function thiepnAccountHash(snapshot){
+      const text=thiepnAccountStableStringify(snapshot);
+      if(!crypto?.subtle)return 'fallback-'+stableHash(text)+'-'+text.length;
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(digest),function(n){return n.toString(16).padStart(2,'0');}).join('');
+    }
+    function thiepnAccountHasMeaningfulLocal(snapshot){
+      if(Object.keys(snapshot?.progress||{}).length)return true;
+      if(Array.isArray(snapshot?.reviewLog)&&snapshot.reviewLog.length)return true;
+      if(Array.isArray(snapshot?.studyDays)&&snapshot.studyDays.length)return true;
+      if(Array.isArray(snapshot?.sessionHistory)&&snapshot.sessionHistory.length)return true;
+      if(Object.keys(snapshot?.userCards||{}).length)return true;
+      if(Object.keys(snapshot?.cardEdits||{}).length)return true;
+      return false;
+    }
+    function thiepnAccountErrorMessage(error){
+      const message=String(error?.message||error||'Account request failed.');
+      if(/FRENCH_SYNC_CONFLICT|40001/i.test(message))return 'French changed on another device too. Choose which copy to keep.';
+      if(/Failed to fetch|NetworkError|timed out/i.test(message))return 'Account sync is temporarily unreachable. Your local progress is safe.';
+      if(/redirect|oauth/i.test(message))return 'Sign-in could not complete. Your local progress is unchanged.';
+      return message.length>180?message.slice(0,177)+'…':message;
+    }
+    function thiepnAccountIsMissingSession(error){
+      const message=String(error?.name||'')+' '+String(error?.message||'');
+      return /AuthSessionMissing|session missing|no session/i.test(message);
+    }
+    function thiepnAccountIsConflict(error){
+      const message=String(error?.code||'')+' '+String(error?.message||'');
+      return /40001|FRENCH_SYNC_CONFLICT/i.test(message);
+    }
+    function thiepnAccountCleanCallbackUrl(){
+      try{
+        const url=new URL(location.href),keys=['code','error','error_code','error_description','thiepn_auth'];
+        let changed=false;
+        keys.forEach(function(key){if(url.searchParams.has(key)){url.searchParams.delete(key);changed=true;}});
+        if(changed)history.replaceState(history.state,'',url.pathname+(url.searchParams.toString()?'?'+url.searchParams.toString():'')+url.hash);
+      }catch{}
+    }
+    async function thiepnAccountLoadClient(){
+      if(state.thiepnAccount.client)return state.thiepnAccount.client;
+      state.thiepnAccount.loading=true;thiepnAccountRender();
+      const module=await thiepnAccountWithTimeout(import(THIEPN_ACCOUNT_MODULE_URL),10000,'THIEPN Account could not load.');
+      const client=module.createClient(THIEPN_ACCOUNT_SUPABASE_URL,THIEPN_ACCOUNT_PUBLISHABLE_KEY,{
+        auth:{flowType:'pkce',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:THIEPN_ACCOUNT_AUTH_STORAGE_KEY}
+      });
+      state.thiepnAccount.client=client;
+      const listener=client.auth.onAuthStateChange(function(){
+        setTimeout(function(){
+          thiepnAccountRefreshAuth({reconcile:true}).catch(function(error){
+            state.thiepnAccount.error=thiepnAccountErrorMessage(error);thiepnAccountRender();
+          });
+        },0);
+      });
+      state.thiepnAccount.authSubscription=listener?.data?.subscription||null;
+      state.thiepnAccount.loading=false;
+      return client;
+    }
+    async function thiepnAccountRefreshAuth(options){
+      options=options||{};
+      const client=state.thiepnAccount.client||await thiepnAccountLoadClient();
+      let response;
+      try{response=await thiepnAccountWithTimeout(client.auth.getUser(),8000,'Account verification timed out.');}
+      catch(error){
+        if(thiepnAccountIsMissingSession(error))response={data:{user:null},error:null};else throw error;
+      }
+      if(response?.error&&!thiepnAccountIsMissingSession(response.error))throw response.error;
+      const previousId=state.thiepnAccount.user?.id||'';
+      state.thiepnAccount.user=response?.data?.user||null;
+      state.thiepnAccount.ready=true;state.thiepnAccount.error='';
+      if(!state.thiepnAccount.user){
+        state.thiepnAccount.status='guest';state.thiepnAccount.conflict=null;
+      }else{
+        const meta=thiepnAccountReadMeta();
+        state.thiepnAccount.lastSyncedAt=meta?.syncedAt||0;
+        state.thiepnAccount.status=meta?.enabled&&meta.userId===state.thiepnAccount.user.id?'synced':'signed-in';
+        if(options.reconcile&&meta?.enabled&&meta.userId===state.thiepnAccount.user.id){
+          thiepnAccountReconcile({background:true}).catch(function(error){
+            state.thiepnAccount.error=thiepnAccountErrorMessage(error);state.thiepnAccount.status='error';thiepnAccountRender();
+          });
+        }
+      }
+      if(state.thiepnAccount.user||previousId)thiepnAccountCleanCallbackUrl();
+      thiepnAccountRender();
+      return state.thiepnAccount.user;
+    }
+    async function thiepnAccountFetchRemote(){
+      const client=state.thiepnAccount.client;
+      if(!client||!state.thiepnAccount.user)return null;
+      const response=await thiepnAccountWithTimeout(
+        client.from('french_sync_state').select('revision,state,app_version,device_id,client_updated_at,updated_at').maybeSingle(),
+        10000,'Cloud progress check timed out.'
+      );
+      if(response.error)throw response.error;
+      return response.data||null;
+    }
+    async function thiepnAccountUpload(snapshot,expectedRevision){
+      const response=await thiepnAccountWithTimeout(state.thiepnAccount.client.rpc('sync_thiepn_french_state',{
+        p_expected_revision:expectedRevision,
+        p_state:snapshot,
+        p_app_version:APP_VERSION,
+        p_device_id:thiepnAccountDeviceId(),
+        p_client_updated_at:new Date(Number(snapshot?.updatedAt)||Date.now()).toISOString()
+      }),12000,'Cloud upload timed out.');
+      if(response.error)throw response.error;
+      return response.data;
+    }
+    function thiepnAccountSaveBaseline(userId,revision,localHash){
+      return thiepnAccountWriteMeta({userId:userId,enabled:true,revision:Number(revision),localHash:localHash,syncedAt:Date.now()});
+    }
+    async function thiepnAccountApplyRemote(remote){
+      if(!remote?.state||typeof remote.state!=='object')throw new Error('Cloud progress is invalid.');
+      state.thiepnAccount.applying=true;
+      try{
+        await depthApplyImportedState(remote.state);
+        const hash=await thiepnAccountHash(thiepnAccountSnapshot());
+        thiepnAccountSaveBaseline(state.thiepnAccount.user.id,remote.revision,hash);
+        state.thiepnAccount.conflict=null;state.thiepnAccount.status='synced';state.thiepnAccount.error='';
+      }finally{state.thiepnAccount.applying=false;}
+      if(state.view==='settings')renderSettings();
+      else if(state.view==='dashboard')renderDashboard();
+      else if(state.view==='progress')renderProgress();
+      thiepnAccountRender();
+    }
+    async function thiepnAccountReconcile(options){
+      options=options||{};
+      const account=state.thiepnAccount,user=account.user;
+      if(!user||account.busy||account.applying)return;
+      const meta=thiepnAccountReadMeta();
+      if(!meta?.enabled||meta.userId!==user.id)return;
+      account.busy=true;account.status='syncing';account.error='';thiepnAccountRender();
+      try{
+        const local=thiepnAccountSnapshot();
+        const localHash=await thiepnAccountHash(local);
+        const remote=await thiepnAccountFetchRemote();
+        if(!remote){
+          const uploaded=await thiepnAccountUpload(local,null);
+          thiepnAccountSaveBaseline(user.id,uploaded.revision,localHash);
+          account.conflict=null;account.status='synced';return;
+        }
+        if(meta.revision===null||!meta.localHash){
+          const remoteHash=await thiepnAccountHash(remote.state);
+          if(remoteHash===localHash){
+            thiepnAccountSaveBaseline(user.id,remote.revision,localHash);
+            account.conflict=null;account.status='synced';return;
+          }
+          if(!thiepnAccountHasMeaningfulLocal(local)){await thiepnAccountApplyRemote(remote);return;}
+          account.conflict={remote:remote,kind:'claim'};account.status='conflict';return;
+        }
+        const localChanged=localHash!==meta.localHash;
+        const remoteChanged=Number(remote.revision)!==Number(meta.revision);
+        if(!localChanged&&!remoteChanged){account.status='synced';account.lastSyncedAt=meta.syncedAt||Date.now();return;}
+        if(localChanged&&!remoteChanged){
+          const uploaded=await thiepnAccountUpload(local,meta.revision);
+          thiepnAccountSaveBaseline(user.id,uploaded.revision,localHash);
+          account.conflict=null;account.status='synced';return;
+        }
+        if(!localChanged&&remoteChanged){await thiepnAccountApplyRemote(remote);return;}
+        account.conflict={remote:remote,kind:'diverged'};account.status='conflict';
+      }catch(error){
+        if(thiepnAccountIsConflict(error)){
+          const remote=await thiepnAccountFetchRemote().catch(function(){return null;});
+          if(remote)account.conflict={remote:remote,kind:'diverged'};
+          account.status='conflict';
+        }else{
+          account.error=thiepnAccountErrorMessage(error);account.status='error';
+          if(!options.background)throw error;
+        }
+      }finally{account.busy=false;thiepnAccountRender();}
+    }
+    function thiepnAccountScheduleSync(delay){
+      const account=state.thiepnAccount,meta=thiepnAccountReadMeta();
+      if(!account.user||account.applying||account.conflict||!meta?.enabled||meta.userId!==account.user.id)return;
+      clearTimeout(account.syncTimer);
+      account.syncTimer=setTimeout(function(){
+        thiepnAccountReconcile({background:true}).catch(function(error){
+          account.error=thiepnAccountErrorMessage(error);account.status='error';thiepnAccountRender();
+        });
+      },Number.isFinite(delay)?delay:THIEPN_ACCOUNT_SYNC_DELAY);
+    }
+    async function thiepnAccountSignIn(){
+      const account=state.thiepnAccount;
+      try{
+        account.busy=true;account.error='';thiepnAccountRender();
+        const client=account.client||await thiepnAccountLoadClient();
+        sessionStorage.setItem(THIEPN_ACCOUNT_RETURN_KEY,'settings');
+        const redirectTo=location.origin+location.pathname+'?thiepn_auth=1';
+        const response=await client.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo}});
+        if(response.error)throw response.error;
+      }catch(error){
+        account.busy=false;account.error=thiepnAccountErrorMessage(error);thiepnAccountRender();
+      }
+    }
+    async function thiepnAccountEnableSync(){
+      const account=state.thiepnAccount,user=account.user;
+      if(!user){await thiepnAccountSignIn();return;}
+      account.busy=true;account.error='';thiepnAccountRender();
+      try{
+        const connected=await account.client.rpc('connect_thiepn_app',{p_app_slug:THIEPN_ACCOUNT_APP_SLUG});
+        if(connected.error)throw connected.error;
+        const existing=thiepnAccountReadMeta();
+        thiepnAccountWriteMeta({
+          userId:user.id,enabled:true,
+          revision:existing?.userId===user.id?existing.revision:null,
+          localHash:existing?.userId===user.id?existing.localHash:'',
+          syncedAt:existing?.userId===user.id?existing.syncedAt:0
+        });
+        account.busy=false;
+        await thiepnAccountReconcile({background:false});
+      }catch(error){
+        account.busy=false;account.error=thiepnAccountErrorMessage(error);account.status='error';thiepnAccountRender();
+      }
+    }
+    async function thiepnAccountUseDevice(){
+      const account=state.thiepnAccount,conflict=account.conflict;
+      if(!account.user||!conflict?.remote)return;
+      if(!confirm('Replace the French cloud copy with the progress currently on this device? The cloud copy will be overwritten.'))return;
+      account.busy=true;account.status='syncing';account.error='';thiepnAccountRender();
+      try{
+        const local=thiepnAccountSnapshot(),hash=await thiepnAccountHash(local);
+        const uploaded=await thiepnAccountUpload(local,conflict.remote.revision);
+        thiepnAccountSaveBaseline(account.user.id,uploaded.revision,hash);
+        account.conflict=null;account.status='synced';showToast('This device is now the cloud copy.');
+      }catch(error){
+        account.error=thiepnAccountErrorMessage(error);account.status=thiepnAccountIsConflict(error)?'conflict':'error';
+        if(thiepnAccountIsConflict(error)){
+          const remote=await thiepnAccountFetchRemote().catch(function(){return null;});
+          if(remote)account.conflict={remote:remote,kind:'diverged'};
+        }
+      }finally{account.busy=false;thiepnAccountRender();}
+    }
+    async function thiepnAccountUseCloud(){
+      const account=state.thiepnAccount,conflict=account.conflict;
+      if(!account.user||!conflict?.remote)return;
+      if(!confirm('Replace the progress on this device with your French cloud copy? Export a local backup first if you may need this device copy later.'))return;
+      account.busy=true;account.status='syncing';account.error='';thiepnAccountRender();
+      try{await thiepnAccountApplyRemote(conflict.remote);showToast('Cloud progress restored on this device.');}
+      catch(error){account.error=thiepnAccountErrorMessage(error);account.status='error';}
+      finally{account.busy=false;thiepnAccountRender();}
+    }
+    function thiepnAccountPauseSync(){
+      const account=state.thiepnAccount,user=account.user,meta=thiepnAccountReadMeta();
+      clearTimeout(account.syncTimer);
+      if(user&&meta?.userId===user.id)thiepnAccountWriteMeta({...meta,enabled:false});
+      account.conflict=null;account.status=user?'signed-in':'guest';account.error='';
+      thiepnAccountRender();showToast('Cloud sync paused. Progress remains on this device.');
+    }
+    async function thiepnAccountSignOut(){
+      const account=state.thiepnAccount;
+      try{
+        thiepnAccountPauseSync();account.busy=true;thiepnAccountRender();
+        if(account.client)await account.client.auth.signOut({scope:'local'});
+      }catch(error){account.error=thiepnAccountErrorMessage(error);}
+      finally{account.busy=false;account.user=null;account.status='guest';account.conflict=null;thiepnAccountRender();}
+    }
+    function thiepnAccountFormatTime(value){
+      if(!value)return 'Not synced yet';
+      try{return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}
+      catch{return new Date(value).toLocaleString();}
+    }
+    function thiepnAccountStatusLabel(){
+      const account=state.thiepnAccount;
+      if(!account.user)return 'Guest';
+      if(account.status==='conflict')return 'Needs choice';
+      if(account.status==='syncing'||account.busy)return 'Syncing…';
+      if(account.status==='error')return 'Sync issue';
+      const meta=thiepnAccountReadMeta();
+      if(meta?.enabled&&meta.userId===account.user.id)return 'Synced';
+      return 'Signed in';
+    }
+    function thiepnAccountPanelHtml(){
+      const account=state.thiepnAccount,user=account.user,meta=thiepnAccountReadMeta();
+      const syncEnabled=Boolean(user&&meta?.enabled&&meta.userId===user.id);
+      const email=user?.email?escapeHtml(user.email):'THIEPN Account';
+      let body='',actions='';
+      if(!user){
+        body='<p>Start learning immediately without an account. Your progress stays on this device until you explicitly choose to sync it.</p><div class="thiepn-account-facts"><span><strong>Guest-first</strong>No sign-in required</span><span><strong>Safe adoption</strong>Existing local progress is kept</span><span><strong>Private sync</strong>Account data is scoped to your identity</span></div>';
+        actions='<button class="primary" id="thiepn-account-sign-in" type="button">Sign in with THIEPN Account</button>';
+      }else if(account.conflict){
+        body='<p><strong>'+email+'</strong> is signed in. French found meaningful progress in two places and will not overwrite either copy automatically.</p><div class="thiepn-account-conflict"><strong>Choose the source of truth</strong><span>Use this device to replace the cloud copy, or use cloud to replace this device copy. Automatic sync stays paused until you choose.</span></div>';
+        actions='<button class="primary" id="thiepn-account-use-device" type="button">Use this device</button><button class="secondary" id="thiepn-account-use-cloud" type="button">Use cloud</button><button class="secondary" id="thiepn-account-sign-out" type="button">Sign out</button>';
+      }else if(!syncEnabled){
+        body='<p><strong>'+email+'</strong> is signed in. Your current French progress is still local only; nothing has been uploaded yet.</p><div class="thiepn-account-facts"><span><strong>Next step</strong>Sync this device</span><span><strong>Local copy</strong>Preserved during sign-in</span><span><strong>Future devices</strong>Restore from your account</span></div>';
+        actions='<button class="primary" id="thiepn-account-enable-sync" type="button">Sync this device</button><button class="secondary" id="thiepn-account-sign-out" type="button">Sign out</button>';
+      }else{
+        body='<p><strong>'+email+'</strong> is connected. French reconciles your full learning snapshot across devices without changing the guest-first local workflow.</p><div class="thiepn-account-facts"><span><strong>Status</strong>'+escapeHtml(thiepnAccountStatusLabel())+'</span><span><strong>Last sync</strong>'+escapeHtml(thiepnAccountFormatTime(meta.syncedAt))+'</span><span><strong>Cloud revision</strong>'+escapeHtml(String(meta.revision??'—'))+'</span></div>';
+        actions='<button class="primary" id="thiepn-account-sync-now" type="button">Sync now</button><button class="secondary" id="thiepn-account-pause-sync" type="button">Pause sync</button><button class="secondary" id="thiepn-account-sign-out" type="button">Sign out</button>';
+      }
+      const error=account.error?'<div class="thiepn-account-error" role="status">'+escapeHtml(account.error)+'</div>':'';
+      return '<section class="thiepn-account-panel" id="thiepn-account-sync"><div class="thiepn-account-head"><div><p class="eyebrow">THIEPN Account</p><h3>Account & sync</h3></div><span class="thiepn-account-status '+escapeHtml(account.status)+'">'+escapeHtml(thiepnAccountStatusLabel())+'</span></div>'+body+error+'<div class="button-row thiepn-account-actions">'+actions+'</div><p class="thiepn-account-note">Signing out or pausing sync never deletes the copy stored in this browser.</p></section>';
+    }
+    function thiepnAccountBindPanel(){
+      const account=state.thiepnAccount;
+      main.querySelectorAll('#thiepn-account-sync button').forEach(function(button){button.disabled=account.busy;});
+      $('#thiepn-account-sign-in')?.addEventListener('click',thiepnAccountSignIn);
+      $('#thiepn-account-enable-sync')?.addEventListener('click',thiepnAccountEnableSync);
+      $('#thiepn-account-sync-now')?.addEventListener('click',function(){thiepnAccountReconcile({background:false});});
+      $('#thiepn-account-pause-sync')?.addEventListener('click',thiepnAccountPauseSync);
+      $('#thiepn-account-sign-out')?.addEventListener('click',thiepnAccountSignOut);
+      $('#thiepn-account-use-device')?.addEventListener('click',thiepnAccountUseDevice);
+      $('#thiepn-account-use-cloud')?.addEventListener('click',thiepnAccountUseCloud);
+    }
+    function thiepnAccountRenderPanel(){
+      if(state.view!=='settings')return;
+      const old=main.querySelector('#thiepn-account-sync'),html=thiepnAccountPanelHtml();
+      if(old)old.outerHTML=html;
+      else{
+        const intro=main.querySelector('.v366-settings-intro');
+        if(intro)intro.insertAdjacentHTML('afterend',html);
+        else main.insertAdjacentHTML('afterbegin',html);
+      }
+      thiepnAccountBindPanel();
+      if(typeof v405PolishSurface==='function')v405PolishSurface(main);
+    }
+    function thiepnAccountRenderHeader(){
+      const topbar=document.querySelector('.topbar-inner');if(!topbar)return;
+      let button=document.querySelector('#thiepn-account-chip');
+      if(!button){
+        button=document.createElement('button');button.id='thiepn-account-chip';button.type='button';button.className='thiepn-account-chip';
+        const theme=document.querySelector('#theme-toggle');if(theme)topbar.insertBefore(button,theme);else topbar.appendChild(button);
+        button.addEventListener('click',function(){
+          setView('settings');
+          setTimeout(function(){document.querySelector('#thiepn-account-sync')?.scrollIntoView({behavior:'smooth',block:'start'});},50);
+        });
+      }
+      const label=thiepnAccountStatusLabel();
+      button.innerHTML='<span class="thiepn-account-dot" aria-hidden="true"></span><span class="thiepn-account-chip-label">'+escapeHtml(label)+'</span>';
+      button.setAttribute('aria-label','THIEPN Account: '+label);button.dataset.status=state.thiepnAccount.status;
+    }
+    function thiepnAccountRender(){thiepnAccountRenderHeader();thiepnAccountRenderPanel();}
+    function thiepnAccountEnsureStyles(){
+      if(document.querySelector('#thiepn-account-styles'))return;
+      const style=document.createElement('style');style.id='thiepn-account-styles';
+      style.textContent='.thiepn-account-chip{display:inline-flex;align-items:center;gap:.42rem;min-height:38px;padding:.48rem .66rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-solid);color:var(--ink);box-shadow:none;font-size:.72rem;font-weight:820;white-space:nowrap}.thiepn-account-chip:hover,.thiepn-account-chip:focus-visible{border-color:color-mix(in srgb,var(--blue) 42%,var(--line));background:var(--surface-muted);transform:none}.thiepn-account-dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.thiepn-account-chip[data-status="synced"] .thiepn-account-dot{background:var(--green)}.thiepn-account-chip[data-status="syncing"] .thiepn-account-dot{background:var(--blue)}.thiepn-account-chip[data-status="conflict"] .thiepn-account-dot,.thiepn-account-chip[data-status="error"] .thiepn-account-dot{background:var(--red)}.thiepn-account-panel{margin:0 0 1rem;padding:1rem 1.05rem;border:1px solid var(--line);border-radius:17px;background:var(--surface-solid);scroll-margin-top:90px}.thiepn-account-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}.thiepn-account-head h3{margin:.08rem 0}.thiepn-account-panel>p{max-width:82ch;color:var(--muted);line-height:1.5}.thiepn-account-status{padding:.32rem .5rem;border-radius:999px;background:var(--surface-muted);font-size:.68rem;font-weight:850;color:var(--muted);white-space:nowrap}.thiepn-account-status.synced{color:var(--green)}.thiepn-account-status.conflict,.thiepn-account-status.error{color:var(--red)}.thiepn-account-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.72rem 0}.thiepn-account-facts span{padding:.62rem .68rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-muted);font-size:.72rem;color:var(--muted)}.thiepn-account-facts strong{display:block;margin-bottom:.15rem;color:var(--ink);font-size:.72rem}.thiepn-account-conflict,.thiepn-account-error{margin:.72rem 0;padding:.72rem .78rem;border:1px solid color-mix(in srgb,var(--red) 32%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--red) 8%,var(--surface-solid));font-size:.75rem}.thiepn-account-conflict strong,.thiepn-account-conflict span{display:block}.thiepn-account-conflict span{margin-top:.18rem;color:var(--muted);line-height:1.45}.thiepn-account-error{color:var(--red)}.thiepn-account-actions{margin-top:.72rem}.thiepn-account-note{margin:.62rem 0 0!important;font-size:.68rem!important}.thiepn-account-panel button[disabled]{opacity:.58;cursor:wait}@media(max-width:760px){.thiepn-account-facts{grid-template-columns:1fr}.thiepn-account-chip{min-width:38px;padding:.45rem}.thiepn-account-chip-label{display:none}.thiepn-account-panel{padding:.9rem}.thiepn-account-actions{display:grid;grid-template-columns:1fr}.thiepn-account-head{align-items:center}}';
+      document.head.appendChild(style);
+    }
+    async function thiepnAccountInit(){
+      thiepnAccountEnsureStyles();thiepnAccountRender();
+      try{
+        await thiepnAccountLoadClient();
+        const user=await thiepnAccountRefreshAuth({reconcile:false});
+        if(user){
+          const meta=thiepnAccountReadMeta();
+          if(meta?.enabled&&meta.userId===user.id)await thiepnAccountReconcile({background:true});
+        }
+        if(sessionStorage.getItem(THIEPN_ACCOUNT_RETURN_KEY)==='settings'){
+          sessionStorage.removeItem(THIEPN_ACCOUNT_RETURN_KEY);
+          if(user){
+            setView('settings');
+            setTimeout(function(){document.querySelector('#thiepn-account-sync')?.scrollIntoView({block:'start'});},30);
+          }
+        }
+      }catch(error){
+        state.thiepnAccount.ready=false;state.thiepnAccount.loading=false;
+        state.thiepnAccount.error=thiepnAccountErrorMessage(error);
+        state.thiepnAccount.status=state.thiepnAccount.user?'error':'guest';
+      }
+      thiepnAccountRender();
+      document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')thiepnAccountScheduleSync(400);});
+      window.addEventListener('online',function(){thiepnAccountScheduleSync(400);});
+    }
+
+    const thiepnAccountRenderSettingsBase=renderSettings;
+    renderSettings=function(){
+      const result=thiepnAccountRenderSettingsBase.apply(this,arguments);
+      thiepnAccountRenderPanel();return result;
+    };
+    const thiepnAccountDepthSchedulePersistBase=depthSchedulePersist;
+    depthSchedulePersist=function(){
+      const result=thiepnAccountDepthSchedulePersistBase.apply(this,arguments);
+      if(!state.thiepnAccount.applying)thiepnAccountScheduleSync();
+      return result;
+    };
+    const thiepnAccountInitBase=init;
+    init=async function(options){
+      const result=await thiepnAccountInitBase(options||{});
+      await thiepnAccountInit();return result;
+    };
+
+
     function v380BootAudit(){
       const required=[renderDashboard,renderStudy,renderProgress,renderSettings,renderBrowse,renderLearned,setView,init];
       const ok=required.every(fn=>typeof fn==='function');
