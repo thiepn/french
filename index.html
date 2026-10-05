@@ -28479,6 +28479,12 @@ qui	who	A1	question word`;
       document.title='French — Adaptive language learning';
       document.querySelector('meta[name="description"]')?.setAttribute('content','Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.');
     };
+
+    /* Release identity belongs to the static/core shell, not to optional
+       account connectivity. Assert it before the asynchronous init chain so
+       CDN/auth latency cannot delay stable-channel identification. */
+    v420NormalizeSurface();
+
     const p35InitBase=init;
     init=async function(options){
       const result=await p35InitBase(options||{});
