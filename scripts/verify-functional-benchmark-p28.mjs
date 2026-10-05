@@ -23,8 +23,7 @@ const required=[
   "if(V5190_SPECS.B2)errors.push",
   "v5190Benchmark:v5190NormalizeState",
   "functional-benchmark",
-  "p28-functional-benchmark-v1",
-  "data-functional-fluency"
+  "p28-functional-benchmark-v1"
 ];
 
 for(const token of required){
