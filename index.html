@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.22.0';
-    const APP_RELEASE = 'P31 B2 Open-Ended Production, Argumentation Quality & Advanced Assessment Calibration';
+    const APP_VERSION = '5.23.0';
+    const APP_RELEASE = 'P32 B2 Integrated-Skills Capstone, Source-Based Synthesis & Cross-Modal Transfer';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -26843,6 +26843,532 @@ qui	who	A1	question word`;
     };
 
 
+
+    /* ================================================================
+       v5.23.0 B2 INTEGRATED-SKILLS CAPSTONE, SOURCE-BASED SYNTHESIS &
+       CROSS-MODAL TRANSFER
+       P32 requires the learner to transform unfamiliar B2 source input
+       into an independent response. It extends P31 structural evidence
+       with source-grounding and anti-copy safeguards while remaining a
+       conservative offline evaluator, not a semantic/factual examiner.
+       ================================================================ */
+    const V5230_VERSION='5.23.0';
+    const V5230_RELEASE='P32 B2 Integrated-Skills Capstone, Source-Based Synthesis & Cross-Modal Transfer';
+    const V5230_POLICY='p32-b2-integrated-capstone-v1';
+    const V5230_EVALUATOR='b2-integrated-source-rubric-v1';
+    const V5230_STORAGE_KEY='french-b2-integrated-capstone-v1';
+    const V5230_SCHEMA=1;
+    const V5230_MAX_HISTORY=80;
+    const V5230_VALID_DAYS=35;
+    const V5230_MIN_SCORE=.64;
+    const V5230_MIN_CONFIDENCE=.70;
+    const V5230_MIN_SOURCE_COVERAGE=.75;
+    const V5230_MIN_TRANSFORMATION=.52;
+    const V5230_MAX_COPY_RATIO=.18;
+    const V5230_MAX_LISTEN_PLAYS=2;
+
+    const V5230_TASKS=Object.freeze([
+      Object.freeze({
+        id:'cap-read-hybrid',mode:'reading',sourceId:'read-b2-teletravail',sentenceIndexes:Object.freeze([1,2,3,4]),
+        title:'Synthesize a hybrid-work proposal',minWords:100,targetWords:140,
+        prompt:"À partir du texte, formulez une recommandation pour une organisation qui veut adopter le travail hybride. Résumez les tensions essentielles sans recopier le texte, prenez position, traitez une limite et proposez une condition de mise en œuvre.",
+        required:Object.freeze(['position','reason','counter','condition','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['teletravail','distance','hybride']),
+          Object.freeze(['coordination','echange','presence']),
+          Object.freeze(['autonomie','contrainte','metier']),
+          Object.freeze(['regle','reevaluer','condition'])
+        ])
+      }),
+      Object.freeze({
+        id:'cap-listen-media',mode:'listening',sourceId:'read-b2-algorithmes',sentenceIndexes:Object.freeze([1,2,3,4]),
+        title:'Respond to a briefing about algorithmic recommendations',minWords:100,targetWords:140,
+        prompt:"Après avoir écouté le briefing, expliquez ce qu'il faudrait retenir avant de faire confiance à une recommandation algorithmique. Distinguez fiabilité et neutralité, mentionnez une limite et formulez une conclusion prudente.",
+        required:Object.freeze(['evidence','qualifier','reason','uncertainty','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['recommandation','algorithme']),
+          Object.freeze(['neutre','neutralite']),
+          Object.freeze(['biais','donnee']),
+          Object.freeze(['fiable','prediction','decision'])
+        ])
+      }),
+      Object.freeze({
+        id:'cap-read-mobility',mode:'reading',sourceId:'read-b2-transports',sentenceIndexes:Object.freeze([0,1,2,3,4,5]),
+        title:'Turn a mobility text into a balanced policy',minWords:100,targetWords:140,
+        prompt:"À partir du texte, proposez une politique de mobilité urbaine qui réduise la circulation sans traiter tous les habitants de la même manière. Expliquez le problème d'équité, comparez contrainte et alternative, puis recommandez un compromis.",
+        required:Object.freeze(['position','contrast','reason','condition','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['circulation','voiture','centre']),
+          Object.freeze(['transport','alternative']),
+          Object.freeze(['equitable','penaliser','mobilite']),
+          Object.freeze(['restriction','incitation','consequence'])
+        ])
+      }),
+      Object.freeze({
+        id:'cap-listen-prevention',mode:'listening',sourceId:'read-b2-prevention',sentenceIndexes:Object.freeze([1,2,3,4,5]),
+        title:'Evaluate a prevention-policy briefing',minWords:100,targetWords:140,
+        prompt:"Après le briefing, rédigez une recommandation à un décideur. Expliquez pourquoi la prévention peut être utile à long terme, pourquoi toute campagne n'est pas automatiquement efficace, et quels critères devraient guider l'évaluation.",
+        required:Object.freeze(['position','reason','counter','evidence','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['prevention','traitement']),
+          Object.freeze(['cout','long terme']),
+          Object.freeze(['campagne','message','convaincre']),
+          Object.freeze(['resultat','effet','evaluation'])
+        ])
+      }),
+      Object.freeze({
+        id:'cap-read-housing',mode:'reading',sourceId:'read-b2-logement',sentenceIndexes:Object.freeze([0,1,2,3,4,5]),
+        title:'Synthesize competing housing priorities',minWords:100,targetWords:140,
+        prompt:"À partir du texte, conseillez une ville confrontée à une pénurie de logements. Montrez pourquoi augmenter l'offre ne suffit pas à résoudre le débat, présentez au moins deux priorités en tension et proposez un compromis défendable.",
+        required:Object.freeze(['position','counter','mediation','reason','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['logement','loyer','construire']),
+          Object.freeze(['densification','quartier']),
+          Object.freeze(['espace','vert','qualite']),
+          Object.freeze(['prix','mobilite','compromis'])
+        ])
+      }),
+      Object.freeze({
+        id:'cap-listen-priorities',mode:'listening',sourceId:'read-b2-association',sentenceIndexes:Object.freeze([0,1,2,3,4,5]),
+        title:'Mediate a constrained funding decision',minWords:100,targetWords:140,
+        prompt:"Après avoir écouté le cas, recommandez une décision pour l'association. Représentez équitablement les deux priorités, expliquez les critères à mettre en balance et proposez une solution qui reconnaisse le coût du compromis.",
+        required:Object.freeze(['mediation','reason','qualifier','counter','synthesis']),
+        sourceAnchors:Object.freeze([
+          Object.freeze(['association','budget','projet']),
+          Object.freeze(['personne','groupe','urgent']),
+          Object.freeze(['impact','cout','priorite']),
+          Object.freeze(['renoncer','consensus','compromis'])
+        ])
+      })
+    ]);
+    const V5230_TASK_BY_ID=new Map(V5230_TASKS.map(function(row){return [row.id,row];}));
+    const V5230_SETS=Object.freeze([
+      Object.freeze(['cap-read-hybrid','cap-listen-media']),
+      Object.freeze(['cap-read-mobility','cap-listen-prevention']),
+      Object.freeze(['cap-read-housing','cap-listen-priorities'])
+    ]);
+
+    state.v5230Ui=state.v5230Ui&&typeof state.v5230Ui==='object'?state.v5230Ui:{
+      phase:'write',feedback:null,summary:null,practice:false,practiceTaskId:'',pendingBenchmark:false,taskStartedAt:0,listeningPlays:0
+    };
+
+    function v5230SourceText(task){
+      const reading=task&&V550_READING_BY_ID.get(task.sourceId);if(!reading)return '';
+      return (task.sentenceIndexes||[]).map(function(index){return reading.sentences?.[index]?.fr||'';}).filter(Boolean).join(' ');
+    }
+    function v5230NormalizeResult(row){
+      if(!row||typeof row!=='object'||!V5230_TASK_BY_ID.has(row.taskId))return null;
+      const task=V5230_TASK_BY_ID.get(row.taskId),axes=row.axes&&typeof row.axes==='object'?row.axes:{};
+      return {
+        taskId:row.taskId,sourceId:task.sourceId,mode:task.mode,
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),passed:row.passed===true,
+        baseScore:clamp(finiteNumber(row.baseScore),0,1),sourceCoverage:clamp(finiteNumber(row.sourceCoverage),0,1),
+        transformation:clamp(finiteNumber(row.transformation),0,1),copyRatio:clamp(finiteNumber(row.copyRatio),0,1),
+        wordCount:clamp(Math.floor(finiteNumber(row.wordCount)),0,1000),sentenceCount:clamp(Math.floor(finiteNumber(row.sentenceCount)),0,100),
+        playCount:clamp(Math.floor(finiteNumber(row.playCount)),0,20),durationMs:clamp(finiteNumber(row.durationMs),0,7200000),
+        axes:{
+          task:clamp(finiteNumber(axes.task),0,1),argument:clamp(finiteNumber(axes.argument),0,1),nuance:clamp(finiteNumber(axes.nuance),0,1),
+          cohesion:clamp(finiteNumber(axes.cohesion),0,1),range:clamp(finiteNumber(axes.range),0,1),complexity:clamp(finiteNumber(axes.complexity),0,1)
+        },
+        evaluator:String(row.evaluator||V5230_EVALUATOR).slice(0,90)
+      };
+    }
+    function v5230NormalizeAttempt(row){
+      if(!row||typeof row!=='object')return null;
+      const tasks=(Array.isArray(row.tasks)?row.tasks:[]).map(v5230NormalizeResult).filter(Boolean).slice(0,2);
+      return {
+        id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1)),
+        completedAt:clamp(finiteNumber(row.completedAt),0,now()+days(1)),passed:row.passed===true,
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),
+        tasks:tasks,evaluator:String(row.evaluator||V5230_EVALUATOR).slice(0,90),policy:V5230_POLICY
+      };
+    }
+    function v5230NormalizeActive(row){
+      if(!row||typeof row!=='object'||!Array.isArray(row.queue))return null;
+      const queue=row.queue.filter(function(id){return V5230_TASK_BY_ID.has(id);}).slice(0,2);if(queue.length!==2)return null;
+      const results=(Array.isArray(row.results)?row.results:[]).map(v5230NormalizeResult).filter(Boolean).slice(0,queue.length);
+      return {
+        id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1))||now(),
+        queue:queue,index:clamp(Math.floor(finiteNumber(row.index)),0,queue.length),results:results
+      };
+    }
+    function v5230NormalizeState(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history=[];
+      for(const row of (Array.isArray(source.history)?source.history:[]).slice(-V5230_MAX_HISTORY)){
+        const normalized=v5230NormalizeAttempt(row);if(normalized)history.push(normalized);
+      }
+      return {schema:V5230_SCHEMA,active:v5230NormalizeActive(source.active),history:history};
+    }
+    function v5230Load(){
+      state.v5230Capstone=v5230NormalizeState(state.v5230Capstone||safeStorageRead(V5230_STORAGE_KEY)||{});
+      return state.v5230Capstone;
+    }
+    function v5230Save(){
+      state.v5230Capstone=v5230NormalizeState(state.v5230Capstone||{});
+      safeStorageSet(V5230_STORAGE_KEY,state.v5230Capstone);depthSchedulePersist?.();return state.v5230Capstone;
+    }
+    v5230Load();
+
+    const v5230DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5230DepthStateSnapshotBase(),v5230Capstone:v5230NormalizeState(state.v5230Capstone||{})};};
+    const v5230DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5230DepthApplyImportedStateBase(saved);
+      state.v5230Capstone=v5230NormalizeState(saved?.v5230Capstone||safeStorageRead(V5230_STORAGE_KEY)||{});
+      v5230Save();return result;
+    };
+    const v5230DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5230DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5230Capstone)state.v5230Capstone=v5230NormalizeState(saved.v5230Capstone);}catch{}
+      return result;
+    };
+
+    function v5230Ngrams(text,n=5){
+      const words=v580Words(text),out=[];for(let i=0;i<=words.length-n;i++)out.push(words.slice(i,i+n).join(' '));return out;
+    }
+    function v5230CopyRatio(source,response){
+      const sourceSet=new Set(v5230Ngrams(source,5)),grams=v5230Ngrams(response,5);
+      if(!grams.length)return 1;
+      return clamp(grams.filter(function(gram){return sourceSet.has(gram);}).length/grams.length,0,1);
+    }
+    function v5230SourceCoverage(task,folded){
+      const groups=task.sourceAnchors||[],hits=groups.filter(function(group){
+        return group.some(function(anchor){return v5220HasMarker(folded,anchor);});
+      }).length;
+      return {coverage:groups.length?hits/groups.length:0,hits:hits,total:groups.length};
+    }
+    function v5230EvaluateTask(task,text,{durationMs=0,playCount=0}={}){
+      const source=v5230SourceText(task),raw=String(text||'').trim(),folded=v580Fold(raw);
+      const proxy={id:task.id,kind:'integrated-'+task.mode,minWords:task.minWords,targetWords:task.targetWords,required:task.required,anchors:task.sourceAnchors};
+      const base=v5220EvaluateText(proxy,raw,durationMs),ground=v5230SourceCoverage(task,folded),copyRatio=v5230CopyRatio(source,raw);
+      const transformation=clamp(base.axes.argument*.28+base.axes.nuance*.22+base.axes.cohesion*.20+base.axes.task*.15+(1-copyRatio)*.15,0,1);
+      const modalityEvidence=task.mode==='listening'?(playCount>=1&&playCount<=V5230_MAX_LISTEN_PLAYS?(playCount===1?1:.90):0):1;
+      let score=clamp(base.score*.58+ground.coverage*.25+transformation*.17,0,1);
+      if(copyRatio>V5230_MAX_COPY_RATIO)score*=.72;
+      const confidence=clamp(base.confidence*.58+ground.coverage*.25+modalityEvidence*.17,0,1);
+      const modalityPass=task.mode!=='listening'||(playCount>=1&&playCount<=V5230_MAX_LISTEN_PLAYS);
+      const passed=base.passed&&base.wordCount>=task.minWords&&ground.coverage>=V5230_MIN_SOURCE_COVERAGE&&
+        transformation>=V5230_MIN_TRANSFORMATION&&copyRatio<=V5230_MAX_COPY_RATIO&&confidence>=V5230_MIN_CONFIDENCE&&modalityPass;
+      return {
+        taskId:task.id,sourceId:task.sourceId,mode:task.mode,score:score,confidence:confidence,passed:passed,
+        baseScore:base.score,sourceCoverage:ground.coverage,sourceGroupsHit:ground.hits,sourceGroupsTotal:ground.total,
+        transformation:transformation,copyRatio:copyRatio,playCount:playCount,wordCount:base.wordCount,
+        sentenceCount:base.sentenceCount,durationMs:base.durationMs,axes:base.axes,base:base,evaluator:V5230_EVALUATOR
+      };
+    }
+    function v5230AssessmentPass(tasks){
+      if(!Array.isArray(tasks)||tasks.length!==2||tasks.some(function(row){return !row?.passed;}))return {passed:false,score:0,confidence:0};
+      const modes=new Set(tasks.map(function(row){return row.mode;}));if(!modes.has('reading')||!modes.has('listening'))return {passed:false,score:0,confidence:0};
+      const score=tasks.reduce(function(sum,row){return sum+row.score;},0)/tasks.length;
+      const confidence=tasks.reduce(function(sum,row){return sum+row.confidence;},0)/tasks.length;
+      return {passed:score>=V5230_MIN_SCORE&&confidence>=V5230_MIN_CONFIDENCE,score:score,confidence:confidence};
+    }
+    function v5230SelectQueue(){
+      const index=(state.v5230Capstone?.history?.length||0)%V5230_SETS.length;return V5230_SETS[index].slice();
+    }
+    function v5230Latest(){
+      return (state.v5230Capstone?.history||[]).slice().sort(function(a,b){return b.completedAt-a.completedAt;})[0]||null;
+    }
+    function v5230Snapshot(at=now()){
+      const latest=v5230Latest(),active=state.v5230Capstone?.active||null;
+      const ageDays=latest?.completedAt?Math.floor((at-latest.completedAt)/days(1)):null;
+      const currentPass=Boolean(latest?.passed&&latest.evaluator===V5230_EVALUATOR&&ageDays!==null&&ageDays<=V5230_VALID_DAYS);
+      return {
+        schema:'thiepn-french-b2-integrated-capstone',schemaVersion:1,policy:V5230_POLICY,evaluator:V5230_EVALUATOR,
+        currentPass:currentPass,stale:Boolean(latest?.passed&&!currentPass),active:Boolean(active),latest:latest,
+        score:latest?.score||0,confidence:latest?.confidence||0,ageDays:ageDays,
+        validUntil:latest?.passed?latest.completedAt+days(V5230_VALID_DAYS):null,
+        attempts:state.v5230Capstone?.history?.length||0
+      };
+    }
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_B2_INTEGRATED_CAPSTONE',{
+      value:Object.freeze({version:V5230_POLICY,getSnapshot:v5230Snapshot,evaluate:function(taskId,text,options){const task=V5230_TASK_BY_ID.get(taskId);return task?v5230EvaluateTask(task,text,options||{}):null;}}),
+      writable:false,configurable:false
+    });
+
+    function v5230CurrentTask(){
+      if(state.v5230Ui.practice)return V5230_TASK_BY_ID.get(state.v5230Ui.practiceTaskId)||V5230_TASKS[0];
+      const active=state.v5230Capstone?.active;if(!active)return null;return V5230_TASK_BY_ID.get(active.queue[active.index])||null;
+    }
+    function v5230StartAssessment(options={}){
+      const practice=options.practice===true;
+      if(!practice&&!v5220CalibrationSnapshot().currentPass){
+        showToast('Complete the current P31 B2 open-production calibration before the integrated capstone.');
+        v5220StartAssessment({pendingBenchmark:options.pendingBenchmark===true});return;
+      }
+      state.v5230Ui.practice=practice;state.v5230Ui.feedback=null;state.v5230Ui.summary=null;
+      state.v5230Ui.pendingBenchmark=options.pendingBenchmark===true;state.v5230Ui.taskStartedAt=now();state.v5230Ui.phase='write';state.v5230Ui.listeningPlays=0;
+      if(practice){
+        const offset=(state.v5230Capstone?.history?.length||0)+1;
+        state.v5230Ui.practiceTaskId=V5230_TASKS[offset%V5230_TASKS.length].id;
+      }else if(!state.v5230Capstone.active){
+        state.v5230Capstone.active={id:'b2-capstone-'+Math.round(now()),startedAt:now(),queue:v5230SelectQueue(),index:0,results:[]};v5230Save();
+      }
+      v5230EnsureDialog();v5230RenderDialog();const dialog=$('#v5230-dialog');if(dialog&&!dialog.open)dialog.showModal();
+    }
+    function v5230SourceHtml(task){
+      const reading=V550_READING_BY_ID.get(task.sourceId),source=v5230SourceText(task);
+      if(task.mode==='reading'){
+        return '<section class="v5230-source"><div><span>Reading source · '+escapeHtml(reading?.title||task.sourceId)+'</span><strong>Read, select, and transform the relevant ideas</strong></div><p lang="fr">'+escapeHtml(source)+'</p></section>';
+      }
+      return '<section class="v5230-source listening"><div><span>Listening source · '+escapeHtml(reading?.title||task.sourceId)+'</span><strong>Transcript hidden during calibrated work</strong></div><div class="button-row"><button class="secondary" id="v5230-play-source" type="button">Play French briefing</button><span id="v5230-play-count">'+state.v5230Ui.listeningPlays+'/'+(state.v5230Ui.practice?'∞':V5230_MAX_LISTEN_PLAYS)+' plays</span></div>'+
+        (state.v5230Ui.practice?'<details class="v5230-transcript"><summary>Practice-only transcript</summary><p lang="fr">'+escapeHtml(source)+'</p></details>':'<p class="v5230-source-note">Calibrated listening requires at least one play and allows at most '+V5230_MAX_LISTEN_PLAYS+'. The transcript is not shown before submission.</p>')+'</section>';
+    }
+    function v5230WriteHtml(task){
+      const active=state.v5230Capstone?.active,step=state.v5230Ui.practice?1:Math.min(2,(active?.index||0)+1);
+      const attestation=state.v5230Ui.practice?'':'<label class="v5230-attest"><input type="checkbox" id="v5230-independent"> I wrote this response without a translator, AI-generated answer, model response, or external notes'+(task.mode==='listening'?', and I did not use a transcript.':'.')+'</label>';
+      return '<div class="v5230-dialog-head"><div><p class="eyebrow">P32 '+(state.v5230Ui.practice?'practice':'integrated capstone · task '+step+'/2')+'</p><h2>'+escapeHtml(task.title)+'</h2><span>'+escapeHtml(task.mode)+' → production · target '+task.targetWords+' words · minimum '+task.minWords+'</span></div><button type="button" class="v5230-close" id="v5230-close" aria-label="Close">×</button></div>'+
+        v5230SourceHtml(task)+'<div class="v5230-prompt" lang="fr">'+escapeHtml(task.prompt)+'</div>'+
+        '<textarea id="v5230-response" rows="11" lang="fr" spellcheck="true" placeholder="Transformez les idées de la source dans votre propre réponse…"></textarea>'+
+        '<div class="v5230-compose-meta"><span id="v5230-word-count">0 words</span><span>Direct copying is measured; source use must become synthesis.</span></div>'+attestation+
+        '<div class="button-row"><button class="primary" id="v5230-submit" type="button">'+(state.v5230Ui.practice?'Evaluate practice':'Submit independent response')+'</button>'+
+        (!state.v5230Ui.practice?'<button class="secondary" id="v5230-end" type="button">End capstone</button>':'')+'</div>';
+    }
+    function v5230Suggestions(result,task){
+      const suggestions=[];
+      if(result.sourceCoverage<V5230_MIN_SOURCE_COVERAGE)suggestions.push('Use more of the source-specific ideas; generic topic vocabulary is not enough.');
+      if(result.copyRatio>V5230_MAX_COPY_RATIO)suggestions.push('Paraphrase and reorganize the source instead of reusing long source sequences.');
+      if(result.transformation<V5230_MIN_TRANSFORMATION)suggestions.push('Transform the input: connect it to a position, limitation, consequence, condition, or synthesis.');
+      if(result.base?.axes?.argument<.5)suggestions.push('Make the reasoning chain more explicit with reasons, counter-position, consequence, or evidence.');
+      if(result.base?.axes?.nuance<.45)suggestions.push('Qualify the conclusion instead of presenting the source as an absolute rule.');
+      if(task.mode==='listening'&&result.playCount<1)suggestions.push('Listen to the source before submitting the response.');
+      return suggestions.slice(0,4);
+    }
+    function v5230FeedbackHtml(result,task){
+      const suggestions=v5230Suggestions(result,task),source=v5230SourceText(task);
+      return '<div class="v5230-dialog-head"><div><p class="eyebrow">P32 integrated-task analysis</p><h2>'+(result.passed?'Source-grounded transfer pass':'More evidence needed')+'</h2><span>'+escapeHtml(task.mode)+' · '+result.wordCount+' words · '+result.sentenceCount+' sentences</span></div><button type="button" class="v5230-close" id="v5230-close" aria-label="Close">×</button></div>'+
+        '<div class="v5230-score-row"><span><strong>'+Math.round(result.score*100)+'%</strong> integrated score</span><span><strong>'+Math.round(result.sourceCoverage*100)+'%</strong> source coverage</span><span><strong>'+Math.round(result.transformation*100)+'%</strong> transformation</span><span><strong>'+Math.round(result.copyRatio*100)+'%</strong> direct-copy ratio</span></div>'+
+        v5220AxisGrid(result.base||result)+
+        '<div class="v5230-feedback"><strong>What to improve</strong>'+(suggestions.length?'<ul>'+suggestions.map(function(x){return '<li>'+escapeHtml(x)+'</li>';}).join('')+'</ul>':'<p>The observable source-grounding and transformation gates are satisfied.</p>')+'</div>'+
+        (task.mode==='listening'?'<details class="v5230-transcript"><summary>Review the source transcript after submission</summary><p lang="fr">'+escapeHtml(source)+'</p></details>':'')+
+        '<p class="v5230-disclaimer">Source grounding here means observable concept coverage and transformation. The offline evaluator does not claim to verify every factual inference, grammatical choice, or subtle semantic relation.</p>'+
+        '<div class="button-row">'+(state.v5230Ui.practice?'<button class="primary" id="v5230-practice-again" type="button">Another practice task</button><button class="secondary" id="v5230-close-result" type="button">Close</button>':
+          '<button class="primary" id="v5230-next" type="button">Continue to task 2</button><button class="secondary" id="v5230-close-result" type="button">Close for now</button>')+'</div>';
+    }
+    function v5230SummaryHtml(summary){
+      const result=summary.attempt,canContinue=state.v5230Ui.pendingBenchmark&&result.passed;
+      return '<div class="v5230-dialog-head"><div><p class="eyebrow">P32 integrated capstone complete</p><h2>'+(result.passed?'Capstone passed':'Capstone not yet passed')+'</h2><span>One reading-to-production task + one listening-to-production task</span></div><button type="button" class="v5230-close" id="v5230-close" aria-label="Close">×</button></div>'+
+        '<div class="v5230-score-row"><span><strong>'+Math.round(result.score*100)+'%</strong> mean integrated score</span><span><strong>'+Math.round(result.confidence*100)+'%</strong> mean confidence</span><span><strong>'+(result.passed?'Current for '+V5230_VALID_DAYS+' days':'Re-test required')+'</strong></span><span><strong>'+result.tasks.filter(function(row){return row.passed;}).length+'/2</strong> task passes</span></div>'+
+        '<div class="v5230-summary-tasks">'+result.tasks.map(function(task){const spec=V5230_TASK_BY_ID.get(task.taskId);return '<span><b>'+escapeHtml(spec?.title||task.taskId)+'</b>'+escapeHtml(task.mode)+' · '+Math.round(task.score*100)+'% · '+(task.passed?'pass':'not yet')+'</span>';}).join('')+'</div>'+
+        '<p class="v5230-disclaimer">A pass is internal evidence that you can transform B2 reading and listening input into a source-grounded response. It is not an accredited CEFR integrated-skills score and does not make semantic accuracy claims the offline evaluator cannot support.</p>'+
+        '<div class="button-row">'+(canContinue?'<button class="primary" id="v5230-continue-benchmark" type="button">Continue to B2 benchmark</button>':'<button class="primary" id="v5230-close-result" type="button">Close</button>')+
+        (!result.passed?'<button class="secondary" id="v5230-retry" type="button">Start a new capstone</button>':'')+'</div>';
+    }
+    function v5230RenderDialog(){
+      const body=$('#v5230-dialog-body');if(!body)return;
+      if(state.v5230Ui.phase==='summary'&&state.v5230Ui.summary)body.innerHTML=v5230SummaryHtml(state.v5230Ui.summary);
+      else if(state.v5230Ui.phase==='feedback'&&state.v5230Ui.feedback){
+        const task=V5230_TASK_BY_ID.get(state.v5230Ui.feedback.taskId);body.innerHTML=v5230FeedbackHtml(state.v5230Ui.feedback,task);
+      }else{
+        const task=v5230CurrentTask();if(!task){body.innerHTML='<p>No integrated B2 task is available.</p>';return;}
+        state.v5230Ui.taskStartedAt=now();state.v5230Ui.listeningPlays=0;body.innerHTML=v5230WriteHtml(task);
+      }
+      v5230BindDialog();
+    }
+    function v5230FinishAssessment(){
+      const active=state.v5230Capstone?.active;if(!active)return null;
+      const outcome=v5230AssessmentPass(active.results),attempt=v5230NormalizeAttempt({
+        id:active.id,startedAt:active.startedAt,completedAt:now(),passed:outcome.passed,score:outcome.score,confidence:outcome.confidence,tasks:active.results
+      });
+      state.v5230Capstone.history.push(attempt);
+      if(state.v5230Capstone.history.length>V5230_MAX_HISTORY)state.v5230Capstone.history=state.v5230Capstone.history.slice(-V5230_MAX_HISTORY);
+      state.v5230Capstone.active=null;v5230Save();v5160Invalidate();v5160ReconcilePromotions();
+      state.v5230Ui.summary={attempt:attempt};state.v5230Ui.phase='summary';return attempt;
+    }
+    function v5230Submit(){
+      const task=v5230CurrentTask(),textarea=$('#v5230-response');if(!task||!textarea)return;
+      if(!state.v5230Ui.practice&&!$('#v5230-independent')?.checked){showToast('Confirm that the response was produced independently before submitting.');return;}
+      if(task.mode==='listening'&&state.v5230Ui.listeningPlays<1){showToast('Play the listening source before submitting.');return;}
+      const result=v5230EvaluateTask(task,textarea.value.trim(),{durationMs:now()-finiteNumber(state.v5230Ui.taskStartedAt,now()),playCount:state.v5230Ui.listeningPlays});
+      if(state.v5230Ui.practice){state.v5230Ui.feedback=result;state.v5230Ui.phase='feedback';v5230RenderDialog();return;}
+      const active=state.v5230Capstone?.active;if(!active)return;
+      active.results.push(v5230NormalizeResult(result));active.index++;v5230Save();
+      if(active.index>=active.queue.length){v5230FinishAssessment();v5230RenderDialog();if(state.view==='progress')renderProgress();return;}
+      state.v5230Ui.feedback=result;state.v5230Ui.phase='feedback';v5230RenderDialog();
+    }
+    function v5230PlaySource(){
+      const task=v5230CurrentTask();if(!task||task.mode!=='listening')return;
+      if(!state.v5230Ui.practice&&state.v5230Ui.listeningPlays>=V5230_MAX_LISTEN_PLAYS){showToast('The calibrated listening limit is '+V5230_MAX_LISTEN_PLAYS+' plays.');return;}
+      state.v5230Ui.listeningPlays++;
+      const node=$('#v5230-play-count');if(node)node.textContent=state.v5230Ui.listeningPlays+'/'+(state.v5230Ui.practice?'∞':V5230_MAX_LISTEN_PLAYS)+' plays';
+      speakFrench(v5230SourceText(task));
+      if(!state.v5230Ui.practice&&state.v5230Ui.listeningPlays>=V5230_MAX_LISTEN_PLAYS){const button=$('#v5230-play-source');if(button)button.disabled=true;}
+    }
+    function v5230CloseDialog(){const dialog=$('#v5230-dialog');if(dialog?.open)dialog.close();}
+    function v5230CancelAssessment(){
+      state.v5230Capstone.active=null;v5230Save();state.v5230Ui.pendingBenchmark=false;state.v5230Ui.phase='write';state.v5230Ui.feedback=null;stopSpeech();v5230CloseDialog();
+      if(state.view==='progress')renderProgress();
+    }
+    function v5230BindDialog(){
+      const textarea=$('#v5230-response');
+      const updateCount=function(){if(!textarea)return;const count=v580Words(textarea.value).length,node=$('#v5230-word-count');if(node)node.textContent=count+' word'+(count===1?'':'s');};
+      textarea?.addEventListener('input',updateCount);updateCount();
+      $('#v5230-play-source')?.addEventListener('click',v5230PlaySource);
+      $('#v5230-submit')?.addEventListener('click',v5230Submit);
+      $('#v5230-close')?.addEventListener('click',v5230CloseDialog);
+      $('#v5230-close-result')?.addEventListener('click',v5230CloseDialog);
+      $('#v5230-end')?.addEventListener('click',v5230CancelAssessment);
+      $('#v5230-next')?.addEventListener('click',function(){state.v5230Ui.phase='write';state.v5230Ui.feedback=null;v5230RenderDialog();});
+      $('#v5230-practice-again')?.addEventListener('click',function(){
+        const current=V5230_TASKS.findIndex(function(row){return row.id===state.v5230Ui.practiceTaskId;});
+        state.v5230Ui.practiceTaskId=V5230_TASKS[(current+1)%V5230_TASKS.length].id;state.v5230Ui.phase='write';state.v5230Ui.feedback=null;v5230RenderDialog();
+      });
+      $('#v5230-retry')?.addEventListener('click',function(){state.v5230Ui.phase='write';state.v5230Ui.summary=null;v5230StartAssessment({pendingBenchmark:state.v5230Ui.pendingBenchmark});});
+      $('#v5230-continue-benchmark')?.addEventListener('click',function(){
+        state.v5230Ui.pendingBenchmark=false;v5230CloseDialog();v5230StartBenchmarkBase('B2');
+      });
+    }
+    function v5230EnsureDialog(){
+      if($('#v5230-dialog'))return;
+      document.body.insertAdjacentHTML('beforeend','<dialog id="v5230-dialog" class="v5230-dialog"><div id="v5230-dialog-body"></div></dialog>');
+      const dialog=$('#v5230-dialog');dialog?.addEventListener('cancel',function(event){event.preventDefault();v5230CloseDialog();});
+    }
+
+    function v5230StatusLabel(snapshot){
+      if(snapshot.active)return 'Capstone in progress';
+      if(snapshot.currentPass)return 'Integrated evidence current';
+      if(snapshot.stale)return 'Integrated evidence stale';
+      if(snapshot.latest)return 'Fresh capstone required';
+      return 'Not yet assessed';
+    }
+    function v5230ProgressPanel(){
+      const s=v5230Snapshot(),latest=s.latest;
+      return '<section class="v5230-panel"><div class="v5230-head"><div><p class="eyebrow">P32 B2 integrated skills</p><h3>'+escapeHtml(v5230StatusLabel(s))+'</h3><p>Transform B2 source input rather than answering a generic prompt: one reading-to-production task and one transcript-hidden listening-to-production task, with source coverage and direct-copy safeguards.</p></div><span class="v5230-status '+(s.currentPass?'pass':s.active?'active':'')+'">'+(s.currentPass?'Current':s.active?'In progress':'Evidence required')+'</span></div>'+
+        '<div class="v5230-progress-grid"><span><strong>'+(latest?Math.round(latest.score*100)+'%':'—')+'</strong> latest score</span><span><strong>'+(latest?Math.round(latest.confidence*100)+'%':'—')+'</strong> confidence</span><span><strong>'+s.attempts+'</strong> capstones</span><span><strong>'+(s.validUntil?v5200Date(s.validUntil):'—')+'</strong> valid until</span></div>'+
+        '<p class="v5230-note">P32 stores task/source IDs and rubric metrics only—never your response text. A current P31 calibration is a prerequisite. Current P32 evidence is then required for B2 P25 transfer qualification and the B2 P28 benchmark.</p>'+
+        '<div class="button-row"><button class="primary" id="v5230-start" type="button">'+(s.active?'Resume integrated capstone':s.currentPass?'Run fresh capstone':'Start integrated capstone')+'</button><button class="secondary" id="v5230-practice" type="button">Practice source transfer</button></div></section>';
+    }
+    function v5230DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5230-panel'))return;
+      const anchor=main.querySelector('.v5220-panel')||main.querySelector('.v5210-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5230ProgressPanel());else main.insertAdjacentHTML('beforeend',v5230ProgressPanel());
+      $('#v5230-start')?.addEventListener('click',function(){v5230StartAssessment();});
+      $('#v5230-practice')?.addEventListener('click',function(){v5230StartAssessment({practice:true});});
+    }
+    const v5230RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5230RenderProgressBase();v5230DecorateProgress();return result;};
+
+    const v5230TransferGateBase=v5160TransferGate;
+    v5160TransferGate=function(level){
+      const gate=v5230TransferGateBase(level);if(level!=='B2')return gate;
+      const capstone=v5230Snapshot();
+      gate.integratedCapstoneRequired=true;gate.integratedCapstoneCurrent=capstone.currentPass;
+      gate.integratedCapstoneScore=capstone.score;gate.integratedCapstoneConfidence=capstone.confidence;
+      gate.detail+=' · P32 integrated source transfer '+(capstone.currentPass?'current '+Math.round(capstone.score*100)+'%':'required');
+      if(!capstone.currentPass){gate.coverage=false;return gate;}
+      gate.score=Math.min(gate.score,capstone.score);gate.confidence=Math.min(gate.confidence,capstone.confidence);return gate;
+    };
+
+    const v5230StartBenchmarkBase=v5190StartBenchmark;
+    v5190StartBenchmark=function(level){
+      if(level==='B2'){
+        if(!v5220CalibrationSnapshot().currentPass)return v5230StartBenchmarkBase(level);
+        const capstone=v5230Snapshot();
+        if(!capstone.currentPass){
+          const activeBenchmark=state.v5190Benchmark?.active,activeMission=state.v590Missions?.active,activeConversation=state.v580Conversation?.active;
+          if((activeBenchmark&&activeBenchmark.level!=='B2')||activeMission||activeConversation)return v5230StartBenchmarkBase(level);
+          showToast('B2 benchmark requires current P32 integrated source-transfer evidence first.');
+          v5230StartAssessment({pendingBenchmark:true});return;
+        }
+      }
+      return v5230StartBenchmarkBase(level);
+    };
+    const v5230FinishBenchmarkBase=v5190FinishAttempt;
+    v5190FinishAttempt=function(passed){
+      const active=state.v5190Benchmark?.active;
+      if(active?.level==='B2'&&passed===true&&!v5230Snapshot().currentPass){
+        showToast('B2 benchmark cannot pass without current P32 integrated source-transfer evidence.');
+        return v5230FinishBenchmarkBase(false);
+      }
+      return v5230FinishBenchmarkBase(passed);
+    };
+
+    const v5230CoachSnapshotBase=coachSnapshot;
+    coachSnapshot=function(){
+      const snapshot=v5230CoachSnapshotBase(),capstone=v5230Snapshot(),production=v5220CalibrationSnapshot();
+      if(['maintenance','advanced-production'].includes(snapshot.preset))return {...snapshot,integratedCapstone:capstone};
+      const urgent=snapshot.leeches>0||snapshot.total.due>Math.max(20,state.settings.dailyReviewLimit*.5);
+      if(urgent)return {...snapshot,integratedCapstone:capstone};
+      if(v5160StudyFrontier()==='B2'&&production.currentPass&&!capstone.currentPass){
+        return {...snapshot,integratedCapstone:capstone,preset:'integrated-capstone',
+          headline:'Complete B2 integrated-skills capstone',
+          reason:capstone.stale?'Your previous P32 source-transfer evidence is older than '+V5230_VALID_DAYS+' days. Refresh it before relying on B2 integrated performance.':
+            'B2 progression now requires source-grounded transfer from both reading and listening, not only free-standing argument structure.'};
+      }
+      return {...snapshot,integratedCapstone:capstone};
+    };
+    const v5230ApplySessionPresetBase=applySessionPreset;
+    applySessionPreset=function(name){
+      if(name==='integrated-capstone'){v5230StartAssessment();return;}
+      return v5230ApplySessionPresetBase(name);
+    };
+
+    function v5230CalibrationFixtures(){
+      const task=V5230_TASK_BY_ID.get('cap-read-hybrid');
+      const weak="À mon avis, cette idée est intéressante parce que le travail moderne doit être flexible. Cependant, il faut trouver une bonne solution pour tout le monde. En conclusion, je recommande un compromis.";
+      const strong="À mon avis, le télétravail peut donner davantage d'autonomie aux employés parce qu'il réduit certaines contraintes inutiles, mais une organisation hybride ne fonctionne pas sans coordination. Le texte montre notamment que certains métiers exigent davantage de présence et que les échanges informels peuvent devenir plus rares à distance. Cependant, imposer exactement la même règle à chaque équipe n'est pas nécessairement la meilleure solution. Par exemple, un service qui accueille du public n'a pas les mêmes besoins qu'une équipe qui travaille surtout sur des dossiers numériques. Si l'entreprise veut préserver la flexibilité sans perdre la coopération, elle pourrait fixer quelques jours communs et laisser le reste adaptable selon le métier. Cette règle devrait aussi être réévaluée après une période d'essai. En conclusion, je recommande donc un cadre prévisible, à condition qu'il tienne compte des contraintes réelles de chaque service.";
+      return {weak:v5230EvaluateTask(task,weak,{playCount:0}),strong:v5230EvaluateTask(task,strong,{playCount:0})};
+    }
+    function v5230Audit(){
+      const errors=[],fixtures=v5230CalibrationFixtures(),serialized=JSON.stringify(v5230NormalizeState(state.v5230Capstone||{}));
+      if(V5230_TASKS.length!==6)errors.push('P32 requires exactly six integrated task specifications');
+      for(const set of V5230_SETS){
+        const rows=set.map(function(id){return V5230_TASK_BY_ID.get(id);});
+        if(rows.length!==2||rows.some(function(row){return !row;}))errors.push('invalid P32 two-task set');
+        else if(new Set(rows.map(function(row){return row.mode;})).size!==2)errors.push('P32 set must contain reading and listening');
+      }
+      for(const task of V5230_TASKS){
+        const source=V550_READING_BY_ID.get(task.sourceId);
+        if(!source||source.level!=='B2')errors.push(task.id+' does not reference a B2 source');
+        if((task.sourceAnchors||[]).length<4)errors.push(task.id+' has insufficient source-specific anchor groups');
+      }
+      if(fixtures.weak.passed)errors.push('weak P32 calibration fixture incorrectly passes');
+      if(!fixtures.strong.passed)errors.push('strong P32 calibration fixture does not pass');
+      if(fixtures.strong.score<=fixtures.weak.score||fixtures.strong.confidence<=fixtures.weak.confidence)errors.push('P32 calibration fixtures are not ordered');
+      if(/"text"\s*:|"response"\s*:|"draft"\s*:|"sourceText"\s*:/i.test(serialized))errors.push('raw learner/source text leaked into persistent P32 state');
+      const gate=v5160TransferGate('B2');
+      if(gate.integratedCapstoneRequired!==true)errors.push('P25 B2 transfer gate is not linked to P32');
+      if(!v5220CalibrationSnapshot)errors.push('P31 dependency unavailable');
+      if(typeof V5190_SPECS.B2!=='object')errors.push('P28 B2 benchmark missing');
+      if(V5230_VALID_DAYS>45||V5230_VALID_DAYS<28)errors.push('P32 validity window is not maintenance-compatible');
+      if(V5230_MAX_LISTEN_PLAYS!==2)errors.push('calibrated listening replay limit drifted');
+      if(errors.length)console.error('French P32 integrated capstone audit failed',errors);
+      document.documentElement.dataset.b2IntegratedCapstone=errors.length?'failed':'source-grounded-cross-modal-v1';return errors;
+    }
+    const v5230RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5230RunQaBase(),errors=v5230Audit();
+      result.checks.push(v5100QaCheck('b2-integrated-capstone','B2 integrated-skills capstone & source-based transfer',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):'reading→production + listening→production · source coverage · anti-copy transformation · confidence/abstention · privacy-minimal persistence'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + '+V5230_POLICY;
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5230EnsureStyles(){
+      if(document.querySelector('#v5230-capstone-style'))return;
+      const style=document.createElement('style');style.id='v5230-capstone-style';
+      style.textContent='.v5230-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5230-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5230-head h3{margin:.08rem 0}.v5230-head p{margin:0;color:var(--muted);font-size:.62rem;max-width:82ch}.v5230-status{padding:.32rem .5rem;border-radius:999px;background:var(--surface-muted);font-size:.55rem;font-weight:850;color:var(--muted);white-space:nowrap}.v5230-status.pass{color:var(--green)}.v5230-status.active{color:var(--blue)}.v5230-progress-grid,.v5230-score-row,.v5230-summary-tasks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.3rem;margin-top:.6rem}.v5230-progress-grid span,.v5230-score-row span,.v5230-summary-tasks span{padding:.45rem .5rem;border-radius:10px;background:var(--surface-muted);font-size:.51rem;color:var(--muted)}.v5230-progress-grid strong,.v5230-score-row strong,.v5230-summary-tasks b{display:block;color:var(--navy);font-size:.72rem}.v5230-note{margin:.58rem 0!important;color:var(--muted)!important;font-size:.5rem!important}.v5230-dialog{width:min(800px,calc(100vw - 28px));max-height:92vh;border:1px solid var(--line);border-radius:18px;background:var(--surface-solid);color:var(--text);padding:0;box-shadow:0 24px 80px rgba(0,0,0,.22)}.v5230-dialog::backdrop{background:rgba(20,28,42,.48);backdrop-filter:blur(4px)}#v5230-dialog-body{padding:1rem}.v5230-dialog-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5230-dialog-head h2{margin:.08rem 0}.v5230-dialog-head span{color:var(--muted);font-size:.58rem}.v5230-close{border:0;background:transparent;color:var(--muted);font-size:1.4rem;padding:.1rem .35rem}.v5230-source,.v5230-prompt,.v5230-feedback{margin:.7rem 0;padding:.75rem;border-radius:13px;background:var(--surface-muted)}.v5230-source>div:first-child{display:grid;gap:.08rem}.v5230-source span,.v5230-source-note{color:var(--muted);font-size:.53rem}.v5230-source p{font-size:.75rem;line-height:1.58;margin:.45rem 0 0}.v5230-source.listening .button-row{align-items:center;margin-top:.5rem}.v5230-prompt{font-size:.78rem;line-height:1.55}.v5230-dialog textarea{width:100%;resize:vertical;min-height:220px;padding:.75rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-solid);color:var(--text);font:inherit;line-height:1.55}.v5230-compose-meta{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin:.3rem 0 .55rem;color:var(--muted);font-size:.52rem}.v5230-attest{display:flex;gap:.45rem;align-items:flex-start;padding:.58rem;border:1px solid var(--line);border-radius:10px;font-size:.58rem;color:var(--muted);margin-bottom:.65rem}.v5230-feedback{display:grid;gap:.25rem;font-size:.58rem}.v5230-feedback ul{margin:.2rem 0 0;padding-left:1rem;color:var(--muted)}.v5230-feedback p{margin:.2rem 0;color:var(--muted)}.v5230-transcript{margin:.55rem 0;padding:.55rem .65rem;border:1px solid var(--line);border-radius:10px;font-size:.56rem}.v5230-transcript p{font-size:.7rem;line-height:1.5}.v5230-disclaimer{font-size:.53rem;color:var(--muted);line-height:1.45;margin:.65rem 0}.v5230-summary-tasks{grid-template-columns:1fr 1fr}@media(max-width:720px){.v5230-head,.v5230-dialog-head{flex-direction:column}.v5230-progress-grid,.v5230-score-row,.v5230-summary-tasks{grid-template-columns:1fr 1fr}.v5230-dialog{width:calc(100vw - 16px)}.v5230-dialog textarea{min-height:190px}}';
+      document.head.append(style);
+    }
+    const v5230NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5230NormalizeSurfaceBase();document.documentElement.dataset.release='p32-b2-integrated-capstone';
+      document.documentElement.dataset.integratedAssessment='source-grounded-cross-modal-v1';
+    };
+    const v5230InitBase=init;
+    init=async function(options){
+      v5230EnsureStyles();v5230EnsureDialog();v5230Load();
+      const result=await v5230InitBase(options||{});
+      v5230Load();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='progress')renderProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.23.0';return result;
+    };
+
+
     /* THIEPN Account — guest-first auth + revision-safe cloud sync. */
     const THIEPN_ACCOUNT_SUPABASE_URL='https://hycegznamzjhwinegaai.supabase.co';
     const THIEPN_ACCOUNT_PUBLISHABLE_KEY='sb_publishable_1rZzRPzfLMaAH5pIgCwIjA_19UPMIsR';
@@ -27282,6 +27808,7 @@ qui	who	A1	question word`;
       if(coach.leeches>0){kind='practice';priority=94;}
       else if(total.due>Math.max(20,state.settings.dailyReviewLimit)){kind='review';priority=92;}
       else if(coach.preset==='maintenance'){kind='maintain';priority=89;}
+      else if(coach.preset==='integrated-capstone'){kind='practice';priority=85;}
       else if(coach.preset==='advanced-production'){kind='practice';priority=84;}
       else if(coach.preset==='weakness'){kind='practice';priority=86;}
       else if(total.due>0){kind='review';priority=82;}
@@ -27308,7 +27835,7 @@ qui	who	A1	question word`;
         const gate=row.gates[id];
         return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
       }):[];
-      const fluencyMaintenance=v5200Snapshot(),openProduction=v5220CalibrationSnapshot();
+      const fluencyMaintenance=v5200Snapshot(),openProduction=v5220CalibrationSnapshot(),integratedCapstone=v5230Snapshot();
       const benchmarkPassedLevels=new Set((state.v5190Benchmark?.history||[]).filter(function(item){return item?.passed===true;}).map(function(item){return item.level;})).size;
       const maintenanceDueLevels=fluencyMaintenance.levels.filter(function(item){return item.maintenanceNeeded;}).length;
       const maintenanceNeeded=Boolean((highest&&progression.map[highest]&&!progression.map[highest].currentQualified)||fluencyMaintenance.maintenanceNeeded);
@@ -27316,7 +27843,7 @@ qui	who	A1	question word`;
         generatedAt:new Date().toISOString(),
         appId:'french',
         languageId:'french',
-        producerRevision:'french-p8-read-model-v3',
+        producerRevision:'french-p8-read-model-v4',
         presentation:{displayName:'French',nativeName:'Français',appRoute:location.origin+'/'},
         enrollment:{status:'active',targetBand:state.studyPlan?.targetLevel||frontier},
         workload:{
@@ -27338,7 +27865,8 @@ qui	who	A1	question word`;
           {id:'functional-benchmark-levels',label:'Functional benchmark levels passed',current:benchmarkPassedLevels,total:V5200_LEVELS.length,unit:'levels'},
           {id:'long-term-transfer-levels',label:'Long-term transfer levels',current:fluencyMaintenance.longTermLevels.length,total:V5200_LEVELS.length,unit:'levels'},
           {id:'maintenance-due-levels',label:'Functional maintenance due',current:maintenanceDueLevels,total:V5200_LEVELS.length,unit:'levels'},
-          {id:'b2-open-production-calibration',label:'B2 open-production calibration',current:openProduction.currentPass?1:0,total:1,unit:'assessment'}
+          {id:'b2-open-production-calibration',label:'B2 open-production calibration',current:openProduction.currentPass?1:0,total:1,unit:'assessment'},
+          {id:'b2-integrated-capstone',label:'B2 integrated-skills capstone',current:integratedCapstone.currentPass?1:0,total:1,unit:'assessment'}
         ]},
         proficiency:{
           framework:'THIEPN French internal CEFR-aligned gates',
