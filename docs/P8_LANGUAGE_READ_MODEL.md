@@ -84,3 +84,5 @@ French producer revision `french-p8-read-model-v2` additionally projects the cur
 - functional maintenance due.
 
 P30's B2 corpus unlock flows through the existing P25 frontier and P28/P29 systems rather than becoming a separate Hub proficiency claim.
+
+Verification continues to use the unchanged `p8-read-model-v1` privacy and authority guarantees.
