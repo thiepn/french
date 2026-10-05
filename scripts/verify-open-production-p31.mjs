@@ -29,6 +29,7 @@ const required=[
   "complexity:'Structural complexity'",
   "words.length>=prompt.minWords",
   "sentences.length>=4",
+  "topicCoverage>=.67",
   "task>=.60",
   "argument>=.42",
   "nuance>=.35",
@@ -52,6 +53,7 @@ const required=[
   "producerRevision:'french-p8-read-model-v3'",
   "id:'b2-open-production-calibration'",
   "v5220CalibrationSnapshot()",
+  "latest.evaluator===V5220_EVALUATOR",
   "dataset.advancedAssessment='confidence-calibrated-v1'"
 ];
 for(const token of required)if(!html.includes(token))failures.push("missing P31 invariant: "+token);
@@ -65,6 +67,7 @@ if(html.includes("markers.filter(function(marker){return v580Has(folded,marker);
 if(!html.includes("(' '+folded+' ').includes(' '+needle+' ')")){
   failures.push("P31 exact phrase-boundary marker matcher missing");
 }
+if(!html.includes("anchors:Object.freeze(["))failures.push("P31 topic-anchor coverage missing");
 
 const normalizeTaskStart=html.indexOf("function v5220NormalizeTask(row)");
 const normalizeAttemptStart=html.indexOf("function v5220NormalizeAttempt(row)",normalizeTaskStart);
