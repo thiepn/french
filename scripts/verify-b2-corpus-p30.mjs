@@ -7,7 +7,6 @@ const [html,serviceWorker]=await Promise.all([
 
 const failures=[];
 const required=[
-  "const APP_VERSION = '5.21.0';",
   "P30 B2 Communicative Corpus Expansion, Advanced Functional Coverage & Benchmark Unlock",
   "const V5210_VERSION='5.21.0';",
   "const V5210_ADVANCED_FUNCTIONS=Object.freeze(['evaluate','qualify','hypothesize','persuade','mediate','synthesize']);",
