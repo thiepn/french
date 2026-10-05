@@ -3073,8 +3073,8 @@ html[data-ui-theme="crimson-night"]{--paper:#18080b;--paper-2:#2d1016;--ink:#fae
   (() => {
     'use strict';
 
-    const APP_VERSION = '5.23.0';
-    const APP_RELEASE = 'P32 B2 Integrated-Skills Capstone, Source-Based Synthesis & Cross-Modal Transfer';
+    const APP_VERSION = '5.24.0';
+    const APP_RELEASE = 'P33 B2 Spontaneous Spoken Production, Fluency, Discourse Control & Oral Assessment Calibration';
     const THIEPN_LANGUAGES_SOURCE_BASELINE = '28a39ce1c59ab02301b408f016522dbddc28d0c0';
     const THIEPN_LANGUAGES_API = globalThis.THIEPN_LANGUAGES_PLATFORM;
     const THIEPN_LANGUAGE_READ_MODEL_API = globalThis.THIEPN_LANGUAGE_READ_MODEL;
@@ -26701,7 +26701,7 @@ qui	who	A1	question word`;
       });
       $('#v5220-retry')?.addEventListener('click',function(){state.v5220Ui.phase='write';state.v5220Ui.summary=null;v5220StartAssessment({pendingBenchmark:state.v5220Ui.pendingBenchmark});});
       $('#v5220-continue-benchmark')?.addEventListener('click',function(){
-        state.v5220Ui.pendingBenchmark=false;v5220CloseDialog();v5220StartBenchmarkBase('B2');
+        state.v5220Ui.pendingBenchmark=false;v5220CloseDialog();v5190StartBenchmark('B2');
       });
     }
     function v5220EnsureDialog(){
@@ -27216,7 +27216,7 @@ qui	who	A1	question word`;
       });
       $('#v5230-retry')?.addEventListener('click',function(){state.v5230Ui.phase='write';state.v5230Ui.summary=null;v5230StartAssessment({pendingBenchmark:state.v5230Ui.pendingBenchmark});});
       $('#v5230-continue-benchmark')?.addEventListener('click',function(){
-        state.v5230Ui.pendingBenchmark=false;v5230CloseDialog();v5230StartBenchmarkBase('B2');
+        state.v5230Ui.pendingBenchmark=false;v5230CloseDialog();v5190StartBenchmark('B2');
       });
     }
     function v5230EnsureDialog(){
@@ -27366,6 +27366,542 @@ qui	who	A1	question word`;
       v5230Load();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
       if(state.view==='progress')renderProgress();
       const badge=$('.version-badge');if(badge)badge.textContent='v5.23.0';return result;
+    };
+
+
+
+    /* ================================================================
+       v5.24.0 B2 SPONTANEOUS SPOKEN PRODUCTION, FLUENCY, DISCOURSE
+       CONTROL & ORAL ASSESSMENT CALIBRATION
+       P33 adds a privacy-minimal oral calibration layer. Browser speech
+       recognition is used only for observable transcript/recoverability
+       evidence; accent quality is never inferred. Low ASR confidence
+       produces an abstention, not a learner failure.
+       ================================================================ */
+    const V5240_VERSION='5.24.0';
+    const V5240_RELEASE='P33 B2 Spontaneous Spoken Production, Fluency, Discourse Control & Oral Assessment Calibration';
+    const V5240_POLICY='p33-b2-spontaneous-oral-v1';
+    const V5240_EVALUATOR='b2-spontaneous-oral-rubric-v1';
+    const V5240_STORAGE_KEY='french-b2-spontaneous-oral-v1';
+    const V5240_SCHEMA=1;
+    const V5240_MAX_HISTORY=80;
+    const V5240_VALID_DAYS=35;
+    const V5240_MIN_SCORE=.64;
+    const V5240_MIN_CONFIDENCE=.68;
+    const V5240_MIN_ASR_CONFIDENCE=.25;
+    const V5240_MIN_RESPONSE_MS=40000;
+    const V5240_MAX_RESPONSE_MS=105000;
+    const V5240_LONG_PAUSE_MS=5500;
+    const V5240_PREP_SECONDS=20;
+    const V5240_FILLERS=Object.freeze(['euh','heu','hum','hmm','ben','bah']);
+    const V5240_CORRECTIONS=Object.freeze(['je veux dire','plus exactement','autrement dit','pardon']);
+
+    const V5240_PROMPTS=Object.freeze([
+      Object.freeze({
+        id:'oral-work-policy',mode:'immediate',kind:'argumentation',title:'Workplace policy — zero prep',minWords:80,targetWords:115,
+        prompt:"Votre organisation veut imposer trois jours de présence au bureau à tout le monde. Réagissez immédiatement : prenez position, justifiez-la, reconnaissez une limite ou une objection, proposez une condition ou un compromis et concluez.",
+        required:Object.freeze(['position','reason','counter','condition','synthesis']),
+        anchors:Object.freeze([Object.freeze(['organisation','bureau','presence','teletravail']),Object.freeze(['equipe','employe','service']),Object.freeze(['jour','flexible','coordination'])])
+      }),
+      Object.freeze({
+        id:'oral-media-claim',mode:'brief-prep',kind:'evaluation',title:'Evaluate a disputed claim — 20 s prep',minWords:85,targetWords:120,
+        prompt:"Un article affirme qu'une étude prouve qu'une nouvelle méthode double les résultats. Expliquez oralement ce qu'il faudrait vérifier, nuancez le degré de certitude, traitez une explication alternative et donnez une conclusion responsable.",
+        required:Object.freeze(['evidence','qualifier','counter','uncertainty','synthesis']),
+        anchors:Object.freeze([Object.freeze(['article','etude','publication']),Object.freeze(['resultat','donnee','source','chiffre']),Object.freeze(['preuve','methode','conclusion','causalite'])])
+      }),
+      Object.freeze({
+        id:'oral-city-policy',mode:'immediate',kind:'argumentation',title:'City transport — zero prep',minWords:80,targetWords:115,
+        prompt:"Une ville veut fortement limiter la voiture dans le centre. Répondez immédiatement en tenant compte de l'environnement et des personnes qui disposent de peu d'alternatives. Donnez un argument, une objection, une conséquence et une recommandation.",
+        required:Object.freeze(['position','reason','counter','consequence','synthesis']),
+        anchors:Object.freeze([Object.freeze(['ville','centre','voiture','circulation']),Object.freeze(['transport','bus','metro','alternative']),Object.freeze(['pollution','environnement','mobilite'])])
+      }),
+      Object.freeze({
+        id:'oral-project-crisis',mode:'brief-prep',kind:'decision',title:'Project crisis — 20 s prep',minWords:85,targetWords:120,
+        prompt:"Un projet important a du retard, le budget est presque épuisé et toutes les fonctions ne peuvent plus être livrées. Comparez les options, recommandez une décision, expliquez les conséquences et justifiez le compromis.",
+        required:Object.freeze(['position','contrast','consequence','condition','synthesis']),
+        anchors:Object.freeze([Object.freeze(['projet','retard','delai']),Object.freeze(['budget','cout','moyen']),Object.freeze(['fonction','perimetre','livrer','qualite'])])
+      }),
+      Object.freeze({
+        id:'oral-team-conflict',mode:'immediate',kind:'mediation',title:'Team conflict — zero prep',minWords:80,targetWords:115,
+        prompt:"Deux équipes sont en conflit : l'une veut ajouter des demandes urgentes, l'autre veut geler le projet. Reformulez immédiatement les deux positions, nuancez leurs hypothèses, proposez un compromis et expliquez pourquoi il est acceptable.",
+        required:Object.freeze(['mediation','qualifier','counter','persuasion','synthesis']),
+        anchors:Object.freeze([Object.freeze(['equipe','partie','collegue']),Object.freeze(['demande','urgence','priorite']),Object.freeze(['projet','perimetre','charge','compromis'])])
+      }),
+      Object.freeze({
+        id:'oral-priority-choice',mode:'brief-prep',kind:'synthesis',title:'Priority decision — 20 s prep',minWords:85,targetWords:120,
+        prompt:"Une association ne peut financer entièrement qu'un seul de deux projets : l'un aiderait beaucoup de personnes, l'autre un groupe plus petit mais dans une situation plus urgente. Mettez les critères en balance, défendez une décision ou un compromis et concluez.",
+        required:Object.freeze(['contrast','reason','qualifier','mediation','synthesis']),
+        anchors:Object.freeze([Object.freeze(['association','projet','budget']),Object.freeze(['personne','groupe','urgence']),Object.freeze(['priorite','impact','cout','compromis'])])
+      })
+    ]);
+    const V5240_PROMPT_BY_ID=new Map(V5240_PROMPTS.map(function(row){return [row.id,row];}));
+    const V5240_SETS=Object.freeze([
+      Object.freeze(['oral-work-policy','oral-media-claim']),
+      Object.freeze(['oral-city-policy','oral-project-crisis']),
+      Object.freeze(['oral-team-conflict','oral-priority-choice'])
+    ]);
+
+    state.v5240Ui=state.v5240Ui&&typeof state.v5240Ui==='object'?state.v5240Ui:{
+      phase:'ready',practice:false,practicePromptId:'',pendingBenchmark:false,feedback:null,summary:null,
+      attested:false,prepEndsAt:0,recording:false,stopRequested:false,finalizing:false,startedAt:0,
+      segments:[],recognition:null,restartCount:0,recognitionError:'',timer:null
+    };
+
+    function v5240NormalizeTask(row){
+      if(!row||typeof row!=='object'||!V5240_PROMPT_BY_ID.has(row.promptId))return null;
+      const axes=row.axes&&typeof row.axes==='object'?row.axes:{};
+      return {
+        promptId:row.promptId,mode:V5240_PROMPT_BY_ID.get(row.promptId).mode,
+        passed:row.passed===true,abstained:row.abstained===true,
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),
+        wordCount:clamp(Math.floor(finiteNumber(row.wordCount)),0,1000),durationMs:clamp(finiteNumber(row.durationMs),0,V5240_MAX_RESPONSE_MS+15000),
+        wpm:clamp(finiteNumber(row.wpm),0,300),asrConfidence:clamp(finiteNumber(row.asrConfidence),0,1),
+        fluency:clamp(finiteNumber(row.fluency),0,1),discourse:clamp(finiteNumber(row.discourse),0,1),
+        fillerRatio:clamp(finiteNumber(row.fillerRatio),0,1),longPauseCount:clamp(Math.floor(finiteNumber(row.longPauseCount)),0,30),
+        correctionCount:clamp(Math.floor(finiteNumber(row.correctionCount)),0,30),topicCoverage:clamp(finiteNumber(row.topicCoverage),0,1),
+        axes:{
+          task:clamp(finiteNumber(axes.task),0,1),argument:clamp(finiteNumber(axes.argument),0,1),nuance:clamp(finiteNumber(axes.nuance),0,1),
+          cohesion:clamp(finiteNumber(axes.cohesion),0,1),range:clamp(finiteNumber(axes.range),0,1),complexity:clamp(finiteNumber(axes.complexity),0,1)
+        },
+        evaluator:String(row.evaluator||V5240_EVALUATOR).slice(0,80)
+      };
+    }
+    function v5240NormalizeAttempt(row){
+      if(!row||typeof row!=='object')return null;
+      const tasks=(Array.isArray(row.tasks)?row.tasks:[]).map(v5240NormalizeTask).filter(Boolean).slice(0,2);
+      return {
+        id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1)),
+        completedAt:clamp(finiteNumber(row.completedAt),0,now()+days(1)),passed:row.passed===true,abstained:row.abstained===true,
+        score:clamp(finiteNumber(row.score),0,1),confidence:clamp(finiteNumber(row.confidence),0,1),tasks:tasks,
+        evaluator:String(row.evaluator||V5240_EVALUATOR).slice(0,80),policy:V5240_POLICY
+      };
+    }
+    function v5240NormalizeActive(row){
+      if(!row||typeof row!=='object'||!Array.isArray(row.queue))return null;
+      const queue=row.queue.filter(function(id){return V5240_PROMPT_BY_ID.has(id);}).slice(0,2);if(queue.length!==2)return null;
+      const results=(Array.isArray(row.results)?row.results:[]).map(v5240NormalizeTask).filter(Boolean).slice(0,queue.length);
+      const index=clamp(Math.floor(finiteNumber(row.index)),0,queue.length);
+      return {id:String(row.id||'').slice(0,140),startedAt:clamp(finiteNumber(row.startedAt),0,now()+days(1))||now(),queue:queue,index:index,results:results};
+    }
+    function v5240NormalizeState(raw){
+      const source=raw&&typeof raw==='object'?raw:{},history=[];
+      for(const row of (Array.isArray(source.history)?source.history:[]).slice(-V5240_MAX_HISTORY)){
+        const normalized=v5240NormalizeAttempt(row);if(normalized)history.push(normalized);
+      }
+      return {schema:V5240_SCHEMA,active:v5240NormalizeActive(source.active),history:history};
+    }
+    function v5240Load(){state.v5240Oral=v5240NormalizeState(state.v5240Oral||safeStorageRead(V5240_STORAGE_KEY)||{});return state.v5240Oral;}
+    function v5240Save(){state.v5240Oral=v5240NormalizeState(state.v5240Oral||{});safeStorageSet(V5240_STORAGE_KEY,state.v5240Oral);depthSchedulePersist?.();return state.v5240Oral;}
+    v5240Load();
+
+    const v5240DepthStateSnapshotBase=depthStateSnapshot;
+    depthStateSnapshot=function(){return {...v5240DepthStateSnapshotBase(),v5240Oral:v5240NormalizeState(state.v5240Oral||{})};};
+    const v5240DepthApplyImportedStateBase=depthApplyImportedState;
+    depthApplyImportedState=async function(saved){
+      const result=await v5240DepthApplyImportedStateBase(saved);
+      state.v5240Oral=v5240NormalizeState(saved?.v5240Oral||safeStorageRead(V5240_STORAGE_KEY)||{});
+      v5240Save();return result;
+    };
+    const v5240DepthHydrateBase=depthHydrateFromDb;
+    depthHydrateFromDb=async function(){
+      const result=await v5240DepthHydrateBase();
+      if(result)try{const saved=await depthDbGet('kv',DEPTH_STATE_KEY);if(saved?.v5240Oral)state.v5240Oral=v5240NormalizeState(saved.v5240Oral);}catch{}
+      return result;
+    };
+
+    function v5240ClearTimer(){if(state.v5240Ui.timer){clearInterval(state.v5240Ui.timer);clearTimeout(state.v5240Ui.timer);state.v5240Ui.timer=null;}}
+    function v5240AbortRecognition(){
+      const recognition=state.v5240Ui.recognition;state.v5240Ui.recognition=null;
+      if(recognition){try{recognition.onend=null;recognition.abort();}catch{}}
+      state.v5240Ui.recording=false;state.v5240Ui.stopRequested=false;state.v5240Ui.finalizing=false;
+    }
+    function v5240ResetEphemeral(){
+      v5240ClearTimer();v5240AbortRecognition();
+      state.v5240Ui.phase='ready';state.v5240Ui.feedback=null;state.v5240Ui.summary=null;state.v5240Ui.attested=false;
+      state.v5240Ui.prepEndsAt=0;state.v5240Ui.startedAt=0;state.v5240Ui.segments=[];state.v5240Ui.restartCount=0;state.v5240Ui.recognitionError='';
+    }
+    function v5240SelectQueue(){
+      const index=(state.v5240Oral?.history?.length||0)%V5240_SETS.length;
+      return V5240_SETS[index].slice();
+    }
+    function v5240CurrentPrompt(){
+      if(state.v5240Ui.practice)return V5240_PROMPT_BY_ID.get(state.v5240Ui.practicePromptId)||V5240_PROMPTS[0];
+      const active=state.v5240Oral?.active;if(!active)return null;return V5240_PROMPT_BY_ID.get(active.queue[active.index])||null;
+    }
+    function v5240Latest(){return (state.v5240Oral?.history||[]).slice().sort(function(a,b){return b.completedAt-a.completedAt;})[0]||null;}
+    function v5240LatestScored(){return (state.v5240Oral?.history||[]).filter(function(row){return !row.abstained;}).slice().sort(function(a,b){return b.completedAt-a.completedAt;})[0]||null;}
+    function v5240Snapshot(at=now()){
+      const latest=v5240Latest(),latestScored=v5240LatestScored(),active=state.v5240Oral?.active||null;
+      const ageDays=latestScored?.completedAt?Math.floor((at-latestScored.completedAt)/days(1)):null;
+      const currentPass=Boolean(latestScored?.passed&&latestScored.evaluator===V5240_EVALUATOR&&ageDays!==null&&ageDays<=V5240_VALID_DAYS);
+      const stale=Boolean(latestScored?.passed&&!currentPass);
+      return {
+        schema:'thiepn-french-b2-spontaneous-oral',schemaVersion:1,policy:V5240_POLICY,evaluator:V5240_EVALUATOR,
+        currentPass:currentPass,stale:stale,active:Boolean(active),latest:latest,latestScored:latestScored,
+        score:latestScored?.score||0,confidence:latestScored?.confidence||0,ageDays:ageDays,
+        validUntil:latestScored?.passed?latestScored.completedAt+days(V5240_VALID_DAYS):null,
+        attempts:state.v5240Oral?.history?.length||0,abstentions:(state.v5240Oral?.history||[]).filter(function(row){return row.abstained;}).length
+      };
+    }
+    Object.defineProperty(globalThis,'THIEPN_FRENCH_B2_ORAL',{
+      value:Object.freeze({version:V5240_POLICY,getSnapshot:v5240Snapshot}),writable:false,configurable:false
+    });
+
+    function v5240PhraseCount(folded,phrases){return phrases.reduce(function(sum,phrase){return sum+(v5220HasMarker(folded,phrase)?1:0);},0);}
+    function v5240FillerCount(words){return words.filter(function(word){return V5240_FILLERS.includes(word);}).length;}
+    function v5240LongPauseCount(segments){
+      const rows=Array.isArray(segments)?segments:[];let count=0;
+      for(let i=1;i<rows.length;i++)if(finiteNumber(rows[i].atMs)-finiteNumber(rows[i-1].atMs)>=V5240_LONG_PAUSE_MS)count++;
+      return count;
+    }
+    function v5240AsrConfidence(segments){
+      let weighted=0,weight=0;
+      for(const row of (Array.isArray(segments)?segments:[])){
+        const confidence=finiteNumber(row.confidence),words=v580Words(row.text||'').length;
+        if(confidence>0&&words){weighted+=confidence*words;weight+=words;}
+      }
+      return weight?clamp(weighted/weight,0,1):0;
+    }
+    function v5240Evaluate(prompt,text,meta={}){
+      const raw=String(text||'').trim(),words=v580Words(raw),folded=v580Fold(raw),durationMs=clamp(finiteNumber(meta.durationMs),0,V5240_MAX_RESPONSE_MS+15000),
+        durationMin=Math.max(durationMs/60000,.001),wpm=words.length/durationMin,segments=Array.isArray(meta.segments)?meta.segments:[],
+        asrConfidence=v5240AsrConfidence(segments),fillerCount=v5240FillerCount(words),fillerRatio=words.length?fillerCount/words.length:0,
+        longPauseCount=v5240LongPauseCount(segments),correctionCount=v5240PhraseCount(folded,V5240_CORRECTIONS),
+        base=v5220EvaluateText(prompt,raw,durationMs);
+      const pace=wpm>=85&&wpm<=175?1:wpm>=70&&wpm<=200?.72:wpm>=55&&wpm<=220?.42:.18;
+      const fillerControl=clamp(1-fillerRatio/.12,0,1),pauseControl=clamp(1-longPauseCount/4,0,1);
+      const fluency=clamp(pace*.48+fillerControl*.30+pauseControl*.22,0,1);
+      const discourse=clamp(base.axes.task*.24+base.axes.argument*.22+base.axes.nuance*.18+base.axes.cohesion*.16+base.axes.range*.10+base.axes.complexity*.10,0,1);
+      const familyBreadth=(base.familyHits||[]).length,lengthCoverage=clamp(words.length/Math.max(prompt.targetWords||prompt.minWords,prompt.minWords),0,1),
+        durationCoverage=clamp(durationMs/60000,0,1);
+      const confidence=asrConfidence>0?clamp(asrConfidence*.30+lengthCoverage*.20+durationCoverage*.15+base.topicCoverage*.15+Math.min(1,familyBreadth/7)*.20,0,1):0;
+      const score=clamp(discourse*.64+fluency*.36,0,1);
+      const abstained=Boolean(meta.recognitionError)||!raw||asrConfidence<V5240_MIN_ASR_CONFIDENCE;
+      const passed=!abstained&&words.length>=prompt.minWords&&durationMs>=V5240_MIN_RESPONSE_MS&&durationMs<=V5240_MAX_RESPONSE_MS+5000&&
+        wpm>=70&&wpm<=200&&fillerRatio<=.10&&longPauseCount<=3&&base.topicCoverage>=.67&&base.axes.task>=.60&&
+        base.axes.argument>=.35&&base.axes.nuance>=.25&&base.axes.cohesion>=.25&&fluency>=.58&&discourse>=.54&&score>=.60&&confidence>=.66;
+      return {
+        promptId:prompt.id,mode:prompt.mode,passed:passed,abstained:abstained,score:score,confidence:confidence,
+        wordCount:words.length,durationMs:durationMs,wpm:wpm,asrConfidence:asrConfidence,fluency:fluency,discourse:discourse,
+        fillerRatio:fillerRatio,longPauseCount:longPauseCount,correctionCount:correctionCount,topicCoverage:base.topicCoverage,
+        axes:base.axes,evaluator:V5240_EVALUATOR
+      };
+    }
+    function v5240AssessmentPass(tasks){
+      if(!Array.isArray(tasks)||tasks.length!==2)return {passed:false,abstained:false,score:0,confidence:0};
+      const modes=new Set(tasks.map(function(row){return row.mode;}));
+      const score=tasks.reduce(function(sum,row){return sum+row.score;},0)/tasks.length;
+      const confidence=tasks.reduce(function(sum,row){return sum+row.confidence;},0)/tasks.length;
+      const abstained=tasks.some(function(row){return row.abstained;});
+      const passed=!abstained&&modes.has('immediate')&&modes.has('brief-prep')&&tasks.every(function(row){return row.passed;})&&score>=V5240_MIN_SCORE&&confidence>=V5240_MIN_CONFIDENCE;
+      return {passed:passed,abstained:abstained,score:score,confidence:confidence};
+    }
+
+    function v5240StartAssessment(options={}){
+      const practice=options.practice===true;
+      if(!v570CanRecognize()){showToast('Calibrated oral assessment needs browser French speech recognition. This browser cannot provide it.');return;}
+      if(!practice&&!v5220CalibrationSnapshot().currentPass){showToast('Complete a current P31 open-production calibration first.');v5220StartAssessment();return;}
+      if(!practice&&!v5230Snapshot().currentPass){showToast('Complete a current P32 integrated-skills capstone first.');v5230StartAssessment();return;}
+      v5240ResetEphemeral();state.v5240Ui.practice=practice;state.v5240Ui.pendingBenchmark=options.pendingBenchmark===true;
+      if(practice){
+        const offset=(state.v5240Oral?.history?.length||0)+1;state.v5240Ui.practicePromptId=V5240_PROMPTS[offset%V5240_PROMPTS.length].id;
+      }else if(!state.v5240Oral.active){
+        state.v5240Oral.active={id:'oral-'+Math.round(now()),startedAt:now(),queue:v5240SelectQueue(),index:0,results:[]};v5240Save();
+      }
+      state.v5240Ui.phase='ready';v5240EnsureDialog();v5240RenderDialog();
+    }
+    function v5240StartPrep(){
+      const prompt=v5240CurrentPrompt();if(!prompt||prompt.mode!=='brief-prep')return;
+      if(!state.v5240Ui.practice&&!state.v5240Ui.attested){showToast('Confirm the independent-response statement first.');return;}
+      state.v5240Ui.phase='prep';state.v5240Ui.prepEndsAt=performance.now()+V5240_PREP_SECONDS*1000;v5240RenderDialog();v5240StartTicker();
+    }
+    function v5240StartTicker(){
+      v5240ClearTimer();
+      state.v5240Ui.timer=setInterval(function(){
+        if(state.v5240Ui.phase==='prep'){
+          const left=Math.max(0,Math.ceil((state.v5240Ui.prepEndsAt-performance.now())/1000)),node=$('#v5240-countdown');
+          if(node)node.textContent=left+' s';
+          if(left<=0){v5240ClearTimer();state.v5240Ui.phase='armed';v5240RenderDialog();}
+        }else if(state.v5240Ui.phase==='recording'){
+          const elapsed=Math.max(0,performance.now()-state.v5240Ui.startedAt),node=$('#v5240-record-time');
+          if(node)node.textContent=Math.floor(elapsed/1000)+' s';
+          if(elapsed>=V5240_MAX_RESPONSE_MS)v5240StopRecognition();
+        }
+      },300);
+    }
+    function v5240AddRecognitionResult(event){
+      for(let i=event.resultIndex||0;i<(event.results?.length||0);i++){
+        const result=event.results[i];if(!result?.isFinal)continue;
+        const alts=Array.from(result).map(function(row){return {text:String(row.transcript||'').trim(),confidence:clamp(finiteNumber(row.confidence),0,1)};}).filter(function(row){return row.text;});
+        if(!alts.length)continue;
+        const best=alts.sort(function(a,b){return b.confidence-a.confidence;})[0];
+        state.v5240Ui.segments.push({text:best.text,confidence:best.confidence,atMs:Math.max(0,performance.now()-state.v5240Ui.startedAt)});
+      }
+    }
+    function v5240LaunchRecognizer(){
+      const Recognition=v570RecognitionCtor();if(!Recognition){state.v5240Ui.recognitionError='unavailable';v5240FinalizeRecognition();return;}
+      const recognition=new Recognition();state.v5240Ui.recognition=recognition;
+      recognition.lang='fr-FR';recognition.continuous=true;recognition.interimResults=true;recognition.maxAlternatives=3;
+      recognition.onresult=v5240AddRecognitionResult;
+      recognition.onerror=function(event){
+        const code=String(event.error||'recognition-error');
+        if(['not-allowed','service-not-allowed','audio-capture','network'].includes(code)){state.v5240Ui.recognitionError=code;state.v5240Ui.stopRequested=true;}
+      };
+      recognition.onend=function(){
+        if(state.v5240Ui.recognition===recognition)state.v5240Ui.recognition=null;
+        if(!state.v5240Ui.recording)return;
+        const elapsed=state.v5240Ui.startedAt?performance.now()-state.v5240Ui.startedAt:0;
+        if(state.v5240Ui.stopRequested||state.v5240Ui.recognitionError||elapsed>=V5240_MAX_RESPONSE_MS||state.v5240Ui.restartCount>=3){v5240FinalizeRecognition();return;}
+        state.v5240Ui.restartCount++;setTimeout(function(){if(state.v5240Ui.recording&&!state.v5240Ui.stopRequested)v5240LaunchRecognizer();},140);
+      };
+      try{recognition.start();}catch{state.v5240Ui.recognitionError='start-failed';v5240FinalizeRecognition();}
+    }
+    function v5240StartRecognition(){
+      const prompt=v5240CurrentPrompt();if(!prompt)return;
+      if(!state.v5240Ui.practice&&!state.v5240Ui.attested){showToast('Confirm the independent-response statement first.');return;}
+      try{state.v570Recognition?.abort?.();}catch{}
+      state.v5240Ui.segments=[];state.v5240Ui.recognitionError='';state.v5240Ui.restartCount=0;state.v5240Ui.stopRequested=false;state.v5240Ui.finalizing=false;
+      state.v5240Ui.recording=true;state.v5240Ui.startedAt=performance.now();state.v5240Ui.phase='recording';v5240RenderDialog();v5240StartTicker();v5240LaunchRecognizer();
+    }
+    function v5240StopRecognition(){
+      if(!state.v5240Ui.recording)return;
+      state.v5240Ui.stopRequested=true;const recognition=state.v5240Ui.recognition;
+      if(recognition){try{recognition.stop();}catch{v5240FinalizeRecognition();}}else v5240FinalizeRecognition();
+    }
+    function v5240FinalizeRecognition(){
+      if(state.v5240Ui.finalizing)return;state.v5240Ui.finalizing=true;v5240ClearTimer();
+      const prompt=v5240CurrentPrompt();if(!prompt){state.v5240Ui.recording=false;state.v5240Ui.finalizing=false;return;}
+      const durationMs=Math.min(V5240_MAX_RESPONSE_MS+10000,Math.max(0,performance.now()-state.v5240Ui.startedAt));
+      const transcript=state.v5240Ui.segments.map(function(row){return row.text;}).join(' ').trim();
+      const result=v5240Evaluate(prompt,transcript,{durationMs:durationMs,segments:state.v5240Ui.segments,recognitionError:state.v5240Ui.recognitionError});
+      state.v5240Ui.recording=false;state.v5240Ui.recognition=null;state.v5240Ui.feedback=result;state.v5240Ui.phase='feedback';state.v5240Ui.finalizing=false;
+      if(!state.v5240Ui.practice){
+        const active=state.v5240Oral.active;if(!active)return;
+        active.results.push(v5240NormalizeTask(result));active.index++;v5240Save();
+        if(active.index>=active.queue.length){v5240FinishAssessment();state.v5240Ui.phase='summary';}
+      }
+      state.v5240Ui.segments=[];state.v5240Ui.startedAt=0;v5240RenderDialog();if(state.view==='progress')renderProgress();
+    }
+    function v5240FinishAssessment(){
+      const active=state.v5240Oral?.active;if(!active)return null;
+      const verdict=v5240AssessmentPass(active.results),attempt=v5240NormalizeAttempt({
+        id:active.id,startedAt:active.startedAt,completedAt:now(),passed:verdict.passed,abstained:verdict.abstained,
+        score:verdict.score,confidence:verdict.confidence,tasks:active.results,evaluator:V5240_EVALUATOR
+      });
+      state.v5240Oral.history.push(attempt);if(state.v5240Oral.history.length>V5240_MAX_HISTORY)state.v5240Oral.history=state.v5240Oral.history.slice(-V5240_MAX_HISTORY);
+      state.v5240Oral.active=null;state.v5240Ui.summary=attempt;v5240Save();v5160Invalidate();v5160ReconcilePromotions();return attempt;
+    }
+    function v5240CancelAssessment(){
+      v5240ClearTimer();v5240AbortRecognition();
+      if(!state.v5240Ui.practice){state.v5240Oral.active=null;v5240Save();}
+      state.v5240Ui.pendingBenchmark=false;state.v5240Ui.phase='ready';state.v5240Ui.feedback=null;state.v5240Ui.summary=null;v5240CloseDialog();
+      if(state.view==='progress')renderProgress();
+    }
+
+    function v5240Attestation(){
+      return state.v5240Ui.practice?'':'<label class="v5240-attest"><input type="checkbox" id="v5240-attest" '+(state.v5240Ui.attested?'checked':'')+'> <span>I will answer spontaneously in French without AI, a translator, written notes, or a prepared script.</span></label>';
+    }
+    function v5240PromptHtml(prompt,visible=true){
+      return visible?'<section class="v5240-prompt"><strong>'+escapeHtml(prompt.title)+'</strong><p>'+escapeHtml(prompt.prompt)+'</p></section>':
+        '<section class="v5240-prompt hidden-prompt"><strong>'+escapeHtml(prompt.title)+'</strong><p>The exact prompt appears when speech recognition starts. No preparation time is provided for this task.</p></section>';
+    }
+    function v5240TaskControls(prompt){
+      const phase=state.v5240Ui.phase,practice=state.v5240Ui.practice;
+      if(phase==='prep')return '<div class="v5240-live"><strong id="v5240-countdown">'+V5240_PREP_SECONDS+' s</strong><span>Prepare mentally only. No written notes.</span></div>';
+      if(phase==='armed')return '<button class="primary" id="v5240-start-record" type="button">Start spoken response</button>';
+      if(phase==='recording')return '<div class="v5240-live recording"><div><strong id="v5240-record-time">0 s</strong><span>Speak continuously. Transcript is hidden during calibrated work.</span></div><button class="primary" id="v5240-stop-record" type="button">Finish response</button></div>';
+      if(prompt.mode==='brief-prep')return '<button class="primary" id="v5240-start-prep" type="button" '+(!practice&&!state.v5240Ui.attested?'disabled':'')+'>Begin '+V5240_PREP_SECONDS+'-second preparation</button>';
+      return '<button class="primary" id="v5240-start-record" type="button" '+(!practice&&!state.v5240Ui.attested?'disabled':'')+'>Reveal prompt & start immediately</button>';
+    }
+    function v5240FeedbackHtml(result,prompt){
+      const status=result.abstained?'Unscored — recognition evidence too weak':result.passed?'Task passed':'Task not yet at calibrated threshold';
+      return '<section class="v5240-feedback"><p class="eyebrow">Oral calibration result</p><h3>'+escapeHtml(status)+'</h3>'+
+        '<div class="v5240-score-row"><span><strong>'+Math.round(result.score*100)+'%</strong> overall</span><span><strong>'+Math.round(result.confidence*100)+'%</strong> evaluator confidence</span><span><strong>'+Math.round(result.fluency*100)+'%</strong> fluency proxy</span><span><strong>'+Math.round(result.discourse*100)+'%</strong> discourse</span><span><strong>'+Math.round(result.wpm)+'</strong> words/min</span><span><strong>'+Math.round(result.asrConfidence*100)+'%</strong> ASR confidence</span></div>'+
+        '<p>'+result.wordCount+' recognized words · '+Math.round(result.durationMs/1000)+' s · '+Math.round(result.fillerRatio*100)+'% filler ratio · '+result.longPauseCount+' long-pause signal'+(result.longPauseCount===1?'':'s')+' · '+result.correctionCount+' explicit self-correction marker'+(result.correctionCount===1?'':'s')+'.</p>'+
+        '<p class="v5240-disclaimer">Self-correction is recorded but not penalized by itself. Browser recognition can estimate recoverability and timing proxies; it does not justify an accent-quality or full pronunciation score.</p>'+
+        (state.v5240Ui.practice?'<button class="primary" id="v5240-practice-again" type="button">Try another oral prompt</button>':
+          (state.v5240Oral.active?'<button class="primary" id="v5240-next" type="button">Continue</button>':''))+'</section>';
+    }
+    function v5240SummaryHtml(summary){
+      const title=summary.abstained?'Assessment unscored':summary.passed?'B2 oral calibration passed':'B2 oral calibration not yet passed';
+      return '<section class="v5240-feedback summary"><p class="eyebrow">P33 complete</p><h2>'+escapeHtml(title)+'</h2>'+
+        '<div class="v5240-score-row"><span><strong>'+Math.round(summary.score*100)+'%</strong> mean score</span><span><strong>'+Math.round(summary.confidence*100)+'%</strong> confidence</span><span><strong>'+summary.tasks.filter(function(row){return row.passed;}).length+'/2</strong> tasks passed</span><span><strong>'+summary.tasks.filter(function(row){return row.abstained;}).length+'</strong> abstentions</span></div>'+
+        '<p class="v5240-disclaimer">'+(summary.abstained?'Recognition uncertainty was treated as an abstention rather than evidence of weak French.':'Both a zero-prep and a 20-second-prep response are required; one cannot compensate for the other.')+'</p>'+
+        '<div class="button-row"><button class="secondary" id="v5240-close-result" type="button">Close</button>'+
+        (summary.passed&&state.v5240Ui.pendingBenchmark?'<button class="primary" id="v5240-continue-benchmark" type="button">Continue B2 benchmark</button>':'<button class="primary" id="v5240-retry" type="button">Run another calibration</button>')+'</div></section>';
+    }
+    function v5240RenderDialog(){
+      v5240EnsureDialog();const dialog=$('#v5240-dialog'),body=$('#v5240-dialog-body');if(!dialog||!body)return;
+      const prompt=v5240CurrentPrompt(),summary=state.v5240Ui.summary,feedback=state.v5240Ui.feedback;
+      if(state.v5240Ui.phase==='summary'&&summary)body.innerHTML=v5240SummaryHtml(summary);
+      else if(state.v5240Ui.phase==='feedback'&&feedback&&prompt)body.innerHTML=v5240FeedbackHtml(feedback,prompt);
+      else if(prompt){
+        const index=state.v5240Ui.practice?1:(state.v5240Oral.active?.index||0)+1,phase=state.v5240Ui.phase;
+        const visible=prompt.mode!=='immediate'||phase==='recording'||phase==='armed'||phase==='prep';
+        body.innerHTML='<div class="v5240-dialog-head"><div><p class="eyebrow">'+(state.v5240Ui.practice?'P33 oral practice':'P33 calibrated oral · task '+index+'/2')+'</p><h2>'+escapeHtml(prompt.mode==='immediate'?'Zero-prep response':'Brief-prep response')+'</h2><span>'+escapeHtml(prompt.mode==='immediate'?'No preparation window':'20 seconds mental preparation')+' · 40–105 s response</span></div><button class="v5240-close" id="v5240-close" type="button" aria-label="Close">×</button></div>'+
+          v5240PromptHtml(prompt,visible)+v5240Attestation()+v5240TaskControls(prompt)+
+          '<p class="v5240-disclaimer">Calibration requires browser French speech recognition with usable confidence metadata. The app does not persist the recognized transcript or an audio recording. Recognition may be provided by the browser or its speech service.</p>'+
+          (!state.v5240Ui.practice?'<button class="text-button" id="v5240-end" type="button">Cancel assessment</button>':'');
+      }else body.innerHTML='<p>No oral task is active.</p>';
+      if(!dialog.open)dialog.showModal();v5240BindDialog();
+    }
+    function v5240BindDialog(){
+      $('#v5240-attest')?.addEventListener('change',function(event){state.v5240Ui.attested=event.target.checked===true;v5240RenderDialog();});
+      $('#v5240-start-prep')?.addEventListener('click',v5240StartPrep);
+      $('#v5240-start-record')?.addEventListener('click',v5240StartRecognition);
+      $('#v5240-stop-record')?.addEventListener('click',v5240StopRecognition);
+      $('#v5240-close')?.addEventListener('click',v5240CloseDialog);
+      $('#v5240-close-result')?.addEventListener('click',v5240CloseDialog);
+      $('#v5240-end')?.addEventListener('click',v5240CancelAssessment);
+      $('#v5240-next')?.addEventListener('click',function(){state.v5240Ui.feedback=null;state.v5240Ui.phase='ready';state.v5240Ui.attested=false;v5240RenderDialog();});
+      $('#v5240-practice-again')?.addEventListener('click',function(){
+        const current=V5240_PROMPTS.findIndex(function(row){return row.id===state.v5240Ui.practicePromptId;});
+        state.v5240Ui.practicePromptId=V5240_PROMPTS[(current+1)%V5240_PROMPTS.length].id;state.v5240Ui.feedback=null;state.v5240Ui.phase='ready';v5240RenderDialog();
+      });
+      $('#v5240-retry')?.addEventListener('click',function(){const pending=state.v5240Ui.pendingBenchmark;state.v5240Ui.summary=null;v5240StartAssessment({pendingBenchmark:pending});});
+      $('#v5240-continue-benchmark')?.addEventListener('click',function(){state.v5240Ui.pendingBenchmark=false;v5240CloseDialog();v5190StartBenchmark('B2');});
+    }
+    function v5240EnsureDialog(){
+      if($('#v5240-dialog'))return;
+      document.body.insertAdjacentHTML('beforeend','<dialog id="v5240-dialog" class="v5240-dialog"><div id="v5240-dialog-body"></div></dialog>');
+      const dialog=$('#v5240-dialog');dialog?.addEventListener('cancel',function(event){event.preventDefault();if(state.v5240Ui.recording)return;v5240CloseDialog();});
+    }
+    function v5240CloseDialog(){if(state.v5240Ui.recording){showToast('Finish the spoken response before closing.');return;}const dialog=$('#v5240-dialog');if(dialog?.open)dialog.close();}
+
+    function v5240StatusLabel(snapshot){
+      if(snapshot.active)return 'Assessment in progress';
+      if(snapshot.currentPass)return 'Current oral calibration';
+      if(snapshot.stale)return 'Oral calibration stale';
+      if(snapshot.latest?.abstained)return 'Latest attempt unscored';
+      if(snapshot.latestScored)return 'Fresh oral calibration required';
+      return 'Not yet calibrated';
+    }
+    function v5240ProgressPanel(){
+      const s=v5240Snapshot(),latest=s.latestScored;
+      return '<section class="v5240-panel"><div class="v5240-head"><div><p class="eyebrow">P33 B2 spontaneous oral</p><h3>'+escapeHtml(v5240StatusLabel(s))+'</h3><p>Two spoken tasks test sustained B2 discourse under different planning pressure: one zero-prep response and one response after 20 seconds of mental preparation. Weak speech-recognition evidence causes abstention rather than a negative proficiency claim.</p></div><span class="v5240-status '+(s.currentPass?'pass':s.active?'active':'')+'">'+(s.currentPass?'Current':s.active?'In progress':'Evidence required')+'</span></div>'+
+        '<div class="v5240-progress-grid"><span><strong>'+(latest?Math.round(latest.score*100)+'%':'—')+'</strong> latest score</span><span><strong>'+(latest?Math.round(latest.confidence*100)+'%':'—')+'</strong> confidence</span><span><strong>'+s.attempts+'</strong> assessments</span><span><strong>'+s.abstentions+'</strong> abstentions</span><span><strong>'+(s.validUntil?v5200Date(s.validUntil):'—')+'</strong> valid until</span></div>'+
+        '<p class="v5240-note">Persisted P33 evidence contains prompt IDs and rubric metrics only. No transcript or audio recording is stored. P33 measures observable oral discourse/fluency proxies, not accent quality.</p>'+
+        '<div class="button-row"><button class="primary" id="v5240-start" type="button">'+(s.active?'Resume oral calibration':s.currentPass?'Run fresh oral calibration':'Start oral calibration')+'</button><button class="secondary" id="v5240-practice" type="button">Practice spontaneous speaking</button></div></section>';
+    }
+    function v5240DecorateProgress(){
+      if(state.view!=='progress'||main.querySelector('.v5240-panel'))return;
+      const anchor=main.querySelector('.v5230-panel')||main.querySelector('.v5220-panel');
+      if(anchor)anchor.insertAdjacentHTML('afterend',v5240ProgressPanel());else main.insertAdjacentHTML('beforeend',v5240ProgressPanel());
+      $('#v5240-start')?.addEventListener('click',function(){v5240StartAssessment();});
+      $('#v5240-practice')?.addEventListener('click',function(){v5240StartAssessment({practice:true});});
+    }
+    const v5240RenderProgressBase=renderProgress;
+    renderProgress=function(){const result=v5240RenderProgressBase();v5240DecorateProgress();return result;};
+
+    const v5240SpeakingGateBase=v5160SpeakingGate;
+    v5160SpeakingGate=function(level){
+      const gate=v5240SpeakingGateBase(level);if(level!=='B2')return gate;
+      const oral=v5240Snapshot();
+      gate.spontaneousOralRequired=true;gate.spontaneousOralCurrent=oral.currentPass;gate.spontaneousOralScore=oral.score;gate.spontaneousOralConfidence=oral.confidence;
+      gate.detail+=' · P33 spontaneous oral '+(oral.currentPass?'current '+Math.round(oral.score*100)+'%':'required');
+      if(!oral.currentPass){gate.coverage=false;return gate;}
+      gate.score=Math.min(gate.score,oral.score);gate.confidence=Math.min(gate.confidence,oral.confidence);return gate;
+    };
+
+    const v5240StartBenchmarkBase=v5190StartBenchmark;
+    v5190StartBenchmark=function(level){
+      if(level==='B2'){
+        if(!v5220CalibrationSnapshot().currentPass||!v5230Snapshot().currentPass)return v5240StartBenchmarkBase(level);
+        const oral=v5240Snapshot();
+        if(!oral.currentPass){
+          const activeBenchmark=state.v5190Benchmark?.active,activeMission=state.v590Missions?.active,activeConversation=state.v580Conversation?.active;
+          if((activeBenchmark&&activeBenchmark.level!=='B2')||activeMission||activeConversation)return v5240StartBenchmarkBase(level);
+          showToast('B2 benchmark requires current P33 spontaneous oral calibration first.');
+          v5240StartAssessment({pendingBenchmark:true});return;
+        }
+      }
+      return v5240StartBenchmarkBase(level);
+    };
+    const v5240FinishBenchmarkBase=v5190FinishAttempt;
+    v5190FinishAttempt=function(passed){
+      const active=state.v5190Benchmark?.active;
+      if(active?.level==='B2'&&passed===true&&!v5240Snapshot().currentPass){
+        showToast('B2 benchmark cannot pass without current P33 spontaneous oral calibration.');
+        return v5240FinishBenchmarkBase(false);
+      }
+      return v5240FinishBenchmarkBase(passed);
+    };
+
+    const v5240CoachSnapshotBase=coachSnapshot;
+    coachSnapshot=function(){
+      const snapshot=v5240CoachSnapshotBase(),oral=v5240Snapshot(),production=v5220CalibrationSnapshot(),integrated=v5230Snapshot();
+      if(['maintenance','advanced-production','integrated-capstone'].includes(snapshot.preset))return {...snapshot,oralCalibration:oral};
+      const urgent=snapshot.leeches>0||snapshot.total.due>Math.max(20,state.settings.dailyReviewLimit*.5);
+      if(urgent)return {...snapshot,oralCalibration:oral};
+      if(v5160StudyFrontier()==='B2'&&production.currentPass&&integrated.currentPass&&!oral.currentPass){
+        return {...snapshot,oralCalibration:oral,preset:'oral-calibration',
+          headline:'Calibrate B2 spontaneous speaking',
+          reason:oral.stale?'Your previous P33 oral evidence is older than '+V5240_VALID_DAYS+' days. Refresh it before relying on B2 spoken production.':
+            'B2 speaking now requires both a zero-prep and a brief-prep sustained oral response with confidence-aware speech-recognition evidence.'};
+      }
+      return {...snapshot,oralCalibration:oral};
+    };
+    const v5240ApplySessionPresetBase=applySessionPreset;
+    applySessionPreset=function(name){if(name==='oral-calibration'){v5240StartAssessment();return;}return v5240ApplySessionPresetBase(name);};
+
+    function v5240CalibrationFixtures(){
+      const prompt=V5240_PROMPT_BY_ID.get('oral-work-policy');
+      const weak='Je pense que le bureau est bien. Mais parfois le télétravail est bien aussi. Je ne sais pas. En conclusion, il faut une solution.';
+      const strong="À mon avis, imposer exactement trois jours de présence peut faciliter la coordination, parce que les équipes savent quand elles peuvent travailler ensemble. Cependant, la même règle n'est pas nécessairement adaptée à chaque service. Par exemple, une équipe qui accueille du public a besoin d'une présence plus régulière, tandis qu'un service qui travaille surtout sur des dossiers numériques peut garder davantage de flexibilité. Je reconnais que la direction veut une règle simple, mais cette simplicité risque de créer des contraintes inutiles. Si les objectifs communs restent clairs, on pourrait fixer deux jours obligatoires et laisser le troisième adaptable. Cette solution préserverait la coopération tout en évitant une règle trop rigide. En conclusion, je recommande donc un cadre commun à condition qu'il puisse être réévalué selon les besoins réels des équipes.";
+      const segments=[{text:strong.slice(0,120),confidence:.78,atMs:18000},{text:strong.slice(120,300),confidence:.80,atMs:39000},{text:strong.slice(300),confidence:.79,atMs:65000}];
+      return {weak:v5240Evaluate(prompt,weak,{durationMs:18000,segments:[{text:weak,confidence:.8,atMs:18000}]}),strong:v5240Evaluate(prompt,strong,{durationMs:65000,segments:segments})};
+    }
+    function v5240Audit(){
+      const errors=[],fixtures=v5240CalibrationFixtures(),serialized=JSON.stringify(v5240NormalizeState(state.v5240Oral||{}));
+      if(V5240_PROMPTS.length!==6)errors.push('P33 requires exactly six oral prompts');
+      for(const set of V5240_SETS){
+        const rows=set.map(function(id){return V5240_PROMPT_BY_ID.get(id);});
+        if(rows.length!==2||rows.some(function(row){return !row;}))errors.push('invalid P33 two-task set');
+        else if(new Set(rows.map(function(row){return row.mode;})).size!==2)errors.push('P33 set must contain zero-prep and brief-prep tasks');
+      }
+      if(fixtures.weak.passed)errors.push('weak P33 calibration fixture incorrectly passes');
+      if(!fixtures.strong.passed)errors.push('strong P33 calibration fixture does not pass');
+      if(fixtures.strong.score<=fixtures.weak.score||fixtures.strong.confidence<=fixtures.weak.confidence)errors.push('P33 calibration fixtures are not ordered');
+      if(/"transcript"\s*:|"audio"\s*:|"blob"\s*:|"recording"\s*:|"response"\s*:/i.test(serialized))errors.push('raw oral content leaked into persistent P33 state');
+      const gate=v5160SpeakingGate('B2');
+      if(gate.spontaneousOralRequired!==true)errors.push('P25 B2 speaking gate is not linked to P33');
+      if(!v5220CalibrationSnapshot||!v5230Snapshot)errors.push('P31/P32 dependencies unavailable');
+      if(typeof V5190_SPECS.B2!=='object')errors.push('P28 B2 benchmark missing');
+      if(V5240_VALID_DAYS>45||V5240_VALID_DAYS<28)errors.push('P33 validity window is not maintenance-compatible');
+      if(V5240_MIN_ASR_CONFIDENCE<=0)errors.push('P33 must abstain when ASR confidence is unavailable');
+      if(errors.length)console.error('French P33 spontaneous oral audit failed',errors);
+      document.documentElement.dataset.b2SpontaneousOral=errors.length?'failed':'confidence-calibrated-oral-v1';return errors;
+    }
+    const v5240RunQaBase=v5100RunQa;
+    v5100RunQa=function(){
+      const result=v5240RunQaBase(),errors=v5240Audit();
+      result.checks.push(v5100QaCheck('b2-spontaneous-oral','B2 spontaneous oral production & assessment calibration',errors.length?'fail':'pass',
+        errors.length?errors.slice(0,8).join(' · '):'zero-prep + 20s-prep · sustained discourse · fluency proxies · ASR-confidence abstention · no accent inference · privacy-minimal persistence'));
+      result.fail=result.checks.filter(function(row){return row.status==='fail';}).length;
+      result.warn=result.checks.filter(function(row){return row.status==='warn';}).length;
+      result.status=result.fail?'fail':result.warn?'warn':'pass';
+      result.policy=String(result.policy||V5100_POLICY)+' + '+V5240_POLICY;
+      state.v5100Qa.last=result;document.documentElement.dataset.communicativeQa=result.status;return result;
+    };
+
+    function v5240EnsureStyles(){
+      if(document.querySelector('#v5240-oral-style'))return;
+      const style=document.createElement('style');style.id='v5240-oral-style';
+      style.textContent='.v5240-panel{border:1px solid var(--line);background:var(--surface-solid);border-radius:17px;margin:.7rem 0;padding:.9rem}.v5240-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5240-head h3{margin:.08rem 0}.v5240-head p{margin:0;color:var(--muted);font-size:.62rem;max-width:82ch}.v5240-status{padding:.32rem .5rem;border-radius:999px;background:var(--surface-muted);font-size:.55rem;font-weight:850;color:var(--muted);white-space:nowrap}.v5240-status.pass{color:var(--green)}.v5240-status.active{color:var(--blue)}.v5240-progress-grid,.v5240-score-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.3rem;margin-top:.6rem}.v5240-progress-grid span,.v5240-score-row span{padding:.45rem .5rem;border-radius:10px;background:var(--surface-muted);font-size:.51rem;color:var(--muted)}.v5240-progress-grid strong,.v5240-score-row strong{display:block;color:var(--navy);font-size:.72rem}.v5240-note{margin:.58rem 0!important;color:var(--muted)!important;font-size:.5rem!important}.v5240-dialog{width:min(790px,calc(100vw - 28px));max-height:92vh;border:1px solid var(--line);border-radius:18px;background:var(--surface-solid);color:var(--text);padding:0;box-shadow:0 24px 80px rgba(0,0,0,.22)}.v5240-dialog::backdrop{background:rgba(20,28,42,.5);backdrop-filter:blur(4px)}#v5240-dialog-body{padding:1rem}.v5240-dialog-head{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}.v5240-dialog-head h2{margin:.08rem 0}.v5240-dialog-head span{color:var(--muted);font-size:.58rem}.v5240-close{border:0;background:transparent;color:var(--muted);font-size:1.4rem;padding:.1rem .35rem}.v5240-prompt,.v5240-feedback,.v5240-live{margin:.7rem 0;padding:.75rem;border-radius:13px;background:var(--surface-muted)}.v5240-prompt p,.v5240-feedback p{font-size:.7rem;line-height:1.52;color:var(--muted)}.v5240-prompt.hidden-prompt{border:1px dashed var(--line)}.v5240-attest{display:flex;gap:.45rem;align-items:flex-start;padding:.6rem;border:1px solid var(--line);border-radius:10px;font-size:.58rem;color:var(--muted);margin:.65rem 0}.v5240-live{display:flex;justify-content:space-between;align-items:center;gap:.6rem}.v5240-live strong{font-size:1.2rem;color:var(--navy)}.v5240-live span{display:block;color:var(--muted);font-size:.56rem}.v5240-live.recording{border:1px solid color-mix(in srgb,var(--red) 35%,var(--line))}.v5240-disclaimer{font-size:.53rem!important;color:var(--muted)!important;line-height:1.45}.v5240-feedback h3,.v5240-feedback h2{margin:.1rem 0}.v5240-score-row{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:720px){.v5240-head,.v5240-dialog-head,.v5240-live{flex-direction:column;align-items:stretch}.v5240-progress-grid,.v5240-score-row{grid-template-columns:1fr 1fr}.v5240-dialog{width:calc(100vw - 16px)}}';
+      document.head.append(style);
+    }
+    const v5240NormalizeSurfaceBase=v420NormalizeSurface;
+    v420NormalizeSurface=function(){
+      v5240NormalizeSurfaceBase();document.documentElement.dataset.release='p33-b2-spontaneous-oral';
+      document.documentElement.dataset.oralAssessment='confidence-calibrated-oral-v1';
+    };
+    const v5240InitBase=init;
+    init=async function(options){
+      v5240EnsureStyles();v5240EnsureDialog();v5240Load();
+      const result=await v5240InitBase(options||{});
+      v5240Load();v5160Invalidate();v5160ReconcilePromotions();v420NormalizeSurface();state.v5100Qa.last=v5100RunQa();
+      if(state.view==='progress')renderProgress();
+      const badge=$('.version-badge');if(badge)badge.textContent='v5.24.0';return result;
     };
 
 
@@ -27810,6 +28346,7 @@ qui	who	A1	question word`;
       else if(coach.preset==='maintenance'){kind='maintain';priority=89;}
       else if(coach.preset==='integrated-capstone'){kind='practice';priority=85;}
       else if(coach.preset==='advanced-production'){kind='practice';priority=84;}
+      else if(coach.preset==='oral-calibration'){kind='practice';priority=83;}
       else if(coach.preset==='weakness'){kind='practice';priority=86;}
       else if(total.due>0){kind='review';priority=82;}
       else if(coach.preset==='roadmap'&&plan.focus){kind='course';priority=72;}
@@ -27835,7 +28372,7 @@ qui	who	A1	question word`;
         const gate=row.gates[id];
         return {id:id,label:gate.label,score:gate.score,confidence:gate.confidence,band:frontier,evidenceCount:Math.round(gate.confidence*100)};
       }):[];
-      const fluencyMaintenance=v5200Snapshot(),openProduction=v5220CalibrationSnapshot(),integratedCapstone=v5230Snapshot();
+      const fluencyMaintenance=v5200Snapshot(),openProduction=v5220CalibrationSnapshot(),integratedCapstone=v5230Snapshot(),oralCalibration=v5240Snapshot();
       const benchmarkPassedLevels=new Set((state.v5190Benchmark?.history||[]).filter(function(item){return item?.passed===true;}).map(function(item){return item.level;})).size;
       const maintenanceDueLevels=fluencyMaintenance.levels.filter(function(item){return item.maintenanceNeeded;}).length;
       const maintenanceNeeded=Boolean((highest&&progression.map[highest]&&!progression.map[highest].currentQualified)||fluencyMaintenance.maintenanceNeeded);
@@ -27843,7 +28380,7 @@ qui	who	A1	question word`;
         generatedAt:new Date().toISOString(),
         appId:'french',
         languageId:'french',
-        producerRevision:'french-p8-read-model-v4',
+        producerRevision:'french-p8-read-model-v5',
         presentation:{displayName:'French',nativeName:'Français',appRoute:location.origin+'/'},
         enrollment:{status:'active',targetBand:state.studyPlan?.targetLevel||frontier},
         workload:{
@@ -27866,7 +28403,8 @@ qui	who	A1	question word`;
           {id:'long-term-transfer-levels',label:'Long-term transfer levels',current:fluencyMaintenance.longTermLevels.length,total:V5200_LEVELS.length,unit:'levels'},
           {id:'maintenance-due-levels',label:'Functional maintenance due',current:maintenanceDueLevels,total:V5200_LEVELS.length,unit:'levels'},
           {id:'b2-open-production-calibration',label:'B2 open-production calibration',current:openProduction.currentPass?1:0,total:1,unit:'assessment'},
-          {id:'b2-integrated-capstone',label:'B2 integrated-skills capstone',current:integratedCapstone.currentPass?1:0,total:1,unit:'assessment'}
+          {id:'b2-integrated-capstone',label:'B2 integrated-skills capstone',current:integratedCapstone.currentPass?1:0,total:1,unit:'assessment'},
+          {id:'b2-spontaneous-oral-calibration',label:'B2 spontaneous oral calibration',current:oralCalibration.currentPass?1:0,total:1,unit:'assessment'}
         ]},
         proficiency:{
           framework:'THIEPN French internal CEFR-aligned gates',
@@ -27878,7 +28416,7 @@ qui	who	A1	question word`;
         },
         nextAction:thiepnFrenchReadModelNextAction(coach,total,plan),
         source:{
-          stateRevision:String(state.reviewLog?.length||0)+':'+String(last?.t||0)+':'+String(state.profile?.xp||0),
+          stateRevision:String(state.reviewLog?.length||0)+':'+String(last?.t||0)+':'+String(state.profile?.xp||0)+':'+String(state.v5240Oral?.history?.length||0),
           contentVersion:APP_VERSION
         }
       });
