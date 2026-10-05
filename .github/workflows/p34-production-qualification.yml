@@ -1,0 +1,32 @@
+name: P34 production qualification
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run fail-closed full regression
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/verify-production-p34.mjs | tee p34-qualification.json
+      - name: Preserve qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-p34-qualification-${{ github.sha }}
+          path: p34-qualification.json
+          if-no-files-found: error
+          retention-days: 30
