@@ -97,6 +97,8 @@ for (const level of ['starter','A1','A2','B1','B2','C1','C2','ungraded']) {
         meaning: String(word.meaning || ''),
         ipa: String(word.ipa || ''),
         pos: String(word.pos || ''),
+        article: String(word.article || ''),
+        gender: String(word.gender || ''),
         level,
         order: Number(word.order) || 0,
         packId: id
