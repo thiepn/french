@@ -1,10 +1,10 @@
 import type { HydratedLearnerState } from './hydrate';
 
 const DB_NAME='thiepn-french-vnext';
-const DB_VERSION=4;
+const DB_VERSION=5;
 const META_STORE='meta';
 const MIGRATION_STORE='migration';
-const DATA_STORES=['learner','srs','activity','user-content'] as const;
+const DATA_STORES=['learner','srs','activity','user-content','session'] as const;
 
 export function openFrenchDatabase():Promise<IDBDatabase>{
   return new Promise((resolve,reject)=>{
