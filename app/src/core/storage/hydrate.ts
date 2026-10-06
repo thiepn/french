@@ -11,8 +11,12 @@ export async function hydrateLearnerState():Promise<HydratedLearnerState>{
 
   const { preserveLegacyStateOnce }=await import('../migration/import');
   const envelope=await preserveLegacyStateOnce();
-  if(!envelope)return{};
+  if(envelope){
+    const { migrateLegacyEnvelopeOnce }=await import('../learner/migrate');
+    return migrateLegacyEnvelopeOnce(envelope);
+  }
 
-  const { migrateLegacyEnvelopeOnce }=await import('../learner/migrate');
-  return migrateLegacyEnvelopeOnce(envelope);
+  const { ensureCanonicalLearnerState }=await import('../learner/repository');
+  await ensureCanonicalLearnerState();
+  return{dueCount:0,streakDays:0};
 }
