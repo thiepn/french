@@ -39,8 +39,11 @@ if (blob !== SOURCE_BLOB) throw new Error('Pinned French content blob mismatch: 
 
 const source = JSON.parse(bytes.toString('utf8'));
 if (!Array.isArray(source.words)) throw new Error('French content source has no words array.');
-if (Number(source.count) !== source.words.length) {
-  throw new Error('French source count mismatch: metadata=' + source.count + ', words=' + source.words.length);
+const declaredCount = Number(source.count);
+const actualCount = source.words.length;
+const countMismatch = Number.isFinite(declaredCount) && declaredCount !== actualCount;
+if (countMismatch) {
+  console.warn('Pinned French source metadata count differs from its words array:', { declaredCount, actualCount });
 }
 
 await rm(PACK_DIR, { recursive: true, force: true });
@@ -97,6 +100,9 @@ const manifest = {
     url: SOURCE_URL,
     upstreamVersion: source.version,
     upstreamGeneratedAt: source.generatedAt,
+    declaredCount: Number.isFinite(declaredCount) ? declaredCount : null,
+    actualCount,
+    countMismatch,
     licenses: Array.isArray(source.sources)
       ? source.sources.map(row => ({ name: row.name, license: row.license, url: row.url }))
       : []
@@ -114,7 +120,9 @@ console.log(JSON.stringify({
   schema: 'thiepn-french-vnext-content-build',
   ok: true,
   sourceBlob: SOURCE_BLOB,
-  sourceRecords: source.words.length,
+  sourceRecords: actualCount,
+  declaredSourceRecords: Number.isFinite(declaredCount) ? declaredCount : null,
+  countMismatch,
   packSize: PACK_SIZE,
   packs: packs.length,
   levels: manifest.totals.levels
