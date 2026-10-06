@@ -66,13 +66,21 @@ P35 now:
 
 This changes presentation scheduling only. Learning state, evidence, scheduling, progression, and assessment rules remain unchanged.
 
-### 6. Mobile bottom-navigation hit testing
+### 6. Legacy release diagnostics blocking first render
+
+The accumulated release line also ran older lexical QA, high-frequency audit, context-health, and release-candidate regression reports while the starter/catalog state was being applied. These reports are useful diagnostics, but they are not required to make Home usable and they repeatedly traverse already-enriched catalog state.
+
+During cold start P35 now supplies shape-compatible **pending** diagnostic reports to those historical wrappers. Once the core init chain completes, the pending values are discarded. The original diagnostic functions remain authoritative and compute normally when their existing Settings/diagnostic surfaces request them.
+
+Vocabulary enrichment, persisted learner state, SRS scheduling, import migration, communicative evidence, and CEFR-aligned progression logic are not skipped.
+
+### 7. Mobile bottom-navigation hit testing
 
 Android emulation exposed a real case where long Words content could intercept pointer events over the fixed bottom navigation.
 
 P35 gives the bottom navigation an explicit fixed stacking contract, keeps its buttons pointer-active, and reserves bottom content space. Navigation is still tested with normal pointer clicks.
 
-### 7. Acceptance-harness drift
+### 8. Acceptance-harness drift
 
 The browser suite had inherited assumptions from older UI versions. P35 now tests current public contracts:
 
@@ -84,7 +92,7 @@ The browser suite had inherited assumptions from older UI versions. P35 now test
 
 The onboarding helper invokes the already-visible Save & start button through its normal DOM click because WebKit can continuously classify the animated dialog as actionability-unstable. Core navigation remains exercised through real pointer clicks.
 
-### 8. Offline acceptance semantics
+### 9. Offline acceptance semantics
 
 An installed service worker is not enough. The Chromium offline test requires an active **controlling** service worker before disconnecting, then performs a real offline reload.
 
