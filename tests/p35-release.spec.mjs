@@ -109,27 +109,25 @@ test('stable shell boots, identifies itself correctly, and core navigation remai
   expect(p25AuditErrors).toEqual([]);
 });
 
-test('manifest, static shell, and release metadata expose the full stable product', async ({ page }) => {
+test('manifest, static shell, and release metadata expose the full stable product', async ({ page, request }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page).toHaveTitle(EXPECTED_TITLE);
 
-  const metadata = await page.evaluate(async () => {
-    const [manifestResponse, releaseResponse, shellResponse] = await Promise.all([
-      fetch('/manifest.webmanifest', { cache: 'no-store' }),
-      fetch('/release.json', { cache: 'no-store' }),
-      fetch('/', { cache: 'no-store' })
-    ]);
-    if (!manifestResponse.ok) throw new Error(`manifest HTTP ${manifestResponse.status}`);
-    if (!releaseResponse.ok) throw new Error(`release marker HTTP ${releaseResponse.status}`);
-    if (!shellResponse.ok) throw new Error(`shell HTTP ${shellResponse.status}`);
-    return {
-      manifest: await manifestResponse.json(),
-      release: await releaseResponse.json(),
-      shell: await shellResponse.text()
-    };
-  });
-
-  const { manifest, release, shell } = metadata;
+  /* Static deployment metadata is an origin contract, not an application
+     main-thread contract. Use Playwright's request context so a browser
+     service-worker/cache implementation cannot turn this check into a false
+     UI hang while still exercising the exact configured base URL. */
+  const [manifestResponse, releaseResponse, shellResponse] = await Promise.all([
+    request.get('/manifest.webmanifest'),
+    request.get('/release.json'),
+    request.get('/')
+  ]);
+  expect(manifestResponse.ok()).toBe(true);
+  expect(releaseResponse.ok()).toBe(true);
+  expect(shellResponse.ok()).toBe(true);
+  const manifest = await manifestResponse.json();
+  const release = await releaseResponse.json();
+  const shell = await shellResponse.text();
   expect(manifest.name).toBe('French');
   expect(manifest.short_name).toBe('French');
   expect(manifest.start_url).toBe('/');
@@ -169,12 +167,25 @@ test('offline shell survives a controlled reload after first online boot', async
   });
   expect(serviceWorkerReady).toBe(true);
 
+  /* An active worker is not sufficient: the current page must actually be
+     controlled before an offline navigation is meaningful. clients.claim()
+     normally makes this immediate; the poll turns any failure into an
+     explicit release defect instead of an ambiguous ERR_INTERNET_DISCONNECTED. */
+  await expect.poll(
+    () => page.evaluate(() => Boolean(navigator.serviceWorker?.controller)),
+    { timeout: 15000, message: 'service worker should control the release page before offline reload' }
+  ).toBe(true);
+
   await page.reload({ waitUntil: 'domcontentloaded' });
   await waitForStableBoot(page);
+  await expect.poll(
+    () => page.evaluate(() => Boolean(navigator.serviceWorker?.controller)),
+    { timeout: 10000 }
+  ).toBe(true);
 
   await page.context().setOffline(true);
   try {
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.reload({ waitUntil: 'commit', timeout: 15000 });
     await waitForStableBoot(page);
     await expect(page.locator('#main')).toBeVisible();
     await expect(page.locator('body')).not.toContainText('Vocabulary could not be loaded');
