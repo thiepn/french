@@ -1,0 +1,1 @@
+import type { RouteContext } from '../core/types';export function mount({main}:RouteContext):void{main.innerHTML='<section class="page"><p class="eyebrow">Evidence on demand</p><h1>Progress</h1><p class="lede">Longitudinal mastery and CEFR analytics are queried when opened, not recomputed during boot.</p></section>';}

@@ -1,0 +1,1 @@
+import type { RouteContext } from '../core/types';export function mount({main}:RouteContext):void{main.innerHTML='<section class="page"><p class="eyebrow">Device capability on demand</p><h1>Speak</h1><p class="lede">Microphone and speech code initialize only after entering speaking practice.</p></section>';}

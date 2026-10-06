@@ -1,0 +1,1 @@
+import type { RouteContext } from '../core/types';export function mount({main}:RouteContext):void{main.innerHTML='<section class="page"><p class="eyebrow">Retrieval first</p><h1>Review</h1><p class="lede">The review engine will be an isolated domain module, never part of bootstrap.</p></section>';}
