@@ -34,6 +34,6 @@ Core publication is secondary to French learning-state synchronization. If Core 
 
 Production cross-device visibility requires the P9 Core database migration and Gateway deployment to be active.
 
-## P33 compatibility
+## P35 compatibility
 
-The P9 integration is replayed on top of the current P33 French producer. It does not freeze or downgrade the read model revision; spontaneous spoken-production calibration continues to flow through the same privacy-minimal P8 envelope before authenticated publication.
+The P9 integration is replayed on top of the current P35 French producer. It does not freeze or downgrade the read model revision; the complete P35 stable-release learning surface continues to flow through the same privacy-minimal P8 envelope before authenticated publication.
