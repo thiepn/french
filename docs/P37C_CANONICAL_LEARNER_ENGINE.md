@@ -30,6 +30,8 @@ The canonical SRS record explicitly preserves the final P35 progress fields:
 
 `app/src/core/learner/scheduler.ts` is a UI-free port of the authoritative v3.6.9 Depth Core scheduler that remains active in P35.
 
+These FSRS-compatible scheduling functions preserve the stable behavior exactly.
+
 It preserves:
 
 - the 19 stable FSRS-compatible weights;
