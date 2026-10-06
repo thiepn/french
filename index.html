@@ -28715,9 +28715,14 @@ qui	who	A1	question word`;
       p35StartupQaDeferred=true;
       p35DeferNonCriticalBoot=firstBoot;
       try{
-        /* Let the parser finish and paint the stable loading shell before the
-           accumulated historical init wrappers begin their synchronous work. */
-        if(firstBoot)await new Promise(function(resolve){setTimeout(resolve,0);});
+        /* Never let the accumulated historical init chain hold the parser's
+           DOMContentLoaded boundary. A timer alone is not sufficient because
+           its task can become runnable before DOMContentLoaded is dispatched. */
+        if(firstBoot&&document.readyState==='loading'){
+          await new Promise(function(resolve){window.addEventListener('DOMContentLoaded',resolve,{once:true});});
+        }else if(firstBoot){
+          await new Promise(function(resolve){setTimeout(resolve,0);});
+        }
         const result=await p35InitBase(options||{});
         return result;
       }finally{
