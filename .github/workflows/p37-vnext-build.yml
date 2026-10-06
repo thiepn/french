@@ -1,7 +1,7 @@
 name: P37 scalable runtime rebuild
 on:
   push:
-    branches: ["main","p37-scalable-runtime-rebuild"]
+    branches: ["main"]
   pull_request:
   workflow_dispatch:
 permissions:
