@@ -4,7 +4,8 @@ import type {
   CanonicalMigrationV1,
   CanonicalReviewEventV1,
   CanonicalSrsRecordV1,
-  CanonicalUserContentV1
+  CanonicalUserContentV1,
+  SkillId
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
 import { advanceSession,applyAgainRequeue,normalizeStudySession,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
@@ -291,13 +292,13 @@ export async function todayReviewCounts(now=Date.now()):Promise<{newSeen:number;
   }finally{db.close();}
 }
 
-export function newRecognitionRecord(noteId:string):CanonicalSrsRecordV1{
+export function newSkillRecord(noteId:string,skill:SkillId='recognition'):CanonicalSrsRecordV1{
   return{
     schema:'thiepn-french-srs-record-v1',
-    id:noteId+'::d31:0:recognition',
+    id:noteId+'::d31:0:'+skill,
     noteId,
     sense:0,
-    skill:'recognition',
+    skill,
     status:'new',
     seen:0,streak:0,intervalDays:0,dueAt:0,lastReviewedAt:0,learnedAt:0,
     ease:2.5,lapses:0,successes:0,lastRating:'',learningStep:0,againCount:0,hardCount:0,
@@ -307,25 +308,53 @@ export function newRecognitionRecord(noteId:string):CanonicalSrsRecordV1{
   };
 }
 
+export function newRecognitionRecord(noteId:string):CanonicalSrsRecordV1{
+  return newSkillRecord(noteId,'recognition');
+}
+
+export async function ensureSkillRecord(noteId:string,skill:SkillId):Promise<CanonicalSrsRecordV1>{
+  const id=noteId+'::d31:0:'+skill;
+  const existing=await readSrsById(id);
+  if(existing)return existing;
+  const row=newSkillRecord(noteId,skill);
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('srs','readwrite');
+      tx.objectStore('srs').put(row,row.id);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not create skill record.'));
+      tx.onabort=()=>reject(tx.error??new Error('Skill record write was aborted.'));
+    });
+  }finally{db.close();}
+  return row;
+}
+
+export async function readSrsByNoteId(noteId:string):Promise<CanonicalSrsRecordV1[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const rows:CanonicalSrsRecordV1[]=[];
+      const tx=db.transaction('srs','readonly');
+      const request=tx.objectStore('srs').index('noteId').openCursor(IDBKeyRange.only(noteId));
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor)return;
+        rows.push(cursor.value as CanonicalSrsRecordV1);
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not read note skill records.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not read note skill records.'));
+    });
+  }finally{db.close();}
+}
+
 export async function ensureNewRecognitionRecords(noteIds:string[]):Promise<CanonicalSrsRecordV1[]>{
   const unique=[...new Set(noteIds.filter(Boolean))].slice(0,100);
   const rows:CanonicalSrsRecordV1[]=[];
   for(const noteId of unique){
-    const id=noteId+'::d31:0:recognition';
-    const existing=await readSrsById(id);
-    if(existing){rows.push(existing);continue;}
-    const row=newRecognitionRecord(noteId);
-    const db=await openFrenchDatabase();
-    try{
-      await new Promise<void>((resolve,reject)=>{
-        const tx=db.transaction('srs','readwrite');
-        tx.objectStore('srs').put(row,row.id);
-        tx.oncomplete=()=>resolve();
-        tx.onerror=()=>reject(tx.error??new Error('Could not create new recognition record.'));
-        tx.onabort=()=>reject(tx.error??new Error('New recognition record write was aborted.'));
-      });
-    }finally{db.close();}
-    rows.push(row);
+    rows.push(await ensureSkillRecord(noteId,'recognition'));
   }
   return rows;
 }
@@ -609,4 +638,46 @@ export async function ensureCanonicalLearnerState(now=Date.now()):Promise<Canoni
   }finally{db.close();}
 
   return learner;
+}
+
+
+export async function readReviewEventsSince(startAt:number,limit=5000):Promise<CanonicalReviewEventV1[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const rows:CanonicalReviewEventV1[]=[];
+      const tx=db.transaction('activity','readonly');
+      const request=tx.objectStore('activity').index('t').openCursor(IDBKeyRange.lowerBound(startAt),'next');
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor||rows.length>=limit)return;
+        rows.push(cursor.value as CanonicalReviewEventV1);
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not read scheduled performance window.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not read scheduled performance window.'));
+    });
+  }finally{db.close();}
+}
+
+export async function countDueSrs(now=Date.now()):Promise<number>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      let count=0;
+      const tx=db.transaction('srs','readonly');
+      const request=tx.objectStore('srs').index('dueAt').openCursor(IDBKeyRange.bound(1,now));
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor)return;
+        const row=cursor.value as CanonicalSrsRecordV1;
+        if(row.status!=='new'&&!row.suspended&&(!row.buriedUntil||row.buriedUntil<=now))count++;
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not count due reviews.'));
+      tx.oncomplete=()=>resolve(count);
+      tx.onerror=()=>reject(tx.error??new Error('Could not count due reviews.'));
+    });
+  }finally{db.close();}
 }
