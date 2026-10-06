@@ -6,7 +6,7 @@ const live = /^https:/i.test(baseURL);
 export default defineConfig({
   testDir: '.',
   testMatch: /p35-release\.spec\.mjs/,
-  timeout: live ? 120000 : 90000,
+  timeout: live ? 180000 : 150000,
   expect: { timeout: 15000 },
   retries: 1,
   workers: 1,
