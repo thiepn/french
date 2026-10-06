@@ -12,7 +12,7 @@ The vNext session model now preserves these P35 behaviors:
 - due/new mixing;
 - 3 due : 1 new interleave mode;
 - sibling spacing by note family;
-- Again requeue approximately seven cards later;
+- delayed practice-only reinforcement after failed or hard/weak scheduled reviews;
 - 14-day resumable active sessions;
 - persisted skip state;
 - bounded undo history;
@@ -53,6 +53,39 @@ The corresponding undo token preserves only the state required to reverse that a
 - prior queue/cursor/stats.
 
 Undo then restores/deletes those values in one transaction.
+
+## Final adaptive reinforcement
+
+The final stable P35 behavior does not schedule the same failed card twice.
+
+A failed scheduled answer changes FSRS exactly once. The session may then insert delayed practice-only reinforcement:
+
+- context reinforcement when a useful bilingual example exists;
+- reverse recall after Again unless the card is already leech-like;
+- context spacing scales with session size and lands roughly 4–9 cards later;
+- reverse recall lands roughly 8–12 cards later;
+- adaptive extras are capped at 2–6 depending on initial session size.
+
+Reinforcement events are persisted as `practiceOnly: true`. They can update activity/profile statistics, but **they do not move the next scheduled SRS review**.
+
+Reinforcement metadata is part of the resumable session and is restored by Undo.
+
+## Adaptive workload calibration
+
+Today treats the configured new-word count as a ceiling, not a quota.
+
+The final stable calibration is preserved:
+
+- due pressure at 65% of daily review capacity halves remaining new work;
+- due pressure at or above full capacity pauses new vocabulary;
+- with at least 30 recent scheduled answers, sub-72% recall caps new work at 50%;
+- sub-80% recall caps new work at 75%.
+
+Later skills are graduated in order:
+
+`recognition → article (when applicable) → production → spelling → listening`
+
+Recognition must become meaningfully stable before additional skills are introduced.
 
 ## Session composition
 
@@ -124,7 +157,7 @@ The browser scenarios verify:
 1. Home shell does not fetch vocabulary packs or search indexes during first paint.
 2. Words searches the full corpus and opens at most the selected result pack.
 3. A fresh user can start a new-card session.
-4. Again is persisted and requeued.
+4. Again changes the schedule once and inserts persisted practice-only reinforcement.
 5. Undo restores the prior SRS/session state.
 6. Reload resumes the same active card.
 7. A fresh Today session can be composed and persisted.
