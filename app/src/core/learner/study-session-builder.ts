@@ -116,7 +116,7 @@ function bySkill(rows:CanonicalSrsRecordV1[]):Map<SkillId,CanonicalSrsRecordV1>{
 function isUnseen(row:CanonicalSrsRecordV1|undefined):boolean{
   return !row||(row.status==='new'&&row.seen===0);
 }
-function nextAdaptiveSkill(meta:VocabularySearchRow,rows:CanonicalSrsRecordV1[]):SkillId|null{
+export function nextAdaptiveSkill(meta:VocabularySearchRow,rows:CanonicalSrsRecordV1[]):SkillId|null{
   const skills=bySkill(rows);
   const recognition=skills.get('recognition');
   if(isUnseen(recognition))return'recognition';
