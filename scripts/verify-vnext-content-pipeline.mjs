@@ -21,14 +21,14 @@ for(const token of [
 ])need(builder,token,'content builder '+token);
 
 for(const token of ['count?:number','bytes?:number','sha256?:string','totals?:'])need(manifest,token,'manifest '+token);
-for(const token of ['12,000 vocabulary records','12,000 to 120,000','Web Worker','P37H'])need(docs,token,'documentation '+token);
+for(const token of ['12,001 word objects','12,001 to 120,000','Web Worker','P37H'])need(docs,token,'documentation '+token);
 need(pkg,'"build:vnext":"npm run content:vnext && vite build','content build before Vite');
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37d-content-pipeline',
   ok:failures.length===0,
   failures,
-  sourceRecords:12000,
+  sourceRecords:12001,
   packSize:250,
   bootstrapCoupledToRecordCount:false
 },null,2));
