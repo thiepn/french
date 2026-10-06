@@ -29,6 +29,8 @@ export interface VocabularySearchRow {
   meaning:string;
   ipa:string;
   pos:string;
+  article:string;
+  gender:string;
   level:string;
   order:number;
   packId:string;
