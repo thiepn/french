@@ -5,7 +5,7 @@
     "content:vnext":"node scripts/build-vnext-content.mjs",
     "build:vnext":"npm run content:vnext && vite build --config vite.config.ts",
     "typecheck:vnext":"tsc -p tsconfig.json --noEmit",
-    "verify:vnext":"node scripts/verify-vnext-architecture.mjs",
+    "verify:vnext":"node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs",
     "test:vnext:scheduler":"node scripts/test-vnext-scheduler.mts",
     "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
     "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run build:vnext && npm run verify:vnext:dist"
