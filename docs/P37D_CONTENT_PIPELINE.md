@@ -4,7 +4,7 @@ P37D moves curriculum volume out of the application runtime.
 
 ## Current source scale
 
-The pinned Sakana French source at Git blob 14beb3f21e908a471fe213c99ebc776bd11a5222 contains 12,000 vocabulary records spanning starter, A1, A2, B1, B2, C1 and C2.
+The pinned Sakana French source at Git blob 14beb3f21e908a471fe213c99ebc776bd11a5222 declares 12,000 vocabulary records but contains 12,001 word objects spanning starter, A1, A2, B1, B2, C1 and C2.
 
 The old P35 loader was designed around a much smaller catalog. vNext must treat content growth as deployed data growth, not bootstrap growth.
 
@@ -26,7 +26,7 @@ The Vite application never imports these pack files into its bootstrap JavaScrip
 
 The manifest itself is requested only when a content-facing route such as Learn or Words opens. Individual packs are loaded later by the feature that needs them.
 
-Therefore increasing vocabulary from 12,000 to 120,000 records increases deployed content, not initial JavaScript.
+Therefore increasing vocabulary from 12,001 to 120,000 records increases deployed content, not initial JavaScript.
 
 ## Future families
 
