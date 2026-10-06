@@ -28539,6 +28539,87 @@ qui	who	A1	question word`;
       return result;
     };
 
+    /* Earlier release layers also attached full lexical, context and release
+       audits directly to catalog application / init. Those diagnostics are
+       valuable when explicitly opened, but they are not learner-state
+       initialization and can repeatedly traverse the enriched catalog before
+       Home is first rendered. P35 returns shape-compatible pending reports
+       while the startup chain unwinds, then clears those placeholders so the
+       existing diagnostic surfaces compute the real reports lazily on use. */
+    const p35LexicalAuditBase=v396BuildAudit;
+    const p35HighFrequencyAuditBase=v401HighFrequencyAudit;
+    const p35ContextHealthBase=v402ContextHealth;
+    const p35ReleaseChecksBase=v410ReleaseChecks;
+
+    function p35PendingHighFrequencyAudit(){
+      return {limit:V401_AUDIT_LIMIT,checked:0,curated:0,foundation:0,flagged:0,flaggedIds:[],issues:[],issueCounts:{},deferred:true};
+    }
+    function p35PendingContextHealth(){
+      return {
+        version:V402_VERSION,total:Number(state.cards?.length||0),withPrimary:0,primaryCoverage:0,
+        withSecondary:0,multiSense:0,multiSenseCovered:0,nuanceCoverage:0,curatedCards:0,
+        curatedExamples:0,lowFit:0,missingTarget:0,averageLearnerFit:0,redundantSuppressed:0,
+        bankEntries:0,deferred:true
+      };
+    }
+    function p35PendingLexicalAudit(){
+      const highFrequency=p35PendingHighFrequencyAudit();
+      return {
+        version:APP_VERSION,release:P35_RELEASE,generatedAt:new Date().toISOString(),
+        source:String(state.loadSource||'startup'),fullCatalog:false,cards:Number(state.cards?.length||0),
+        catalogTarget:V400_TARGET,catalogManifest:v400CatalogManifest(),
+        structural:{pass:true,duplicateIds:0,orphanProgress:0,invalidDue:0},
+        content:{
+          criticalCount:0,warningCount:0,missingMeaning:0,invalidHeadwords:0,brokenExamples:0,
+          possibleDuplicateGroups:0,suspiciousIpa:0,validatedExamples:0,validatedExampleCoverage:0,
+          lowConfidenceExamples:0,flaggedCards:0,issueCounts:{}
+        },
+        status:'pending',statusLabel:'Deferred until diagnostics are opened',
+        issueCounts:{},flaggedIds:[],criticalIds:[],duplicateGroups:[],highFrequency,deferred:true
+      };
+    }
+    function p35PendingReleaseChecks(){
+      const catalog=v410CatalogCheck();
+      return {
+        app:'French',version:APP_VERSION,release:P35_RELEASE,reportSchema:V410_REPORT_SCHEMA,
+        generatedAt:new Date().toISOString(),featureFreeze:true,
+        migration:{from:V410_PREVIOUS_VERSION||'fresh-install',to:APP_VERSION,backupSchemas:`${V410_SUPPORTED_BACKUP_MIN_SCHEMA}–${V410_BACKUP_SCHEMA}`},
+        catalog,
+        controllers:{ok:true,detail:'Deferred during cold start'},
+        navigation:{ok:true,detail:'Deferred during cold start'},
+        scheduler:{ok:true,passed:0,total:0},
+        backup:{ok:true,bytes:0,warnings:[]},
+        legacyBackups:{ok:true,passed:0,total:0},
+        storage:{ok:true,mode:'Deferred during cold start'},
+        lexical:{structural:{pass:true,duplicateIds:0,orphanProgress:0,invalidDue:0},criticalCount:0,warningCount:0,validatedExampleCoverage:0},
+        blockers:[],warnings:['Release diagnostics deferred until explicitly opened'],status:'attention',deferred:true
+      };
+    }
+
+    v396BuildAudit=function(force=false){
+      if(p35StartupQaDeferred)return p35PendingLexicalAudit();
+      return p35LexicalAuditBase(force);
+    };
+    v401HighFrequencyAudit=function(cards=state.cards||[]){
+      if(p35StartupQaDeferred)return p35PendingHighFrequencyAudit();
+      return p35HighFrequencyAuditBase(cards);
+    };
+    v402ContextHealth=function(cards=state.cards||[]){
+      if(p35StartupQaDeferred)return p35PendingContextHealth();
+      return p35ContextHealthBase(cards);
+    };
+    v410ReleaseChecks=function(force=false){
+      if(p35StartupQaDeferred)return p35PendingReleaseChecks();
+      return p35ReleaseChecksBase(force);
+    };
+    function p35ResetDeferredDiagnostics(){
+      v396AuditCache=null;
+      state.v396ReleaseAudit=null;
+      state.v401HighFrequencyAudit=null;
+      state.v402ContextHealth=null;
+      state.v410ReleaseChecks=null;
+    }
+
     function p35EnsureReleaseStyles(){
       if(document.getElementById('p35-release-hardening-style'))return;
       const style=document.createElement('style');style.id='p35-release-hardening-style';
@@ -28643,6 +28724,7 @@ qui	who	A1	question word`;
         p35DeferNonCriticalBoot=false;
         p35StartupQaDeferred=false;
         state.v5100Qa.last=P35_QA_PENDING;
+        p35ResetDeferredDiagnostics();
         v420NormalizeSurface();
         p35ScheduleDeferredBootDrain();
       }
