@@ -1,17 +1,19 @@
 import type { HydratedLearnerState } from './hydrate';
 
 const DB_NAME='thiepn-french-vnext';
-const DB_VERSION=2;
+const DB_VERSION=3;
 const META_STORE='meta';
 const MIGRATION_STORE='migration';
+const DATA_STORES=['learner','srs','activity','user-content'] as const;
 
-function openDatabase():Promise<IDBDatabase>{
+export function openFrenchDatabase():Promise<IDBDatabase>{
   return new Promise((resolve,reject)=>{
     const request=indexedDB.open(DB_NAME,DB_VERSION);
     request.onupgradeneeded=()=>{
       const db=request.result;
       if(!db.objectStoreNames.contains(META_STORE))db.createObjectStore(META_STORE);
       if(!db.objectStoreNames.contains(MIGRATION_STORE))db.createObjectStore(MIGRATION_STORE);
+      for(const store of DATA_STORES)if(!db.objectStoreNames.contains(store))db.createObjectStore(store);
     };
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error??new Error('Could not open French vNext storage.'));
@@ -20,7 +22,7 @@ function openDatabase():Promise<IDBDatabase>{
 
 async function getValue<T>(store:string,key:string):Promise<T|undefined>{
   if(!('indexedDB' in globalThis))return undefined;
-  const db=await openDatabase();
+  const db=await openFrenchDatabase();
   try{
     return await new Promise((resolve,reject)=>{
       const tx=db.transaction(store,'readonly');
@@ -33,7 +35,7 @@ async function getValue<T>(store:string,key:string):Promise<T|undefined>{
 
 async function putValue(store:string,key:string,value:unknown):Promise<void>{
   if(!('indexedDB' in globalThis))return;
-  const db=await openDatabase();
+  const db=await openFrenchDatabase();
   try{
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction(store,'readwrite');
@@ -49,14 +51,7 @@ export async function readLearnerSummary():Promise<HydratedLearnerState>{
   return (await getValue<HydratedLearnerState>(META_STORE,'learner-summary'))??{};
 }
 
-export function writeMetaValue(key:string,value:unknown):Promise<void>{
-  return putValue(META_STORE,key,value);
-}
-
-export function readMigrationValue<T>(key:string):Promise<T|undefined>{
-  return getValue<T>(MIGRATION_STORE,key);
-}
-
-export function writeMigrationValue(key:string,value:unknown):Promise<void>{
-  return putValue(MIGRATION_STORE,key,value);
-}
+export function readMetaValue<T>(key:string):Promise<T|undefined>{return getValue<T>(META_STORE,key);}
+export function writeMetaValue(key:string,value:unknown):Promise<void>{return putValue(META_STORE,key,value);}
+export function readMigrationValue<T>(key:string):Promise<T|undefined>{return getValue<T>(MIGRATION_STORE,key);}
+export function writeMigrationValue(key:string,value:unknown):Promise<void>{return putValue(MIGRATION_STORE,key,value);}

@@ -7,8 +7,12 @@ function hasSummary(value:HydratedLearnerState):boolean{
 export async function hydrateLearnerState():Promise<HydratedLearnerState>{
   const { readLearnerSummary }=await import('./idb');
   const current=await readLearnerSummary();
-  if(hasSummary(current)) return current;
+  if(hasSummary(current))return current;
 
-  const { importLegacyStateOnce }=await import('../migration/import');
-  return (await importLegacyStateOnce())??{};
+  const { preserveLegacyStateOnce }=await import('../migration/import');
+  const envelope=await preserveLegacyStateOnce();
+  if(!envelope)return{};
+
+  const { migrateLegacyEnvelopeOnce }=await import('../learner/migrate');
+  return migrateLegacyEnvelopeOnce(envelope);
 }
