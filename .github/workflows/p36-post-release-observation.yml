@@ -1,0 +1,43 @@
+name: P36 post-release observation
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p36-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maintenance-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify P36 maintenance baseline
+        run: node scripts/verify-maintenance-p36.mjs
+
+  production-observation:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: maintenance-baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      P36_BASE_URL: https://french.thiepn.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Observe stable production for drift
+        run: node scripts/observe-production-p36.mjs
