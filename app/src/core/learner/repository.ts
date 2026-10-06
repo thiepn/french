@@ -681,3 +681,29 @@ export async function countDueSrs(now=Date.now()):Promise<number>{
     });
   }finally{db.close();}
 }
+
+
+export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,CanonicalSrsRecordV1[]>>{
+  const unique=[...new Set(noteIds.filter(Boolean))].slice(0,500);
+  const result=new Map<string,CanonicalSrsRecordV1[]>();
+  if(!unique.length)return result;
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction('srs','readonly');
+      const index=tx.objectStore('srs').index('noteId');
+      let pending=unique.length;
+      for(const noteId of unique){
+        const request=index.getAll(IDBKeyRange.only(noteId));
+        request.onsuccess=()=>{
+          result.set(noteId,(request.result??[]) as CanonicalSrsRecordV1[]);
+          pending--;
+        };
+        request.onerror=()=>reject(request.error??new Error('Could not batch-read note skill records.'));
+      }
+      tx.oncomplete=()=>resolve(result);
+      tx.onerror=()=>reject(tx.error??new Error('Could not batch-read note skill records.'));
+      tx.onabort=()=>reject(tx.error??new Error('Batch note skill read was aborted.'));
+    });
+  }finally{db.close();}
+}
