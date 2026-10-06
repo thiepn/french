@@ -1,5 +1,15 @@
 import type { RouteContext } from '../core/types';
-import { readCanonicalLearnerState,readDueSrs,recordCanonicalReview } from '../core/learner/repository';
+import {
+  clearActiveStudySession,
+  readActiveStudySession,
+  readCanonicalLearnerState,
+  readSrsById,
+  recordStudySessionReview,
+  skipStudySessionItem,
+  undoLastStudySessionReview
+} from '../core/learner/repository';
+import { createReviewStudySession } from '../core/learner/study-session-builder';
+import type { StudySessionStateV1 } from '../core/learner/session';
 import type { CanonicalSrsRecordV1 } from '../core/learner/model';
 import type { SchedulerRating } from '../core/learner/scheduler';
 import { gradeTypedAnswer,suggestedRating,type GradingMode,type TypedGrade } from '../core/learner/grader';
@@ -33,12 +43,18 @@ function speakFrench(text:string):void{
   window.speechSynthesis.cancel();
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';window.speechSynthesis.speak(utterance);
 }
+function sessionLabel(session:StudySessionStateV1):string{
+  if(session.mode==='learn')return'New-card learning';
+  if(session.mode==='today')return"Today's session";
+  return'Review';
+}
 
 export async function mount({main,signal}:RouteContext):Promise<void>{
-  main.innerHTML='<section class="page review-page"><p class="eyebrow">Retrieval first</p><h1>Review</h1><p class="lede">Due reviews come directly from the canonical SRS store. Content is resolved only for the current item.</p><p class="inline-status" data-status>Reading due reviews…</p><div class="review-stage" data-stage></div></section>';
+  main.innerHTML='<section class="page review-page"><p class="eyebrow">Retrieval first</p><h1>Study</h1><p class="lede">This session is resumable for 14 days and persists each answer atomically.</p><div class="study-session-toolbar"><p class="inline-status" data-status>Opening session…</p><button class="secondary-action compact-action" data-undo type="button" hidden>Undo answer</button></div><div class="review-stage" data-stage></div></section>';
   const stage=main.querySelector<HTMLElement>('[data-stage]');
   const status=main.querySelector<HTMLElement>('[data-status]');
-  if(!stage||!status)return;
+  const undoButton=main.querySelector<HTMLButtonElement>('[data-undo]');
+  if(!stage||!status||!undoButton)return;
 
   const learner=await readCanonicalLearnerState();
   const settings=object(learner?.settings),sessionSettings=object(settings.session);
@@ -46,30 +62,51 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const strictArticles=sessionSettings.strictArticles!==false;
   const typedPreference=sessionSettings.typed===true;
 
-  let queue=await readDueSrs(30);
-  let unresolved=0;
+  let session=await readActiveStudySession();
+  if(!session)session=await createReviewStudySession(50);
 
-  const updateStatus=()=>{
-    status.textContent=queue.length
-      ?queue.length+' due item'+(queue.length===1?'':'s')+' loaded'+(unresolved?' · '+unresolved+' unresolved skipped':'')
-      :'No reviews due right now'+(unresolved?' · '+unresolved+' unresolved item'+(unresolved===1?'':'s')+' skipped':'');
+  const refreshToolbar=()=>{
+    const total=session.queueIds.length;
+    const shown=Math.min(total,session.cursor+1);
+    status.textContent=total
+      ?sessionLabel(session)+' · '+shown+' / '+total+' · '+session.stats.reviewed+' answered · '+session.stats.skipped+' skipped'
+      :'No cards available for this session.';
+    undoButton.hidden=session.undo.length===0;
   };
 
-  const renderDone=()=>{
+  const renderDone=async()=>{
+    const finalSession=session;
     stage.replaceChildren();
     const card=document.createElement('article');card.className='review-card review-done';
-    const h=document.createElement('h2');h.textContent='Reviews clear';
-    const p=document.createElement('p');p.textContent='There are no more due items in this review batch.';
-    const refresh=document.createElement('button');refresh.type='button';refresh.className='secondary-action';refresh.textContent='Check again';
-    refresh.addEventListener('click',async()=>{refresh.disabled=true;queue=await readDueSrs(30);updateStatus();void renderCurrent();});
-    card.append(h,p,refresh);stage.append(card);
+    const h=document.createElement('h2');h.textContent='Session complete';
+    const accuracy=finalSession.stats.reviewed?Math.round(finalSession.stats.correct/finalSession.stats.reviewed*100):0;
+    const p=document.createElement('p');
+    p.textContent=finalSession.stats.reviewed+' answers · '+finalSession.stats.newSeen+' new · '+finalSession.stats.skipped+' skipped · '+accuracy+'% successful.';
+    const restart=document.createElement('button');restart.type='button';restart.className='secondary-action';restart.textContent='Check due reviews again';
+    restart.addEventListener('click',async()=>{
+      restart.disabled=true;
+      await clearActiveStudySession();
+      session=await createReviewStudySession(50);
+      refreshToolbar();
+      void renderCurrent();
+    });
+    card.append(h,p,restart);stage.append(card);
+    status.textContent='Session complete · '+finalSession.stats.reviewed+' answers saved';
+    undoButton.hidden=true;
+    await clearActiveStudySession();
   };
 
   const renderCurrent=async():Promise<void>=>{
     if(signal.aborted)return;
-    if(!queue.length){updateStatus();renderDone();return;}
+    if(session.cursor>=session.queueIds.length||!session.currentId){await renderDone();return;}
 
-    const record=queue[0];
+    const record=await readSrsById(session.currentId);
+    if(!record){
+      const advanced=await skipStudySessionItem();
+      if(!advanced){await renderDone();return;}
+      session=advanced;refreshToolbar();void renderCurrent();return;
+    }
+
     stage.innerHTML='<article class="review-card"><p>Loading review content…</p></article>';
     const word=await resolveReviewWord(record,signal);
     if(signal.aborted)return;
@@ -80,8 +117,12 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const h=document.createElement('h2');h.textContent='Content not resolved';
       const p=document.createElement('p');p.textContent='The saved SRS record '+record.noteId+' is preserved, but its content is not in the current corpus or migrated user cards.';
       const skip=document.createElement('button');skip.type='button';skip.className='secondary-action';skip.textContent='Skip without changing progress';
-      skip.addEventListener('click',()=>{unresolved++;queue.shift();updateStatus();void renderCurrent();});
-      card.append(h,p,skip);stage.append(card);return;
+      skip.addEventListener('click',async()=>{
+        const advanced=await skipStudySessionItem();
+        if(advanced)session=advanced;
+        refreshToolbar();void renderCurrent();
+      });
+      card.append(h,p,skip);stage.append(card);refreshToolbar();return;
     }
 
     const spec=promptFor(record,word);
@@ -100,7 +141,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const promptText=document.createElement('h2');promptText.textContent=spec.prompt;prompt.append(promptText);
     if(word.ipa&&!spec.listening){const ipa=document.createElement('p');ipa.className='word-ipa';ipa.textContent=word.ipa;prompt.append(ipa);}
     if(spec.listening){
-      const listen=document.createElement('button');listen.type='button';listen.className='secondary-action';listen.textContent='Play French';
+      const listen=document.createElement('button');listen.type='button';listen.className='secondary-action compact-action';listen.textContent='Play French';
       listen.addEventListener('click',()=>speakFrench(word.word));prompt.append(listen);
     }
 
@@ -110,7 +151,6 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     answer.append(answerLabel,answerText);
 
     const feedback=document.createElement('p');feedback.className='grade-feedback';feedback.hidden=true;
-
     const actions=document.createElement('div');actions.className='review-actions';
     const ratings=document.createElement('div');ratings.className='rating-grid';ratings.hidden=true;
     const ratingButtons=new Map<SchedulerRating,HTMLButtonElement>();
@@ -157,15 +197,15 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         for(const control of ratings.querySelectorAll<HTMLButtonElement>('button'))control.disabled=true;
         const responseMs=Math.max(0,Math.round(performance.now()-started));
         try{
-          await recordCanonicalReview(record,rating,{
+          const saved=await recordStudySessionReview(record,rating,{
             level:word.level,pos:word.pos,direction:spec.direction,practice:spec.listening?'listening':'review',
             typed:Boolean(grade),typedQuality:grade?.quality??'none',correct:grade?.correct??rating!=='again'
           },Date.now(),responseMs,grade?.quality??'none');
-          queue.shift();updateStatus();void renderCurrent();
+          session=saved.session;refreshToolbar();void renderCurrent();
         }catch(error){
           for(const control of ratings.querySelectorAll<HTMLButtonElement>('button'))control.disabled=false;
-          status.textContent='Could not save this review. Your previous SRS record remains intact.';
-          console.error('French review write failed',error);
+          status.textContent='Could not save this answer. The previous SRS and session state remain intact.';
+          console.error('French session review write failed',error);
         }
       });
       ratings.append(button);
@@ -173,10 +213,18 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
 
     card.append(meta,prompt,answer,feedback,actions,ratings);stage.append(card);
     if(input)queueMicrotask(()=>input?.focus());
-    updateStatus();
+    refreshToolbar();
   };
 
-  updateStatus();
+  undoButton.addEventListener('click',async()=>{
+    undoButton.disabled=true;
+    try{
+      const restored=await undoLastStudySessionReview();
+      if(restored){session=restored;refreshToolbar();await renderCurrent();}
+    }finally{undoButton.disabled=false;}
+  });
+
+  refreshToolbar();
   await renderCurrent();
   signal.addEventListener('abort',()=>{if('speechSynthesis' in window)window.speechSynthesis.cancel();},{once:true});
 }
