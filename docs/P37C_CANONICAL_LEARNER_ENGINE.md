@@ -1,8 +1,6 @@
 # P37C — Canonical Learner Engine Foundation
 
-P37C replaces the stable application's giant serialized state object with explicit vNext domain records.
-
-This phase starts with schema and migration parity. Scheduler behavior is migrated only after its inputs and outputs have stable canonical types.
+P37C replaces the stable application's giant serialized state object with explicit vNext domain records and moves the stable scheduler into a pure, independently qualified module.
 
 ## Storage layout
 
@@ -28,29 +26,48 @@ The canonical SRS record explicitly preserves the final P35 progress fields:
 - FSRS version/state, scheduled/elapsed days and retrievability;
 - directional skill identity encoded by the stable `::d31:` ID convention.
 
-P37C does not yet alter scheduler mathematics.
+## Pure scheduler
+
+`app/src/core/learner/scheduler.ts` is a UI-free port of the authoritative v3.6.9 Depth Core scheduler that remains active in P35.
+
+It preserves:
+
+- the 19 stable FSRS-compatible weights;
+- the same difficulty mean-reversion function;
+- the same retrievability curve;
+- the same recall/forget stability formulas;
+- the same desired-retention interval conversion;
+- learning and relearning steps;
+- Again/Hard/Good/Easy semantics;
+- answer-quality penalties for close/missing-article/review judgments;
+- leech auto-suspension thresholds.
+
+The scheduler accepts one canonical SRS record plus explicit settings and returns a new record. It has no DOM, storage, global state, account, content, or UI dependency.
+
+## Deterministic parity fixtures
+
+The CI scheduler suite checks stable numeric outcomes for:
+
+- new + Again;
+- new + Good;
+- new + Easy graduation;
+- mature review + Good;
+- mature review + Again/relearning;
+- typed close-answer stability penalty;
+- automatic leech suspension.
+
+These fixtures pin due timestamps, intervals, difficulty, stability and retrievability values from the stable scheduler.
 
 ## Activity parity
 
-The canonical review-event model preserves:
-
-- timestamp and card/note/skill identity;
-- rating, response time and correctness;
-- typed-answer quality and practice mode;
-- level/POS/theme context;
-- practice-only flag;
-- the memory-state evidence persisted by the later stable Study Engine.
+The canonical review-event model preserves timestamp/card/note/skill identity, rating, response time, correctness, typed-answer quality, practice mode, context, practice-only status, and memory-state evidence.
 
 ## Migration semantics
 
-The P37B preservation envelope is converted once per source fingerprint.
+The P37B preservation envelope is converted once per source fingerprint. The conversion transaction writes learner, SRS, activity and user-content stores together. The preserved P35 envelope remains in the separate `migration` store.
 
-The conversion transaction writes learner, SRS, activity and user-content stores together. Only after that transaction succeeds is the canonical migration marker committed.
+## Remaining P37C work
 
-The preserved P35 envelope remains in the separate `migration` store.
+Review still does not use the canonical engine in production. The next work is repository commands for atomic answer recording/undo/session state and then queue construction against the canonical SRS store.
 
-## Next P37C work
-
-The next step is to move the authoritative FSRS-compatible scheduling functions into a standalone pure module and qualify them against stable fixtures for Again/Hard/Good/Easy, first learning, review, lapse, relearning and answer-quality penalties.
-
-Only then should Review begin using the canonical SRS store.
+Only after those pass parity tests should the vNext Review route become functional.
