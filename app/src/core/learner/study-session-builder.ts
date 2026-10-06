@@ -4,7 +4,7 @@ import {
   ensureNewRecognitionRecords,
   readCanonicalLearnerState,
   readDueSrs,
-  readKnownNoteIds,
+  readStartedRecognitionNoteIds,
   readRecentReviewEvents,
   todayReviewCounts,
   writeActiveStudySession
@@ -55,7 +55,7 @@ async function smartDue(limit:number,now:number):Promise<string[]>{
 
 async function freshRecords(limit:number){
   if(limit<=0)return[];
-  const [index,known]=await Promise.all([loadVocabularySearchIndex(),readKnownNoteIds()]);
+  const [index,known]=await Promise.all([loadVocabularySearchIndex(),readStartedRecognitionNoteIds()]);
   const unseen=index.rows
     .filter(row=>row.id&&!known.has(row.id))
     .sort((a,b)=>a.order-b.order)
