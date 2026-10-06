@@ -10,6 +10,7 @@ const PACK_SIZE = 250;
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = resolve(ROOT, 'app/public/content');
 const PACK_DIR = resolve(CONTENT_DIR, 'packs');
+const SEARCH_DIR = resolve(CONTENT_DIR, 'search');
 
 function gitBlobSha(buffer) {
   const header = Buffer.from('blob ' + buffer.length + '\0');
@@ -47,7 +48,9 @@ if (countMismatch) {
 }
 
 await rm(PACK_DIR, { recursive: true, force: true });
+await rm(SEARCH_DIR, { recursive: true, force: true });
 await mkdir(PACK_DIR, { recursive: true });
+await mkdir(SEARCH_DIR, { recursive: true });
 
 const byLevel = new Map();
 for (const word of source.words) {
@@ -58,6 +61,7 @@ for (const word of source.words) {
 }
 
 const packs = [];
+const searchRows = [];
 for (const level of ['starter','A1','A2','B1','B2','C1','C2','ungraded']) {
   const rows = byLevel.get(level) || [];
   for (let offset = 0; offset < rows.length; offset += PACK_SIZE) {
@@ -86,8 +90,37 @@ for (const level of ['starter','A1','A2','B1','B2','C1','C2','ungraded']) {
       sha256: sha256(output),
       revision: payload.revision
     });
+    for (const word of slice) {
+      searchRows.push({
+        id: String(word.id || ''),
+        word: String(word.word || ''),
+        meaning: String(word.meaning || ''),
+        ipa: String(word.ipa || ''),
+        pos: String(word.pos || ''),
+        level,
+        order: Number(word.order) || 0,
+        packId: id
+      });
+    }
   }
 }
+
+const searchPayload = {
+  schema: 'thiepn-french-vocabulary-search-v1',
+  revision: SOURCE_BLOB.slice(0, 12),
+  rows: searchRows
+};
+const searchBytes = Buffer.from(JSON.stringify(searchPayload));
+const searchPath = resolve(SEARCH_DIR, 'vocabulary-index.json');
+await writeFile(searchPath, searchBytes);
+const vocabularySearch = {
+  schema: searchPayload.schema,
+  path: '/content/search/vocabulary-index.json',
+  count: searchRows.length,
+  bytes: searchBytes.length,
+  sha256: sha256(searchBytes),
+  revision: searchPayload.revision
+};
 
 const manifest = {
   schema: 'thiepn-french-content-manifest-v1',
@@ -107,6 +140,7 @@ const manifest = {
       ? source.sources.map(row => ({ name: row.name, license: row.license, url: row.url }))
       : []
   },
+  indexes: { vocabulary: vocabularySearch },
   totals: {
     records: source.words.length,
     packs: packs.length,
@@ -125,5 +159,6 @@ console.log(JSON.stringify({
   countMismatch,
   packSize: PACK_SIZE,
   packs: packs.length,
-  levels: manifest.totals.levels
+  levels: manifest.totals.levels,
+  searchIndexBytes: searchBytes.length
 }, null, 2));
