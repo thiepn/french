@@ -55,8 +55,8 @@ function applyEdit(base:ReviewWord,raw:Record<string,unknown>):ReviewWord{
 
 function fromCorpus(word:VocabularyWord):ReviewWord{
   return{
-    id:word.id,word:word.word,meaning:word.meaning,ipa:word.ipa??'',pos:word.pos??'',level:word.level??'',
-    article:'',gender:'',plural:'',aliases:[],source:'corpus'
+    id:String(word.id),word:word.word,meaning:word.meaning,ipa:word.ipa??'',pos:word.pos??'',level:word.level??'',
+    article:word.article??'',gender:word.gender??'',plural:word.plural??'',aliases:word.aliases??[],source:'corpus'
   };
 }
 
