@@ -27,10 +27,9 @@ for(const token of [
   'readStartedRecognitionNoteIds'
 ])need(repo,token,'repository '+token);
 for(const token of ['createReviewStudySession','createLearnStudySession','createTodayStudySession','todayReviewCounts'])need(builder,token,'builder '+token);
-for(const token of ["data-start="today"","data-start="new"",'readActiveStudySession'])need(learn,token,'Learn '+token);
+for(const token of ['data-start="today"','data-start="new"','readActiveStudySession'])need(learn,token,'Learn '+token);
 for(const token of ['recordStudySessionReview','undoLastStudySessionReview','skipStudySessionItem','readActiveStudySession'])need(review,token,'Study route '+token);
 for(const token of ['chromium-desktop','firefox-desktop','webkit-desktop','android-chrome','ios-webkit'])need(workflow,token,'browser matrix '+token);
-for(const token of ['Again requeue','Undo rollback','reload resume'].map(()=>''))void token;
 for(const token of ['queueIds.filter','Undo answer','page.reload','content/packs/'])need(tests,token,'browser test '+token);
 for(const token of ['weakness-aware smart ordering','14-day resumable active sessions','Fresh-user support','P35 remains the production runtime'])need(docs,token,'documentation '+token);
 
