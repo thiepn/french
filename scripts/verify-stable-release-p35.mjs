@@ -46,6 +46,10 @@ for (const token of [
   "mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven')",
   "grid-template-columns:repeat(8,minmax(58px,1fr))!important",
   "const p35AccountInitBase=thiepnAccountInit;",
+  "p35DeferredBootReady",
+  "requestIdleCallback",
+  "dataset.p35BootReady='true'",
+  "document.body.appendChild(mobile)",
   "b2Content=v5160LevelContent('B2')",
   "dataset.oralAssessment='confidence-calibrated-oral-v1'",
   "THIEPN Account — guest-first auth + revision-safe cloud sync.",
@@ -84,12 +88,14 @@ if (release) {
   }
 }
 
-requireToken(serviceWorker, "const CACHE_NAME = 'french-shell-v48';", 'unchanged P33 offline shell v48');
+requireToken(serviceWorker, "const CACHE_NAME = 'french-shell-v49';", 'stable P35 offline shell v49');
 for (const file of [
   "'./index.html'",
   "'./manifest.webmanifest'",
+  "'./release.json'",
   "'./vendor/thiepn-languages-consumer-contract.js'",
-  "'./vendor/thiepn-languages-read-model.js'"
+  "'./vendor/thiepn-languages-read-model.js'",
+  "'./vendor/thiepn-languages-dashboard.js'"
 ]) requireToken(serviceWorker, file);
 
 for (const project of [
