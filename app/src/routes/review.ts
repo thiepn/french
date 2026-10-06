@@ -1,17 +1,20 @@
 import type { RouteContext } from '../core/types';
-import { readDueSrs,recordCanonicalReview } from '../core/learner/repository';
+import { readCanonicalLearnerState,readDueSrs,recordCanonicalReview } from '../core/learner/repository';
 import type { CanonicalSrsRecordV1 } from '../core/learner/model';
 import type { SchedulerRating } from '../core/learner/scheduler';
+import { gradeTypedAnswer,suggestedRating,type GradingMode,type TypedGrade } from '../core/learner/grader';
 import { resolveReviewWord,type ReviewWord } from '../core/content/review-content';
 
 interface PromptSpec{
   label:string;
   prompt:string;
   answer:string;
-  direction:string;
+  direction:'fr-en'|'en-fr'|'audio-fr';
   listening:boolean;
 }
-
+function object(value:unknown):Record<string,unknown>{
+  return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
+}
 function promptFor(record:CanonicalSrsRecordV1,word:ReviewWord):PromptSpec{
   if(record.skill==='production'||record.skill==='spelling'){
     return{label:record.skill==='spelling'?'Meaning → exact French':'Meaning → French',prompt:word.meaning,answer:word.word,direction:'en-fr',listening:false};
@@ -21,17 +24,14 @@ function promptFor(record:CanonicalSrsRecordV1,word:ReviewWord):PromptSpec{
     return{label:'Meaning → article + noun',prompt:word.meaning,answer:full||word.word,direction:'en-fr',listening:false};
   }
   if(record.skill==='listening'){
-    return{label:'Listening → French',prompt:'Listen, then recall the French form.',answer:word.word+' · '+word.meaning,direction:'audio-fr',listening:true};
+    return{label:'Listening → French',prompt:'Listen, then type the French form.',answer:word.word,direction:'audio-fr',listening:true};
   }
   return{label:'French → meaning',prompt:word.word,answer:word.meaning,direction:'fr-en',listening:false};
 }
-
 function speakFrench(text:string):void{
   if(!('speechSynthesis' in window))return;
   window.speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(text);
-  utterance.lang='fr-FR';
-  window.speechSynthesis.speak(utterance);
+  const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';window.speechSynthesis.speak(utterance);
 }
 
 export async function mount({main,signal}:RouteContext):Promise<void>{
@@ -39,6 +39,12 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const stage=main.querySelector<HTMLElement>('[data-stage]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!stage||!status)return;
+
+  const learner=await readCanonicalLearnerState();
+  const settings=object(learner?.settings),sessionSettings=object(settings.session);
+  const gradingMode=(['strict','learning','lenient'].includes(String(settings.gradingMode))?String(settings.gradingMode):'learning') as GradingMode;
+  const strictArticles=sessionSettings.strictArticles!==false;
+  const typedPreference=sessionSettings.typed===true;
 
   let queue=await readDueSrs(30);
   let unresolved=0;
@@ -55,12 +61,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const h=document.createElement('h2');h.textContent='Reviews clear';
     const p=document.createElement('p');p.textContent='There are no more due items in this review batch.';
     const refresh=document.createElement('button');refresh.type='button';refresh.className='secondary-action';refresh.textContent='Check again';
-    refresh.addEventListener('click',async()=>{
-      refresh.disabled=true;
-      queue=await readDueSrs(30);
-      updateStatus();
-      void renderCurrent();
-    });
+    refresh.addEventListener('click',async()=>{refresh.disabled=true;queue=await readDueSrs(30);updateStatus();void renderCurrent();});
     card.append(h,p,refresh);stage.append(card);
   };
 
@@ -84,7 +85,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     }
 
     const spec=promptFor(record,word);
+    const typed=typedPreference||['production','listening','spelling','article'].includes(record.skill);
     const started=performance.now();
+    let grade:TypedGrade|null=null;
     stage.replaceChildren();
 
     const card=document.createElement('article');card.className='review-card';
@@ -106,21 +109,58 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const answerText=document.createElement('strong');answerText.textContent=spec.answer;
     answer.append(answerLabel,answerText);
 
-    const actions=document.createElement('div');actions.className='review-actions';
-    const reveal=document.createElement('button');reveal.type='button';reveal.className='primary-action';reveal.textContent='Show answer';
-    actions.append(reveal);
+    const feedback=document.createElement('p');feedback.className='grade-feedback';feedback.hidden=true;
 
+    const actions=document.createElement('div');actions.className='review-actions';
     const ratings=document.createElement('div');ratings.className='rating-grid';ratings.hidden=true;
+    const ratingButtons=new Map<SchedulerRating,HTMLButtonElement>();
+
+    const revealRatings=(result:TypedGrade|null)=>{
+      answer.hidden=false;ratings.hidden=false;
+      if(result){
+        feedback.hidden=false;feedback.textContent=result.label;
+        const suggested=suggestedRating(result,Math.max(0,Math.round(performance.now()-started)));
+        ratingButtons.get(suggested)?.classList.add('is-suggested');
+      }
+      if(spec.listening)speakFrench(word.word);
+    };
+
+    let input:HTMLInputElement|null=null;
+    if(typed){
+      const form=document.createElement('form');form.className='typed-answer';
+      input=document.createElement('input');input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=spec.direction==='fr-en'?'Type the meaning':'Type French';
+      input.setAttribute('aria-label','Your answer');
+      const check=document.createElement('button');check.type='submit';check.className='primary-action';check.textContent='Check answer';
+      const reveal=document.createElement('button');reveal.type='button';reveal.className='secondary-action';reveal.textContent='Show answer';
+      form.append(input,check,reveal);actions.append(form);
+      form.addEventListener('submit',event=>{
+        event.preventDefault();
+        if(!input)return;
+        grade=gradeTypedAnswer(input.value,word,{skill:record.skill,direction:spec.direction,strictArticles,gradingMode});
+        input.disabled=true;check.disabled=true;reveal.hidden=true;revealRatings(grade);
+      });
+      reveal.addEventListener('click',()=>{
+        if(!input)return;
+        grade=gradeTypedAnswer('',word,{skill:record.skill,direction:spec.direction,strictArticles,gradingMode});
+        input.disabled=true;check.disabled=true;reveal.hidden=true;revealRatings(grade);
+      });
+    }else{
+      const reveal=document.createElement('button');reveal.type='button';reveal.className='primary-action';reveal.textContent='Show answer';
+      reveal.addEventListener('click',()=>{reveal.hidden=true;revealRatings(null);});
+      actions.append(reveal);
+    }
+
     const ratingSpecs:Array<[SchedulerRating,string]>=[['again','Again'],['hard','Hard'],['good','Good'],['easy','Easy']];
     for(const [rating,labelText] of ratingSpecs){
-      const button=document.createElement('button');button.type='button';button.dataset.rating=rating;button.textContent=labelText;
+      const button=document.createElement('button');button.type='button';button.dataset.rating=rating;button.textContent=labelText;ratingButtons.set(rating,button);
       button.addEventListener('click',async()=>{
         for(const control of ratings.querySelectorAll<HTMLButtonElement>('button'))control.disabled=true;
         const responseMs=Math.max(0,Math.round(performance.now()-started));
         try{
           await recordCanonicalReview(record,rating,{
-            level:word.level,pos:word.pos,direction:spec.direction,practice:'review',correct:rating!=='again'
-          },Date.now(),responseMs,'none');
+            level:word.level,pos:word.pos,direction:spec.direction,practice:spec.listening?'listening':'review',
+            typed:Boolean(grade),typedQuality:grade?.quality??'none',correct:grade?.correct??rating!=='again'
+          },Date.now(),responseMs,grade?.quality??'none');
           queue.shift();updateStatus();void renderCurrent();
         }catch(error){
           for(const control of ratings.querySelectorAll<HTMLButtonElement>('button'))control.disabled=false;
@@ -131,13 +171,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       ratings.append(button);
     }
 
-    reveal.addEventListener('click',()=>{
-      reveal.hidden=true;answer.hidden=false;ratings.hidden=false;
-      if(spec.listening)speakFrench(word.word);
-    });
-
-    card.append(meta,prompt,answer,actions,ratings);
-    stage.append(card);
+    card.append(meta,prompt,answer,feedback,actions,ratings);stage.append(card);
+    if(input)queueMicrotask(()=>input?.focus());
     updateStatus();
   };
 
