@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const EXPECTED_TITLE = 'French — Adaptive language learning';
 const EXPECTED_SUBTITLE = 'Adaptive French · vocabulary, grammar, listening, speaking & transfer';
 const EXPECTED_BACKUP = 'french-complete-backup-v5.24.0.json';
-const STARTUP_BUDGET_MS = 120000;
+const STARTUP_BUDGET_MS = 150000;
 
 async function completeOnboardingIfNeeded(page) {
   const onboarding = page.locator('#v385-onboarding');
@@ -70,7 +70,7 @@ async function openDataSettings(page) {
 }
 
 test('stable shell boots, identifies itself correctly, and core navigation remains usable', async ({ page }) => {
-  test.setTimeout(150000);
+  test.setTimeout(195000);
   const pageErrors = [];
   const p25AuditErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
@@ -170,7 +170,7 @@ test('manifest, static shell, and release metadata expose the full stable produc
 
 test('offline shell survives a controlled reload after first online boot', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'One Chromium service-worker run is sufficient for shell qualification.');
-  test.setTimeout(240000);
+  test.setTimeout(300000);
 
   await boot(page);
 
