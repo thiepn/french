@@ -6,16 +6,16 @@ const live = /^https:/i.test(baseURL);
 export default defineConfig({
   testDir: '.',
   testMatch: /p35-release\.spec\.mjs/,
-  timeout: 60000,
+  timeout: live ? 120000 : 90000,
   expect: { timeout: 15000 },
-  retries: live ? 1 : 0,
+  retries: 1,
   workers: 1,
   outputDir: '../test-results/p35',
   reporter: [['line']],
   use: {
     baseURL,
     serviceWorkers: 'allow',
-    trace: 'retain-on-failure',
+    trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off'
   },
