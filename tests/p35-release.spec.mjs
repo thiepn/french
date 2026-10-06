@@ -44,10 +44,14 @@ async function boot(page) {
 }
 
 async function openView(page, view) {
-  const button = page.locator(`[aria-label="Primary navigation"] button[data-view="${view}"]:visible`).first();
+  const selector = `[aria-label="Primary navigation"] button[data-view="${view}"]:visible`;
+  const button = page.locator(selector).first();
   await expect(button).toBeVisible();
   await button.click();
-  await expect(button).toHaveAttribute('aria-current', 'page');
+  /* Navigation is intentionally rebuilt by the current compatibility stack.
+     Re-acquire the active control instead of asserting on the detached/replaced
+     button object that initiated the navigation. */
+  await expect(page.locator(`[aria-label="Primary navigation"] button[data-view="${view}"][aria-current="page"]:visible`).first()).toBeVisible();
 }
 
 async function openDataSettings(page) {
