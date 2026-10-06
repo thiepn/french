@@ -275,18 +275,21 @@ export async function todayReviewCounts(now=Date.now()):Promise<{newSeen:number;
   const db=await openFrenchDatabase();
   try{
     return await new Promise((resolve,reject)=>{
-      let newSeen=0,existingReviews=0;
+      const introduced=new Set<string>();let existingReviews=0;
       const tx=db.transaction('activity','readonly');
       const request=tx.objectStore('activity').index('t').openCursor(IDBKeyRange.bound(start.getTime(),end.getTime(),false,true));
       request.onsuccess=()=>{
         const cursor=request.result;
         if(!cursor)return;
         const row=cursor.value as CanonicalReviewEventV1;
-        if(row.wasNew)newSeen++;else existingReviews++;
+        if(row.practiceOnly!==true){
+          if(row.wasNew&&row.skill==='recognition')introduced.add(row.noteId);
+          else if(!row.wasNew)existingReviews++;
+        }
         cursor.continue();
       };
       request.onerror=()=>reject(request.error??new Error('Could not read today review counts.'));
-      tx.oncomplete=()=>resolve({newSeen,existingReviews});
+      tx.oncomplete=()=>resolve({newSeen:introduced.size,existingReviews});
       tx.onerror=()=>reject(tx.error??new Error('Could not read today review counts.'));
     });
   }finally{db.close();}
