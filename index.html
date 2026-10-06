@@ -15456,11 +15456,11 @@ qui	who	A1	question word`;
     }
 
     function v460BindProgress(states){
-      $('[data-v372-open]',main).forEach(button=>button.addEventListener('click',()=>v372OpenDetails(button.dataset.v372Open)));
+      $$('[data-v372-open]',main).forEach(button=>button.addEventListener('click',()=>v372OpenDetails(button.dataset.v372Open)));
       $('#v460-repair-top')?.addEventListener('click',()=>v460RepairWeakest(states));
-      $('[data-v460-theme]',main).forEach(button=>button.addEventListener('click',()=>v460PracticeTheme(states,button.dataset.v460Theme)));
-      $('[data-v460-word]',main).forEach(button=>button.addEventListener('click',()=>v3OpenInspector(button.dataset.v460Word)));
-      $('[data-v460-action]',main).forEach(button=>button.addEventListener('click',()=>{
+      $$('[data-v460-theme]',main).forEach(button=>button.addEventListener('click',()=>v460PracticeTheme(states,button.dataset.v460Theme)));
+      $$('[data-v460-word]',main).forEach(button=>button.addEventListener('click',()=>v3OpenInspector(button.dataset.v460Word)));
+      $$('[data-v460-action]',main).forEach(button=>button.addEventListener('click',()=>{
         const action=button.dataset.v460Action;
         if(action==='due'){v382StartSession('due');return;}
         if(action==='repair'){v460RepairWeakest(states);return;}
