@@ -530,3 +530,24 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
 
   return restored;
 }
+
+
+export async function readKnownNoteIds():Promise<Set<string>>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const notes=new Set<string>();
+      const tx=db.transaction('srs','readonly');
+      const request=tx.objectStore('srs').index('noteId').openKeyCursor();
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor)return;
+        if(typeof cursor.key==='string')notes.add(cursor.key);
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not enumerate known note IDs.'));
+      tx.oncomplete=()=>resolve(notes);
+      tx.onerror=()=>reject(tx.error??new Error('Could not enumerate known note IDs.'));
+    });
+  }finally{db.close();}
+}
