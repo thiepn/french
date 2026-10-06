@@ -81,5 +81,5 @@ export async function loadVocabularyWord(id:string,signal?:AbortSignal):Promise<
   const reference=await findVocabularyReference(id,signal);
   if(!reference)return null;
   const pack=await loadContentPack<VocabularyPack>(reference.packId,signal);
-  return pack.words.find(word=>word.id===id)??null;
+  return pack.words.find(word=>String(word.id)===id)??null;
 }
