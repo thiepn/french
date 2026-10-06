@@ -99,6 +99,20 @@ An installed service worker is not enough. The Chromium offline test requires an
 
 The P9 dashboard asset is part of the current main-branch offline shell and remains included when P35 is merged.
 
+### 10. Legacy mobile-navigation class leakage
+
+The current mobile shell is the eight-item `v580-eight` navigation. The browser matrix exposed that a historical `v382-four` class could survive later navigation rebuilds. Because the old four-column rule is `!important`, eight current controls were laid out as two rows and Words content could intercept taps on the upper row.
+
+P35 now removes mutually exclusive historical layout classes whenever the current navigation is rebuilt and asserts the eight-column horizontal layout in the final release-hardening CSS. The test continues to use real pointer clicks; no forced-click workaround is accepted.
+
+### 11. Acceptance instrumentation must not become the bottleneck
+
+Failure traces showed that recording every DOM/resource snapshot for the roughly 2.8 MB single-file application materially extended first navigation on the hosted runner and consumed nearly the whole per-test budget.
+
+The primary P35 run therefore executes without tracing. A single retry captures a trace only after an initial failure. This preserves diagnostic evidence while keeping the first acceptance pass representative of normal browser execution.
+
+Navigation assertions also reacquire the active control after each route change because the compatibility stack intentionally rebuilds the navigation DOM.
+
 ## Automated acceptance matrix
 
 P35 uses pinned Playwright `1.63.0`.
