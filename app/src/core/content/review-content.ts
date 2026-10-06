@@ -16,6 +16,8 @@ export interface ReviewWord {
   level:string;
   article:string;
   gender:string;
+  plural:string;
+  aliases:string[];
   source:'corpus'|'user'|'edited';
 }
 
@@ -29,7 +31,9 @@ function fromUserCard(id:string,raw:Record<string,unknown>):ReviewWord|null{
   return{
     id,word,meaning,
     ipa:text(raw.ipa),pos:text(raw.pos),level:text(raw.level),
-    article:text(raw.article),gender:text(raw.gender),source:'user'
+    article:text(raw.article),gender:text(raw.gender),plural:text(raw.plural),
+    aliases:Array.isArray(raw.aliases)?raw.aliases.filter(item=>typeof item==='string') as string[]:[],
+    source:'user'
   };
 }
 
@@ -43,6 +47,8 @@ function applyEdit(base:ReviewWord,raw:Record<string,unknown>):ReviewWord{
     level:text(raw.level)||base.level,
     article:text(raw.article)||base.article,
     gender:text(raw.gender)||base.gender,
+    plural:text(raw.plural)||base.plural,
+    aliases:Array.isArray(raw.aliases)?raw.aliases.filter(item=>typeof item==='string') as string[]:base.aliases,
     source:'edited'
   };
 }
@@ -50,7 +56,7 @@ function applyEdit(base:ReviewWord,raw:Record<string,unknown>):ReviewWord{
 function fromCorpus(word:VocabularyWord):ReviewWord{
   return{
     id:word.id,word:word.word,meaning:word.meaning,ipa:word.ipa??'',pos:word.pos??'',level:word.level??'',
-    article:'',gender:'',source:'corpus'
+    article:'',gender:'',plural:'',aliases:[],source:'corpus'
   };
 }
 
