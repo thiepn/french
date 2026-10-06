@@ -26,7 +26,7 @@ Dashboard contract:
 
 Target Core origin:
 
-`https://api.thiepn.dev`
+`https://thiepn-core-gateway.thiepn.workers.dev`
 
 ## Failure behavior
 
@@ -37,3 +37,8 @@ Production cross-device visibility requires the P9 Core database migration and G
 ## P35 compatibility
 
 The P9 integration is replayed on top of the current P35 French producer. It does not freeze or downgrade the read model revision; the complete P35 stable-release learning surface continues to flow through the same privacy-minimal P8 envelope before authenticated publication.
+
+
+## P12 production burn-in correction
+
+The P12 audit found that the production publisher still targeted the undeployed `api.thiepn.dev` hostname even though the Core Gateway is live at `https://thiepn-core-gateway.thiepn.workers.dev`. The publisher and verification gate now use the deployed Worker directly. This changes only transport wiring; French remains authoritative for learner state, sync, scheduling, mastery, proficiency and next action.
