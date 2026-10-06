@@ -1,5 +1,14 @@
 {
   "name":"thiepn-french","private":true,"version":"0.0.0","type":"module",
-  "scripts":{"dev:vnext":"vite --config vite.config.ts","build:vnext":"vite build --config vite.config.ts","typecheck:vnext":"tsc -p tsconfig.json --noEmit","verify:vnext":"node scripts/verify-vnext-architecture.mjs","test:vnext:scheduler":"node scripts/test-vnext-scheduler.mts","verify:vnext:dist":"node scripts/check-vnext-budget.mjs","qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run build:vnext && npm run verify:vnext:dist"},
+  "scripts":{
+    "dev:vnext":"vite --config vite.config.ts",
+    "content:vnext":"node scripts/build-vnext-content.mjs",
+    "build:vnext":"npm run content:vnext && vite build --config vite.config.ts",
+    "typecheck:vnext":"tsc -p tsconfig.json --noEmit",
+    "verify:vnext":"node scripts/verify-vnext-architecture.mjs",
+    "test:vnext:scheduler":"node scripts/test-vnext-scheduler.mts",
+    "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
+    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run build:vnext && npm run verify:vnext:dist"
+  },
   "devDependencies":{"typescript":"7.0.2","vite":"8.3.3"}
 }
