@@ -41,7 +41,7 @@ test('Words searches full corpus off bootstrap and lazily resolves a result',asy
   expect(resources.filter(url=>url.includes('/content/packs/')).length).toBeLessThanOrEqual(1);
 });
 
-test('new-card session persists Again requeue, undo, and reload resume',async({page})=>{
+test('new-card session persists practice-only reinforcement, undo, and reload resume',async({page})=>{
   await page.goto('/#learn');
   const newButton=page.getByRole('button',{name:'Learn new words'});
   await expect(newButton).toBeVisible();
@@ -62,13 +62,16 @@ test('new-card session persists Again requeue, undo, and reload resume',async({p
   const after=await readActiveSession(page);
   expect(after.undo.length).toBe(1);
   expect(after.cursor).toBe(1);
-  expect(after.queueIds.filter(id=>id===firstId).length).toBe(2);
+  expect(after.reinforcements.length).toBeGreaterThan(0);
+  expect(after.queueIds.filter(id=>id===firstId).length).toBeGreaterThanOrEqual(2);
+  expect(after.reinforcements.every(item=>after.queueIds[item.index]===firstId)).toBeTruthy();
 
   await page.getByRole('button',{name:'Undo answer'}).click();
   const undone=await readActiveSession(page);
   expect(undone.currentId).toBe(firstId);
   expect(undone.cursor).toBe(0);
   expect(undone.undo.length).toBe(0);
+  expect(undone.reinforcements.length).toBe(0);
 
   await page.reload();
   await expect(page).toHaveURL(/#review$/);
