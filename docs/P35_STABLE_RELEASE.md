@@ -102,9 +102,125 @@ P35 now applies three release-only corrections:
 
 - the complete IndexedDB state/cache startup calls are bounded at their public function boundary, not only inside lower-level requests;
 - THIEPN Account remains guest-first, but its CDN/auth initialization no longer blocks the usable study surface;
-- historical phase wrappers no longer rerun the newest aggregate QA chain repeatedly during one startup. Intermediate boot-time QA calls are deferred and one authoritative full QA pass runs after initialization.
+- historical phase wrappers no longer rerun the newest aggregate QA chain during startup. Browser startup records QA as deferred; the full aggregate runtime diagnostic is explicit via `FrenchP35ReleaseQa()`, while P34/P35 CI remains the release authority.
 
 The trace also exposed a P25 audit wording/logic bug: B2 **learner gate availability** was being treated as B2 **communicative corpus availability**. A user on the embedded starter catalog can legitimately lack B2 lexical evidence while P30's B2 corpus is structurally complete. P25 now checks the curriculum's promotion coverage for that corpus assertion instead of requiring every learner gate to be measurable from the currently loaded vocabulary catalog.
+
+### Later browser-run defects
+
+The next matrix exposed three independent release-hardening issues:
+
+- the P4/P5-era Progress redesign contained four collection bindings that used the single-element `# P35 — Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening
+
+P35 converts the feature-complete P33/P34 French candidate into a stable release line.
+
+The phase is intentionally narrow:
+
+> prove the existing product works coherently across supported browser engines, responsive/mobile profiles, offline reload, local recovery, backup flows, and the live production origin; repair only defects that block that proof.
+
+## Release baseline
+
+- application version: `5.24.0`
+- learner logic: frozen from P33
+- aggregate qualification: P34
+- release channel: `stable`
+- production origin: `https://french.thiepn.dev`
+- P35 release marker: `release.json`
+
+P35 does not add vocabulary, grammar content, a new assessment, a new progression authority, C1 content, or a new account model.
+
+## Defect found during acceptance preparation
+
+The application had accumulated newer internal/product phases while its first-paint and canonical surface identity still described the product as a vocabulary-flashcard app.
+
+Before JavaScript normalization, the shell still exposed:
+
+- a `v4.1.4` badge;
+- the subtitle “Focused French vocabulary and spaced repetition”;
+- the title “French — Vocabulary flashcards”;
+- vocabulary-only metadata.
+
+Later normalization corrected the badge but continued to reset the title and subtitle to vocabulary-only wording.
+
+P35 fixes that mismatch without altering learning behavior.
+
+The stable surface is now:
+
+- badge: `v5.24.0`
+- title: **French — Adaptive language learning**
+- subtitle: **Adaptive French · vocabulary, grammar, listening, speaking & transfer**
+- product scope: `adaptive-language-learning`
+- release dataset: `p35-stable-release`
+- release channel: `stable`
+
+The manifest and HTML description now represent the full product rather than only its original flashcard layer.
+
+## Defects found by the first browser run
+
+The first P35 browser matrix did its job and exposed two additional release issues.
+
+### Cross-browser startup recovery
+
+The earlier startup-reliability layer correctly bounded the primary IndexedDB reads, but a later recovery path could call the daily snapshot cursor without the same deadline.
+
+On Firefox and WebKit, an empty or delayed recovery cursor could therefore leave a cold start on **Opening French** indefinitely even though the embedded starter catalog was available.
+
+P35 now bounds the recovery-only snapshot lookup with the same local startup deadline. If that mirror does not respond, French marks storage as degraded and continues with its normal local fallback instead of blocking startup.
+
+This is a product defect fix, not a test relaxation.
+
+### Acceptance harness drift
+
+The first P35 tests also assumed historical DOM details that are no longer part of the canonical interface:
+
+- runtime presence of `.version-badge`, although the current UI intentionally removes the visible badge after hydration;
+- the pre-v3.8 navigation structure;
+- no first-run setup dialog.
+
+The acceptance suite now tests the current public contract instead:
+
+- stable release datasets and metadata;
+- current accessible **Primary navigation** buttons;
+- the static pre-hydration `v5.24.0` release identity;
+- first-run setup completion through the real onboarding controls.
+
+Changing stale selectors is test maintenance. It does not change learner behavior or reduce the release criteria.
+
+### Release identity is independent of account connectivity
+
+The P35 stable-channel marker is now asserted synchronously before the asynchronous account initialization chain. Optional account CDN/auth latency therefore cannot delay or suppress the app's release identity.
+
+This does not bypass startup acceptance: the browser suite still waits for the core study surface to leave its loading state before declaring a successful boot.
+
+### Acceptance now follows the current public UI
+
+A second diagnostic run showed that several remaining failures were obsolete test assumptions rather than product failures:
+
+- Firefox had fully rendered the application while `waitForFunction` remained pending, so readiness now uses visible DOM/locator assertions rather than animation-frame polling.
+- Words is verified through the accessible **Search vocabulary** searchbox rather than the removed `#browse-search` control.
+- Progress is verified through its current intelligence heading rather than legacy backup controls.
+- Backup export/import is exercised in **Settings → Data**, where those controls now live.
+- First-run onboarding saves the already-selected defaults directly instead of pressing a shortcut that intentionally rerenders the dialog during the automation click sequence.
+
+These changes preserve the same acceptance intent while targeting the product that is actually shipped.
+
+The P35 workflow also cancels superseded runs for the same branch/ref so obsolete browser matrices do not consume runner capacity after a defect-only patch.
+
+### Cold-start work is bounded and de-duplicated
+
+The next browser trace showed the core shell could render but startup still spent excessive time unwinding historical phase wrappers.
+
+P35 now applies three release-only corrections:
+
+- the complete IndexedDB state/cache startup calls are bounded at their public function boundary, not only inside lower-level requests;
+- THIEPN Account remains guest-first, but its CDN/auth initialization no longer blocks the usable study surface;
+- historical phase wrappers no longer rerun the newest aggregate QA chain during startup. Browser startup records QA as deferred; the full aggregate runtime diagnostic is explicit via `FrenchP35ReleaseQa()`, while P34/P35 CI remains the release authority.
+
+ helper and then called `.forEach()`. P35 corrects those bindings to the multi-element `$` helper;
+- on narrow mobile layouts, long Words content could sit above the fixed bottom navigation in the hit-test stack. P35 raises the mobile navigation stacking layer and reserves enough bottom content space for its current two-row form;
+- deployment metadata checks no longer execute `fetch('/')` inside the application page. They use Playwright's request context, because manifest/release/static-shell validation is an origin contract and must not be confused with service-worker/UI responsiveness.
+
+Offline acceptance now additionally requires `navigator.serviceWorker.controller` before disconnecting the browser. An installed-but-not-controlling worker is not accepted as offline readiness.
 
 ## Automated acceptance matrix
 
