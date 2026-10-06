@@ -11,6 +11,10 @@ export interface VocabularyWord {
   order?:number;
   sentences?:Array<{text?:string;translation?:string}>;
   tags?:string[];
+  article?:string;
+  gender?:string;
+  plural?:string;
+  aliases?:string[];
 }
 export interface VocabularyPack {
   schema:'thiepn-french-vocabulary-pack-v1';
