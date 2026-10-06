@@ -462,7 +462,7 @@ export async function recordStudySessionReview(
     t:timestamp,id:previous.id,noteId:previous.noteId,skill:previous.skill,rating,responseMs,
     wasNew:practiceOnly?false:previous.status==='new'&&previous.seen===0,
     intervalDays:next.intervalDays,
-    direction:reinforcement?.direction||context.direction??'',
+    direction:(reinforcement?.direction||context.direction)||'',
     typed:context.typed===true,
     typedQuality:context.typedQuality??String(typedQuality),
     level:context.level??'',pos:context.pos??'',theme:context.theme??'',
