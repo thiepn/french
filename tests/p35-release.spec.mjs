@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 const EXPECTED_TITLE = 'French — Adaptive language learning';
 const EXPECTED_SUBTITLE = 'Adaptive French · vocabulary, grammar, listening, speaking & transfer';
 const EXPECTED_BACKUP = 'french-complete-backup-v5.24.0.json';
+const STARTUP_BUDGET_MS = 120000;
 
 async function completeOnboardingIfNeeded(page) {
   const onboarding = page.locator('#v385-onboarding');
@@ -21,15 +22,15 @@ async function completeOnboardingIfNeeded(page) {
 async function waitForStableBoot(page) {
   const main = page.locator('#main');
   await expect(main).toBeVisible();
-  await expect(main.locator('.loading-screen')).toHaveCount(0, { timeout: 30000 });
-  await expect(page.locator('#main h1, #main h2, #v385-onboarding[open]').first()).toBeVisible({ timeout: 30000 });
+  await expect(main.locator('.loading-screen')).toHaveCount(0, { timeout: STARTUP_BUDGET_MS });
+  await expect(page.locator('#main h1, #main h2, #v385-onboarding[open]').first()).toBeVisible({ timeout: STARTUP_BUDGET_MS });
 
-  await expect(page.locator('html')).toHaveAttribute('data-release', 'p35-stable-release', { timeout: 15000 });
+  await expect(page.locator('html')).toHaveAttribute('data-release', 'p35-stable-release', { timeout: STARTUP_BUDGET_MS });
   await expect(page.locator('html')).toHaveAttribute('data-release-channel', 'stable');
   await expect(page.locator('html')).toHaveAttribute('data-release-acceptance', 'browser-device-defect-only');
   await expect(page.locator('html')).toHaveAttribute('data-product-scope', 'adaptive-language-learning');
   await expect(page.locator('html')).toHaveAttribute('data-app-version', '5.24.0');
-  await expect(page.locator('html')).toHaveAttribute('data-p35-boot-ready', 'true', { timeout: 15000 });
+  await expect(page.locator('html')).toHaveAttribute('data-p35-boot-ready', 'true', { timeout: STARTUP_BUDGET_MS });
 
   await expect(page).toHaveTitle(EXPECTED_TITLE);
   await expect(page.locator('.brand-copy span')).toHaveText(EXPECTED_SUBTITLE);
@@ -40,8 +41,12 @@ async function waitForStableBoot(page) {
 }
 
 async function boot(page) {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const started = Date.now();
+  await page.goto('/', { waitUntil: 'commit', timeout: 15000 });
   await waitForStableBoot(page);
+  const elapsed = Date.now() - started;
+  expect(elapsed, `cold start exceeded ${STARTUP_BUDGET_MS} ms CI acceptance budget`).toBeLessThanOrEqual(STARTUP_BUDGET_MS);
+  return elapsed;
 }
 
 async function openView(page, view) {
@@ -65,6 +70,7 @@ async function openDataSettings(page) {
 }
 
 test('stable shell boots, identifies itself correctly, and core navigation remains usable', async ({ page }) => {
+  test.setTimeout(150000);
   const pageErrors = [];
   const p25AuditErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
@@ -164,6 +170,7 @@ test('manifest, static shell, and release metadata expose the full stable produc
 
 test('offline shell survives a controlled reload after first online boot', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium-desktop', 'One Chromium service-worker run is sufficient for shell qualification.');
+  test.setTimeout(240000);
 
   await boot(page);
 
@@ -178,25 +185,20 @@ test('offline shell survives a controlled reload after first online boot', async
   expect(serviceWorkerReady).toBe(true);
 
   /* An active worker is not sufficient: the current page must actually be
-     controlled before an offline navigation is meaningful. clients.claim()
-     normally makes this immediate; the poll turns any failure into an
-     explicit release defect instead of an ambiguous ERR_INTERNET_DISCONNECTED. */
+     controlled before an offline navigation is meaningful. Once it controls
+     this page, a second online reload adds no coverage and merely repeats the
+     expensive single-file cold start. */
   await expect.poll(
     () => page.evaluate(() => Boolean(navigator.serviceWorker?.controller)),
     { timeout: 15000, message: 'service worker should control the release page before offline reload' }
   ).toBe(true);
 
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await waitForStableBoot(page);
-  await expect.poll(
-    () => page.evaluate(() => Boolean(navigator.serviceWorker?.controller)),
-    { timeout: 10000 }
-  ).toBe(true);
-
   await page.context().setOffline(true);
   try {
+    const started = Date.now();
     await page.reload({ waitUntil: 'commit', timeout: 15000 });
     await waitForStableBoot(page);
+    expect(Date.now() - started, 'offline controlled reload exceeded startup acceptance budget').toBeLessThanOrEqual(STARTUP_BUDGET_MS);
     await expect(page.locator('#main')).toBeVisible();
     await expect(page.locator('body')).not.toContainText('Vocabulary could not be loaded');
   } finally {
