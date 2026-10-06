@@ -18,13 +18,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Discover stable P35 storage contract
+        run: node scripts/extract-legacy-storage-contract.mjs
       - name: Install pinned vNext toolchain
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Typecheck, build, and enforce startup budgets
         run: npm run qualify:vnext
-      - name: Preserve vNext build preview
+      - name: Preserve vNext build and migration discovery
         uses: actions/upload-artifact@v4
         with:
           name: french-vnext-${{ github.sha }}
-          path: dist-vnext
+          path: |
+            dist-vnext
+            legacy-storage-contract.json
           retention-days: 14
