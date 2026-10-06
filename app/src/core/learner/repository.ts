@@ -532,22 +532,23 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
 }
 
 
-export async function readKnownNoteIds():Promise<Set<string>>{
+export async function readStartedRecognitionNoteIds():Promise<Set<string>>{
   const db=await openFrenchDatabase();
   try{
     return await new Promise((resolve,reject)=>{
       const notes=new Set<string>();
       const tx=db.transaction('srs','readonly');
-      const request=tx.objectStore('srs').index('noteId').openKeyCursor();
+      const request=tx.objectStore('srs').openCursor();
       request.onsuccess=()=>{
         const cursor=request.result;
         if(!cursor)return;
-        if(typeof cursor.key==='string')notes.add(cursor.key);
+        const row=cursor.value as CanonicalSrsRecordV1;
+        if(row.skill==='recognition'&&(row.status!=='new'||row.seen>0))notes.add(row.noteId);
         cursor.continue();
       };
-      request.onerror=()=>reject(request.error??new Error('Could not enumerate known note IDs.'));
+      request.onerror=()=>reject(request.error??new Error('Could not enumerate started recognition notes.'));
       tx.oncomplete=()=>resolve(notes);
-      tx.onerror=()=>reject(tx.error??new Error('Could not enumerate known note IDs.'));
+      tx.onerror=()=>reject(tx.error??new Error('Could not enumerate started recognition notes.'));
     });
   }finally{db.close();}
 }
