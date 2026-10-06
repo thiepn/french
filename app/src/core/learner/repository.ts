@@ -586,7 +586,7 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
   const restored:StudySessionStateV1={
     ...active,
     queueIds:[...undo.previousQueueIds],
-    reinforcements:undo.previousReinforcements.map(item=>({...item})),
+    reinforcements:(undo.previousReinforcements??[]).map(item=>({...item})),
     cursor:undo.previousCursor,
     currentId:undo.previousQueueIds[undo.previousCursor]??undo.srsId,
     stats:JSON.parse(JSON.stringify(undo.previousStats)) as StudySessionStateV1['stats'],
