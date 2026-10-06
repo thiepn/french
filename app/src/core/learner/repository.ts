@@ -551,3 +551,61 @@ export async function readKnownNoteIds():Promise<Set<string>>{
     });
   }finally{db.close();}
 }
+
+
+export async function ensureCanonicalLearnerState(now=Date.now()):Promise<CanonicalLearnerStateV1>{
+  const existing=await readCanonicalLearnerState();
+  if(existing)return existing;
+
+  const learner:CanonicalLearnerStateV1={
+    schema:'thiepn-french-learner-state-v1',
+    revision:1,
+    migratedAt:now,
+    sourceFingerprint:'fresh-vnext',
+    sourceUpdatedAt:now,
+    sourceVersion:'vnext',
+    sourceSchema:0,
+    settings:{
+      session:{
+        deck:'A1',direction:'fr-en',order:'smart',size:50,mode:'today',practice:'review',
+        typed:false,requeueAgain:true,mix:'due-first',siblingSpacing:true,strictArticles:true
+      },
+      dailyNewLimit:20,
+      dailyReviewLimit:200,
+      leechThreshold:8,
+      autoSuspendLeeches:false,
+      desiredRetention:.9,
+      maxInterval:3650,
+      learningSteps:[1,10,1440],
+      relearningSteps:[10],
+      gradingMode:'learning'
+    },
+    profile:{
+      xp:0,bestCombo:0,lifetimeAnswers:0,lifetimeCorrect:0,typedAnswers:0,
+      choiceAnswers:0,listeningAnswers:0,clozeAnswers:0,perfectSessions:0,
+      achievements:[],claimedMissions:{}
+    },
+    studyPlan:{targetLevel:'B1',targetDate:'',studyDaysPerWeek:6,dailyMinutes:30,masteryGoal:90},
+    promotions:{},
+    studyDays:[],
+    featureState:{}
+  };
+
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','user-content','meta'],'readwrite');
+      tx.objectStore('learner').put(learner,'state-v1');
+      tx.objectStore('user-content').put({
+        schema:'thiepn-french-user-content-v1',
+        userCards:{},cardEdits:{},smartDecks:{},customDecks:{}
+      },'content-v1');
+      tx.objectStore('meta').put({currentLevel:undefined,dueCount:0,streakDays:0},'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not initialize fresh learner state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Fresh learner initialization was aborted.'));
+    });
+  }finally{db.close();}
+
+  return learner;
+}
