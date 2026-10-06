@@ -42,6 +42,9 @@ for (const token of [
   "window.addEventListener('DOMContentLoaded',resolve,{once:true})",
   "p35-release-hardening-style",
   "z-index:2147483000!important",
+  "function p35NormalizeMobileNavigation()",
+  "mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven')",
+  "grid-template-columns:repeat(8,minmax(58px,1fr))!important",
   "const p35AccountInitBase=thiepnAccountInit;",
   "b2Content=v5160LevelContent('B2')",
   "dataset.oralAssessment='confidence-calibrated-oral-v1'",
@@ -98,6 +101,12 @@ for (const project of [
 ]) requireToken(config, project, 'browser project ' + project);
 
 for (const token of [
+  "retries: 1",
+  "trace: 'on-first-retry'",
+  "timeout: live ? 120000 : 90000"
+]) requireToken(config, token, 'browser harness token ' + token);
+
+for (const token of [
   "p35-stable-release",
   "Vocabulary could not be loaded",
   "document.documentElement.scrollWidth - window.innerWidth",
@@ -108,6 +117,7 @@ for (const token of [
   "start.evaluate(button => button.click())",
   "setOffline(true)",
   "Search vocabulary",
+  "button[data-view=\"\${view}\"][aria-current=\"page\"]:visible",
   "What you know, what is fragile, what to do next",
   "french-complete-backup-v5.24.0.json",
   "#v371-export-backup",
