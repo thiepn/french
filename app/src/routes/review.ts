@@ -9,7 +9,7 @@ import {
   undoLastStudySessionReview
 } from '../core/learner/repository';
 import { createReviewStudySession } from '../core/learner/study-session-builder';
-import type { StudySessionStateV1 } from '../core/learner/session';
+import { reinforcementAt,type StudyReinforcementV1,type StudySessionStateV1 } from '../core/learner/session';
 import type { CanonicalSrsRecordV1 } from '../core/learner/model';
 import type { SchedulerRating } from '../core/learner/scheduler';
 import { gradeTypedAnswer,suggestedRating,type GradingMode,type TypedGrade } from '../core/learner/grader';
@@ -25,7 +25,19 @@ interface PromptSpec{
 function object(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
 }
-function promptFor(record:CanonicalSrsRecordV1,word:ReviewWord):PromptSpec{
+function clozeContext(word:ReviewWord):string{
+  if(!word.exampleFr)return'';
+  const replaced=word.exampleFr.replace(word.word,'_____');
+  return replaced===word.exampleFr?word.exampleFr+' · _____':replaced;
+}
+function promptFor(record:CanonicalSrsRecordV1,word:ReviewWord,reinforcement:StudyReinforcementV1|null=null):PromptSpec{
+  if(reinforcement?.type==='context'){
+    return{label:'Context reinforcement · extra practice',prompt:clozeContext(word),answer:word.word,direction:'en-fr',listening:false};
+  }
+  if(reinforcement?.type==='reverse'){
+    if(reinforcement.direction==='en-fr')return{label:'Reverse recall · extra practice',prompt:word.meaning,answer:word.word,direction:'en-fr',listening:false};
+    return{label:'Reverse recall · extra practice',prompt:word.word,answer:word.meaning,direction:'fr-en',listening:false};
+  }
   if(record.skill==='production'||record.skill==='spelling'){
     return{label:record.skill==='spelling'?'Meaning → exact French':'Meaning → French',prompt:word.meaning,answer:word.word,direction:'en-fr',listening:false};
   }
@@ -125,8 +137,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       card.append(h,p,skip);stage.append(card);refreshToolbar();return;
     }
 
-    const spec=promptFor(record,word);
-    const typed=typedPreference||['production','listening','spelling','article'].includes(record.skill);
+    const reinforcement=reinforcementAt(session);
+    const spec=promptFor(record,word,reinforcement);
+    const typed=reinforcement?.type==='context'||typedPreference||['production','listening','spelling','article'].includes(record.skill);
     const started=performance.now();
     let grade:TypedGrade|null=null;
     stage.replaceChildren();
@@ -136,6 +149,12 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const direction=document.createElement('span');direction.textContent=spec.label;
     const level=document.createElement('span');level.textContent=[word.level,word.pos].filter(Boolean).join(' · ')||word.source;
     meta.append(direction,level);
+    if(reinforcement){
+      const practiceNote=document.createElement('p');
+      practiceNote.className='reinforcement-note';
+      practiceNote.textContent='Extra practice only · your next scheduled review will not move.';
+      card.append(practiceNote);
+    }
 
     const prompt=document.createElement('div');prompt.className='review-prompt';
     const promptText=document.createElement('h2');promptText.textContent=spec.prompt;prompt.append(promptText);
@@ -199,7 +218,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         try{
           const saved=await recordStudySessionReview(record,rating,{
             level:word.level,pos:word.pos,direction:spec.direction,practice:spec.listening?'listening':'review',
-            typed:Boolean(grade),typedQuality:grade?.quality??'none',correct:grade?.correct??rating!=='again'
+            typed:Boolean(grade),typedQuality:grade?.quality??'none',correct:grade?.correct??rating!=='again',
+            hasContext:Boolean(word.exampleFr&&word.exampleEn)
           },Date.now(),responseMs,grade?.quality??'none');
           session=saved.session;refreshToolbar();void renderCurrent();
         }catch(error){
