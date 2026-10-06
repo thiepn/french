@@ -1,0 +1,55 @@
+name: French defect
+description: Report a reproducible failure in the stable French learning product.
+title: "[Defect] "
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - P0 — data/safety integrity
+        - P1 — core study blocked
+        - P2 — major degradation
+        - P3 — minor defect
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Device, OS, browser/PWA mode, and whether the app was online or offline.
+      placeholder: "Example: Windows 11, Firefox 156, browser tab, online"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Give the smallest repeatable sequence that triggers the defect.
+      placeholder: "1. Open ...\n2. Tap ...\n3. Observe ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Study impact
+      description: What study task was blocked, degraded, or put at risk?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add screenshots, console errors, exported diagnostics, or other evidence when available.

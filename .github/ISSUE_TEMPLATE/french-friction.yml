@@ -1,0 +1,46 @@
+name: French study friction
+description: Record repeated friction observed during real study without assuming a feature solution.
+title: "[Friction] "
+body:
+  - type: textarea
+    id: study-goal
+    attributes:
+      label: Study goal
+      description: What were you trying to learn, review, understand, or produce?
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Friction observed
+      description: Describe what was unnecessarily slow, confusing, repetitive, or error-prone.
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Once
+        - Occasional
+        - Repeated
+        - Nearly every session
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: What do you currently do to continue studying?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Learning impact
+      description: Explain the time cost, confusion, interruption, or learning consequence.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add examples or screenshots if they make the friction easier to evaluate.
