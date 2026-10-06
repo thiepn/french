@@ -37,7 +37,7 @@ const required=[
   "minIndependentRate:88,minEvidence:.68,minIntent:.68,maxSupport:1",
   "B2 benchmark is locked because the audited B2 communicative corpus is incomplete.",
   "const V5200_LEVELS=Object.freeze(['A1','A2','B1','B2']);",
-  "if(!b2.coverageComplete)errors.push('B2 communicative corpus incomplete after P30');",
+  "b2Content=v5160LevelContent('B2');if(!b2Content.promotionCoverage)errors.push('B2 communicative corpus incomplete after P30');",
   "p30-b2-corpus-v1",
   "dataset.b2Benchmark='audited-advanced-functional-v1'"
 ];
