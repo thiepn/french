@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: p35-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   static:
     runs-on: ubuntu-latest
@@ -22,8 +26,22 @@ jobs:
 
   browser-local:
     needs: static
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium-desktop
+            engine: chromium
+          - project: firefox-desktop
+            engine: firefox
+          - project: webkit-desktop
+            engine: webkit
+          - project: android-chrome
+            engine: chromium
+          - project: ios-webkit
+            engine: webkit
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,8 +49,8 @@ jobs:
           node-version: 24
       - name: Install pinned Playwright
         run: npm install --no-save @playwright/test@1.63.0
-      - name: Install browser engines
-        run: npx playwright install --with-deps chromium firefox webkit
+      - name: Install browser engine
+        run: npx playwright install --with-deps "${{ matrix.engine }}"
       - name: Start local release candidate
         shell: bash
         run: |
@@ -46,13 +64,13 @@ jobs:
           done
           cat /tmp/french-p35-server.log
           exit 1
-      - name: Run desktop and mobile-emulation acceptance
-        run: npx playwright test --config tests/playwright.p35.config.mjs
+      - name: Run isolated browser acceptance
+        run: npx playwright test --config tests/playwright.p35.config.mjs --project="${{ matrix.project }}"
       - name: Preserve browser failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: french-p35-local-browser-${{ github.sha }}
+          name: french-p35-local-${{ matrix.project }}-${{ github.sha }}
           path: test-results/p35
           if-no-files-found: ignore
           retention-days: 30
@@ -60,8 +78,18 @@ jobs:
   live-production:
     if: github.event_name == 'push'
     needs: browser-local
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium-desktop
+            engine: chromium
+          - project: firefox-desktop
+            engine: firefox
+          - project: webkit-desktop
+            engine: webkit
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 18
     env:
       P35_BASE_URL: https://french.thiepn.dev
     steps:
@@ -84,15 +112,15 @@ jobs:
           exit 1
       - name: Install pinned Playwright
         run: npm install --no-save @playwright/test@1.63.0
-      - name: Install production browser engines
-        run: npx playwright install --with-deps chromium firefox webkit
-      - name: Run live desktop-engine acceptance
-        run: npx playwright test --config tests/playwright.p35.config.mjs --project=chromium-desktop --project=firefox-desktop --project=webkit-desktop
+      - name: Install production browser engine
+        run: npx playwright install --with-deps "${{ matrix.engine }}"
+      - name: Run isolated live browser acceptance
+        run: npx playwright test --config tests/playwright.p35.config.mjs --project="${{ matrix.project }}"
       - name: Preserve live failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: french-p35-live-browser-${{ github.sha }}
+          name: french-p35-live-${{ matrix.project }}-${{ github.sha }}
           path: test-results/p35
           if-no-files-found: ignore
           retention-days: 30

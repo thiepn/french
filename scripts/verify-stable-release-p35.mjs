@@ -26,6 +26,31 @@ for (const token of [
   "Adaptive French · vocabulary, grammar, listening, speaking & transfer",
   "Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.",
   "const V5240_VERSION='5.24.0';",
+  "const p35HydrateLocalStateBase=v362HydrateLocalState;",
+  "const p35ReadCatalogCacheBase=v362ReadCatalogCache;",
+  "p35-startup-qa-deferred",
+  "const p35LexicalAuditBase=v396BuildAudit;",
+  "const p35HighFrequencyAuditBase=v401HighFrequencyAudit;",
+  "const p35ContextHealthBase=v402ContextHealth;",
+  "const p35ReleaseChecksBase=v410ReleaseChecks;",
+  "p35ResetDeferredDiagnostics",
+  "Deferred until diagnostics are opened",
+  "device:v5100DeviceSnapshot()",
+  "globalThis.FrenchP35ReleaseQa=function()",
+  "p35DeferBootInitializer",
+  "document.readyState==='loading'",
+  "window.addEventListener('DOMContentLoaded',resolve,{once:true})",
+  "p35-release-hardening-style",
+  "z-index:2147483646!important",
+  "function p35NormalizeMobileNavigation()",
+  "mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven')",
+  "grid-template-columns:repeat(8,minmax(64px,1fr))!important",
+  "const p35AccountInitBase=thiepnAccountInit;",
+  "p35DeferredBootReady",
+  "requestIdleCallback",
+  "dataset.p35BootReady='true'",
+  "document.body.appendChild(mobile)",
+  "b2Content=v5160LevelContent('B2')",
   "dataset.oralAssessment='confidence-calibrated-oral-v1'",
   "THIEPN Account — guest-first auth + revision-safe cloud sync.",
   "producerRevision:'french-p8-read-model-v5'"
@@ -63,12 +88,14 @@ if (release) {
   }
 }
 
-requireToken(serviceWorker, "const CACHE_NAME = 'french-shell-v48';", 'unchanged P33 offline shell v48');
+requireToken(serviceWorker, "const CACHE_NAME = 'french-shell-v49';", 'stable P35 offline shell v49');
 for (const file of [
   "'./index.html'",
   "'./manifest.webmanifest'",
+  "'./release.json'",
   "'./vendor/thiepn-languages-consumer-contract.js'",
-  "'./vendor/thiepn-languages-read-model.js'"
+  "'./vendor/thiepn-languages-read-model.js'",
+  "'./vendor/thiepn-languages-dashboard.js'"
 ]) requireToken(serviceWorker, file);
 
 for (const project of [
@@ -80,22 +107,48 @@ for (const project of [
 ]) requireToken(config, project, 'browser project ' + project);
 
 for (const token of [
+  "retries: 1",
+  "trace: 'on-first-retry'",
+  "timeout: live ? 210000 : 180000"
+]) requireToken(config, token, 'browser harness token ' + token);
+
+for (const token of [
   "p35-stable-release",
   "Vocabulary could not be loaded",
   "document.documentElement.scrollWidth - window.innerWidth",
   "navigator.serviceWorker.ready",
+  "navigator.serviceWorker?.controller",
+  "const STARTUP_BUDGET_MS = 150000",
+  "cold start exceeded",
+  "a second online reload adds no coverage",
+  "request.get('/manifest.webmanifest')",
+  "Static HTTP metadata is engine-independent",
+  "start.evaluate(button => button.click())",
   "setOffline(true)",
-  "french-progress.json",
+  "Search vocabulary",
+  "button[data-view=\"\${view}\"][aria-current=\"page\"]:visible",
+  "What you know, what is fragile, what to do next",
+  "french-complete-backup-v5.24.0.json",
+  "#v371-export-backup",
+  "#v371-import-backup",
   "Could not import this backup",
   "french3000-settings-v2",
   "delete window.SpeechRecognition",
-  "#thiepn-account-chip"
+  "#thiepn-account-chip",
+  "French P25 CEFR progression audit failed"
 ]) requireToken(spec, token, 'browser acceptance token ' + token);
 
 for (const token of [
   'P35 stable release acceptance',
   '@playwright/test@1.63.0',
-  'playwright install --with-deps chromium firefox webkit',
+  'fail-fast: false',
+  'project: chromium-desktop',
+  'project: firefox-desktop',
+  'project: webkit-desktop',
+  'project: android-chrome',
+  'project: ios-webkit',
+  'playwright install --with-deps "\${{ matrix.engine }}"',
+  '--project="\${{ matrix.project }}"',
   'python3 -m http.server 4173',
   'node scripts/verify-production-p34.mjs',
   'P35_BASE_URL: https://french.thiepn.dev',

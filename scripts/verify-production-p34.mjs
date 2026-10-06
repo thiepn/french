@@ -61,10 +61,10 @@ if (html.includes("P33 B2 Spontaneous Spoken Production, Fluency, Discourse Cont
   fail("p33-candidate-present", "P33 release marker missing");
 }
 
-if (/const CACHE_NAME = ['"]french-shell-v48['"]/.test(serviceWorker)) {
-  ok("offline-shell", "v48");
+if (/const CACHE_NAME = ['"]french-shell-v49['"]/.test(serviceWorker)) {
+  ok("offline-shell", "v49");
 } else {
-  fail("offline-shell", "expected exact P33 shell french-shell-v48");
+  fail("offline-shell", "expected stable P35 shell french-shell-v49");
 }
 
 for (const token of [
@@ -120,7 +120,8 @@ for (const relativePath of [
   "icon-512.png",
   "maskable-icon.svg",
   "vendor/thiepn-languages-consumer-contract.js",
-  "vendor/thiepn-languages-read-model.js"
+  "vendor/thiepn-languages-read-model.js",
+  "vendor/thiepn-languages-dashboard.js"
 ]) {
   await requireFile(relativePath);
 }
@@ -219,7 +220,7 @@ const report = {
   schema: "thiepn-french-p34-production-qualification-v1",
   candidate: {
     appVersion: "5.24.0",
-    offlineShell: "v48",
+    offlineShell: "v49",
     domain: "french.thiepn.dev"
   },
   ok: failures.length === 0,

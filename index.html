@@ -15459,11 +15459,11 @@ qui	who	A1	question word`;
     }
 
     function v460BindProgress(states){
-      $('[data-v372-open]',main).forEach(button=>button.addEventListener('click',()=>v372OpenDetails(button.dataset.v372Open)));
+      $$('[data-v372-open]',main).forEach(button=>button.addEventListener('click',()=>v372OpenDetails(button.dataset.v372Open)));
       $('#v460-repair-top')?.addEventListener('click',()=>v460RepairWeakest(states));
-      $('[data-v460-theme]',main).forEach(button=>button.addEventListener('click',()=>v460PracticeTheme(states,button.dataset.v460Theme)));
-      $('[data-v460-word]',main).forEach(button=>button.addEventListener('click',()=>v3OpenInspector(button.dataset.v460Word)));
-      $('[data-v460-action]',main).forEach(button=>button.addEventListener('click',()=>{
+      $$('[data-v460-theme]',main).forEach(button=>button.addEventListener('click',()=>v460PracticeTheme(states,button.dataset.v460Theme)));
+      $$('[data-v460-word]',main).forEach(button=>button.addEventListener('click',()=>v3OpenInspector(button.dataset.v460Word)));
+      $$('[data-v460-action]',main).forEach(button=>button.addEventListener('click',()=>{
         const action=button.dataset.v460Action;
         if(action==='due'){v382StartSession('due');return;}
         if(action==='repair'){v460RepairWeakest(states);return;}
@@ -24924,7 +24924,7 @@ qui	who	A1	question word`;
         }
         if(row.currentQualified&&!row.coverageComplete)errors.push(level+' qualified without content coverage');
       }
-      const b2=p.map.B2;if(!b2.coverageComplete)errors.push('B2 communicative corpus incomplete after P30');
+      const b2=p.map.B2,b2Content=v5160LevelContent('B2');if(!b2Content.promotionCoverage)errors.push('B2 communicative corpus incomplete after P30');
       const promotions=state.v5160Progression?.promotions||{};let prior=true;
       for(const level of V5160_LEVELS){if(promotions[level]&&!prior)errors.push(level+' promotion stored before prerequisite');prior=prior&&Boolean(promotions[level]);}
       const serialized=JSON.stringify(v5160NormalizeProgression(state.v5160Progression||{}));
@@ -28491,6 +28491,39 @@ qui	who	A1	question word`;
        proficiency, curriculum, or account authority changes.
        ================================================================ */
     const P35_RELEASE='P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening';
+
+    /* Cold-start storage must be bounded at the public function boundary, not
+       only inside individual IndexedDB operations. If an engine leaves any
+       lower-level request pending, French continues from localStorage + the
+       embedded starter instead of keeping the loading surface indefinitely. */
+    const p35HydrateLocalStateBase=v362HydrateLocalState;
+    v362HydrateLocalState=async function(){
+      const result=await v362SettledWithin(p35HydrateLocalStateBase(),Math.max(1200,V362_LOCAL_TIMEOUT));
+      if(result.ok)return result.value;
+      state.v362StorageDegraded=true;
+      return false;
+    };
+    const p35ReadCatalogCacheBase=v362ReadCatalogCache;
+    v362ReadCatalogCache=async function(){
+      const result=await v362SettledWithin(p35ReadCatalogCacheBase(),Math.max(1200,V362_LOCAL_TIMEOUT));
+      if(result.ok)return result.value;
+      state.v362StorageDegraded=true;
+      return null;
+    };
+
+    /* Firefox/WebKit can occasionally leave an empty IndexedDB snapshot cursor
+       pending even though the primary state read completed. P35 keeps startup
+       local-first by bounding that recovery-only lookup just like every other
+       startup storage read. A timed-out recovery mirror must never block the
+       usable embedded starter catalog. */
+    const p35LatestDepthSnapshotBase=v404LatestDepthSnapshot;
+    v404LatestDepthSnapshot=async function(){
+      const result=await v362SettledWithin(p35LatestDepthSnapshotBase(),V362_LOCAL_TIMEOUT);
+      if(result.ok)return result.value;
+      if(result.timeout)state.v362StorageDegraded=true;
+      return null;
+    };
+
     const p35NormalizeSurfaceBase=v420NormalizeSurface;
     v420NormalizeSurface=function(){
       p35NormalizeSurfaceBase();
@@ -28503,11 +28536,303 @@ qui	who	A1	question word`;
       document.title='French — Adaptive language learning';
       document.querySelector('meta[name="description"]')?.setAttribute('content','Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.');
     };
+
+    /* Release identity belongs to the static/core shell, not to optional
+       account connectivity. Assert it before the asynchronous init chain so
+       CDN/auth latency cannot delay stable-channel identification. */
+    v420NormalizeSurface();
+
+    /* Guest-first account connectivity is optional to usable startup. Render
+       the guest surface synchronously, then let CDN/auth work finish in the
+       background instead of putting the study UI behind a network dependency. */
+    const p35AccountInitBase=thiepnAccountInit;
+    let p35AccountInitScheduled=false;
+    function p35RunAccountInit(){
+      if(p35AccountInitScheduled)return;
+      p35AccountInitScheduled=true;
+      void p35AccountInitBase().catch(function(error){
+        state.thiepnAccount.error=thiepnAccountErrorMessage(error);
+        state.thiepnAccount.status=state.thiepnAccount.user?'error':'guest';
+        thiepnAccountRender();
+      });
+    }
+    thiepnAccountInit=async function(){
+      thiepnAccountEnsureStyles();thiepnAccountRender();
+      if(globalThis.navigator?.onLine===false){
+        window.addEventListener('online',p35RunAccountInit,{once:true});
+        return null;
+      }
+      const authCallback=/[?&](?:code|error|error_code|error_description|thiepn_auth)=/i.test(location.search);
+      if(authCallback){
+        setTimeout(p35RunAccountInit,0);
+        return null;
+      }
+      if('requestIdleCallback' in globalThis)requestIdleCallback(p35RunAccountInit,{timeout:2500});
+      else setTimeout(p35RunAccountInit,1200);
+      return null;
+    };
+
+    /* Historical phase wrappers each call v5100RunQa() while one startup is
+       unwinding. Because the identifier resolves to the newest aggregate QA,
+       that repeated the complete modern audit chain many times. Stable startup
+       must not execute the aggregate diagnostic on the main thread: P34/P35 CI
+       already gates release correctness, while full runtime QA remains an
+       explicit diagnostic action. */
+    const p35RunQaBase=v5100RunQa;
+    let p35StartupQaDeferred=false;
+    const P35_QA_PENDING=Object.freeze({
+      checks:[],fail:0,warn:0,status:'pending',policy:'p35-startup-qa-deferred',
+      device:v5100DeviceSnapshot()
+    });
+    v5100RunQa=function(){
+      if(p35StartupQaDeferred)return P35_QA_PENDING;
+      return p35RunQaBase();
+    };
+    globalThis.FrenchP35ReleaseQa=function(){
+      const result=p35RunQaBase();
+      state.v5100Qa.last=result;
+      return result;
+    };
+
+    /* Earlier release layers also attached full lexical, context and release
+       audits directly to catalog application / init. Those diagnostics are
+       valuable when explicitly opened, but they are not learner-state
+       initialization and can repeatedly traverse the enriched catalog before
+       Home is first rendered. P35 returns shape-compatible pending reports
+       while the startup chain unwinds, then clears those placeholders so the
+       existing diagnostic surfaces compute the real reports lazily on use. */
+    const p35LexicalAuditBase=v396BuildAudit;
+    const p35HighFrequencyAuditBase=v401HighFrequencyAudit;
+    const p35ContextHealthBase=v402ContextHealth;
+    const p35ReleaseChecksBase=v410ReleaseChecks;
+
+    function p35PendingHighFrequencyAudit(){
+      return {limit:V401_AUDIT_LIMIT,checked:0,curated:0,foundation:0,flagged:0,flaggedIds:[],issues:[],issueCounts:{},deferred:true};
+    }
+    function p35PendingContextHealth(){
+      return {
+        version:V402_VERSION,total:Number(state.cards?.length||0),withPrimary:0,primaryCoverage:0,
+        withSecondary:0,multiSense:0,multiSenseCovered:0,nuanceCoverage:0,curatedCards:0,
+        curatedExamples:0,lowFit:0,missingTarget:0,averageLearnerFit:0,redundantSuppressed:0,
+        bankEntries:0,deferred:true
+      };
+    }
+    function p35PendingLexicalAudit(){
+      const highFrequency=p35PendingHighFrequencyAudit();
+      return {
+        version:APP_VERSION,release:P35_RELEASE,generatedAt:new Date().toISOString(),
+        source:String(state.loadSource||'startup'),fullCatalog:false,cards:Number(state.cards?.length||0),
+        catalogTarget:V400_TARGET,catalogManifest:v400CatalogManifest(),
+        structural:{pass:true,duplicateIds:0,orphanProgress:0,invalidDue:0},
+        content:{
+          criticalCount:0,warningCount:0,missingMeaning:0,invalidHeadwords:0,brokenExamples:0,
+          possibleDuplicateGroups:0,suspiciousIpa:0,validatedExamples:0,validatedExampleCoverage:0,
+          lowConfidenceExamples:0,flaggedCards:0,issueCounts:{}
+        },
+        status:'pending',statusLabel:'Deferred until diagnostics are opened',
+        issueCounts:{},flaggedIds:[],criticalIds:[],duplicateGroups:[],highFrequency,deferred:true
+      };
+    }
+    function p35PendingReleaseChecks(){
+      const catalog=v410CatalogCheck();
+      return {
+        app:'French',version:APP_VERSION,release:P35_RELEASE,reportSchema:V410_REPORT_SCHEMA,
+        generatedAt:new Date().toISOString(),featureFreeze:true,
+        migration:{from:V410_PREVIOUS_VERSION||'fresh-install',to:APP_VERSION,backupSchemas:`${V410_SUPPORTED_BACKUP_MIN_SCHEMA}–${V410_BACKUP_SCHEMA}`},
+        catalog,
+        controllers:{ok:true,detail:'Deferred during cold start'},
+        navigation:{ok:true,detail:'Deferred during cold start'},
+        scheduler:{ok:true,passed:0,total:0},
+        backup:{ok:true,bytes:0,warnings:[]},
+        legacyBackups:{ok:true,passed:0,total:0},
+        storage:{ok:true,mode:'Deferred during cold start'},
+        lexical:{structural:{pass:true,duplicateIds:0,orphanProgress:0,invalidDue:0},criticalCount:0,warningCount:0,validatedExampleCoverage:0},
+        blockers:[],warnings:['Release diagnostics deferred until explicitly opened'],status:'attention',deferred:true
+      };
+    }
+
+    v396BuildAudit=function(force=false){
+      if(p35StartupQaDeferred)return p35PendingLexicalAudit();
+      return p35LexicalAuditBase(force);
+    };
+    v401HighFrequencyAudit=function(cards=state.cards||[]){
+      if(p35StartupQaDeferred)return p35PendingHighFrequencyAudit();
+      return p35HighFrequencyAuditBase(cards);
+    };
+    v402ContextHealth=function(cards=state.cards||[]){
+      if(p35StartupQaDeferred)return p35PendingContextHealth();
+      return p35ContextHealthBase(cards);
+    };
+    v410ReleaseChecks=function(force=false){
+      if(p35StartupQaDeferred)return p35PendingReleaseChecks();
+      return p35ReleaseChecksBase(force);
+    };
+    function p35ResetDeferredDiagnostics(){
+      v396AuditCache=null;
+      state.v396ReleaseAudit=null;
+      state.v401HighFrequencyAudit=null;
+      state.v402ContextHealth=null;
+      state.v410ReleaseChecks=null;
+    }
+
+    function p35NormalizeMobileNavigation(){
+      const mobile=document.querySelector('.mobile-nav');
+      const desktop=document.querySelector('.topbar .nav');
+      /* Historical navigation wrappers can leave mutually exclusive grid
+         classes behind. In particular v382-four is !important and can force
+         the current eight-item v580 navigation into two overlapping rows. */
+      if(mobile){
+        mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven');
+        mobile.classList.add('v580-eight');
+        mobile.setAttribute('aria-label','Primary navigation');
+        if(matchMedia('(max-width:760px)').matches&&document.body&&mobile.parentElement!==document.body){
+          document.body.appendChild(mobile);
+        }
+      }
+      [desktop,mobile].filter(Boolean).forEach(function(nav){
+        nav.setAttribute('aria-label','Primary navigation');
+        nav.querySelectorAll('[data-view]').forEach(function(button){
+          const active=button.dataset.view===state.view;
+          button.classList.toggle('active',active);
+          if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+        });
+      });
+    }
+    function p35EnsureReleaseStyles(){
+      if(document.getElementById('p35-release-hardening-style'))return;
+      const style=document.createElement('style');style.id='p35-release-hardening-style';
+      style.textContent='@media(max-width:760px){body>.mobile-nav,.mobile-nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:2147483646!important;pointer-events:auto!important;transform:translateZ(0)!important;will-change:transform!important;overflow-y:hidden!important}.mobile-nav.v580-eight{grid-template-columns:repeat(8,minmax(64px,1fr))!important;overflow-x:auto!important;overscroll-behavior-inline:contain!important}.mobile-nav button{position:relative!important;z-index:2!important;pointer-events:auto!important;touch-action:manipulation!important;min-width:64px!important}.app-shell{isolation:auto!important}body:not(.v383-study-active) .main{position:relative;z-index:auto!important;padding-bottom:calc(7rem + env(safe-area-inset-bottom))!important}}';
+      document.head.appendChild(style);
+    }
+    p35EnsureReleaseStyles();
+
+    const p35NavigationBase=v366ApplyNavigation;
+    v366ApplyNavigation=function(){
+      const result=p35NavigationBase.apply(this,arguments);
+      p35NormalizeMobileNavigation();
+      return result;
+    };
+    v36ApplyNavigation=v366ApplyNavigation;
+    const p35SetViewBase=setView;
+    setView=function(view,options={}){
+      const result=p35SetViewBase(view,options);
+      p35NormalizeMobileNavigation();
+      requestAnimationFrame(p35NormalizeMobileNavigation);
+      return result;
+    };
+    p35NormalizeMobileNavigation();
+    window.addEventListener('resize',p35NormalizeMobileNavigation,{passive:true});
+
+    /* The historical single-file build accumulated many phase-specific CSS
+       and dialog initializers that all ran synchronously before the first
+       storage await. On slower Firefox/WebKit runners that held
+       DOMContentLoaded for tens of seconds. They are presentation-only boot
+       work, so P35 queues them one task at a time after DOMContentLoaded.
+       Direct calls after startup still execute immediately. */
+    const p35DeferredBootQueue=[];
+    const p35DeferredBootQueued=new Set();
+    let p35DeferredBootScheduled=false;
+    let p35DeferredBootReady=false;
+    let p35DeferNonCriticalBoot=false;
+    function p35ScheduleDeferredBootDrain(){
+      if(!p35DeferredBootReady||p35DeferredBootScheduled||!p35DeferredBootQueue.length)return;
+      p35DeferredBootScheduled=true;
+      const drain=function(){
+        p35DeferredBootScheduled=false;
+        const task=p35DeferredBootQueue.shift();
+        if(task){
+          try{task();}catch(error){console.error('French P35 deferred presentation initializer failed.',error);}
+        }
+        if(p35DeferredBootQueue.length)setTimeout(p35ScheduleDeferredBootDrain,80);
+      };
+      const schedule=function(){
+        if('requestIdleCallback' in globalThis)requestIdleCallback(drain,{timeout:1000});
+        else setTimeout(drain,120);
+      };
+      if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',schedule,{once:true});
+      else schedule();
+    }
+    function p35DeferBootInitializer(label,initializer){
+      let complete=false;
+      return function(){
+        const args=arguments,self=this;
+        if(complete)return;
+        if(!p35DeferNonCriticalBoot){
+          complete=true;
+          return initializer.apply(self,args);
+        }
+        if(p35DeferredBootQueued.has(label))return;
+        p35DeferredBootQueued.add(label);
+        p35DeferredBootQueue.push(function(){
+          if(complete)return;
+          complete=true;
+          initializer.apply(self,args);
+        });
+      };
+    }
+    v430EnsureStyles=p35DeferBootInitializer('v430EnsureStyles',v430EnsureStyles);
+    v440EnsureStyles=p35DeferBootInitializer('v440EnsureStyles',v440EnsureStyles);
+    v450EnsureStyles=p35DeferBootInitializer('v450EnsureStyles',v450EnsureStyles);
+    v460EnsureStyles=p35DeferBootInitializer('v460EnsureStyles',v460EnsureStyles);
+    v470EnsureStyles=p35DeferBootInitializer('v470EnsureStyles',v470EnsureStyles);
+    v480EnsureStyles=p35DeferBootInitializer('v480EnsureStyles',v480EnsureStyles);
+    v490EnsureStyles=p35DeferBootInitializer('v490EnsureStyles',v490EnsureStyles);
+    v500EnsureStyles=p35DeferBootInitializer('v500EnsureStyles',v500EnsureStyles);
+    v510EnsureStyles=p35DeferBootInitializer('v510EnsureStyles',v510EnsureStyles);
+    v520EnsureStyles=p35DeferBootInitializer('v520EnsureStyles',v520EnsureStyles);
+    v530EnsureStyles=p35DeferBootInitializer('v530EnsureStyles',v530EnsureStyles);
+    v540EnsureStyles=p35DeferBootInitializer('v540EnsureStyles',v540EnsureStyles);
+    v550EnsureStyles=p35DeferBootInitializer('v550EnsureStyles',v550EnsureStyles);
+    v560EnsureStyles=p35DeferBootInitializer('v560EnsureStyles',v560EnsureStyles);
+    v570EnsureStyles=p35DeferBootInitializer('v570EnsureStyles',v570EnsureStyles);
+    v580EnsureStyles=p35DeferBootInitializer('v580EnsureStyles',v580EnsureStyles);
+    v590EnsureStyles=p35DeferBootInitializer('v590EnsureStyles',v590EnsureStyles);
+    v5100EnsureStyles=p35DeferBootInitializer('v5100EnsureStyles',v5100EnsureStyles);
+    v5110EnsureStyles=p35DeferBootInitializer('v5110EnsureStyles',v5110EnsureStyles);
+    v5120EnsureStyles=p35DeferBootInitializer('v5120EnsureStyles',v5120EnsureStyles);
+    v5130EnsureStyles=p35DeferBootInitializer('v5130EnsureStyles',v5130EnsureStyles);
+    v5140EnsureStyles=p35DeferBootInitializer('v5140EnsureStyles',v5140EnsureStyles);
+    v5150EnsureStyles=p35DeferBootInitializer('v5150EnsureStyles',v5150EnsureStyles);
+    v5160EnsureStyles=p35DeferBootInitializer('v5160EnsureStyles',v5160EnsureStyles);
+    v5170EnsureStyles=p35DeferBootInitializer('v5170EnsureStyles',v5170EnsureStyles);
+    v5180EnsureStyles=p35DeferBootInitializer('v5180EnsureStyles',v5180EnsureStyles);
+    v5190EnsureStyles=p35DeferBootInitializer('v5190EnsureStyles',v5190EnsureStyles);
+    v5200EnsureStyles=p35DeferBootInitializer('v5200EnsureStyles',v5200EnsureStyles);
+    v5210EnsureStyles=p35DeferBootInitializer('v5210EnsureStyles',v5210EnsureStyles);
+    v5220EnsureStyles=p35DeferBootInitializer('v5220EnsureStyles',v5220EnsureStyles);
+    v5230EnsureStyles=p35DeferBootInitializer('v5230EnsureStyles',v5230EnsureStyles);
+    v5240EnsureStyles=p35DeferBootInitializer('v5240EnsureStyles',v5240EnsureStyles);
+    v5220EnsureDialog=p35DeferBootInitializer('v5220EnsureDialog',v5220EnsureDialog);
+    v5230EnsureDialog=p35DeferBootInitializer('v5230EnsureDialog',v5230EnsureDialog);
+    v5240EnsureDialog=p35DeferBootInitializer('v5240EnsureDialog',v5240EnsureDialog);
+
     const p35InitBase=init;
     init=async function(options){
-      const result=await p35InitBase(options||{});
-      v420NormalizeSurface();
-      return result;
+      const firstBoot=!state.initialized;
+      p35StartupQaDeferred=true;
+      p35DeferNonCriticalBoot=firstBoot;
+      try{
+        /* Never let the accumulated historical init chain hold the parser's
+           DOMContentLoaded boundary. A timer alone is not sufficient because
+           its task can become runnable before DOMContentLoaded is dispatched. */
+        if(firstBoot&&document.readyState==='loading'){
+          await new Promise(function(resolve){window.addEventListener('DOMContentLoaded',resolve,{once:true});});
+        }else if(firstBoot){
+          await new Promise(function(resolve){setTimeout(resolve,0);});
+        }
+        const result=await p35InitBase(options||{});
+        return result;
+      }finally{
+        p35DeferNonCriticalBoot=false;
+        p35StartupQaDeferred=false;
+        p35DeferredBootReady=true;
+        state.v5100Qa.last=P35_QA_PENDING;
+        p35ResetDeferredDiagnostics();
+        v420NormalizeSurface();
+        p35NormalizeMobileNavigation();
+        document.documentElement.dataset.p35BootReady='true';
+        setTimeout(p35ScheduleDeferredBootDrain,250);
+      }
     };
 
 

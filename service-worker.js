@@ -1,8 +1,9 @@
-const CACHE_NAME = 'french-shell-v48';
+const CACHE_NAME = 'french-shell-v49';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './release.json',
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
