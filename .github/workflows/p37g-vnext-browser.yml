@@ -2,7 +2,7 @@ name: P37G vNext browser qualification
 
 on:
   push:
-    branches: ["p37-scalable-runtime-rebuild","main"]
+    branches: ["main"]
   pull_request:
   workflow_dispatch:
 
