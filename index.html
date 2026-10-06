@@ -24921,7 +24921,7 @@ qui	who	A1	question word`;
         }
         if(row.currentQualified&&!row.coverageComplete)errors.push(level+' qualified without content coverage');
       }
-      const b2=p.map.B2;if(!b2.coverageComplete)errors.push('B2 communicative corpus incomplete after P30');
+      const b2=p.map.B2,b2Content=v5160LevelContent('B2');if(!b2Content.promotionCoverage)errors.push('B2 communicative corpus incomplete after P30');
       const promotions=state.v5160Progression?.promotions||{};let prior=true;
       for(const level of V5160_LEVELS){if(promotions[level]&&!prior)errors.push(level+' promotion stored before prerequisite');prior=prior&&Boolean(promotions[level]);}
       const serialized=JSON.stringify(v5160NormalizeProgression(state.v5160Progression||{}));
@@ -28454,6 +28454,25 @@ qui	who	A1	question word`;
        ================================================================ */
     const P35_RELEASE='P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening';
 
+    /* Cold-start storage must be bounded at the public function boundary, not
+       only inside individual IndexedDB operations. If an engine leaves any
+       lower-level request pending, French continues from localStorage + the
+       embedded starter instead of keeping the loading surface indefinitely. */
+    const p35HydrateLocalStateBase=v362HydrateLocalState;
+    v362HydrateLocalState=async function(){
+      const result=await v362SettledWithin(p35HydrateLocalStateBase(),Math.max(1200,V362_LOCAL_TIMEOUT));
+      if(result.ok)return result.value;
+      state.v362StorageDegraded=true;
+      return false;
+    };
+    const p35ReadCatalogCacheBase=v362ReadCatalogCache;
+    v362ReadCatalogCache=async function(){
+      const result=await v362SettledWithin(p35ReadCatalogCacheBase(),Math.max(1200,V362_LOCAL_TIMEOUT));
+      if(result.ok)return result.value;
+      state.v362StorageDegraded=true;
+      return null;
+    };
+
     /* Firefox/WebKit can occasionally leave an empty IndexedDB snapshot cursor
        pending even though the primary state read completed. P35 keeps startup
        local-first by bounding that recovery-only lookup just like every other
@@ -28485,11 +28504,45 @@ qui	who	A1	question word`;
        CDN/auth latency cannot delay stable-channel identification. */
     v420NormalizeSurface();
 
+    /* Guest-first account connectivity is optional to usable startup. Render
+       the guest surface synchronously, then let CDN/auth work finish in the
+       background instead of putting the study UI behind a network dependency. */
+    const p35AccountInitBase=thiepnAccountInit;
+    thiepnAccountInit=async function(){
+      void p35AccountInitBase().catch(function(error){
+        state.thiepnAccount.error=thiepnAccountErrorMessage(error);
+        state.thiepnAccount.status=state.thiepnAccount.user?'error':'guest';
+        thiepnAccountRender();
+      });
+      return null;
+    };
+
+    /* Historical phase wrappers each call v5100RunQa() while one startup is
+       unwinding. Because the identifier resolves to the newest aggregate QA,
+       that repeated the complete modern audit chain many times. Defer those
+       duplicate boot-time calls and execute one authoritative pass after all
+       phase initialization is complete. Interactive/manual QA remains full. */
+    const p35RunQaBase=v5100RunQa;
+    let p35StartupQaDeferred=false;
+    const P35_QA_PENDING=Object.freeze({
+      checks:[],fail:0,warn:0,status:'pending',policy:'p35-startup-qa-deferred'
+    });
+    v5100RunQa=function(){
+      if(p35StartupQaDeferred)return P35_QA_PENDING;
+      return p35RunQaBase();
+    };
+
     const p35InitBase=init;
     init=async function(options){
-      const result=await p35InitBase(options||{});
-      v420NormalizeSurface();
-      return result;
+      p35StartupQaDeferred=true;
+      try{
+        const result=await p35InitBase(options||{});
+        return result;
+      }finally{
+        p35StartupQaDeferred=false;
+        try{state.v5100Qa.last=p35RunQaBase();}catch(error){console.error('French P35 final QA failed.',error);}
+        v420NormalizeSurface();
+      }
     };
 
 
