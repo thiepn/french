@@ -601,6 +601,7 @@ export async function ensureCanonicalLearnerState(now=Date.now()):Promise<Canoni
     settings:{
       session:{
         deck:'A1',direction:'fr-en',order:'smart',size:50,mode:'today',practice:'review',
+        skillMode:'adaptive',scheduleMode:'review',
         typed:false,requeueAgain:true,mix:'due-first',siblingSpacing:true,strictArticles:true
       },
       dailyNewLimit:20,
