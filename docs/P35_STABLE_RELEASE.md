@@ -94,6 +94,18 @@ These changes preserve the same acceptance intent while targeting the product th
 
 The P35 workflow also cancels superseded runs for the same branch/ref so obsolete browser matrices do not consume runner capacity after a defect-only patch.
 
+### Cold-start work is bounded and de-duplicated
+
+The next browser trace showed the core shell could render but startup still spent excessive time unwinding historical phase wrappers.
+
+P35 now applies three release-only corrections:
+
+- the complete IndexedDB state/cache startup calls are bounded at their public function boundary, not only inside lower-level requests;
+- THIEPN Account remains guest-first, but its CDN/auth initialization no longer blocks the usable study surface;
+- historical phase wrappers no longer rerun the newest aggregate QA chain repeatedly during one startup. Intermediate boot-time QA calls are deferred and one authoritative full QA pass runs after initialization.
+
+The trace also exposed a P25 audit wording/logic bug: B2 **learner gate availability** was being treated as B2 **communicative corpus availability**. A user on the embedded starter catalog can legitimately lack B2 lexical evidence while P30's B2 corpus is structurally complete. P25 now checks the curriculum's promotion coverage for that corpus assertion instead of requiring every learner gate to be measurable from the currently loaded vocabulary catalog.
+
 ## Automated acceptance matrix
 
 P35 uses Playwright 1.63.0 and runs five local profiles:
