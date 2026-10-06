@@ -18,20 +18,22 @@ const need=(source,token,label=token)=>{if(!source.includes(token))failures.push
 
 for(const token of ["const DB_VERSION=5","'session'","createIndex('dueAt','dueAt'"])need(idb,token,'storage '+token);
 for(const token of ['weaknessScore','smartPriority','mixTodayQueue','spaceSiblingFamilies'])need(queue,token,'queue '+token);
-for(const token of ['14*86_400_000','applyAgainRequeue','normalizeStudySession','StudyUndoEntryV1'])need(session,token,'session '+token);
+for(const token of ['14*86_400_000','insertReinforcement','reinforcementAt','normalizeStudySession','StudyUndoEntryV1','adaptiveReinforcements'])need(session,token,'session '+token);
 for(const token of [
   'recordStudySessionReview',
   "db.transaction(['learner','srs','activity','meta','session'],'readwrite')",
   'undoLastStudySessionReview',
   'ensureCanonicalLearnerState',
-  'readStartedRecognitionNoteIds'
+  'readStartedRecognitionNoteIds',
+  'practiceOnly',
+  'previousReinforcements'
 ])need(repo,token,'repository '+token);
-for(const token of ['createReviewStudySession','createLearnStudySession','createTodayStudySession','todayReviewCounts'])need(builder,token,'builder '+token);
+for(const token of ['createReviewStudySession','createLearnStudySession','createTodayStudySession','todayReviewCounts','pacingDecision','nextAdaptiveSkill','adaptiveStagedRecords'])need(builder,token,'builder '+token);
 for(const token of ['data-start="today"','data-start="new"','readActiveStudySession'])need(learn,token,'Learn '+token);
-for(const token of ['recordStudySessionReview','undoLastStudySessionReview','skipStudySessionItem','readActiveStudySession'])need(review,token,'Study route '+token);
+for(const token of ['recordStudySessionReview','undoLastStudySessionReview','skipStudySessionItem','readActiveStudySession','reinforcementAt','Extra practice only'])need(review,token,'Study route '+token);
 for(const token of ['chromium-desktop','firefox-desktop','webkit-desktop','android-chrome','ios-webkit'])need(workflow,token,'browser matrix '+token);
-for(const token of ['queueIds.filter','Undo answer','page.reload','content/packs/'])need(tests,token,'browser test '+token);
-for(const token of ['weakness-aware smart ordering','14-day resumable active sessions','Fresh-user support','P35 remains the production runtime'])need(docs,token,'documentation '+token);
+for(const token of ['reinforcements.length','queueIds.filter','Undo answer','page.reload','content/packs/'])need(tests,token,'browser test '+token);
+for(const token of ['weakness-aware smart ordering','14-day resumable active sessions','practice-only reinforcement','Adaptive workload calibration','Fresh-user support','P35 remains the production runtime'])need(docs,token,'documentation '+token);
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37g-study-session-parity',
