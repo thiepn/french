@@ -8,18 +8,30 @@ export interface ContentPackDescriptor {
   sha256?:string;
   revision:string;
 }
+export interface ContentIndexDescriptor {
+  schema:string;
+  path:string;
+  count:number;
+  bytes:number;
+  sha256:string;
+  revision:string;
+}
 export interface ContentSourceMetadata {
   repository?:string;
   commit?:string;
   blob?:string;
   upstreamVersion?:number|string;
   upstreamGeneratedAt?:string;
+  declaredCount?:number|null;
+  actualCount?:number;
+  countMismatch?:boolean;
 }
 export interface ContentManifest {
   schema:'thiepn-french-content-manifest-v1';
   revision:string;
   generatedAt?:string;
   source?:ContentSourceMetadata;
+  indexes?:{vocabulary?:ContentIndexDescriptor};
   totals?:{records?:number;packs?:number;levels?:Record<string,number>};
   packs:ContentPackDescriptor[];
 }
