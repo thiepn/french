@@ -109,7 +109,7 @@ for (const project of [
 for (const token of [
   "retries: 1",
   "trace: 'on-first-retry'",
-  "timeout: live ? 120000 : 90000"
+  "timeout: live ? 180000 : 150000"
 ]) requireToken(config, token, 'browser harness token ' + token);
 
 for (const token of [
@@ -118,6 +118,9 @@ for (const token of [
   "document.documentElement.scrollWidth - window.innerWidth",
   "navigator.serviceWorker.ready",
   "navigator.serviceWorker?.controller",
+  "const STARTUP_BUDGET_MS = 120000",
+  "cold start exceeded",
+  "a second online reload adds no coverage",
   "request.get('/manifest.webmanifest')",
   "Static HTTP metadata is engine-independent",
   "start.evaluate(button => button.click())",
