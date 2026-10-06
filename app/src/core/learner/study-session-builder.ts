@@ -1,5 +1,6 @@
 import { loadVocabularySearchIndex } from '../content/loader';
 import {
+  ensureCanonicalLearnerState,
   ensureNewRecognitionRecords,
   readCanonicalLearnerState,
   readDueSrs,
@@ -45,7 +46,7 @@ async function smartDue(limit:number,now:number):Promise<string[]>{
     familyKey:record.noteId,
     evidence:evidence.get(record.id)
   }));
-  const learner=await readCanonicalLearnerState();
+  const learner=await ensureCanonicalLearnerState();
   const prefs=sessionPreferences(learner);
   return sortSmartQueue(candidates,{now,leechThreshold:prefs.leechThreshold,siblingSpacing:prefs.siblingSpacing})
     .slice(0,limit)
@@ -63,7 +64,7 @@ async function freshRecords(limit:number){
 }
 
 export async function createReviewStudySession(limit=50,now=Date.now()):Promise<StudySessionStateV1>{
-  const learner=await readCanonicalLearnerState();
+  const learner=await ensureCanonicalLearnerState();
   const prefs=sessionPreferences(learner);
   const queue=await smartDue(limit,now);
   const session=createStudySession(queue,{mode:'review',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
@@ -72,7 +73,7 @@ export async function createReviewStudySession(limit=50,now=Date.now()):Promise<
 }
 
 export async function createLearnStudySession(limit?:number,now=Date.now()):Promise<StudySessionStateV1>{
-  const learner=await readCanonicalLearnerState();
+  const learner=await ensureCanonicalLearnerState();
   const prefs=sessionPreferences(learner);
   const rows=await freshRecords(limit??prefs.dailyNewLimit);
   const queue=rows.map(row=>row.id);
@@ -82,7 +83,7 @@ export async function createLearnStudySession(limit?:number,now=Date.now()):Prom
 }
 
 export async function createTodayStudySession(now=Date.now()):Promise<StudySessionStateV1>{
-  const learner=await readCanonicalLearnerState();
+  const learner=await ensureCanonicalLearnerState();
   const prefs=sessionPreferences(learner);
   const today=await todayReviewCounts(now);
   const reviewLimit=Math.max(0,prefs.dailyReviewLimit-today.existingReviews);
