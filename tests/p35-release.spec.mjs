@@ -54,7 +54,13 @@ async function openDataSettings(page) {
 
 test('stable shell boots, identifies itself correctly, and core navigation remains usable', async ({ page }) => {
   const pageErrors = [];
+  const p25AuditErrors = [];
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().includes('French P25 CEFR progression audit failed')) {
+      p25AuditErrors.push(message.text());
+    }
+  });
 
   await boot(page);
 
@@ -100,6 +106,7 @@ test('stable shell boots, identifies itself correctly, and core navigation remai
   await expect(page.locator('#main h1, #main h2').first()).toBeVisible();
 
   expect(pageErrors).toEqual([]);
+  expect(p25AuditErrors).toEqual([]);
 });
 
 test('manifest, static shell, and release metadata expose the full stable product', async ({ page }) => {
