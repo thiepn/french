@@ -3,7 +3,8 @@ import type {
   CanonicalLearnerStateV1,
   CanonicalMigrationV1,
   CanonicalReviewEventV1,
-  CanonicalSrsRecordV1
+  CanonicalSrsRecordV1,
+  CanonicalUserContentV1
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
 
@@ -212,6 +213,18 @@ export async function recordCanonicalReview(
   }finally{db.close();}
 
   return{next,event};
+}
+
+export async function readCanonicalUserContent():Promise<CanonicalUserContentV1|null>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction('user-content','readonly');
+      const request=tx.objectStore('user-content').get('content-v1');
+      request.onsuccess=()=>resolve((request.result as CanonicalUserContentV1|undefined)??null);
+      request.onerror=()=>reject(request.error??new Error('Could not read user content.'));
+    });
+  }finally{db.close();}
 }
 
 export async function hasCanonicalLearnerState():Promise<boolean>{
