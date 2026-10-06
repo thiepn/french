@@ -8,7 +8,7 @@ import type {
   SkillId
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
-import { advanceSession,applyAgainRequeue,normalizeStudySession,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
+import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
 
@@ -140,6 +140,7 @@ export interface ReviewContentContext{
   typedQuality?:string;
   correct?:boolean;
   xp?:number;
+  hasContext?:boolean;
 }
 
 export async function recordCanonicalReview(
@@ -444,20 +445,28 @@ export async function recordStudySessionReview(
 ):Promise<{next:CanonicalSrsRecordV1;event:CanonicalReviewEventV1;session:StudySessionStateV1}>{
   const learner=await ensureCanonicalLearnerState(timestamp);
   const active=await readActiveStudySession(timestamp);
-  if(!learner||!active)throw new Error('Active learner session is unavailable.');
+  if(!active)throw new Error('Active learner session is unavailable.');
 
-  const next=scheduleRating(previous,rating,timestamp,responseMs,typedQuality,schedulerConfigFromLearner(learner));
+  const reinforcement=reinforcementAt(active);
+  const practiceOnly=Boolean(reinforcement);
+  const next=practiceOnly
+    ?previous
+    :scheduleRating(previous,rating,timestamp,responseMs,typedQuality,schedulerConfigFromLearner(learner));
   const correct=context.correct??rating!=='again';
   const nextCombo=correct?active.stats.combo+1:0;
-  const xp=ratingXp(rating,context.practice??'review',context.typed===true,nextCombo);
+  const practice=reinforcement?.practice??context.practice??'review';
+  const xp=ratingXp(rating,practice,context.typed===true,nextCombo);
   const event:CanonicalReviewEventV1={
     schema:'thiepn-french-review-event-v1',
     eventId:'vnext:'+timestamp+':'+previous.id+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
     t:timestamp,id:previous.id,noteId:previous.noteId,skill:previous.skill,rating,responseMs,
-    wasNew:previous.status==='new'&&previous.seen===0,intervalDays:next.intervalDays,
-    direction:context.direction??'',typed:context.typed===true,
-    typedQuality:context.typedQuality??String(typedQuality),level:context.level??'',pos:context.pos??'',
-    theme:context.theme??'',practice:context.practice??'review',correct,xp,practiceOnly:false,
+    wasNew:practiceOnly?false:previous.status==='new'&&previous.seen===0,
+    intervalDays:next.intervalDays,
+    direction:reinforcement?.direction||context.direction??'',
+    typed:context.typed===true,
+    typedQuality:context.typedQuality??String(typedQuality),
+    level:context.level??'',pos:context.pos??'',theme:context.theme??'',
+    practice,correct,xp,practiceOnly,
     stability:next.stability,difficulty:next.difficulty,retrievability:next.retrievability,
     scheduledDays:next.scheduledDays,fsrsState:next.fsrsState
   };
@@ -469,7 +478,7 @@ export async function recordStudySessionReview(
   profile.lifetimeAnswers=Math.max(0,Math.round(number(profile.lifetimeAnswers,0)))+1;
   if(correct)profile.lifetimeCorrect=Math.max(0,Math.round(number(profile.lifetimeCorrect,0)))+1;
   if(context.typed===true)profile.typedAnswers=Math.max(0,Math.round(number(profile.typedAnswers,0)))+1;
-  if((context.practice??'')==='listening')profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  if(practice==='listening')profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
   profile.bestCombo=Math.max(Math.round(number(profile.bestCombo,0)),nextCombo);
   const updatedLearner={...learner,studyDays,profile};
 
@@ -484,26 +493,67 @@ export async function recordStudySessionReview(
     previousProfile:{...learner.profile},
     previousSummary:{...previousSummary},
     previousQueueIds:[...active.queueIds],
+    previousReinforcements:active.reinforcements.map(item=>({...item})),
     previousCursor:active.cursor,
     previousStats:cloneSessionStats(active)
   };
 
-  let session={...active,stats:updateSessionStats(active,previous,rating,event),undo:[...active.undo.slice(-19),undo]};
-  if(rating==='again')session=applyAgainRequeue(session,previous.id);
+  let session:StudySessionStateV1={
+    ...active,
+    stats:updateSessionStats(active,previous,rating,event),
+    undo:[...active.undo.slice(-19),undo]
+  };
+
+  if(practiceOnly){
+    session.stats.adaptivePractice++;
+  }else{
+    const initial=Math.max(10,active.seedIds.length||active.queueIds.length||10);
+    const cap=Math.min(6,Math.max(2,Math.ceil(initial*.18)));
+    const hardWeak=rating==='hard'&&(next.lapses>=2||next.difficulty>=7||next.lastRating==='again');
+    const leechLike=next.lapses>=5||next.againCount>=7;
+    const remaining=Math.max(0,cap-session.stats.adaptiveReinforcements);
+
+    if((rating==='again'||hardWeak)&&remaining>0&&context.hasContext===true){
+      const offset=rating==='again'
+        ?Math.min(6,Math.max(4,Math.round(initial*.12)))
+        :Math.min(9,Math.max(6,Math.round(initial*.18)));
+      session=insertReinforcement(
+        session,
+        previous.id,
+        'context',
+        offset,
+        context.direction==='fr-en'||context.direction==='en-fr'?context.direction:'',
+        'cloze'
+      );
+    }
+
+    const remainingAfterContext=Math.max(0,cap-session.stats.adaptiveReinforcements);
+    if(rating==='again'&&!leechLike&&remainingAfterContext>0){
+      const reverse=context.direction==='fr-en'?'en-fr':context.direction==='en-fr'?'fr-en':'';
+      const offset=Math.min(12,Math.max(8,Math.round(initial*.24)));
+      session=insertReinforcement(session,previous.id,'reverse',offset,reverse,'review');
+    }
+  }
+
   session=advanceSession(session,timestamp);
 
   const summary={
     currentLevel:previousSummary.currentLevel??highestEarnedLevel(updatedLearner.promotions),
-    dueCount:Math.max(0,Math.round(number(previousSummary.dueCount,1))-(previous.status==='new'?0:1)),
+    dueCount:practiceOnly
+      ?Math.max(0,Math.round(number(previousSummary.dueCount,0)))
+      :Math.max(0,Math.round(number(previousSummary.dueCount,1))-(previous.status==='new'?0:1)),
     streakDays:studyStreak(studyDays,timestamp)
   };
 
   const db=await openFrenchDatabase();
   try{
     await new Promise<void>((resolve,reject)=>{
-      const tx=db.transaction(['learner','srs','activity','meta','session'],'readwrite');
+      const stores=practiceOnly
+        ?['learner','activity','meta','session']
+        :['learner','srs','activity','meta','session'];
+      const tx=db.transaction(stores,'readwrite');
       tx.objectStore('learner').put(updatedLearner,'state-v1');
-      tx.objectStore('srs').put(next,next.id);
+      if(!practiceOnly)tx.objectStore('srs').put(next,next.id);
       tx.objectStore('activity').put(event,event.eventId);
       tx.objectStore('meta').put(summary,'learner-summary');
       tx.objectStore('session').put(session,'active');
@@ -515,7 +565,6 @@ export async function recordStudySessionReview(
 
   return{next,event,session};
 }
-
 export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
   const active=await readActiveStudySession(now);
   if(!active)return null;
@@ -537,6 +586,7 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
   const restored:StudySessionStateV1={
     ...active,
     queueIds:[...undo.previousQueueIds],
+    reinforcements:undo.previousReinforcements.map(item=>({...item})),
     cursor:undo.previousCursor,
     currentId:undo.previousQueueIds[undo.previousCursor]??undo.srsId,
     stats:JSON.parse(JSON.stringify(undo.previousStats)) as StudySessionStateV1['stats'],
