@@ -1,7 +1,7 @@
 import type { HydratedLearnerState } from './hydrate';
 
 const DB_NAME='thiepn-french-vnext';
-const DB_VERSION=3;
+const DB_VERSION=4;
 const META_STORE='meta';
 const MIGRATION_STORE='migration';
 const DATA_STORES=['learner','srs','activity','user-content'] as const;
@@ -14,6 +14,17 @@ export function openFrenchDatabase():Promise<IDBDatabase>{
       if(!db.objectStoreNames.contains(META_STORE))db.createObjectStore(META_STORE);
       if(!db.objectStoreNames.contains(MIGRATION_STORE))db.createObjectStore(MIGRATION_STORE);
       for(const store of DATA_STORES)if(!db.objectStoreNames.contains(store))db.createObjectStore(store);
+      const tx=request.transaction;
+      if(tx&&db.objectStoreNames.contains('srs')){
+        const srs=tx.objectStore('srs');
+        if(!srs.indexNames.contains('dueAt'))srs.createIndex('dueAt','dueAt',{unique:false});
+        if(!srs.indexNames.contains('noteId'))srs.createIndex('noteId','noteId',{unique:false});
+      }
+      if(tx&&db.objectStoreNames.contains('activity')){
+        const activity=tx.objectStore('activity');
+        if(!activity.indexNames.contains('t'))activity.createIndex('t','t',{unique:false});
+        if(!activity.indexNames.contains('id'))activity.createIndex('id','id',{unique:false});
+      }
     };
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error??new Error('Could not open French vNext storage.'));
