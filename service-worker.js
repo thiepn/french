@@ -1,14 +1,16 @@
-const CACHE_NAME = 'french-shell-v48';
+const CACHE_NAME = 'french-shell-v49';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './release.json',
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
   './maskable-icon.svg',
   './vendor/thiepn-languages-consumer-contract.js',
-  './vendor/thiepn-languages-read-model.js'
+  './vendor/thiepn-languages-read-model.js',
+  './vendor/thiepn-languages-dashboard.js'
 ];
 
 self.addEventListener('install', event => {
