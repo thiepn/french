@@ -29,6 +29,7 @@ async function waitForStableBoot(page) {
   await expect(page.locator('html')).toHaveAttribute('data-release-acceptance', 'browser-device-defect-only');
   await expect(page.locator('html')).toHaveAttribute('data-product-scope', 'adaptive-language-learning');
   await expect(page.locator('html')).toHaveAttribute('data-app-version', '5.24.0');
+  await expect(page.locator('html')).toHaveAttribute('data-p35-boot-ready', 'true', { timeout: 15000 });
 
   await expect(page).toHaveTitle(EXPECTED_TITLE);
   await expect(page.locator('.brand-copy span')).toHaveText(EXPECTED_SUBTITLE);
