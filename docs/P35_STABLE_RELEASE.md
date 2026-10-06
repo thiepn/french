@@ -113,6 +113,16 @@ The primary P35 run therefore executes without tracing. A single retry captures 
 
 Navigation assertions also reacquire the active control after each route change because the compatibility stack intentionally rebuilds the navigation DOM.
 
+### 12. Hosted-runner startup budget is explicit
+
+The five-engine acceptance matrix runs on shared GitHub-hosted VMs, where parsing/evaluating the large single-file compatibility stack is substantially slower than normal interactive hardware.
+
+P35 therefore uses an explicit **120 second cold-start CI budget**. A browser that cannot reach the stable P35 shell inside that bound still fails release acceptance.
+
+This is a CI acceptance ceiling, not a claim that a real user should tolerate a two-minute startup. Startup performance remains observable work for post-release maintenance.
+
+The offline qualification now performs one controlled offline reload after the service worker has demonstrably claimed the page. A second online reload was removed because it added no service-worker coverage and merely duplicated the expensive cold-start path inside the same test.
+
 ## Automated acceptance matrix
 
 P35 uses pinned Playwright `1.63.0`.
