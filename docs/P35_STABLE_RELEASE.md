@@ -43,7 +43,7 @@ P35 bounds the complete public state/cache recovery path. A stalled recovery mir
 
 THIEPN Account remains guest-first. Its external client/auth work is optional to local study and no longer blocks the usable study surface.
 
-The stable release identity is asserted synchronously before optional account connectivity begins.
+The stable release identity is asserted synchronously before optional account connectivity begins. Normal guest startup defers the external account client/auth path to browser idle time; fully offline startup does not attempt that network path at all and schedules it for the next `online` event.
 
 ### 4. Historical aggregate QA repeated during startup
 
@@ -79,7 +79,7 @@ Vocabulary enrichment, persisted learner state, SRS scheduling, import migration
 
 Android emulation exposed a real case where long Words content could intercept pointer events over the fixed bottom navigation.
 
-P35 gives the bottom navigation an explicit fixed stacking contract, keeps its buttons pointer-active, and reserves bottom content space. Navigation is still tested with normal pointer clicks.
+P35 gives the bottom navigation an explicit fixed stacking contract, keeps its buttons pointer-active, and reserves bottom content space. On narrow screens the canonical mobile navigation is promoted to a direct `body` child so historical content stacking contexts cannot cover it. Active/`aria-current` state is reasserted after navigation DOM rebuilds. Navigation is still tested with normal pointer clicks.
 
 ### 8. Acceptance-harness drift
 
@@ -97,7 +97,7 @@ The onboarding helper invokes the already-visible Save & start button through it
 
 An installed service worker is not enough. The Chromium offline test requires an active **controlling** service worker before disconnecting, then performs a real offline reload.
 
-The P9 dashboard asset is part of the current main-branch offline shell and remains included when P35 is merged.
+P35 advances the stable application shell to `french-shell-v49`. It precaches both `release.json` and the P9 dashboard dependency `vendor/thiepn-languages-dashboard.js` in addition to the existing P7/P8 assets. This closes the discovered case where a service-worker-controlled offline reload could still request a production dependency that had never been cached.
 
 ### 10. Legacy mobile-navigation class leakage
 
