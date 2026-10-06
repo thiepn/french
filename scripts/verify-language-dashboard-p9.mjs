@@ -23,7 +23,7 @@ if(dashboardPos<0)failures.push("P9 dashboard artifact missing");
 if(readModelPos>=0&&dashboardPos>=0&&dashboardPos<readModelPos)failures.push("P9 dashboard artifact must load after P8 read-model artifact");
 if(!vendor.includes('CONTRACT="p9-dashboard-v1"'))failures.push("unexpected P9 dashboard contract");
 if(!serviceWorker.includes("./vendor/thiepn-languages-dashboard.js"))failures.push("P9 dashboard artifact missing from offline shell");
-if(!html.includes("THIEPN_CORE_GATEWAY_URL = 'https://api.thiepn.dev'"))failures.push("Core gateway origin missing");
+if(!html.includes("THIEPN_CORE_GATEWAY_URL = 'https://thiepn-core-gateway.thiepn.workers.dev'"))failures.push("live Core Worker origin missing");
 if(!tokenProvider.includes("meta?.enabled"))failures.push("P9 publish is not gated by explicit French sync enablement");
 if(!tokenProvider.includes("account.client.auth.getSession()"))failures.push("P9 bearer token is not sourced from canonical Account session");
 if(!publisher.includes("thiepnFrenchLanguageReadModel()"))failures.push("P9 does not publish the authoritative P8 projection");
