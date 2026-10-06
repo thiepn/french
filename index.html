@@ -28508,12 +28508,29 @@ qui	who	A1	question word`;
        the guest surface synchronously, then let CDN/auth work finish in the
        background instead of putting the study UI behind a network dependency. */
     const p35AccountInitBase=thiepnAccountInit;
-    thiepnAccountInit=async function(){
+    let p35AccountInitScheduled=false;
+    function p35RunAccountInit(){
+      if(p35AccountInitScheduled)return;
+      p35AccountInitScheduled=true;
       void p35AccountInitBase().catch(function(error){
         state.thiepnAccount.error=thiepnAccountErrorMessage(error);
         state.thiepnAccount.status=state.thiepnAccount.user?'error':'guest';
         thiepnAccountRender();
       });
+    }
+    thiepnAccountInit=async function(){
+      thiepnAccountEnsureStyles();thiepnAccountRender();
+      if(globalThis.navigator?.onLine===false){
+        window.addEventListener('online',p35RunAccountInit,{once:true});
+        return null;
+      }
+      const authCallback=/[?&](?:code|error|error_code|error_description|thiepn_auth)=/i.test(location.search);
+      if(authCallback){
+        setTimeout(p35RunAccountInit,0);
+        return null;
+      }
+      if('requestIdleCallback' in globalThis)requestIdleCallback(p35RunAccountInit,{timeout:2500});
+      else setTimeout(p35RunAccountInit,1200);
       return null;
     };
 
@@ -28622,18 +28639,31 @@ qui	who	A1	question word`;
 
     function p35NormalizeMobileNavigation(){
       const mobile=document.querySelector('.mobile-nav');
-      if(!mobile)return;
+      const desktop=document.querySelector('.topbar .nav');
       /* Historical navigation wrappers can leave mutually exclusive grid
          classes behind. In particular v382-four is !important and can force
          the current eight-item v580 navigation into two overlapping rows. */
-      mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven');
-      mobile.classList.add('v580-eight');
-      mobile.setAttribute('aria-label','Primary navigation');
+      if(mobile){
+        mobile.classList.remove('v36-four','v36-five','v382-four','v382-five','v550-five','v560-six','v570-seven');
+        mobile.classList.add('v580-eight');
+        mobile.setAttribute('aria-label','Primary navigation');
+        if(matchMedia('(max-width:760px)').matches&&document.body&&mobile.parentElement!==document.body){
+          document.body.appendChild(mobile);
+        }
+      }
+      [desktop,mobile].filter(Boolean).forEach(function(nav){
+        nav.setAttribute('aria-label','Primary navigation');
+        nav.querySelectorAll('[data-view]').forEach(function(button){
+          const active=button.dataset.view===state.view;
+          button.classList.toggle('active',active);
+          if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+        });
+      });
     }
     function p35EnsureReleaseStyles(){
       if(document.getElementById('p35-release-hardening-style'))return;
       const style=document.createElement('style');style.id='p35-release-hardening-style';
-      style.textContent='@media(max-width:760px){.mobile-nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:2147483000!important;pointer-events:auto!important;isolation:isolate!important;transform:none!important}.mobile-nav.v580-eight{grid-template-columns:repeat(8,minmax(58px,1fr))!important;overflow-x:auto!important;overscroll-behavior-inline:contain!important}.mobile-nav button{position:relative!important;z-index:1!important;pointer-events:auto!important;touch-action:manipulation}body:not(.v383-study-active) .main{position:relative;z-index:0;padding-bottom:calc(7rem + env(safe-area-inset-bottom))!important}}';
+      style.textContent='@media(max-width:760px){body>.mobile-nav,.mobile-nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:2147483646!important;pointer-events:auto!important;transform:translateZ(0)!important;will-change:transform!important;overflow-y:hidden!important}.mobile-nav.v580-eight{grid-template-columns:repeat(8,minmax(64px,1fr))!important;overflow-x:auto!important;overscroll-behavior-inline:contain!important}.mobile-nav button{position:relative!important;z-index:2!important;pointer-events:auto!important;touch-action:manipulation!important;min-width:64px!important}.app-shell{isolation:auto!important}body:not(.v383-study-active) .main{position:relative;z-index:auto!important;padding-bottom:calc(7rem + env(safe-area-inset-bottom))!important}}';
       document.head.appendChild(style);
     }
     p35EnsureReleaseStyles();
@@ -28645,7 +28675,15 @@ qui	who	A1	question word`;
       return result;
     };
     v36ApplyNavigation=v366ApplyNavigation;
+    const p35SetViewBase=setView;
+    setView=function(view,options={}){
+      const result=p35SetViewBase(view,options);
+      p35NormalizeMobileNavigation();
+      requestAnimationFrame(p35NormalizeMobileNavigation);
+      return result;
+    };
     p35NormalizeMobileNavigation();
+    window.addEventListener('resize',p35NormalizeMobileNavigation,{passive:true});
 
     /* The historical single-file build accumulated many phase-specific CSS
        and dialog initializers that all ran synchronously before the first
@@ -28656,22 +28694,25 @@ qui	who	A1	question word`;
     const p35DeferredBootQueue=[];
     const p35DeferredBootQueued=new Set();
     let p35DeferredBootScheduled=false;
+    let p35DeferredBootReady=false;
     let p35DeferNonCriticalBoot=false;
     function p35ScheduleDeferredBootDrain(){
-      if(p35DeferredBootScheduled||!p35DeferredBootQueue.length)return;
+      if(!p35DeferredBootReady||p35DeferredBootScheduled||!p35DeferredBootQueue.length)return;
       p35DeferredBootScheduled=true;
-      const start=function(){
-        setTimeout(function p35DrainOne(){
-          p35DeferredBootScheduled=false;
-          const task=p35DeferredBootQueue.shift();
-          if(task){
-            try{task();}catch(error){console.error('French P35 deferred presentation initializer failed.',error);}
-          }
-          if(p35DeferredBootQueue.length)p35ScheduleDeferredBootDrain();
-        },0);
+      const drain=function(){
+        p35DeferredBootScheduled=false;
+        const task=p35DeferredBootQueue.shift();
+        if(task){
+          try{task();}catch(error){console.error('French P35 deferred presentation initializer failed.',error);}
+        }
+        if(p35DeferredBootQueue.length)setTimeout(p35ScheduleDeferredBootDrain,80);
       };
-      if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',start,{once:true});
-      else start();
+      const schedule=function(){
+        if('requestIdleCallback' in globalThis)requestIdleCallback(drain,{timeout:1000});
+        else setTimeout(drain,120);
+      };
+      if(document.readyState==='loading')window.addEventListener('DOMContentLoaded',schedule,{once:true});
+      else schedule();
     }
     function p35DeferBootInitializer(label,initializer){
       let complete=false;
@@ -28689,7 +28730,6 @@ qui	who	A1	question word`;
           complete=true;
           initializer.apply(self,args);
         });
-        p35ScheduleDeferredBootDrain();
       };
     }
     v430EnsureStyles=p35DeferBootInitializer('v430EnsureStyles',v430EnsureStyles);
@@ -28747,11 +28787,13 @@ qui	who	A1	question word`;
       }finally{
         p35DeferNonCriticalBoot=false;
         p35StartupQaDeferred=false;
+        p35DeferredBootReady=true;
         state.v5100Qa.last=P35_QA_PENDING;
         p35ResetDeferredDiagnostics();
         v420NormalizeSurface();
         p35NormalizeMobileNavigation();
-        p35ScheduleDeferredBootDrain();
+        document.documentElement.dataset.p35BootReady='true';
+        setTimeout(p35ScheduleDeferredBootDrain,250);
       }
     };
 
