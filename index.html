@@ -28519,9 +28519,10 @@ qui	who	A1	question word`;
 
     /* Historical phase wrappers each call v5100RunQa() while one startup is
        unwinding. Because the identifier resolves to the newest aggregate QA,
-       that repeated the complete modern audit chain many times. Defer those
-       duplicate boot-time calls and execute one authoritative pass after all
-       phase initialization is complete. Interactive/manual QA remains full. */
+       that repeated the complete modern audit chain many times. Stable startup
+       must not execute the aggregate diagnostic on the main thread: P34/P35 CI
+       already gates release correctness, while full runtime QA remains an
+       explicit diagnostic action. */
     const p35RunQaBase=v5100RunQa;
     let p35StartupQaDeferred=false;
     const P35_QA_PENDING=Object.freeze({
@@ -28531,6 +28532,19 @@ qui	who	A1	question word`;
       if(p35StartupQaDeferred)return P35_QA_PENDING;
       return p35RunQaBase();
     };
+    globalThis.FrenchP35ReleaseQa=function(){
+      const result=p35RunQaBase();
+      state.v5100Qa.last=result;
+      return result;
+    };
+
+    function p35EnsureReleaseStyles(){
+      if(document.getElementById('p35-release-hardening-style'))return;
+      const style=document.createElement('style');style.id='p35-release-hardening-style';
+      style.textContent='@media(max-width:760px){.mobile-nav{z-index:10000!important;pointer-events:auto!important;isolation:isolate}body:not(.v383-study-active) .main{padding-bottom:calc(11.5rem + env(safe-area-inset-bottom))!important}}';
+      document.head.appendChild(style);
+    }
+    p35EnsureReleaseStyles();
 
     const p35InitBase=init;
     init=async function(options){
@@ -28540,7 +28554,7 @@ qui	who	A1	question word`;
         return result;
       }finally{
         p35StartupQaDeferred=false;
-        try{state.v5100Qa.last=p35RunQaBase();}catch(error){console.error('French P35 final QA failed.',error);}
+        state.v5100Qa.last=P35_QA_PENDING;
         v420NormalizeSurface();
       }
     };
