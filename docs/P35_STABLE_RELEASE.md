@@ -59,10 +59,11 @@ The single-file app accumulated many phase-specific `EnsureStyles` and assessmen
 
 P35 now:
 
-1. yields one event-loop turn before entering the historical init chain on first boot;
-2. defers noncritical phase CSS/dialog construction until after `DOMContentLoaded`;
-3. drains that presentation queue incrementally instead of executing the entire accumulated layer in one blocking task;
-4. still executes an initializer immediately if a later user action needs it before the deferred queue reaches it.
+1. explicitly waits for `DOMContentLoaded` before entering the historical init chain when the parser is still active;
+2. uses a later event-loop turn when startup is invoked after the document is already interactive;
+3. defers noncritical phase CSS/dialog construction until after `DOMContentLoaded`;
+4. drains that presentation queue incrementally instead of executing the entire accumulated layer in one blocking task;
+5. still executes an initializer immediately if a later user action needs it before the deferred queue reaches it.
 
 This changes presentation scheduling only. Learning state, evidence, scheduling, progression, and assessment rules remain unchanged.
 
