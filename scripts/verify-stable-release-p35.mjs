@@ -26,6 +26,11 @@ for (const token of [
   "Adaptive French · vocabulary, grammar, listening, speaking & transfer",
   "Local-first French learning with adaptive vocabulary, grammar, reading, listening, speaking, real-world transfer, CEFR-aligned progression, and offline support.",
   "const V5240_VERSION='5.24.0';",
+  "const p35HydrateLocalStateBase=v362HydrateLocalState;",
+  "const p35ReadCatalogCacheBase=v362ReadCatalogCache;",
+  "p35-startup-qa-deferred",
+  "const p35AccountInitBase=thiepnAccountInit;",
+  "b2Content=v5160LevelContent('B2')",
   "dataset.oralAssessment='confidence-calibrated-oral-v1'",
   "THIEPN Account — guest-first auth + revision-safe cloud sync.",
   "producerRevision:'french-p8-read-model-v5'"
@@ -93,7 +98,8 @@ for (const token of [
   "Could not import this backup",
   "french3000-settings-v2",
   "delete window.SpeechRecognition",
-  "#thiepn-account-chip"
+  "#thiepn-account-chip",
+  "French P25 CEFR progression audit failed"
 ]) requireToken(spec, token, 'browser acceptance token ' + token);
 
 for (const token of [
