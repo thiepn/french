@@ -410,7 +410,7 @@ export async function recordStudySessionReview(
   responseMs=0,
   typedQuality:TypedQuality='none'
 ):Promise<{next:CanonicalSrsRecordV1;event:CanonicalReviewEventV1;session:StudySessionStateV1}>{
-  const learner=await readCanonicalLearnerState();
+  const learner=await ensureCanonicalLearnerState(timestamp);
   const active=await readActiveStudySession(timestamp);
   if(!learner||!active)throw new Error('Active learner session is unavailable.');
 
