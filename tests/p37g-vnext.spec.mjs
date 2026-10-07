@@ -14,6 +14,21 @@ async function readActiveSession(page){
   }));
 }
 
+async function countPracticeEvents(page,practice){
+  return page.evaluate(async practiceName=>new Promise((resolve,reject)=>{
+    const request=indexedDB.open('thiepn-french-vnext');
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;let count=0;
+      const tx=db.transaction('activity','readonly');
+      const cursor=tx.objectStore('activity').openCursor();
+      cursor.onsuccess=()=>{const row=cursor.result;if(!row)return;if(row.value?.practice===practiceName&&row.value?.practiceOnly===true)count++;row.continue();};
+      cursor.onerror=()=>reject(cursor.error);
+      tx.oncomplete=()=>{db.close();resolve(count);};
+    };
+  },practice));
+}
+
 test('shell stays content-independent on first Home paint',async({page})=>{
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-shell-ready','true');
@@ -95,4 +110,51 @@ test('Today session composes persisted session state on a fresh profile',async({
   expect(session.mode).toBe('today');
   expect(session.queueIds.length).toBeGreaterThan(0);
   expect(session.expiresAt-session.updatedAt).toBeGreaterThan(13*86_400_000);
+});
+
+
+test('Listen loads one small pack and saves practice-only evidence',async({page})=>{
+  await page.goto('/#listen');
+  await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
+  await expect(page.locator('.media-practice-card')).toBeVisible({timeout:30_000});
+  const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(entry=>entry.name));
+  expect(resources.some(url=>url.includes('/content/search/vocabulary-index.json'))).toBeFalsy();
+  expect(resources.filter(url=>url.includes('/content/packs/')).length).toBeLessThanOrEqual(1);
+
+  await page.getByRole('button',{name:'Reveal'}).click();
+  await expect(page.locator('.media-feedback')).toBeVisible();
+  await expect.poll(()=>countPracticeEvents(page,'listening')).toBe(1);
+});
+
+test('Speak initializes microphone recognition only after explicit action',async({page})=>{
+  await page.addInitScript(()=>{
+    window.__speechStarts=0;
+    class FakeRecognition{
+      constructor(){this.lang='';this.interimResults=false;this.continuous=false;this.maxAlternatives=1;this.onresult=null;this.onerror=null;this.onend=null;}
+      start(){
+        window.__speechStarts++;
+        setTimeout(()=>{
+          this.onresult?.({resultIndex:0,results:[{0:{transcript:'bonjour',confidence:.9},length:1,isFinal:true}]});
+          this.onend?.();
+        },0);
+      }
+      stop(){this.onend?.();}
+      abort(){this.onend?.();}
+    }
+    window.SpeechRecognition=FakeRecognition;
+    window.webkitSpeechRecognition=FakeRecognition;
+  });
+  await page.goto('/#speak');
+  await expect(page.getByRole('heading',{name:'Speak'})).toBeVisible();
+  await expect(page.locator('.media-practice-card')).toBeVisible({timeout:30_000});
+  expect(await page.evaluate(()=>window.__speechStarts)).toBe(0);
+
+  const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(entry=>entry.name));
+  expect(resources.some(url=>url.includes('/content/search/vocabulary-index.json'))).toBeFalsy();
+  expect(resources.filter(url=>url.includes('/content/packs/')).length).toBeLessThanOrEqual(1);
+
+  await page.getByRole('button',{name:'Start microphone'}).click();
+  await expect.poll(()=>page.evaluate(()=>window.__speechStarts)).toBe(1);
+  await expect(page.locator('.media-feedback')).toBeVisible();
+  await expect.poll(()=>countPracticeEvents(page,'speaking')).toBe(1);
 });
