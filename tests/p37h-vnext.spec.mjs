@@ -89,3 +89,11 @@ test('installed vNext shell survives a real offline reload',async({page,context}
     await context.setOffline(false);
   }
 });
+
+
+test('Settings keeps Account sync disabled until the first-party French client is registered',async({page})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
+  await expect(page.getByText(/pending control-plane registration/i)).toBeVisible();
+  await expect(page.getByText(/no French data is uploaded/i)).toBeVisible();
+});

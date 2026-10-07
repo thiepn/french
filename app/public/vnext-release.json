@@ -20,7 +20,11 @@
     "p15-read-listen-pairing",
     "p12-sentence-diagnosis",
     "p16-p12-spoken-transfer",
-    "read-listen-speak-context"
+    "read-listen-speak-context",
+    "first-party-account-sync-engine",
+    "p35-compatible-cloud-snapshot",
+    "oauth-aware-sync-rls"
   ],
-  "fullP35FeatureParity": false
+  "fullP35FeatureParity": false,
+  "accountOAuthClient": "pending-manual-registration"
 }

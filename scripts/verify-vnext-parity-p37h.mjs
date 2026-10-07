@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const [progress,settings,listen,speak,read,repository,styles,backup,main,index,swBuilder,manifest,contentBuilder,readingSource,sentenceSource,sentenceDiagnosis,router,shell]=await Promise.all([
+const [progress,settings,listen,speak,read,repository,styles,backup,main,index,swBuilder,manifest,contentBuilder,readingSource,sentenceSource,sentenceDiagnosis,router,shell,accountSessionVendor,accountConfig,accountSync,accountRuntime,accountUi,accountMigration]=await Promise.all([
   readFile(new URL('../app/src/routes/progress.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/settings.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/listen.ts',import.meta.url),'utf8'),
@@ -18,7 +18,13 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
   readFile(new URL('./data/stable-sentence-exercises-v1.json',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/content/sentence-diagnosis.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/router.ts',import.meta.url),'utf8'),
-  readFile(new URL('../app/src/core/shell.ts',import.meta.url),'utf8')
+  readFile(new URL('../app/src/core/shell.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/account-session-vendor.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/config.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/sync.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/runtime.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/settings-ui.ts',import.meta.url),'utf8'),
+  readFile(new URL('../supabase/migrations/20261007221500_french_first_party_sso_access.sql',import.meta.url),'utf8')
 ]);
 
 const failures=[];
@@ -37,6 +43,12 @@ for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Need
 for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
 need(shell,"read:'Read'",'Read navigation');
+for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
+for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','__PENDING_FRENCH_OAUTH_CLIENT_ID__'])need(accountConfig,token,'Account config '+token);
+for(const token of ['connect_thiepn_app','sync_thiepn_french_state','Sync this device','chooseThisDevice','chooseCloud'])need(accountSync+accountUi,token,'Account sync '+token);
+for(const token of ['probeFrenchAccountSession','isFrenchOAuthCallback','reconcileFrenchSync'])need(accountRuntime,token,'Account runtime '+token);
+for(const token of ["is_thiepn_first_party_oauth_client_for_app('french')","app_data.read","app_data.write","FRENCH_APP_NOT_CONNECTED"])need(accountMigration,token,'Account RLS '+token);
+for(const source of [accountSessionVendor,accountSync,accountRuntime,accountUi]){reject(source,"signInWithOAuth","direct Google/Supabase provider flow");reject(source,"provider:'google'","direct Google provider");}
 for(const token of ['recordPracticeEvidence','practiceOnly:true','supportLevel','firstListen','errorCategory'])need(repository,token,'practice evidence '+token);
 need(repository,'export async function replaceCanonicalLearnerSettings','settings persistence');
 for(const token of ['.progress-grid','.settings-form','.practice-card','.activity-bars','.data-recovery'])need(styles,token,'styles '+token);
@@ -60,6 +72,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
+  remainingCutoverBlockers:['one-time-french-oauth-client-registration-and-pin','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;
