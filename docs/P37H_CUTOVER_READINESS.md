@@ -58,12 +58,35 @@ Existing P35 cloud snapshots are accepted through the P37 legacy-to-canonical co
 
 Account initialization is not part of first paint. It starts after learner hydration only when an existing auth/sync signal or OAuth callback exists. Opening Settings explicitly loads it.
 
+## Slice H2 — Listen & Speak
+
+Listen and Speak are now functional route-scoped practice surfaces.
+
+Both select at most one small vocabulary pack for the daily practice set. They do not load the full vocabulary search index.
+
+Listen provides:
+
+- French device TTS;
+- typed audio recall;
+- the stable French-aware grader;
+- reveal/replay/next controls;
+- practice-only activity evidence that never moves SRS scheduling.
+
+Speak provides:
+
+- meaning → spoken French recall;
+- model French TTS;
+- microphone speech recognition only after an explicit button press;
+- transcript grading with the stable French-aware grader;
+- a self-rating fallback when speech recognition is unavailable;
+- practice-only speaking evidence that never changes scheduled SRS state.
+
+Five-engine browser acceptance verifies bounded content loading and confirms microphone recognition does not initialize before learner action.
+
 ## Still blocking cutover
 
 P37H remains incomplete until:
 
-- Listen is functional;
-- Speak is functional;
 - vNext owns service worker / offline shell / manifest behavior;
 - live account sync is qualified;
 - final production artifact promotion and rollback path are qualified.
