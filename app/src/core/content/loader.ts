@@ -40,9 +40,49 @@ export interface VocabularySearchIndex {
   revision:string;
   rows:VocabularySearchRow[];
 }
+export interface ReadingSentence {
+  fr:string;
+  en:string;
+  grammar?:string;
+}
+export interface ReadingQuestion {
+  id:string;
+  prompt:string;
+  options:string[];
+  answer:number;
+  target?:string;
+}
+export interface ReadingPhrase {
+  text:string;
+  frame?:string;
+}
+export interface ReadingItem {
+  id:string;
+  title:string;
+  level:string;
+  type:string;
+  minutes:number;
+  topic:string;
+  register:string;
+  authenticity:string;
+  sourceLabel:string;
+  license:string;
+  targets:string[];
+  phrases:ReadingPhrase[];
+  sentences:ReadingSentence[];
+  questions:ReadingQuestion[];
+}
+export interface ReadingCorpus {
+  schema:'thiepn-french-reading-corpus-v1';
+  revision:string;
+  source?:Record<string,unknown>;
+  count:number;
+  readings:ReadingItem[];
+}
 
 const memory=new Map<string,unknown>();
 let searchIndexPromise:Promise<VocabularySearchIndex>|null=null;
+let readingCorpusPromise:Promise<ReadingCorpus>|null=null;
 let searchMap:Map<string,VocabularySearchRow>|null=null;
 
 async function fetchVerifiedJson<T>(path:string,sha256?:string,signal?:AbortSignal):Promise<T>{
@@ -88,4 +128,17 @@ export async function loadVocabularyWord(id:string,signal?:AbortSignal):Promise<
   if(!reference)return null;
   const pack=await loadContentPack<VocabularyPack>(reference.packId,signal);
   return pack.words.find(word=>String(word.id)===id)??null;
+}
+
+export async function loadReadingCorpus(signal?:AbortSignal):Promise<ReadingCorpus>{
+  readingCorpusPromise??=(async()=>{
+    const manifest=await loadContentManifest(signal);
+    const descriptor=manifest.indexes?.readings;
+    if(!descriptor)throw new Error('Reading library is unavailable.');
+    const corpus=await fetchVerifiedJson<ReadingCorpus>(descriptor.path,descriptor.sha256,signal);
+    if(corpus.schema!=='thiepn-french-reading-corpus-v1'||!Array.isArray(corpus.readings))throw new Error('Reading corpus schema mismatch.');
+    if(corpus.readings.length!==descriptor.count)throw new Error('Reading corpus count mismatch.');
+    return corpus;
+  })();
+  return readingCorpusPromise;
 }
