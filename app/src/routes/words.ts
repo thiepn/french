@@ -21,7 +21,7 @@ function localSearch(rows:VocabularySearchRow[],query:string,limit=40):Vocabular
   }).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||a.row.order-b.row.order).slice(0,limit).map(item=>item.row);
 }
 
-export async function mount({main,signal}:RouteContext):Promise<void>{
+export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   main.innerHTML='<section class="page words-page"><p class="eyebrow">On-demand corpus</p><h1>Words</h1><p class="lede">Search the full French corpus without loading every vocabulary pack.</p><label class="search-field"><span>Search French or English</span><input data-search type="search" autocomplete="off" placeholder="bonjour, apprendre, travel…"></label><p class="inline-status" data-status>Preparing search index…</p><div class="word-layout"><div class="word-results" data-results aria-live="polite"></div><aside class="word-detail" data-detail><p>Select a word to load its full record.</p></aside></div></section>';
 
   const input=main.querySelector<HTMLInputElement>('[data-search]');
@@ -55,6 +55,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         const fr=document.createElement('p');fr.textContent=example.text;block.append(fr);
         if(example.translation){const en=document.createElement('small');en.textContent=example.translation;block.append(en);}
         detail.append(block);
+        const listen=document.createElement('button');listen.type='button';listen.className='secondary-action compact-action word-context-action';listen.textContent='Listen in context';
+        listen.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-listen-note',String(word.id));navigate('listen');});
+        detail.append(listen);
       }
     }catch(error){
       if(signal.aborted)return;

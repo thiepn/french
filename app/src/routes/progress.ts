@@ -238,6 +238,28 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   activityPanel.append(bars);
 
+  const listeningEvents=recent.filter(event=>event.practiceOnly===true&&event.practice==='contextual-listening');
+  const listeningCorrect=listeningEvents.filter(event=>event.correct).length;
+  const listeningFirst=listeningEvents.filter(event=>event.firstListen===true).length;
+  const listeningSupported=listeningEvents.filter(event=>event.correct&&Number(event.supportLevel)>0).length;
+  const listeningErrors=new Map<string,number>();
+  for(const event of listeningEvents){if(event.errorCategory)listeningErrors.set(event.errorCategory,(listeningErrors.get(event.errorCategory)??0)+1);}
+  const topListeningErrors=[...listeningErrors.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+  const listeningPanel=document.createElement('section');listeningPanel.className='data-panel';
+  listeningPanel.append(textNode('h2','Contextual listening evidence'));
+  const listeningGrid=document.createElement('div');listeningGrid.className='pressure-grid';
+  for(const [label,value] of [
+    ['Attempts',listeningEvents.length],
+    ['Accurate',listeningCorrect],
+    ['First-listen',listeningFirst],
+    ['Supported wins',listeningSupported]
+  ] as Array<[string,number]>){
+    const card=document.createElement('div');card.className='pressure-card';card.append(textNode('span',label),textNode('strong',String(value)));listeningGrid.append(card);
+  }
+  listeningPanel.append(listeningGrid);
+  if(topListeningErrors.length)listeningPanel.append(textNode('p','Top aural errors: '+topListeningErrors.map(([name,count])=>name+' ('+count+')').join(' · '),'intel-note'));
+
   const evidencePanel=document.createElement('section');evidencePanel.className='data-panel compact-evidence';
   evidencePanel.append(textNode('h2','Recent evidence'));
   const evidenceGrid=document.createElement('div');evidenceGrid.className='progress-grid';
@@ -252,6 +274,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   evidencePanel.append(evidenceGrid);
 
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,activityPanel,evidencePanel);
+  host.append(actions,funnel,pressurePanel,skills,cefr,weak,listeningPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
