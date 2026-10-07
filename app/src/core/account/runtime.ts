@@ -59,6 +59,8 @@ let client:SupabaseClientLike|null=null;
 let authSubscription:{unsubscribe?:()=>void}|null=null;
 let syncTimer=0;
 let applying=false;
+const localStateListener=()=>scheduleSync();
+window.addEventListener('french:local-state-changed',localStateListener);
 let runtime:AccountRuntimeState={
   status:'guest',ready:false,busy:false,user:null,error:'',lastSyncedAt:0,conflict:null
 };
@@ -372,4 +374,5 @@ export function destroyAccountRuntime():void{
   authSubscription?.unsubscribe?.();
   authSubscription=null;
   client=null;
+  window.removeEventListener('french:local-state-changed',localStateListener);
 }
