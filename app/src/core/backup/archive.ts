@@ -3,8 +3,8 @@ import { openFrenchDatabase } from '../storage/idb';
 const BACKUP_SCHEMA='thiepn-french-vnext-backup-v1' as const;
 const DB_NAME='thiepn-french-vnext';
 const DB_VERSION=5;
-const STORE_NAMES=['learner','srs','activity','user-content','session','meta','migration'] as const;
-type StoreName=typeof STORE_NAMES[number];
+export const STORE_NAMES=['learner','srs','activity','user-content','session','meta','migration'] as const;
+export type StoreName=typeof STORE_NAMES[number];
 type JsonKey=string|number;
 export interface BackupRow{key:JsonKey;value:unknown}
 export interface BackupPayload{dbName:string;dbVersion:number;stores:Record<StoreName,BackupRow[]>}
@@ -56,17 +56,46 @@ function assertRows(value:unknown,name:StoreName):BackupRow[]{
   });
 }
 
-export async function createBackupArchive(now=Date.now()):Promise<{archive:FrenchBackupArchive;text:string;filename:string}>{
+export async function createBackupPayload():Promise<BackupPayload>{
   const db=await openFrenchDatabase();
   try{
     const stores={} as Record<StoreName,BackupRow[]>;
     for(const name of STORE_NAMES)stores[name]=await dumpStore(db,name);
-    const payload:BackupPayload={dbName:DB_NAME,dbVersion:DB_VERSION,stores};
-    const checksum=await sha256(JSON.stringify(payload));
+    return{dbName:DB_NAME,dbVersion:DB_VERSION,stores};
+  }finally{db.close();}
+}
+export function validateBackupPayload(value:unknown):BackupPayload{
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Backup payload is invalid.');
+  const raw=value as Record<string,unknown>;
+  if(raw.dbName!==DB_NAME)throw new Error('Backup database identity does not match French.');
+  const storesRaw=raw.stores;
+  if(!storesRaw||typeof storesRaw!=='object'||Array.isArray(storesRaw))throw new Error('Backup stores are missing.');
+  const stores={} as Record<StoreName,BackupRow[]>;
+  for(const name of STORE_NAMES)stores[name]=assertRows((storesRaw as Record<string,unknown>)[name],name);
+  return{dbName:DB_NAME,dbVersion:Number(raw.dbVersion)||DB_VERSION,stores};
+}
+export async function restoreBackupPayload(value:unknown):Promise<void>{
+  const payload=validateBackupPayload(value);
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction([...STORE_NAMES],'readwrite');
+      for(const name of STORE_NAMES){
+        const store=tx.objectStore(name);store.clear();
+        for(const row of payload.stores[name])store.put(row.value,row.key);
+      }
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Backup restore failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Backup restore was aborted.'));
+    });
+  }finally{db.close();}
+}
+export async function createBackupArchive(now=Date.now()):Promise<{archive:FrenchBackupArchive;text:string;filename:string}>{
+  const payload=await createBackupPayload();
+  const checksum=await sha256(JSON.stringify(payload));
     const archive:FrenchBackupArchive={schema:BACKUP_SCHEMA,app:'French',createdAt:now,checksum,payload};
     const stamp=new Date(now).toISOString().replace(/[:.]/g,'-');
     return{archive,text:JSON.stringify(archive,null,2),filename:'french-backup-'+stamp+'.json'};
-  }finally{db.close();}
 }
 
 export async function inspectBackupArchive(text:string):Promise<BackupInspection>{
@@ -75,20 +104,10 @@ export async function inspectBackupArchive(text:string):Promise<BackupInspection
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('Backup root is invalid.');
   const candidate=raw as Record<string,unknown>;
   if(candidate.schema!==BACKUP_SCHEMA||candidate.app!=='French')throw new Error('This is not a French vNext backup.');
-  const payloadRaw=candidate.payload;
-  if(!payloadRaw||typeof payloadRaw!=='object'||Array.isArray(payloadRaw))throw new Error('Backup payload is missing.');
-  const payloadObject=payloadRaw as Record<string,unknown>;
-  if(payloadObject.dbName!==DB_NAME)throw new Error('Backup database identity does not match French.');
-  const storesRaw=payloadObject.stores;
-  if(!storesRaw||typeof storesRaw!=='object'||Array.isArray(storesRaw))throw new Error('Backup stores are missing.');
-  const stores={} as Record<StoreName,BackupRow[]>;
+  const payload=validateBackupPayload(candidate.payload);
   const rowsByStore={} as Record<StoreName,number>;
   let totalRows=0;
-  for(const name of STORE_NAMES){
-    const rows=assertRows((storesRaw as Record<string,unknown>)[name],name);
-    stores[name]=rows;rowsByStore[name]=rows.length;totalRows+=rows.length;
-  }
-  const payload:BackupPayload={dbName:DB_NAME,dbVersion:Number(payloadObject.dbVersion)||DB_VERSION,stores};
+  for(const name of STORE_NAMES){rowsByStore[name]=payload.stores[name].length;totalRows+=rowsByStore[name];}
   const expected=String(candidate.checksum??'');
   const actual=await sha256(JSON.stringify(payload));
   if(!expected||actual!==expected)throw new Error('Backup integrity check failed.');
@@ -100,18 +119,6 @@ export async function inspectBackupArchive(text:string):Promise<BackupInspection
 
 export async function restoreBackupArchive(text:string):Promise<BackupInspection>{
   const inspection=await inspectBackupArchive(text);
-  const db=await openFrenchDatabase();
-  try{
-    await new Promise<void>((resolve,reject)=>{
-      const tx=db.transaction([...STORE_NAMES],'readwrite');
-      for(const name of STORE_NAMES){
-        const store=tx.objectStore(name);store.clear();
-        for(const row of inspection.archive.payload.stores[name])store.put(row.value,row.key);
-      }
-      tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??new Error('Backup restore failed.'));
-      tx.onabort=()=>reject(tx.error??new Error('Backup restore was aborted.'));
-    });
-  }finally{db.close();}
+  await restoreBackupPayload(inspection.archive.payload);
   return inspection;
 }
