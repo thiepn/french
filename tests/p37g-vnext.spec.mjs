@@ -158,3 +158,23 @@ test('Speak initializes microphone recognition only after explicit action',async
   await expect(page.locator('.media-feedback')).toBeVisible();
   await expect.poll(()=>countPracticeEvents(page,'speaking')).toBe(1);
 });
+
+
+test('offline runtime reloads the used shell and listening pack without network',async({page,context})=>{
+  await page.goto('/#listen');
+  await expect(page.locator('.media-practice-card')).toBeVisible({timeout:30_000});
+  await page.evaluate(async()=>{
+    if(!('serviceWorker' in navigator))throw new Error('Service workers unavailable.');
+    await navigator.serviceWorker.ready;
+  });
+  await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker?.controller)),{timeout:15_000}).toBeTruthy();
+
+  await context.setOffline(true);
+  try{
+    await page.reload({waitUntil:'domcontentloaded'});
+    await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible({timeout:15_000});
+    await expect(page.locator('.media-practice-card')).toBeVisible({timeout:15_000});
+  }finally{
+    await context.setOffline(false);
+  }
+});
