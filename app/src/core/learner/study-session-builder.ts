@@ -13,9 +13,10 @@ import {
   todayReviewCounts,
   writeActiveStudySession
 } from './repository';
-import type { CanonicalReviewEventV1,CanonicalSrsRecordV1,SkillId } from './model';
+import type { CanonicalSrsRecordV1,SkillId } from './model';
 import { createStudySession,type StudyMix,type StudySessionStateV1 } from './session';
 import { evidenceFromEvents,mixTodayQueue,sortSmartQueue,spaceSiblingFamilies,type QueueCandidate } from './queue';
+import { nextAdaptiveSkill,pacingDecision } from './adaptive';
 
 const DAY_MS=86_400_000;
 const STAGE_ORDER:SkillId[]=['recognition','article','production','spelling','listening'];
@@ -44,35 +45,6 @@ function sessionPreferences(learner:Awaited<ReturnType<typeof readCanonicalLearn
 
 function startOfRecentWindow(now:number,days=14):number{
   const start=new Date(now);start.setHours(0,0,0,0);start.setDate(start.getDate()-(days-1));return start.getTime();
-}
-function recentScheduledPerformance(events:CanonicalReviewEventV1[]){
-  const scheduled=events.filter(event=>event.practiceOnly!==true);
-  const reviewed=scheduled.length;
-  const correct=scheduled.filter(event=>event.correct!==false&&event.rating!=='again').length;
-  return{reviewed,correct,accuracy:reviewed?Math.round(correct/reviewed*100):null as number|null};
-}
-export function pacingDecision(
-  dueTotal:number,
-  remainingNew:number,
-  reviewCapacity:number,
-  events:CanonicalReviewEventV1[]
-){
-  const recent=recentScheduledPerformance(events);
-  const cap=Math.max(0,Math.floor(reviewCapacity));
-  const pressure=cap>0?dueTotal/Math.max(1,cap):0;
-  let factor=1,reason='normal';
-  if(cap>0&&pressure>=1){factor=0;reason='review backlog';}
-  else if(cap>0&&pressure>=.65){factor=.5;reason='review pressure';}
-  if(recent.reviewed>=30&&recent.accuracy!==null){
-    if(recent.accuracy<72&&factor>.5){factor=.5;reason='recent recall needs consolidation';}
-    else if(recent.accuracy<80&&factor>.75){factor=.75;reason='recent recall is still settling';}
-  }
-  const allowedNew=Math.min(Math.max(0,remainingNew),factor<=0?0:Math.ceil(Math.max(0,remainingNew)*factor));
-  return{
-    mode:factor===0?'recovery':factor<1?'cautious':'normal',
-    factor,reason,dueTotal,pressure:Math.round(pressure*100)/100,
-    remainingNew:Math.max(0,remainingNew),allowedNew,recent
-  };
 }
 
 async function smartDue(limit:number,now:number):Promise<string[]>{
@@ -110,48 +82,6 @@ async function freshRecords(limit:number,indexRows?:VocabularySearchRow[]){
   return ensureNewRecognitionRecords(unseen.map(row=>row.id));
 }
 
-function bySkill(rows:CanonicalSrsRecordV1[]):Map<SkillId,CanonicalSrsRecordV1>{
-  return new Map(rows.map(row=>[row.skill,row]));
-}
-function isUnseen(row:CanonicalSrsRecordV1|undefined):boolean{
-  return !row||(row.status==='new'&&row.seen===0);
-}
-export function nextAdaptiveSkill(meta:VocabularySearchRow,rows:CanonicalSrsRecordV1[]):SkillId|null{
-  const skills=bySkill(rows);
-  const recognition=skills.get('recognition');
-  if(isUnseen(recognition))return'recognition';
-  if(!recognition)return null;
-  const recognitionReady=recognition.status==='learned'&&(recognition.stability>=1||recognition.successes>=3);
-  if(!recognitionReady)return null;
-
-  const noun=/noun/i.test(meta.pos)&&Boolean(meta.article);
-  if(noun){
-    const article=skills.get('article');
-    if(isUnseen(article))return'article';
-    if(article){
-      const ready=article.status==='learned'||(article.successes>=2&&article.stability>=.5);
-      if(!ready)return null;
-    }
-  }
-
-  const production=skills.get('production');
-  if(isUnseen(production))return'production';
-  if(production){
-    const ready=production.status==='learned'&&(production.stability>=1||production.successes>=3);
-    if(!ready)return null;
-  }
-
-  const spelling=skills.get('spelling');
-  if(isUnseen(spelling))return'spelling';
-  if(spelling){
-    const ready=spelling.status==='learned'||(spelling.successes>=2&&spelling.stability>=.5);
-    if(!ready)return null;
-  }
-
-  const listening=skills.get('listening');
-  if(isUnseen(listening))return'listening';
-  return null;
-}
 
 async function adaptiveStagedRecords(
   limit:number,
