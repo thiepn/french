@@ -25,10 +25,15 @@ test('Settings persist preferences and expose recovery controls',async({page})=>
   await expect(page.locator('input[data-import]')).toHaveAttribute('accept',/json/);
 });
 
-test('Listen exposes an on-demand dictation session',async({page})=>{
+test('Listen exposes support-aware contextual evidence without moving SRS',async({page})=>{
   await page.goto('/#listen');
   await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Comprehensible'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Intensive'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Targeted'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play audio'})).toBeVisible({timeout:30_000});
+  await expect(page.getByRole('button',{name:'Reveal transcript'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Reveal translation'})).toBeDisabled();
   await expect(page.getByRole('textbox',{name:'Type what you hear'})).toBeVisible();
 });
 

@@ -8,12 +8,12 @@ The merged P37A–G runtime had functional Home, Learn, Review and Words routes,
 
 - **Progress intelligence** ports the core P5 decision model to vNext: catalog→introduced→recognition/production/balanced coverage, CEFR coverage, live FSRS recall, independent skill health, recognition→production gaps, review-pressure buckets, weakness ranking/repair causes, recent evidence and deterministic next actions.
 - **Settings foundation** persists daily workload, desired retention, grading mode, typed-answer preference, article strictness and sibling spacing in canonical learner state.
-- **Listen foundation** provides compact French dictation from recent learner vocabulary plus corpus fallback using device speech synthesis.
+- **Contextual listening evidence** now implements core P15 semantics over native vocabulary example sentences: Comprehensible/Intensive/Targeted modes, 0.78×/1.00×/1.08× playback, progressive transcript→translation support, first-listen classification, aural error taxonomy, practice-only evidence that cannot move SRS, delayed independent retest, Word→Listen targeting, connected-speech cues, and Progress evidence.
 - **Speak foundation** provides model playback, shadowing and capability-aware browser speech recognition with a no-recognition fallback.
 - **Backup/recovery** exports every vNext IndexedDB store with a SHA-256 payload checksum, validates imports before mutation, performs one cross-store replacement transaction, and forces a pre-restore safety export from the UI.
 - **Offline/PWA** restores installable metadata and generates a build-specific service worker. Shell and lazy route chunks are precached while the large vocabulary corpus remains on-demand and caches only as used.
 
-These are functional foundations, **not claims of complete P35 feature parity**. The stable product still contains deeper capabilities that must be deliberately ported or superseded, including P14 reading, P15 contextual listening/support-aware evidence, P16 spoken-production modes/evidence, account synchronization, and related cross-surface integrations. P5's core decision/intelligence surface is now represented natively in vNext.
+These are functional foundations, **not claims of complete P35 feature parity**. The stable product still contains deeper capabilities that must be deliberately ported or superseded, including P14 reading and Read↔Listen pairing, P15's original 19-reading aligned/dialogue corpus layer, P16 spoken-production modes/evidence, account synchronization, and related cross-surface integrations. P5's core decision/intelligence surface is now represented natively in vNext.
 
 None of these feature modules is imported into the critical startup bundle.
 
@@ -24,7 +24,7 @@ This branch is **not** the production cutover. P35 remains production.
 Remaining release blockers:
 
 1. rebuild the authentic **P14 Reading** corpus/workspace and saved-state semantics as native modular content rather than importing the old monolith;
-2. complete **P15/P16 deep parity or deliberate replacements** for contextual listening evidence, speaking/recording/spoken recall/transfer, and their cross-surface bridges;
+2. finish the remaining **P15 pairing/dialogue layer** after P14 exists, and complete **P16 deep parity or deliberate replacements** for speaking/recording/spoken recall/transfer and its cross-surface bridges;
 3. port **THIEPN Account sync** to the current first-party account architecture with explicit local/cloud conflict resolution and guest-first behavior;
 4. run whole-product P35→vNext migration/parity acceptance across preserved learner data, user content, evidence and scheduling;
 5. run the five-engine browser/device matrix on the final candidate plus physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
