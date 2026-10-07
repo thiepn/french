@@ -148,7 +148,7 @@ async function loadClient():Promise<SupabaseClientLike>{
 }
 async function fetchRemote():Promise<RemoteState|null>{
   if(!client||!runtime.user)return null;
-  const response=await timeout(
+  const response:any=await timeout<any>(
     client.from('french_sync_state').select('revision,state,app_version,device_id,client_updated_at,updated_at').maybeSingle(),
     10000,'Cloud progress check timed out.'
   );
@@ -157,7 +157,7 @@ async function fetchRemote():Promise<RemoteState|null>{
 }
 async function upload(snapshot:CanonicalCloudSnapshotV1,expectedRevision:number|null):Promise<{revision:number}>{
   if(!client)throw new Error('Account client is unavailable.');
-  const response=await timeout(client.rpc('sync_thiepn_french_state',{
+  const response:any=await timeout<any>(client.rpc('sync_thiepn_french_state',{
     p_expected_revision:expectedRevision,
     p_state:snapshot,
     p_app_version:APP_VERSION,
@@ -201,8 +201,8 @@ async function applyRemote(remote:RemoteState):Promise<void>{
 }
 export async function refreshAuth(options:{reconcile?:boolean}={}):Promise<AccountRuntimeState['user']>{
   const current=client??await loadClient();
-  let response;
-  try{response=await timeout(current.auth.getUser(),8000,'Account verification timed out.');}
+  let response:any;
+  try{response=await timeout<any>(current.auth.getUser(),8000,'Account verification timed out.');}
   catch(error){
     if(isMissingSession(error))response={data:{user:null},error:null};else throw error;
   }
