@@ -113,6 +113,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(paired&&returnReadingId){
     const back=document.createElement('button');back.type='button';back.className='text-action listen-return';back.textContent='← Back to '+paired.title;
     back.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-read-open',returnReadingId);navigate('read');});
+    const speak=document.createElement('button');speak.type='button';speak.className='secondary-action compact-action listen-return';speak.textContent='Speak pair';
+    speak.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-speak-reading',paired.id);navigate('speak');});
+    main.querySelector('.practice-page')?.prepend(speak);
     main.querySelector('.practice-page')?.prepend(back);
   }
 

@@ -286,6 +286,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const spokenGood=spokenEvents.filter(event=>event.correct).length;
   const spokenModes=new Set(spokenEvents.map(event=>event.practice.replace(/^spoken-/,'')));
   const spokenUnassisted=spokenEvents.filter(event=>event.correct&&Number(event.supportLevel??0)===0).length;
+  const transferEvents=spokenEvents.filter(event=>event.practice==='spoken-transfer');
+  const transferCorrect=transferEvents.filter(event=>event.correct).length;
+  const transferExercises=new Set(transferEvents.map(event=>event.sentenceExerciseId).filter(Boolean));
+  const transferManual=transferEvents.filter(event=>Boolean(event.manualJudgment)).length;
   const spokenPanel=document.createElement('section');spokenPanel.className='data-panel';
   spokenPanel.append(textNode('h2','Spoken production evidence'));
   const spokenGrid=document.createElement('div');spokenGrid.className='pressure-grid';
@@ -298,6 +302,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const card=document.createElement('div');card.className='pressure-card';card.append(textNode('span',label),textNode('strong',String(value)));spokenGrid.append(card);
   }
   spokenPanel.append(spokenGrid,textNode('p','Recognition is treated as an optional intelligibility aid, never as an accent score.','intel-note'));
+  if(transferEvents.length)spokenPanel.append(textNode('p','P12 transfer: '+transferCorrect+'/'+transferEvents.length+' manually confirmed correct · '+transferExercises.size+' exercise families · '+transferManual+' manual judgments.','intel-note'));
 
   const evidencePanel=document.createElement('section');evidencePanel.className='data-panel compact-evidence';
   evidencePanel.append(textNode('h2','Recent evidence'));

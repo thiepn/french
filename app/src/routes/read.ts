@@ -206,12 +206,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     state.history[reading.id]=history;queueSave();
     const coverage=coverageCache.get(reading.id) as Coverage;
     const targetWords=new Set(reading.targets.flatMap(target=>tokenize(target).map(normal)));
-    main.innerHTML='<section class="page read-page reader-page"><div class="reader-bar"><button class="text-action" data-close type="button">← Library</button><div class="reader-mode-tabs" data-modes></div><button class="secondary-action compact-action" data-listen-pair type="button">Listen pair</button><span class="reader-position" data-position></span></div><header class="reader-head"><p class="eyebrow"></p><h1></h1><p class="lede"></p><div class="coverage-strip" data-coverage></div></header><div class="reader-layout"><article class="reading-text" data-text></article><aside class="reading-lookup" data-lookup><p class="eyebrow">Word lookup</p><h3>Tap a word</h3><p class="muted-copy">Lookups and exposure stay separate from successful recall.</p></aside></div><div class="reader-finish"><button class="primary-action" data-finish type="button">Finish reading</button></div></section>';
+    main.innerHTML='<section class="page read-page reader-page"><div class="reader-bar"><button class="text-action" data-close type="button">← Library</button><div class="reader-mode-tabs" data-modes></div><button class="secondary-action compact-action" data-listen-pair type="button">Listen pair</button><button class="secondary-action compact-action" data-speak-context type="button">Speak context</button><span class="reader-position" data-position></span></div><header class="reader-head"><p class="eyebrow"></p><h1></h1><p class="lede"></p><div class="coverage-strip" data-coverage></div></header><div class="reader-layout"><article class="reading-text" data-text></article><aside class="reading-lookup" data-lookup><p class="eyebrow">Word lookup</p><h3>Tap a word</h3><p class="muted-copy">Lookups and exposure stay separate from successful recall.</p></aside></div><div class="reader-finish"><button class="primary-action" data-finish type="button">Finish reading</button></div></section>';
     main.querySelector<HTMLButtonElement>('[data-close]')?.addEventListener('click',renderLibrary);
     main.querySelector<HTMLButtonElement>('[data-listen-pair]')?.addEventListener('click',()=>{
       sessionStorage.setItem('french-vnext-listen-reading',reading.id);
       sessionStorage.setItem('french-vnext-listen-return-reading',reading.id);
       navigate('listen');
+    });
+    main.querySelector<HTMLButtonElement>('[data-speak-context]')?.addEventListener('click',()=>{
+      sessionStorage.setItem('french-vnext-speak-reading',reading.id);
+      navigate('speak');
     });
     const eyebrow=main.querySelector<HTMLElement>('.reader-head .eyebrow');if(eyebrow)eyebrow.textContent=reading.level+' · '+reading.type+' · '+reading.minutes+' min · '+reading.register;
     const title=main.querySelector<HTMLElement>('.reader-head h1');if(title)title.textContent=reading.title;
