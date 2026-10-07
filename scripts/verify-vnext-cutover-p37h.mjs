@@ -43,7 +43,7 @@ for(const token of ['"start_url": "/"','"display": "standalone"','"/icon-192.png
 need(indexHtml,'rel="manifest"','installable index manifest link');
 for(const token of ['icon-192.png','icon-512.png','maskable-icon.svg'])need(finalize,token,'artifact icon '+token);
 for(const token of ["countPracticeEvents(page,'listening')","countPracticeEvents(page,'speaking')",'__speechStarts','content/search/vocabulary-index.json',"context.setOffline(true)","navigator.serviceWorker.ready"])need(tests,token,'browser media/PWA '+token);
-for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','service worker / offline shell','live account sync is qualified'])need(docs,token,'documentation '+token);
+for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','live account sync is qualified'])need(docs,token,'documentation '+token);
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-cutover-readiness',
