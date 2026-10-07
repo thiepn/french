@@ -119,14 +119,19 @@ Account reconciliation is now a pure deterministic policy with fixtures covering
 - true divergence conflict;
 - legacy/untrusted baseline conflict safety.
 
-A non-destructive live CI probe checks the production Supabase project for:
+A non-destructive live CI probe checks the public production Supabase contract for:
 
 - Google OAuth enabled;
-- `french_sync_state`;
+- the `french_sync_state` Data API surface being present (it may correctly remain protected from `anon`).
+
+Supabase removed public OpenAPI/schema introspection for publishable/anon keys in 2026, so CI deliberately does not attempt to enumerate RPCs through `/rest/v1/`.
+
+The authenticated project-schema qualification separately verifies that both required RPCs exist:
+
 - `connect_thiepn_app`;
 - `sync_thiepn_french_state`.
 
-The live probe never authenticates as a user and never writes data.
+The public live probe never authenticates as a learner and never writes data.
 
 A final authenticated Google sign-in + cloud round-trip remains a human qualification gate because CI has no user session.
 
