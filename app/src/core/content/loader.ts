@@ -89,3 +89,25 @@ export async function loadVocabularyWord(id:string,signal?:AbortSignal):Promise<
   const pack=await loadContentPack<VocabularyPack>(reference.packId,signal);
   return pack.words.find(word=>String(word.id)===id)??null;
 }
+
+
+export interface ReadingSentence{fr:string;en:string;grammar?:string}
+export interface ReadingQuestion{id:string;prompt:string;options:string[];answer:number;target?:string}
+export interface ReadingPhrase{text:string;frame?:string}
+export interface ReadingItem{
+  id:string;title:string;level:string;type:string;minutes:number;topic:string;register:string;
+  authenticity:string;sourceLabel:string;license:string;targets:string[];phrases:ReadingPhrase[];
+  sentences:ReadingSentence[];questions:ReadingQuestion[];
+}
+export interface ReadingPack{
+  schema:'thiepn-french-reading-pack-v1';
+  id:'reading-stable-p35';
+  revision:string;
+  sourceRuntime:string;
+  sourceBlob:string;
+  morphology:Record<string,string>;
+  readings:ReadingItem[];
+}
+export function loadStableReadingPack(signal?:AbortSignal):Promise<ReadingPack>{
+  return loadContentPack<ReadingPack>('reading-stable-p35',signal);
+}

@@ -11,6 +11,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = resolve(ROOT, 'app/public/content');
 const PACK_DIR = resolve(CONTENT_DIR, 'packs');
 const SEARCH_DIR = resolve(CONTENT_DIR, 'search');
+const READING_DIR = resolve(CONTENT_DIR, 'readings');
+const READING_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-readings-v1.json');
 
 function gitBlobSha(buffer) {
   const header = Buffer.from('blob ' + buffer.length + '\0');
@@ -49,8 +51,10 @@ if (countMismatch) {
 
 await rm(PACK_DIR, { recursive: true, force: true });
 await rm(SEARCH_DIR, { recursive: true, force: true });
+await rm(READING_DIR, { recursive: true, force: true });
 await mkdir(PACK_DIR, { recursive: true });
 await mkdir(SEARCH_DIR, { recursive: true });
+await mkdir(READING_DIR, { recursive: true });
 
 const byLevel = new Map();
 for (const word of source.words) {
@@ -124,6 +128,36 @@ const vocabularySearch = {
   revision: searchPayload.revision
 };
 
+const readingSource = JSON.parse(await readFile(READING_SOURCE_FILE, 'utf8'));
+if (readingSource.schema !== 'thiepn-french-stable-reading-source-v1' || !Array.isArray(readingSource.readings)) {
+  throw new Error('Stable French reading source schema mismatch.');
+}
+if (readingSource.readings.length !== Number(readingSource.count) || readingSource.readings.length < 25) {
+  throw new Error('Stable French reading corpus is incomplete.');
+}
+const readingPayload = {
+  schema: 'thiepn-french-reading-pack-v1',
+  id: 'reading-stable-p35',
+  revision: String(readingSource.sourceBlob || '').slice(0, 12),
+  sourceRuntime: readingSource.sourceRuntime,
+  sourceBlob: readingSource.sourceBlob,
+  morphology: readingSource.morphology || {},
+  readings: readingSource.readings
+};
+const readingBytes = Buffer.from(JSON.stringify(readingPayload));
+await writeFile(resolve(READING_DIR, 'stable-readings.json'), readingBytes);
+const readingPack = {
+  id: readingPayload.id,
+  kind: 'reading',
+  level: 'A1-B2',
+  path: '/content/readings/stable-readings.json',
+  count: readingPayload.readings.length,
+  bytes: readingBytes.length,
+  sha256: sha256(readingBytes),
+  revision: readingPayload.revision
+};
+packs.push(readingPack);
+
 const manifest = {
   schema: 'thiepn-french-content-manifest-v1',
   revision: 'sakana-' + SOURCE_BLOB.slice(0, 12),
@@ -146,7 +180,8 @@ const manifest = {
   totals: {
     records: source.words.length,
     packs: packs.length,
-    levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length]))
+    levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length])),
+    readings: readingPayload.readings.length
   },
   packs
 };
@@ -162,5 +197,7 @@ console.log(JSON.stringify({
   packSize: PACK_SIZE,
   packs: packs.length,
   levels: manifest.totals.levels,
-  searchIndexBytes: searchBytes.length
+  searchIndexBytes: searchBytes.length,
+  readings: readingPayload.readings.length,
+  readingBytes: readingBytes.length
 }, null, 2));

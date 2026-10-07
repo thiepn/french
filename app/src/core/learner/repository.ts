@@ -883,3 +883,20 @@ export async function recordPracticeEvidence(input:PracticeEvidenceInput,timesta
   }finally{db.close();}
   return event;
 }
+
+
+export async function replaceCanonicalFeatureState(key:string,value:unknown):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,featureState:{...learner.featureState,[key]:value}};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save French feature state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Feature-state save was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
+}
