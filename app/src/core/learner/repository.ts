@@ -777,3 +777,17 @@ export async function replaceCanonicalLearnerSettings(settings:Record<string,unk
   }finally{db.close();}
   return updated;
 }
+
+export async function readAllSrsRecords():Promise<CanonicalSrsRecordV1[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction('srs','readonly');
+      const request=tx.objectStore('srs').getAll();
+      request.onsuccess=()=>resolve((request.result??[]) as CanonicalSrsRecordV1[]);
+      request.onerror=()=>reject(request.error??new Error('Could not read SRS intelligence snapshot.'));
+      tx.onerror=()=>reject(tx.error??new Error('Could not read SRS intelligence snapshot.'));
+      tx.onabort=()=>reject(tx.error??new Error('SRS intelligence read was aborted.'));
+    });
+  }finally{db.close();}
+}
