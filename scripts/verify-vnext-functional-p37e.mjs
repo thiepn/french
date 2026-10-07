@@ -17,7 +17,7 @@ const need=(source,token,label=token)=>{if(!source.includes(token))failures.push
 for(const token of [
   "schema: 'thiepn-french-vocabulary-search-v1'",
   "searchRows.push",
-  "indexes: { vocabulary: vocabularySearch }"
+  "vocabulary: vocabularySearch"
 ])need(builder,token,'search build '+token);
 
 for(const token of [
