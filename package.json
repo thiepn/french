@@ -11,8 +11,9 @@
     "test:vnext:queue":"node scripts/test-vnext-queue.mts",
     "test:vnext:session":"node scripts/test-vnext-session.mts",
     "test:vnext:adaptive":"node scripts/test-vnext-adaptive.mts",
+    "test:vnext:account":"node scripts/test-vnext-account-reconcile.mts",
     "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
-    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run build:vnext && npm run verify:vnext:dist"
+    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:account && npm run build:vnext && npm run verify:vnext:dist"
   },
   "devDependencies":{"typescript":"7.0.2","vite":"8.3.3"}
 }
