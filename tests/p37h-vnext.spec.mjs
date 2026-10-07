@@ -2,7 +2,7 @@ import { test,expect } from '@playwright/test';
 
 test('Progress is a real evidence workspace',async({page})=>{
   await page.goto('/#progress');
-  await expect(page.getByRole('heading',{name:'Progress'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Progress',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Vocabulary coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Skill health'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'CEFR coverage'})).toBeVisible();
@@ -27,7 +27,7 @@ test('Settings persist preferences and expose recovery controls',async({page})=>
 
 test('Read restores the native P14 corpus and paired listening bridge',async({page})=>{
   await page.goto('/#read');
-  await expect(page.getByRole('heading',{name:'Read'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Read',exact:true})).toBeVisible();
   await expect(page.getByText(/25 original graded texts/i)).toBeVisible({timeout:30_000});
   await expect(page.getByRole('heading',{name:'Recommended now'})).toBeVisible();
   const firstOpen=page.getByRole('button',{name:/Open|Resume/}).first();
@@ -38,14 +38,14 @@ test('Read restores the native P14 corpus and paired listening bridge',async({pa
   await expect(page.getByRole('button',{name:'Intensive'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Targeted'})).toBeVisible();
   await page.getByRole('button',{name:'Listen pair'}).click();
-  await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Listen',exact:true})).toBeVisible();
   await expect(page.getByText(/aligned segments ready/i)).toBeVisible({timeout:30_000});
   await expect(page.getByRole('button',{name:/Back to /})).toBeVisible();
 });
 
 test('Listen exposes support-aware contextual evidence without moving SRS',async({page})=>{
   await page.goto('/#listen');
-  await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Listen',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Comprehensible'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Intensive'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Targeted'})).toBeVisible();
@@ -57,7 +57,7 @@ test('Listen exposes support-aware contextual evidence without moving SRS',async
 
 test('Speak exposes four modes, local recording and conservative recognition',async({page})=>{
   await page.goto('/#speak');
-  await expect(page.getByRole('heading',{name:'Speak'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Speak',exact:true})).toBeVisible();
   for(const name of ['Pronunciation','Shadowing','Spoken recall','Spoken transfer'])await expect(page.getByRole('button',{name})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play model'})).toBeVisible({timeout:30_000});
   await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
