@@ -24,6 +24,7 @@ export interface ReviewWord {
 }
 
 let userContentPromise:ReturnType<typeof readCanonicalUserContent>|null=null;
+export function invalidateReviewContentCache():void{userContentPromise=null;}
 async function userContent(){userContentPromise??=readCanonicalUserContent();return userContentPromise;}
 
 function fromUserCard(id:string,raw:Record<string,unknown>):ReviewWord|null{
