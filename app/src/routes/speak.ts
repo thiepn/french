@@ -127,7 +127,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const recordingBox=document.createElement('div');recordingBox.className='speak-recording';
     const record=document.createElement('button');record.type='button';record.className='primary-action compact-action';record.textContent=recording?'Stop recording':'Record me';
     const playMine=document.createElement('button');playMine.type='button';playMine.className='secondary-action compact-action';playMine.textContent='Play mine';playMine.disabled=!audioUrl;
-    const capability=document.createElement('span');capability.textContent=navigator.mediaDevices?.getUserMedia?'Microphone available':'Microphone unavailable · self-assessment still works';
+    const capability=document.createElement('span');capability.textContent=Boolean((navigator as Navigator & {mediaDevices?:MediaDevices}).mediaDevices)?'Microphone available':'Microphone unavailable · self-assessment still works';
     recordingBox.append(record,playMine,capability);
 
     const recognitionBox=document.createElement('div');recognitionBox.className='speak-recognition';
