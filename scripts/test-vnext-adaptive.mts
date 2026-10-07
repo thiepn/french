@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
-import { nextAdaptiveSkill,pacingDecision } from '../app/src/core/learner/study-session-builder.ts';
-import type { VocabularySearchRow } from '../app/src/core/content/loader.ts';
+import { nextAdaptiveSkill,pacingDecision } from '../app/src/core/learner/adaptive.ts';
 import type { CanonicalReviewEventV1,CanonicalSrsRecordV1,SkillId } from '../app/src/core/learner/model.ts';
 
 const now=1_700_000_000_000;
-const meta:VocabularySearchRow={
+const meta={
   id:'chat',word:'chat',meaning:'cat',ipa:'',pos:'noun',article:'un',gender:'m',
   level:'A1',order:1,packId:'vocabulary-a1-01'
 };
