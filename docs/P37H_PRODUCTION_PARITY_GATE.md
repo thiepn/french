@@ -4,14 +4,16 @@ P37H exists because the scalable runtime must not reach production merely becaus
 
 ## Completed in this branch
 
-The P37A–G branch had functional Home, Learn, Review and Words routes, but Listen, Speak, Progress and Settings were still explanatory placeholders. P37H converts those four routes into real lazy-loaded workspaces:
+The merged P37A–G runtime had functional Home, Learn, Review and Words routes, while Listen, Speak, Progress and Settings were explanatory placeholders. This branch converts those routes into useful lazy-loaded workspaces and restores release-critical local infrastructure:
 
-- **Progress** reads canonical SRS/activity evidence on demand and exposes due work, 7/30-day accuracy, lifetime evidence, XP, combo, activity and skill mix.
-- **Settings** persists daily workload, desired retention, grading mode, typed-answer preference, article strictness and sibling spacing in the canonical learner state.
-- **Listen** builds compact dictation practice from recent learner vocabulary plus corpus fallback and uses device French speech synthesis.
-- **Speak** provides model playback, shadowing and capability-aware browser speech recognition with a no-recognition fallback.
+- **Progress foundation** reads canonical SRS/activity evidence on demand and exposes due work, 7/30-day accuracy, lifetime evidence, XP, combo, recent activity and skill mix.
+- **Settings foundation** persists daily workload, desired retention, grading mode, typed-answer preference, article strictness and sibling spacing in canonical learner state.
+- **Listen foundation** provides compact French dictation from recent learner vocabulary plus corpus fallback using device speech synthesis.
+- **Speak foundation** provides model playback, shadowing and capability-aware browser speech recognition with a no-recognition fallback.
 - **Backup/recovery** exports every vNext IndexedDB store with a SHA-256 payload checksum, validates imports before mutation, performs one cross-store replacement transaction, and forces a pre-restore safety export from the UI.
-- **Offline/PWA** restores installable metadata and generates a build-specific service worker. The shell and all lazy route chunks are precached after first load while the large vocabulary corpus remains on-demand and is cached only as used.
+- **Offline/PWA** restores installable metadata and generates a build-specific service worker. Shell and lazy route chunks are precached while the large vocabulary corpus remains on-demand and caches only as used.
+
+These are functional foundations, **not claims of complete P35 feature parity**. The stable product still contains deeper capabilities that must be deliberately ported or superseded, including P5 vocabulary intelligence, P14 reading, P15 contextual listening/support-aware evidence, P16 spoken-production modes/evidence, richer progress actions, account synchronization, and related cross-surface integrations.
 
 None of these feature modules is imported into the critical startup bundle.
 
@@ -19,12 +21,13 @@ None of these feature modules is imported into the critical startup bundle.
 
 This branch is **not** the production cutover. P35 remains production.
 
-The remaining blockers are now narrower:
+Remaining release blockers:
 
-1. restore the authentic **Reading** workspace and its saved-state semantics without importing the old monolith,
-2. port **THIEPN Account sync** to the current first-party account architecture with explicit local/cloud conflict resolution,
-3. run whole-product P35→vNext parity acceptance across the preserved learner-data contract,
-4. perform physical-device qualification for installed-PWA, microphone/speech and mobile keyboard behavior,
-5. only then execute a reversible production cutover with the P35 commit preserved as rollback.
+1. rebuild the authentic **P14 Reading** corpus/workspace and saved-state semantics as native modular content rather than importing the old monolith;
+2. complete **P5/P15/P16 deep parity or deliberate replacements** for progress intelligence, contextual listening evidence, speaking/recording/spoken recall/transfer, and their cross-surface bridges;
+3. port **THIEPN Account sync** to the current first-party account architecture with explicit local/cloud conflict resolution and guest-first behavior;
+4. run whole-product P35→vNext migration/parity acceptance across preserved learner data, user content, evidence and scheduling;
+5. run the five-engine browser/device matrix on the final candidate plus physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
+6. only then execute a reversible production cutover with the P35 commit preserved as rollback.
 
-The old P35 runtime remains a data-compatibility source and rollback implementation, not a runtime dependency of vNext.
+The P35 runtime remains a data-compatibility source and rollback implementation, not a runtime dependency of vNext.

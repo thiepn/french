@@ -44,6 +44,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['reading-workspace','thiepn-account-sync','whole-product-p35-parity-acceptance','real-device-qualification']
+  remainingCutoverBlockers:['p14-reading','p5-p15-p16-deep-parity','thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;
