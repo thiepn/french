@@ -17,6 +17,7 @@ export interface CanonicalCloudSnapshotV1 {
   srs:CanonicalSrsRecordV1[];
   reviews:CanonicalReviewEventV1[];
   userContent:CanonicalUserContentV1;
+  legacyPreservation?:LegacySnapshotEnvelope;
 }
 
 function object(value:unknown):Record<string,unknown>{
