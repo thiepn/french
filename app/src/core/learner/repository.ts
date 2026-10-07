@@ -843,7 +843,6 @@ export async function updateCanonicalSettings(
   const currentSession=object(learner.settings.session);
   const next:CanonicalLearnerStateV1={
     ...learner,
-    sourceUpdatedAt:Date.now(),
     settings:{...learner.settings,...patch,session:{...currentSession,...sessionPatch}}
   };
   const db=await openFrenchDatabase();
