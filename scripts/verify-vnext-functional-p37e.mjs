@@ -33,7 +33,7 @@ for(const token of [
 ])need(worker,token,'search worker '+token);
 
 for(const token of [
-  'const DB_VERSION=4',
+  'const DB_VERSION=5',
   "createIndex('dueAt','dueAt'",
   "createIndex('noteId','noteId'",
   "createIndex('t','t'"
@@ -41,8 +41,8 @@ for(const token of [
 
 for(const token of [
   'readDueSrs',
-  'recordCanonicalReview',
-  "db.transaction(['learner','srs','activity','meta'],'readwrite')",
+  'recordStudySessionReview',
+  "db.transaction(['learner','srs','activity','meta','session'],'readwrite')",
   "tx.objectStore('srs').put(next,next.id)",
   "tx.objectStore('activity').put(event,event.eventId)"
 ])need(repository,token,'review repository '+token);
@@ -54,9 +54,9 @@ for(const token of [
 ])need(words,token,'Words route '+token);
 
 for(const token of [
-  'readDueSrs(30)',
+  'readActiveStudySession()',
   'resolveReviewWord(record,signal)',
-  'recordCanonicalReview(record,rating',
+  'recordStudySessionReview(record,rating',
   "['again','Again'],['hard','Hard'],['good','Good'],['easy','Easy']"
 ])need(review,token,'Review route '+token);
 
