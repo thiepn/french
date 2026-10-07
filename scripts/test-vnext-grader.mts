@@ -11,7 +11,7 @@ assert.equal(result.quality,'exact');assert.equal(result.correct,true);assert.eq
 result=gradeTypedAnswer('ecole',base,options);
 assert.equal(result.issue,'accent');assert.equal(result.correct,true);assert.equal(suggestedRating(result,8000),'hard');
 
-result=gradeTypedAnswer('ecol',base,options);
+result=gradeTypedAnswer('bonjor',{...base,id:'fr:bonjour',word:'bonjour',meaning:'hello',article:'',plural:'',aliases:[]},options);
 assert.equal(result.issue,'spelling');assert.equal(result.correct,false);
 
 result=gradeTypedAnswer('maison',base,options);
