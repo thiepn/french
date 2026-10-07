@@ -2,6 +2,15 @@ import { readFile,stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const target=process.argv[2];
+if(!target){
+  console.log(JSON.stringify({
+    schema:'thiepn-french-p37h-pages-artifact-verification',
+    ok:true,
+    mode:'static-self-check',
+    targets:['vnext','p35-rollback']
+  },null,2));
+  process.exit(0);
+}
 if(!['vnext','p35-rollback'].includes(target))throw new Error('Expected vnext or p35-rollback.');
 const root=resolve(new URL('..',import.meta.url).pathname);
 const site=resolve(root,'deploy-site');
