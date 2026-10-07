@@ -13,6 +13,8 @@ const PACK_DIR = resolve(CONTENT_DIR, 'packs');
 const SEARCH_DIR = resolve(CONTENT_DIR, 'search');
 const READING_DIR = resolve(CONTENT_DIR, 'readings');
 const READING_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-readings-v1.json');
+const SENTENCE_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-sentence-exercises-v1.json');
+const SENTENCE_DIR = resolve(CONTENT_DIR, 'sentences');
 
 function gitBlobSha(buffer) {
   const header = Buffer.from('blob ' + buffer.length + '\0');
@@ -52,9 +54,11 @@ if (countMismatch) {
 await rm(PACK_DIR, { recursive: true, force: true });
 await rm(SEARCH_DIR, { recursive: true, force: true });
 await rm(READING_DIR, { recursive: true, force: true });
+await rm(SENTENCE_DIR, { recursive: true, force: true });
 await mkdir(PACK_DIR, { recursive: true });
 await mkdir(SEARCH_DIR, { recursive: true });
 await mkdir(READING_DIR, { recursive: true });
+await mkdir(SENTENCE_DIR, { recursive: true });
 
 const byLevel = new Map();
 for (const word of source.words) {
@@ -158,6 +162,35 @@ const readingPack = {
 };
 packs.push(readingPack);
 
+const sentenceSource = JSON.parse(await readFile(SENTENCE_SOURCE_FILE, 'utf8'));
+if (sentenceSource.schema !== 'thiepn-french-stable-sentence-source-v1' || !Array.isArray(sentenceSource.exercises)) {
+  throw new Error('Stable French sentence source schema mismatch.');
+}
+if (sentenceSource.exercises.length !== Number(sentenceSource.count) || sentenceSource.exercises.length !== 36) {
+  throw new Error('Stable French sentence exercise corpus is incomplete.');
+}
+const sentencePayload = {
+  schema: 'thiepn-french-sentence-pack-v1',
+  id: 'sentence-stable-p12',
+  revision: String(sentenceSource.sourceBlob || '').slice(0, 12) + '-p12',
+  sourceRuntime: sentenceSource.sourceRuntime,
+  sourcePhase: sentenceSource.sourcePhase,
+  sourceBlob: sentenceSource.sourceBlob,
+  exercises: sentenceSource.exercises
+};
+const sentenceBytes = Buffer.from(JSON.stringify(sentencePayload));
+await writeFile(resolve(SENTENCE_DIR, 'stable-sentence-exercises.json'), sentenceBytes);
+packs.push({
+  id: sentencePayload.id,
+  kind: 'speaking',
+  level: 'A1-B2',
+  path: '/content/sentences/stable-sentence-exercises.json',
+  count: sentencePayload.exercises.length,
+  bytes: sentenceBytes.length,
+  sha256: sha256(sentenceBytes),
+  revision: sentencePayload.revision
+});
+
 const manifest = {
   schema: 'thiepn-french-content-manifest-v1',
   revision: 'sakana-' + SOURCE_BLOB.slice(0, 12),
@@ -181,7 +214,8 @@ const manifest = {
     records: source.words.length,
     packs: packs.length,
     levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length])),
-    readings: readingPayload.readings.length
+    readings: readingPayload.readings.length,
+    sentenceExercises: sentencePayload.exercises.length
   },
   packs
 };
@@ -199,5 +233,7 @@ console.log(JSON.stringify({
   levels: manifest.totals.levels,
   searchIndexBytes: searchBytes.length,
   readings: readingPayload.readings.length,
-  readingBytes: readingBytes.length
+  readingBytes: readingBytes.length,
+  sentenceExercises: sentencePayload.exercises.length,
+  sentenceBytes: sentenceBytes.length
 }, null, 2));

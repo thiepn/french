@@ -813,6 +813,15 @@ export interface PracticeEvidenceInput{
   transcriptUsed?:boolean;
   translationUsed?:boolean;
   errorCategory?:string;
+  sentenceExerciseId?:string;
+  sentenceDiagnosis?:string;
+  targetText?:string;
+  recognizedText?:string;
+  recognitionConfidence?:number;
+  manualJudgment?:string;
+  recordingDurationMs?:number;
+  modelDurationMs?:number;
+  paceRatio?:number;
 }
 
 export async function recordPracticeEvidence(input:PracticeEvidenceInput,timestamp=Date.now()):Promise<CanonicalReviewEventV1>{
@@ -851,7 +860,16 @@ export async function recordPracticeEvidence(input:PracticeEvidenceInput,timesta
     playbackRate:Number.isFinite(input.playbackRate)?Number(input.playbackRate):1,
     transcriptUsed:input.transcriptUsed===true,
     translationUsed:input.translationUsed===true,
-    errorCategory:input.errorCategory??''
+    errorCategory:input.errorCategory??'',
+    sentenceExerciseId:input.sentenceExerciseId??'',
+    sentenceDiagnosis:input.sentenceDiagnosis??'',
+    targetText:input.targetText??'',
+    recognizedText:input.recognizedText??'',
+    recognitionConfidence:Number.isFinite(input.recognitionConfidence)?Number(input.recognitionConfidence):0,
+    manualJudgment:input.manualJudgment??'',
+    recordingDurationMs:Math.max(0,Math.round(input.recordingDurationMs??0)),
+    modelDurationMs:Math.max(0,Math.round(input.modelDurationMs??0)),
+    paceRatio:Number.isFinite(input.paceRatio)?Number(input.paceRatio):0
   };
   const today=dayKey(timestamp);
   const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();

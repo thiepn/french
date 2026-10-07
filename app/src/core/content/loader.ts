@@ -111,3 +111,19 @@ export interface ReadingPack{
 export function loadStableReadingPack(signal?:AbortSignal):Promise<ReadingPack>{
   return loadContentPack<ReadingPack>('reading-stable-p35',signal);
 }
+
+
+export type SentenceExerciseType='complete'|'cue'|'translate'|'transform'|'transfer';
+export interface SentenceExercise{
+  id:string;frame:string;type:SentenceExerciseType;context:string;prompt:string;expected:string;
+  alternatives:string[];required:string[];connector?:string;
+}
+export interface SentenceExercisePack{
+  schema:'thiepn-french-sentence-pack-v1';
+  id:'sentence-stable-p12';
+  revision:string;sourceRuntime:string;sourcePhase:string;sourceBlob:string;
+  exercises:SentenceExercise[];
+}
+export function loadStableSentenceExercises(signal?:AbortSignal):Promise<SentenceExercisePack>{
+  return loadContentPack<SentenceExercisePack>('sentence-stable-p12',signal);
+}

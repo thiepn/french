@@ -76,6 +76,15 @@ export interface CanonicalReviewEventV1 {
   transcriptUsed?:boolean;
   translationUsed?:boolean;
   errorCategory?:string;
+  sentenceExerciseId?:string;
+  sentenceDiagnosis?:string;
+  targetText?:string;
+  recognizedText?:string;
+  recognitionConfidence?:number;
+  manualJudgment?:string;
+  recordingDurationMs?:number;
+  modelDurationMs?:number;
+  paceRatio?:number;
 }
 
 export interface CanonicalLearnerStateV1 {
