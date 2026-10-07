@@ -113,6 +113,65 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     }finally{if(button)button.disabled=false;}
   });
 
-  host.replaceChildren(form);
+  const accountHost=document.createElement('section');accountHost.className='account-panel';accountHost.setAttribute('aria-live','polite');
+  host.replaceChildren(form,accountHost);
   status.textContent='Settings loaded.';
+
+  try{
+    const account=await import('../core/account/sync');
+    if(signal.aborted)return;
+    const renderAccount=(state:import('../core/account/sync').PublicAccountState)=>{
+      accountHost.replaceChildren();
+      const head=document.createElement('div');head.className='account-panel-head';
+      const title=document.createElement('div');
+      const eyebrow=document.createElement('p');eyebrow.className='eyebrow';eyebrow.textContent='THIEPN Account';
+      const h=document.createElement('h2');h.textContent='Account & sync';title.append(eyebrow,h);
+      const badge=document.createElement('span');badge.className='account-status';badge.dataset.status=state.status;badge.textContent=state.status==='signed-in'?'Signed in':state.status==='syncing'?'Syncing…':state.status==='conflict'?'Needs choice':state.status==='error'?'Sync issue':state.status==='synced'?'Synced':'Guest';
+      head.append(title,badge);accountHost.append(head);
+
+      const copy=document.createElement('p');copy.className='account-copy';
+      if(!state.user)copy.textContent='Guest-first by default. Your progress stays on this device until you explicitly connect and enable cloud sync.';
+      else if(state.hasConflict)copy.textContent='French found meaningful progress on this device and in the cloud. Neither copy will be overwritten until you choose the source of truth.';
+      else if(!state.syncEnabled)copy.textContent=(state.user.email||'Your THIEPN Account')+' is signed in. Progress is still local until you enable sync.';
+      else copy.textContent=(state.user.email||'Your THIEPN Account')+' is connected with revision-safe French progress sync.';
+      accountHost.append(copy);
+
+      const facts=document.createElement('div');facts.className='account-facts';
+      const fact=(label:string,value:string)=>{const item=document.createElement('span');const strong=document.createElement('strong');strong.textContent=label;const small=document.createElement('small');small.textContent=value;item.append(strong,small);return item;};
+      facts.append(
+        fact('Local safety','Pausing or signing out never deletes this browser copy'),
+        fact('Cloud revision',state.revision==null?'—':String(state.revision)),
+        fact('Last sync',state.lastSyncedAt?new Date(state.lastSyncedAt).toLocaleString():'Not synced yet')
+      );
+      accountHost.append(facts);
+      if(state.error){const error=document.createElement('p');error.className='account-error';error.textContent=state.error;accountHost.append(error);}
+
+      const actions=document.createElement('div');actions.className='settings-actions account-actions';
+      const button=(label:string,primary:boolean,handler:()=>void|Promise<void>)=>{
+        const b=document.createElement('button');b.type='button';b.className=(primary?'primary-action':'secondary-action')+' compact-action';b.textContent=label;b.disabled=state.busy;b.addEventListener('click',()=>void handler());actions.append(b);
+      };
+      if(!state.user){
+        button('Sign in with THIEPN Account',true,()=>account.signIn());
+      }else if(state.hasConflict){
+        button('Use this device',true,async()=>{if(confirm('Replace the French cloud copy with the progress on this device?'))await account.useDevice();});
+        button('Use cloud',false,async()=>{if(confirm('Replace this device copy with the French cloud copy? Export a backup first if needed.'))await account.useCloud();});
+        button('Sign out',false,()=>account.signOut());
+      }else if(!state.syncEnabled){
+        button('Sync this device',true,()=>account.enableSync());
+        button('Sign out',false,()=>account.signOut());
+      }else{
+        button('Sync now',true,()=>account.reconcileNow(false));
+        button('Pause sync',false,()=>account.pauseSync());
+        button('Sign out',false,()=>account.signOut());
+      }
+      accountHost.append(actions);
+    };
+    const unsubscribe=account.subscribeAccount(renderAccount);
+    signal.addEventListener('abort',unsubscribe,{once:true});
+    await account.initializeAccount(false);
+  }catch(error){
+    if(signal.aborted)return;
+    accountHost.innerHTML='<h2>Account & sync</h2><p class="account-error">THIEPN Account could not load. Local study remains available.</p>';
+    console.error('French account settings failed',error);
+  }
 }
