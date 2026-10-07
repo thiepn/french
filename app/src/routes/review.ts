@@ -74,8 +74,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const strictArticles=sessionSettings.strictArticles!==false;
   const typedPreference=sessionSettings.typed===true;
 
-  let session=await readActiveStudySession();
-  if(!session)session=await createReviewStudySession(50);
+  const restoredSession=await readActiveStudySession();
+  let session:StudySessionStateV1=restoredSession??await createReviewStudySession(50);
 
   const refreshToolbar=()=>{
     const total=session.queueIds.length;
