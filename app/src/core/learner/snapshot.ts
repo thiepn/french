@@ -48,10 +48,10 @@ export async function cloudSnapshotHash(snapshot:CanonicalCloudSnapshotV1):Promi
   return sha256Text(stableStringify(snapshot));
 }
 
-export async function legacyCloudStateToCanonical(state:unknown):Promise<CanonicalMigrationV1>{
+export async function legacyCloudStateEnvelope(state:unknown):Promise<LegacySnapshotEnvelope>{
   const payload=object(state) as JsonObject;
   const fingerprint=await sha256Text(stableStringify(payload));
-  const envelope:LegacySnapshotEnvelope={
+  return{
     schema:'thiepn-french-legacy-import-v1',
     source:'depth-db',
     capturedAt:Date.now(),
@@ -61,5 +61,8 @@ export async function legacyCloudStateToCanonical(state:unknown):Promise<Canonic
     fingerprint,
     payload
   };
-  return legacyEnvelopeToCanonical(envelope);
+}
+
+export async function legacyCloudStateToCanonical(state:unknown):Promise<CanonicalMigrationV1>{
+  return legacyEnvelopeToCanonical(await legacyCloudStateEnvelope(state));
 }
