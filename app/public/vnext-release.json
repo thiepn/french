@@ -12,7 +12,8 @@
     "functional-listen",
     "functional-speak",
     "backup-recovery",
-    "offline-pwa"
+    "offline-pwa",
+    "p5-progress-intelligence"
   ],
   "fullP35FeatureParity": false
 }

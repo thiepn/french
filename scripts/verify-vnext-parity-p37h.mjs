@@ -18,7 +18,7 @@ const failures=[];
 const need=(source,token,label=token)=>{if(!source.includes(token))failures.push('missing '+label);};
 const reject=(source,token,label=token)=>{if(source.includes(token))failures.push('placeholder remains '+label);};
 
-for(const token of ['readRecentReviewEvents','countDueSrs','30-day skill mix','Last 7 days'])need(progress,token,'Progress '+token);
+for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','French dictation','speechSynthesis'])need(listen,token,'Listen '+token);
 for(const token of ['webkitSpeechRecognition','Play model','Speak now','phrase match'])need(speak,token,'Speak '+token);
@@ -44,6 +44,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['p14-reading','p5-p15-p16-deep-parity','thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
+  remainingCutoverBlockers:['p14-reading','p15-p16-deep-parity','thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;

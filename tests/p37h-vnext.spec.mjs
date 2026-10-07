@@ -3,9 +3,12 @@ import { test,expect } from '@playwright/test';
 test('Progress is a real evidence workspace',async({page})=>{
   await page.goto('/#progress');
   await expect(page.getByRole('heading',{name:'Progress'})).toBeVisible();
-  await expect(page.locator('.progress-grid .stat-card')).toHaveCount(6);
-  await expect(page.getByRole('heading',{name:'Last 7 days'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'30-day skill mix'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Vocabulary coverage'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Skill health'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'CEFR coverage'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Review pressure'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Weakest vocabulary'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'What to do next'})).toBeVisible();
 });
 
 test('Settings persist preferences and expose recovery controls',async({page})=>{
