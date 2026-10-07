@@ -761,3 +761,132 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
     });
   }finally{db.close();}
 }
+
+
+export interface CanonicalProgressSnapshot {
+  learner:CanonicalLearnerStateV1;
+  srs:{
+    total:number;notes:number;newCount:number;learning:number;learned:number;due:number;suspended:number;
+    bySkill:Record<string,number>;
+  };
+  activity:{
+    total:number;scheduled:number;practiceOnly:number;correct:number;accuracy:number|null;
+    last30Days:Array<{day:string;answers:number;correct:number;xp:number}>;
+  };
+}
+
+export async function readCanonicalProgressSnapshot(now=Date.now()):Promise<CanonicalProgressSnapshot>{
+  const learner=await ensureCanonicalLearnerState(now);
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const notes=new Set<string>();
+      const bySkill:Record<string,number>={};
+      const srs={total:0,notes:0,newCount:0,learning:0,learned:0,due:0,suspended:0,bySkill};
+      let total=0,scheduled=0,practiceOnly=0,correct=0;
+      const days=new Map<string,{day:string;answers:number;correct:number;xp:number}>();
+      const cutoff=now-30*86_400_000;
+      const tx=db.transaction(['srs','activity'],'readonly');
+
+      const srsCursor=tx.objectStore('srs').openCursor();
+      srsCursor.onsuccess=()=>{
+        const cursor=srsCursor.result;
+        if(!cursor)return;
+        const row=cursor.value as CanonicalSrsRecordV1;
+        srs.total++;notes.add(row.noteId);bySkill[row.skill||'unknown']=(bySkill[row.skill||'unknown']??0)+1;
+        if(row.status==='new')srs.newCount++;else if(row.status==='learning')srs.learning++;else if(row.status==='learned')srs.learned++;
+        if(row.suspended)srs.suspended++;
+        if(!row.suspended&&row.status!=='new'&&row.dueAt>0&&row.dueAt<=now)srs.due++;
+        cursor.continue();
+      };
+      srsCursor.onerror=()=>reject(srsCursor.error??new Error('Could not aggregate SRS progress.'));
+
+      const activityCursor=tx.objectStore('activity').index('t').openCursor(IDBKeyRange.lowerBound(cutoff));
+      activityCursor.onsuccess=()=>{
+        const cursor=activityCursor.result;
+        if(!cursor)return;
+        const row=cursor.value as CanonicalReviewEventV1;
+        total++;
+        if(row.practiceOnly)practiceOnly++;else scheduled++;
+        if(row.correct)correct++;
+        const key=dayKey(row.t);
+        const day=days.get(key)??{day:key,answers:0,correct:0,xp:0};
+        day.answers++;if(row.correct)day.correct++;day.xp+=Math.max(0,Math.round(row.xp||0));days.set(key,day);
+        cursor.continue();
+      };
+      activityCursor.onerror=()=>reject(activityCursor.error??new Error('Could not aggregate activity progress.'));
+
+      tx.oncomplete=()=>{
+        srs.notes=notes.size;
+        const last30Days=[...days.values()].sort((a,b)=>a.day.localeCompare(b.day));
+        resolve({
+          learner,
+          srs,
+          activity:{
+            total,scheduled,practiceOnly,correct,
+            accuracy:total?Math.round(correct/total*100):null,
+            last30Days
+          }
+        });
+      };
+      tx.onerror=()=>reject(tx.error??new Error('Could not read progress snapshot.'));
+      tx.onabort=()=>reject(tx.error??new Error('Progress snapshot read was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+export async function updateCanonicalSettings(
+  patch:Record<string,unknown>,
+  sessionPatch:Record<string,unknown>={}
+):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const currentSession=object(learner.settings.session);
+  const next:CanonicalLearnerStateV1={
+    ...learner,
+    sourceUpdatedAt:Date.now(),
+    settings:{...learner.settings,...patch,session:{...currentSession,...sessionPatch}}
+  };
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(next,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings write was aborted.'));
+    });
+  }finally{db.close();}
+  return next;
+}
+
+export async function exportCanonicalBackup():Promise<Record<string,unknown>>{
+  const db=await openFrenchDatabase();
+  try{
+    const readStore=<T>(storeName:string)=>new Promise<T[]>((resolve,reject)=>{
+      const rows:T[]=[];
+      const tx=db.transaction(storeName,'readonly');
+      const request=tx.objectStore(storeName).openCursor();
+      request.onsuccess=()=>{
+        const cursor=request.result;if(!cursor)return;
+        rows.push(cursor.value as T);cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not export '+storeName+'.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not export '+storeName+'.'));
+    });
+    const [learner,srs,activity,userContent]=await Promise.all([
+      readStore<CanonicalLearnerStateV1>('learner'),
+      readStore<CanonicalSrsRecordV1>('srs'),
+      readStore<CanonicalReviewEventV1>('activity'),
+      readStore<CanonicalUserContentV1>('user-content')
+    ]);
+    return{
+      schema:'thiepn-french-vnext-backup-v1',
+      exportedAt:new Date().toISOString(),
+      learner:learner[0]??null,
+      srs,
+      activity,
+      userContent:userContent[0]??null
+    };
+  }finally{db.close();}
+}
