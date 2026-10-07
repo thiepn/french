@@ -873,11 +873,12 @@ export async function exportCanonicalBackup():Promise<Record<string,unknown>>{
       tx.oncomplete=()=>resolve(rows);
       tx.onerror=()=>reject(tx.error??new Error('Could not export '+storeName+'.'));
     });
-    const [learner,srs,activity,userContent]=await Promise.all([
+    const [learner,srs,activity,userContent,session]=await Promise.all([
       readStore<CanonicalLearnerStateV1>('learner'),
       readStore<CanonicalSrsRecordV1>('srs'),
       readStore<CanonicalReviewEventV1>('activity'),
-      readStore<CanonicalUserContentV1>('user-content')
+      readStore<CanonicalUserContentV1>('user-content'),
+      readStore<StudySessionStateV1>('session')
     ]);
     return{
       schema:'thiepn-french-vnext-backup-v1',
@@ -885,7 +886,8 @@ export async function exportCanonicalBackup():Promise<Record<string,unknown>>{
       learner:learner[0]??null,
       srs,
       activity,
-      userContent:userContent[0]??null
+      userContent:userContent[0]??null,
+      session:session[0]??null
     };
   }finally{db.close();}
 }
@@ -898,6 +900,7 @@ export interface CanonicalBackupV1 {
   srs:CanonicalSrsRecordV1[];
   activity:CanonicalReviewEventV1[];
   userContent:CanonicalUserContentV1|null;
+  session?:StudySessionStateV1|null;
 }
 
 export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<void>{
@@ -918,6 +921,8 @@ export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<v
       for(const row of backup.srs)if(row?.schema==='thiepn-french-srs-record-v1')srs.put(row,row.id);
       for(const row of backup.activity)if(row?.schema==='thiepn-french-review-event-v1')activity.put(row,row.eventId);
       tx.objectStore('user-content').put(userContent,'content-v1');
+      const active=normalizeStudySession(backup.session);
+      if(active)tx.objectStore('session').put(active,'active');
       tx.objectStore('meta').put(backup.learner.sourceFingerprint,MIGRATION_MARKER);
       tx.objectStore('meta').put({
         currentLevel:highestEarnedLevel(backup.learner.promotions),
