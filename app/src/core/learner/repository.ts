@@ -1,4 +1,4 @@
-import { openFrenchDatabase,readMetaValue,writeMetaValue } from '../storage/idb';
+import { openFrenchDatabase,readMetaValue,readMigrationValue,writeMetaValue,writeMigrationValue } from '../storage/idb';
 import type {
   CanonicalLearnerStateV1,
   CanonicalMigrationV1,
@@ -794,11 +794,12 @@ export function readAllReviewEvents():Promise<CanonicalReviewEventV1[]>{
 }
 
 export async function exportCanonicalCloudSnapshot(appVersion='6.0.0-vnext'):Promise<CanonicalCloudSnapshotV1>{
-  const [learner,userContent,srs,reviews]=await Promise.all([
+  const [learner,userContent,srs,reviews,legacyPreservation]=await Promise.all([
     ensureCanonicalLearnerState(),
     readCanonicalUserContent(),
     readAllSrsRecords(),
-    readAllReviewEvents()
+    readAllReviewEvents(),
+    readMigrationValue<import('../migration/legacy-contract').LegacySnapshotEnvelope>('legacy-import-v1')
   ]);
   return{
     schema:'thiepn-french-cloud-state-v1',
@@ -811,7 +812,8 @@ export async function exportCanonicalCloudSnapshot(appVersion='6.0.0-vnext'):Pro
     userContent:userContent??{
       schema:'thiepn-french-user-content-v1',
       userCards:{},cardEdits:{},smartDecks:{},customDecks:{}
-    }
+    },
+    legacyPreservation:legacyPreservation?.schema==='thiepn-french-legacy-import-v1'?legacyPreservation:undefined
   };
 }
 
@@ -858,6 +860,9 @@ export async function replaceCanonicalCloudSnapshot(snapshot:CanonicalCloudSnaps
     reviews:snapshot.reviews,
     userContent:snapshot.userContent
   },'cloud:'+String(snapshot.updatedAt||Date.now()));
+  if(snapshot.legacyPreservation?.schema==='thiepn-french-legacy-import-v1'){
+    await writeMigrationValue('legacy-import-v1',snapshot.legacyPreservation);
+  }
 }
 
 export async function updateLearnerSettings(
