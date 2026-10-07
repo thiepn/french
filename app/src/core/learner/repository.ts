@@ -944,3 +944,82 @@ export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<v
     });
   }finally{db.close();}
 }
+
+
+export interface StandalonePracticeInput {
+  noteId:string;
+  skill:SkillId;
+  rating:Exclude<Rating,''>;
+  correct:boolean;
+  responseMs?:number;
+  typed?:boolean;
+  typedQuality?:string;
+  level?:string;
+  pos?:string;
+  direction?:string;
+  practice:string;
+}
+
+export async function recordStandalonePractice(
+  input:StandalonePracticeInput,
+  timestamp=Date.now()
+):Promise<CanonicalReviewEventV1>{
+  const learner=await ensureCanonicalLearnerState(timestamp);
+  const today=dayKey(timestamp);
+  const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();
+  const profile={...learner.profile};
+  const xp=input.rating==='easy'?5:input.rating==='good'?4:input.rating==='hard'?2:1;
+  profile.xp=Math.max(0,Math.round(number(profile.xp,0)))+xp;
+  profile.lifetimeAnswers=Math.max(0,Math.round(number(profile.lifetimeAnswers,0)))+1;
+  if(input.correct)profile.lifetimeCorrect=Math.max(0,Math.round(number(profile.lifetimeCorrect,0)))+1;
+  if(input.practice==='listening')profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  if(input.practice==='speaking')profile.speakingAnswers=Math.max(0,Math.round(number(profile.speakingAnswers,0)))+1;
+
+  const event:CanonicalReviewEventV1={
+    schema:'thiepn-french-review-event-v1',
+    eventId:'vnext-practice:'+timestamp+':'+input.noteId+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
+    t:timestamp,
+    id:input.noteId+'::practice:'+input.practice,
+    noteId:input.noteId,
+    skill:input.skill,
+    rating:input.rating,
+    responseMs:Math.max(0,Math.round(input.responseMs??0)),
+    wasNew:false,
+    intervalDays:0,
+    direction:input.direction??'',
+    typed:input.typed===true,
+    typedQuality:input.typedQuality??'none',
+    level:input.level??'',
+    pos:input.pos??'',
+    theme:'',
+    practice:input.practice,
+    correct:input.correct,
+    xp,
+    practiceOnly:true,
+    stability:0,
+    difficulty:5,
+    retrievability:0,
+    scheduledDays:0,
+    fsrsState:''
+  };
+
+  const previousSummary=(await readMetaValue<{currentLevel?:string;dueCount?:number;streakDays?:number}>('learner-summary'))??{};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','activity','meta'],'readwrite');
+      tx.objectStore('learner').put({...learner,studyDays,profile},'state-v1');
+      tx.objectStore('activity').put(event,event.eventId);
+      tx.objectStore('meta').put({
+        currentLevel:previousSummary.currentLevel,
+        dueCount:Math.max(0,Math.round(number(previousSummary.dueCount,0))),
+        streakDays:studyStreak(studyDays,timestamp)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save standalone practice.'));
+      tx.onabort=()=>reject(tx.error??new Error('Standalone practice write was aborted.'));
+    });
+  }finally{db.close();}
+  notifyCanonicalChange();
+  return event;
+}
