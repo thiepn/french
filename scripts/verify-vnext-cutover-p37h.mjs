@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const [progress,settings,listen,speak,practice,repo,account,startup,shell,router,pwaRegister,serviceWorker,manifest,indexHtml,finalize,tests,docs]=await Promise.all([
+const [progress,settings,listen,speak,practice,repo,account,reconcile,accountTest,accountProbe,accountWorkflow,startup,shell,router,pwaRegister,serviceWorker,manifest,indexHtml,finalize,tests,docs]=await Promise.all([
   readFile(new URL('../app/src/routes/progress.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/settings.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/listen.ts',import.meta.url),'utf8'),
@@ -8,6 +8,10 @@ const [progress,settings,listen,speak,practice,repo,account,startup,shell,router
   readFile(new URL('../app/src/core/content/practice.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/learner/repository.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/account/sync.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/reconcile.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-account-reconcile.mts',import.meta.url),'utf8'),
+  readFile(new URL('./probe-vnext-account-backend.mjs',import.meta.url),'utf8'),
+  readFile(new URL('../.github/workflows/p37h-cutover-readiness.yml',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/startup.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/shell.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/router.ts',import.meta.url),'utf8'),
@@ -33,6 +37,10 @@ for(const token of [
   'connect_thiepn_app','sync_thiepn_french_state','legacyEnvelopeToCanonical','replaceCanonicalBackup',
   'state.conflict=remote','useDevice','useCloud','pauseSync'
 ])need(account,token,'account '+token);
+for(const token of ['decideReconciliation','upload-new','upload-current','apply-remote','conflict'])need(reconcile,token,'account reconcile '+token);
+for(const token of ["schema:'thiepn-french-p37h-account-reconciliation'","fixtures:8"])need(accountTest,token,'account fixture '+token);
+for(const token of ['/auth/v1/settings','/rest/v1/','/rpc/connect_thiepn_app','/rpc/sync_thiepn_french_state','destructiveWrites:false'])need(accountProbe,token,'live account probe '+token);
+need(accountWorkflow,'Probe production account contract without writes','account backend workflow');
 for(const token of ['hasAccountSignal',"import('./account/sync')",'hydrateLearnerState'])need(startup,token,'startup '+token);
 for(const token of ['account-chip','french:vnext-account-state'])need(shell,token,'shell '+token);
 need(router,'french:vnext-state-replaced','router remote-state refresh');
@@ -43,13 +51,13 @@ for(const token of ['"start_url": "/"','"display": "standalone"','"/icon-192.png
 need(indexHtml,'rel="manifest"','installable index manifest link');
 for(const token of ['icon-192.png','icon-512.png','maskable-icon.svg'])need(finalize,token,'artifact icon '+token);
 for(const token of ["countPracticeEvents(page,'listening')","countPracticeEvents(page,'speaking')",'__speechStarts','content/search/vocabulary-index.json',"context.setOffline(true)","navigator.serviceWorker.ready"])need(tests,token,'browser media/PWA '+token);
-for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','live account sync is qualified'])need(docs,token,'documentation '+token);
+for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','Slice H4 — Account Contract Qualification','authenticated account round-trip is human-qualified'])need(docs,token,'documentation '+token);
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-cutover-readiness',
   ok:failures.length===0,
   failures,
-  completed:['progress','settings','account-architecture','listen','speak','pwa-offline-architecture'],
+  completed:['progress','settings','account-architecture','listen','speak','pwa-offline-architecture','account-contract-qualification'],
   cutoverReady:false
 },null,2));
 if(failures.length)process.exitCode=1;
