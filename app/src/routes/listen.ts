@@ -1,10 +1,10 @@
 import type { RouteContext } from '../core/types';
-import { loadVocabularySearchIndex,loadVocabularyWord,type VocabularyWord } from '../core/content/loader';
+import { loadStableReadingPack,loadVocabularySearchIndex,loadVocabularyWord,type ReadingItem,type VocabularyWord,type VocabularySearchRow } from '../core/content/loader';
 import { readRecentReviewEvents,recordPracticeEvidence } from '../core/learner/repository';
 import { levenshtein } from '../core/learner/grader';
 
 type Mode='comprehensible'|'intensive'|'targeted';
-type Prompt={word:VocabularyWord;text:string;translation:string;repair:boolean};
+type Prompt={word:VocabularyWord;text:string;translation:string;repair:boolean;readingId?:string;readingTitle?:string;segmentIndex?:number;theme?:string};
 
 function exact(value:string):string{return value.normalize('NFC').replace(/[‘’‛`´]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');}
 function words(value:string):string{return exact(value).replace(/[.,!?;:«»()[\]{}]/g,' ').replace(/\s+/g,' ').trim();}
@@ -42,14 +42,30 @@ function uniqueIds(values:string[],limit:number):string[]{
   return result;
 }
 function supportLabel(level:number):string{return['Independent first listen','Replay / speed support','Transcript support','Translation support'][Math.max(0,Math.min(3,level))];}
+function sentenceVocabulary(sentence:string,rows:VocabularySearchRow[],targets:string[]):VocabularySearchRow|undefined{
+  const value=accentFold(sentence);
+  const preferred=targets.map(target=>accentFold(target)).filter(Boolean);
+  for(const target of preferred){
+    const row=rows.find(item=>accentFold(item.word)===target||target.includes(accentFold(item.word))||accentFold(item.word).includes(target));
+    if(row&&value.includes(accentFold(row.word)))return row;
+  }
+  return rows.find(row=>{
+    const token=accentFold(row.word);
+    return token.length>=3&&value.split(/\s+/).includes(token);
+  });
+}
 
-export async function mount({main,signal}:RouteContext):Promise<void>{
+export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   main.innerHTML='<section class="page practice-page listen-contextual"><p class="eyebrow">Contextual listening</p><h1>Listen</h1><p class="lede">Sentence-level dictation with progressive support. Listening evidence is practice-only and never moves scheduled FSRS reviews.</p><div class="mode-tabs" role="group" aria-label="Listening mode"><button data-mode="comprehensible" class="is-active" type="button">Comprehensible</button><button data-mode="intensive" type="button">Intensive</button><button data-mode="targeted" type="button">Targeted</button></div><p class="inline-status" data-status>Preparing contextual listening…</p><div data-practice></div></section>';
   const host=main.querySelector<HTMLElement>('[data-practice]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!host||!status)return;
 
-  const [index,events]=await Promise.all([loadVocabularySearchIndex(signal),readRecentReviewEvents(1000)]);
+  const pairedReadingId=sessionStorage.getItem('french-vnext-listen-reading')??'';
+  const returnReadingId=sessionStorage.getItem('french-vnext-listen-return-reading')??'';
+  sessionStorage.removeItem('french-vnext-listen-reading');
+  sessionStorage.removeItem('french-vnext-listen-return-reading');
+  const [index,events,readingPack]=await Promise.all([loadVocabularySearchIndex(signal),readRecentReviewEvents(1000),pairedReadingId?loadStableReadingPack(signal):Promise.resolve(null)]);
   if(signal.aborted)return;
   const selected=sessionStorage.getItem('french-vnext-listen-note')??'';
   sessionStorage.removeItem('french-vnext-listen-note');
@@ -57,16 +73,29 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const recent=events.filter(event=>event.practiceOnly!==true).map(event=>event.noteId);
   const candidateIds=uniqueIds([selected,...failures,...recent,...index.rows.map(row=>row.id)],60);
   const prompts:Prompt[]=[];
-  for(const id of candidateIds){
-    const word=await loadVocabularyWord(id,signal);if(signal.aborted)return;
-    if(!word?.word||!word.meaning)continue;
-    const sentence=word.sentences?.find(item=>item?.text&&item?.translation)??word.sentences?.find(item=>item?.text);
-    prompts.push({word,text:sentence?.text??word.word,translation:sentence?.translation??word.meaning,repair:false});
-    if(prompts.length>=12)break;
+  const paired=readingPack?.readings.find((reading:ReadingItem)=>reading.id===pairedReadingId);
+  if(paired){
+    for(let segmentIndex=0;segmentIndex<paired.sentences.length;segmentIndex++){
+      const sentence=paired.sentences[segmentIndex];
+      const ref=sentenceVocabulary(sentence.fr,index.rows,paired.targets??[]);
+      if(!ref)continue;
+      const word=await loadVocabularyWord(ref.id,signal);if(signal.aborted)return;
+      if(!word)continue;
+      prompts.push({word,text:sentence.fr,translation:sentence.en,repair:false,readingId:paired.id,readingTitle:paired.title,segmentIndex,theme:paired.topic});
+    }
+  }
+  if(!prompts.length){
+    for(const id of candidateIds){
+      const word=await loadVocabularyWord(id,signal);if(signal.aborted)return;
+      if(!word?.word||!word.meaning)continue;
+      const sentence=word.sentences?.find(item=>item?.text&&item?.translation)??word.sentences?.find(item=>item?.text);
+      prompts.push({word,text:sentence?.text??word.word,translation:sentence?.translation??word.meaning,repair:false});
+      if(prompts.length>=12)break;
+    }
   }
   if(!prompts.length){status.textContent='No listening material is available.';return;}
 
-  let mode:Mode='comprehensible';
+  let mode:Mode=paired?'intensive':'comprehensible';
   let queue=[...prompts.slice(0,10)];
   let cursor=0,correct=0,attempted=0,firstListen=0;
   const modeButtons=[...main.querySelectorAll<HTMLButtonElement>('[data-mode]')];
@@ -80,7 +109,12 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     for(const button of modeButtons)button.classList.toggle('is-active',button.dataset.mode===mode);
     render();
   };
-  for(const button of modeButtons)button.addEventListener('click',()=>reset(button.dataset.mode as Mode));
+  for(const button of modeButtons){button.classList.toggle('is-active',button.dataset.mode===mode);button.addEventListener('click',()=>reset(button.dataset.mode as Mode));}
+  if(paired&&returnReadingId){
+    const back=document.createElement('button');back.type='button';back.className='text-action listen-return';back.textContent='← Back to '+paired.title;
+    back.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-read-open',returnReadingId);navigate('read');});
+    main.querySelector('.practice-page')?.prepend(back);
+  }
 
   const render=()=>{
     if(cursor>=queue.length){
@@ -96,7 +130,10 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     host.innerHTML='<article class="practice-card contextual-card"><div class="practice-meta"><span data-count></span><span data-support></span></div><div class="listen-context-label" data-context></div><h2>Listen for the complete French sentence.</h2><div class="audio-toolbar"><label><span>Speed</span><select data-rate><option value="0.78">0.78×</option><option value="1" selected>1.00×</option><option value="1.08">1.08×</option></select></label><button class="primary-action compact-action" data-play type="button">Play audio</button></div><div class="support-actions"><button class="secondary-action compact-action" data-transcript type="button">Reveal transcript</button><button class="secondary-action compact-action" data-translation type="button" disabled>Reveal translation</button></div><div class="listen-support" data-transcript-panel hidden></div><div class="listen-support" data-translation-panel hidden></div><div class="connected-cues" data-cues></div><form class="typed-answer practice-answer" data-form><input data-answer aria-label="Type what you hear" autocomplete="off" spellcheck="false" placeholder="Type the French sentence"><button class="primary-action compact-action" type="submit">Check</button></form><div class="practice-feedback" data-feedback hidden></div><button class="secondary-action compact-action" data-next type="button" hidden>Next</button></article>';
     const count=host.querySelector<HTMLElement>('[data-count]');if(count)count.textContent=(cursor+1)+' / '+queue.length+(prompt.repair?' · retest':'');
     const supportNode=host.querySelector<HTMLElement>('[data-support]');
-    const context=host.querySelector<HTMLElement>('[data-context]');if(context)context.textContent=prompt.word.meaning+' · '+(prompt.word.level??'');
+    const context=host.querySelector<HTMLElement>('[data-context]');
+    if(context)context.textContent=prompt.readingTitle
+      ?prompt.readingTitle+' · segment '+((prompt.segmentIndex??0)+1)
+      :prompt.word.meaning+' · '+(prompt.word.level??'');
     const rateSelect=host.querySelector<HTMLSelectElement>('[data-rate]');
     const play=host.querySelector<HTMLButtonElement>('[data-play]');
     const transcript=host.querySelector<HTMLButtonElement>('[data-transcript]');
@@ -140,9 +177,10 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const row=index.rows.find(item=>item.id===prompt.word.id);
       try{
         await recordPracticeEvidence({
-          noteId:prompt.word.id,skill:'listening',practice:'contextual-listening',direction:'audio-fr',
+          noteId:prompt.word.id,skill:'listening',direction:'audio-fr',
           typed:true,typedQuality:result.quality,correct:result.correct,responseMs:Math.round(performance.now()-started),
-          level:prompt.word.level??row?.level??'',pos:prompt.word.pos??row?.pos??'',
+          level:prompt.word.level??row?.level??'',pos:prompt.word.pos??row?.pos??'',theme:prompt.theme??'',
+          practice:prompt.readingId?'contextual-listening-reading':'contextual-listening',
           supportLevel:support,firstListen:independent,playCount:plays,playbackRate:rate,
           transcriptUsed,translationUsed,errorCategory:result.error
         });
@@ -158,7 +196,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     input?.focus();
   };
 
-  status.textContent=prompts.length+' contextual prompts ready · no external audio request.';
+  status.textContent=paired
+    ?prompts.length+' aligned segments ready from “'+paired.title+'” · no external audio request.'
+    :prompts.length+' contextual prompts ready · no external audio request.';
   render();
   signal.addEventListener('abort',()=>{if('speechSynthesis' in window)window.speechSynthesis.cancel();},{once:true});
 }

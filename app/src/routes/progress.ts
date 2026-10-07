@@ -238,7 +238,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   activityPanel.append(bars);
 
-  const listeningEvents=recent.filter(event=>event.practiceOnly===true&&event.practice==='contextual-listening');
+  const listeningEvents=recent.filter(event=>event.practiceOnly===true&&event.practice.startsWith('contextual-listening'));
   const listeningCorrect=listeningEvents.filter(event=>event.correct).length;
   const listeningFirst=listeningEvents.filter(event=>event.firstListen===true).length;
   const listeningSupported=listeningEvents.filter(event=>event.correct&&Number(event.supportLevel)>0).length;
@@ -259,6 +259,28 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   listeningPanel.append(listeningGrid);
   if(topListeningErrors.length)listeningPanel.append(textNode('p','Top aural errors: '+topListeningErrors.map(([name,count])=>name+' ('+count+')').join(' · '),'intel-note'));
+
+  const readingRaw=learner?.featureState?.v550Reading;
+  const readingState=readingRaw&&typeof readingRaw==='object'&&!Array.isArray(readingRaw)?readingRaw as Record<string,unknown>:{};
+  const readingHistoryRaw=readingState.history&&typeof readingState.history==='object'&&!Array.isArray(readingState.history)?readingState.history as Record<string,unknown>:{};
+  const readingRows=Object.values(readingHistoryRaw).filter(value=>value&&typeof value==='object'&&!Array.isArray(value)) as Record<string,unknown>[];
+  const readingCompleted=readingRows.filter(row=>Number(row.completedAt)>0).length;
+  const readingCompletions=readingRows.reduce((sum,row)=>sum+Math.max(0,Math.round(Number(row.completionCount)||0)),0);
+  const readingAttempts=readingRows.reduce((sum,row)=>sum+Math.max(0,Math.round(Number(row.questionAttempts)||0)),0);
+  const readingCorrect=readingRows.reduce((sum,row)=>sum+Math.max(0,Math.round(Number(row.questionCorrect)||0)),0);
+  const readingSaved=readingState.saved&&typeof readingState.saved==='object'&&!Array.isArray(readingState.saved)?Object.keys(readingState.saved as Record<string,unknown>).length:0;
+  const readingPanel=document.createElement('section');readingPanel.className='data-panel';
+  readingPanel.append(textNode('h2','Reading context'));
+  const readingGrid=document.createElement('div');readingGrid.className='pressure-grid';
+  for(const [label,value] of [
+    ['Texts completed',readingCompleted],
+    ['Completions',readingCompletions],
+    ['Context recall',readingAttempts?Math.round(readingCorrect/readingAttempts*100):0],
+    ['Saved discoveries',readingSaved]
+  ] as Array<[string,number]>){
+    const card=document.createElement('div');card.className='pressure-card';card.append(textNode('span',label),textNode('strong',label==='Context recall'?value+'%':String(value)));readingGrid.append(card);
+  }
+  readingPanel.append(readingGrid,textNode('p','Reading exposure and lookups remain separate from scheduled recall evidence.','intel-note'));
 
   const spokenEvents=recent.filter(event=>event.practiceOnly===true&&event.practice.startsWith('spoken-'));
   const spokenGood=spokenEvents.filter(event=>event.correct).length;
@@ -291,6 +313,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   evidencePanel.append(evidenceGrid);
 
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,listeningPanel,spokenPanel,activityPanel,evidencePanel);
+  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
