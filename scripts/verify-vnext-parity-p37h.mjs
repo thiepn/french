@@ -51,7 +51,7 @@ for(const token of ["is_thiepn_first_party_oauth_client_for_app('french')","app_
 for(const source of [accountSessionVendor,accountSync,accountRuntime,accountUi]){reject(source,"signInWithOAuth","direct Google/Supabase provider flow");reject(source,"provider:'google'","direct Google provider");}
 for(const token of ['recordPracticeEvidence','practiceOnly:true','supportLevel','firstListen','errorCategory'])need(repository,token,'practice evidence '+token);
 need(repository,'export async function replaceCanonicalLearnerSettings','settings persistence');
-for(const token of ['.progress-grid','.settings-form','.practice-card','.activity-bars','.data-recovery'])need(styles,token,'styles '+token);
+for(const token of ['.progress-grid','.practice-card','.activity-bars','.data-recovery','.account-panel'])need(styles,token,'styles '+token);
 
 for(const token of ['thiepn-french-vnext-backup-v1','SHA-256','createBackupArchive','inspectBackupArchive','restoreBackupArchive',"db.transaction([...STORE_NAMES],'readwrite')"])need(backup,token,'backup '+token);
 need(main,"navigator.serviceWorker.register('/service-worker.js')",'service worker registration');
