@@ -961,3 +961,27 @@ export async function recordStandalonePractice(input:StandalonePracticeInput,tim
   announceLocalStateChanged();
   return event;
 }
+
+
+export async function updateLearnerFeatureState<T>(
+  key:string,
+  updater:(current:T|undefined)=>T
+):Promise<T>{
+  const learner=await ensureCanonicalLearnerState();
+  const featureState={...learner.featureState};
+  const next=updater(featureState[key] as T|undefined);
+  featureState[key]=next;
+  const updated:CanonicalLearnerStateV1={...learner,featureState,sourceUpdatedAt:Date.now()};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not update learner feature state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner feature-state update was aborted.'));
+    });
+  }finally{db.close();}
+  announceLocalStateChanged();
+  return next;
+}
