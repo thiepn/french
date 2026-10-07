@@ -761,3 +761,19 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
     });
   }finally{db.close();}
 }
+
+export async function replaceCanonicalLearnerSettings(settings:Record<string,unknown>):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,settings:{...settings}};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings save was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
+}
