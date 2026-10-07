@@ -21,7 +21,10 @@ export async function beginBackgroundStartup(shell:ShellApi):Promise<void>{
   if(hasAccountSignal()){
     globalThis.setTimeout(()=>void import('./account/sync').then(module=>module.initializeAccount(true)),0);
   }
-  const work=()=>void import('./telemetry/performance').then(m=>m.recordRuntimePerformance());
+  const work=()=>void Promise.all([
+    import('./telemetry/performance').then(m=>m.recordRuntimePerformance()),
+    import('./pwa/register').then(m=>m.registerOfflineRuntime())
+  ]);
   const idle=window.requestIdleCallback?.bind(window);
   if(idle)idle(work,{timeout:1500});else globalThis.setTimeout(work,250);
 }
