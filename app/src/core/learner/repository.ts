@@ -12,6 +12,7 @@ import type { CanonicalCloudSnapshotV1 } from './snapshot';
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
+function announceLocalStateChanged():void{if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('french:local-state-changed'));}
 
 function object(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
@@ -564,6 +565,7 @@ export async function recordStudySessionReview(
     });
   }finally{db.close();}
 
+  announceLocalStateChanged();
   return{next,event,session};
 }
 export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
@@ -956,5 +958,6 @@ export async function recordStandalonePractice(input:StandalonePracticeInput,tim
       tx.onabort=()=>reject(tx.error??new Error('Practice evidence write was aborted.'));
     });
   }finally{db.close();}
+  announceLocalStateChanged();
   return event;
 }
