@@ -4,117 +4,99 @@ import { readCanonicalProgressSnapshot } from '../core/learner/repository';
 function number(value:unknown,fallback=0):number{
   const n=Number(value);return Number.isFinite(n)?n:fallback;
 }
-function text(value:unknown,fallback='—'):string{
-  return typeof value==='string'&&value.trim()?value:fallback;
-}
-function streak(days:string[],now=Date.now()):number{
-  const set=new Set(days);
-  const cursor=new Date(now);cursor.setHours(0,0,0,0);
-  const key=(d:Date)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  if(!set.has(key(cursor)))cursor.setDate(cursor.getDate()-1);
-  let count=0;
-  while(set.has(key(cursor))){count++;cursor.setDate(cursor.getDate()-1);}
-  return count;
-}
-function metric(label:string,value:string,detail=''):HTMLElement{
-  const card=document.createElement('article');card.className='progress-metric';
-  const l=document.createElement('span');l.textContent=label;
-  const strong=document.createElement('strong');strong.textContent=value;
-  card.append(l,strong);
-  if(detail){const small=document.createElement('small');small.textContent=detail;card.append(small);}
-  return card;
+function percent(value:number,total:number):number{
+  return total?Math.round(value/total*100):0;
 }
 
 export async function mount({main,signal}:RouteContext):Promise<void>{
-  main.innerHTML='<section class="page progress-page"><p class="eyebrow">Evidence on demand</p><h1>Progress</h1><p class="lede">Mastery, review quality and CEFR evidence are calculated only when you open this page.</p><p class="inline-status" data-status>Reading learner evidence…</p><div data-progress></div></section>';
-  const host=main.querySelector<HTMLElement>('[data-progress]');
+  main.innerHTML='<section class="page progress-page"><p class="eyebrow">Learning evidence</p><h1>Progress</h1><p class="lede">Mastery, review activity, and skill coverage are calculated only when this page opens.</p><p class="inline-status" data-status>Reading learner evidence…</p><div data-content></div></section>';
   const status=main.querySelector<HTMLElement>('[data-status]');
-  if(!host||!status)return;
+  const host=main.querySelector<HTMLElement>('[data-content]');
+  if(!status||!host)return;
 
   try{
     const snapshot=await readCanonicalProgressSnapshot();
     if(signal.aborted)return;
-    const profile=snapshot.learner.profile;
-    const promotions=snapshot.learner.promotions;
-    const currentLevel=['A1','A2','B1','B2'].filter(level=>{
-      const row=promotions[level];
-      return row&&typeof row==='object'&&Number((row as Record<string,unknown>).earnedAt)>0;
-    }).at(-1)??'—';
-    const studyStreak=streak(snapshot.learner.studyDays);
-    const xp=Math.max(0,Math.round(number(profile.xp)));
-    const scheduled=snapshot.activity.scheduled;
-    const practice=snapshot.activity.practiceOnly;
 
-    status.textContent='Updated from canonical learner, SRS and activity stores.';
+    const profile=snapshot.learner.profile;
+    const currentLevel=Object.entries(snapshot.learner.promotions)
+      .filter(([,value])=>value&&typeof value==='object'&&Number((value as Record<string,unknown>).earnedAt)>0)
+      .map(([level])=>level)
+      .at(-1)??'—';
+    const xp=Math.max(0,Math.round(number(profile.xp)));
+    const lifetimeAnswers=Math.max(snapshot.activity.total,Math.round(number(profile.lifetimeAnswers)));
+    const learnedShare=percent(snapshot.srs.learned,snapshot.srs.total);
+    const accuracy=snapshot.activity.accuracy;
+
+    status.textContent=snapshot.srs.total
+      ?snapshot.srs.notes.toLocaleString()+' vocabulary notes · '+snapshot.srs.total.toLocaleString()+' scheduled skill records'
+      :'No study evidence yet.';
 
     const metrics=document.createElement('div');metrics.className='progress-metrics';
-    metrics.append(
-      metric('Level',currentLevel),
-      metric('Words started',snapshot.srs.notes.toLocaleString()),
-      metric('Due now',snapshot.srs.due.toLocaleString()),
-      metric('30-day accuracy',snapshot.activity.accuracy==null?'—':snapshot.activity.accuracy+'%',scheduled+' scheduled · '+practice+' extra practice'),
-      metric('Study streak',studyStreak+' day'+(studyStreak===1?'':'s')),
-      metric('XP',xp.toLocaleString())
-    );
+    const metric=(label:string,value:string,detail:string)=>{
+      const card=document.createElement('article');card.className='progress-metric';
+      const l=document.createElement('span');l.textContent=label;
+      const v=document.createElement('strong');v.textContent=value;
+      const d=document.createElement('small');d.textContent=detail;
+      card.append(l,v,d);metrics.append(card);
+    };
+    metric('Level',currentLevel,'earned CEFR promotion');
+    metric('Learned',learnedShare+'%',snapshot.srs.learned.toLocaleString()+' skill records in review state');
+    metric('Due',snapshot.srs.due.toLocaleString(),'scheduled now');
+    metric('Accuracy',accuracy==null?'—':accuracy+'%',snapshot.activity.total.toLocaleString()+' recent answers');
+    metric('XP',xp.toLocaleString(),lifetimeAnswers.toLocaleString()+' lifetime answers');
+    metric('Practice',snapshot.activity.practiceOnly.toLocaleString(),'adaptive reinforcement answers');
 
-    const mastery=document.createElement('section');mastery.className='progress-panel';
-    const mh=document.createElement('h2');mh.textContent='Mastery state';mastery.append(mh);
-    const masteryGrid=document.createElement('div');masteryGrid.className='progress-breakdown';
-    for(const [label,value] of [
-      ['Learned',snapshot.srs.learned],
-      ['Learning',snapshot.srs.learning],
-      ['New / queued',snapshot.srs.newCount],
-      ['Suspended',snapshot.srs.suspended]
-    ] as Array<[string,number]>){
-      masteryGrid.append(metric(label,value.toLocaleString()));
+    const mastery=document.createElement('section');mastery.className='progress-section';
+    const masteryHeading=document.createElement('h2');masteryHeading.textContent='Memory state';
+    const masteryRows=document.createElement('div');masteryRows.className='progress-bars';
+    const addBar=(label:string,value:number,total:number)=>{
+      const row=document.createElement('div');row.className='progress-bar-row';
+      const header=document.createElement('div');header.className='progress-bar-head';
+      const name=document.createElement('span');name.textContent=label;
+      const amount=document.createElement('strong');amount.textContent=value.toLocaleString();
+      header.append(name,amount);
+      const track=document.createElement('div');track.className='progress-bar-track';
+      const fill=document.createElement('span');fill.style.width=Math.min(100,percent(value,total))+'%';track.append(fill);
+      row.append(header,track);masteryRows.append(row);
+    };
+    const total=Math.max(1,snapshot.srs.total);
+    addBar('Learned',snapshot.srs.learned,total);
+    addBar('Learning',snapshot.srs.learning,total);
+    addBar('New',snapshot.srs.newCount,total);
+    addBar('Suspended',snapshot.srs.suspended,total);
+    mastery.append(masteryHeading,masteryRows);
+
+    const skills=document.createElement('section');skills.className='progress-section';
+    const skillHeading=document.createElement('h2');skillHeading.textContent='Skill coverage';
+    const skillGrid=document.createElement('div');skillGrid.className='skill-grid';
+    for(const skill of ['recognition','article','production','spelling','listening']){
+      const card=document.createElement('article');card.className='skill-card';
+      const label=document.createElement('span');label.textContent=skill;
+      const value=document.createElement('strong');value.textContent=(snapshot.srs.bySkill[skill]??0).toLocaleString();
+      card.append(label,value);skillGrid.append(card);
     }
-    mastery.append(masteryGrid);
+    skills.append(skillHeading,skillGrid);
 
-    const skill=document.createElement('section');skill.className='progress-panel';
-    const sh=document.createElement('h2');sh.textContent='Skill records';skill.append(sh);
-    const skillGrid=document.createElement('div');skillGrid.className='skill-progress-grid';
-    for(const id of ['recognition','article','production','spelling','listening']){
-      const row=document.createElement('div');row.className='skill-progress-row';
-      const name=document.createElement('span');name.textContent=id[0].toUpperCase()+id.slice(1);
-      const value=document.createElement('strong');value.textContent=String(snapshot.srs.bySkill[id]??0);
-      row.append(name,value);skillGrid.append(row);
-    }
-    skill.append(skillGrid);
-
-    const activity=document.createElement('section');activity.className='progress-panel';
-    const ah=document.createElement('h2');ah.textContent='Recent activity';activity.append(ah);
+    const activity=document.createElement('section');activity.className='progress-section';
+    const activityHeading=document.createElement('h2');activityHeading.textContent='Last 30 days';
+    const dayGrid=document.createElement('div');dayGrid.className='activity-days';
     if(snapshot.activity.last30Days.length){
       const max=Math.max(...snapshot.activity.last30Days.map(day=>day.answers),1);
-      const chart=document.createElement('div');chart.className='activity-bars';
       for(const day of snapshot.activity.last30Days){
-        const item=document.createElement('div');item.className='activity-day';
-        item.title=`${day.day}: ${day.answers} answers · ${day.correct} correct · ${day.xp} XP`;
-        const bar=document.createElement('span');bar.className='activity-bar';bar.style.setProperty('--activity-height',String(Math.max(.08,day.answers/max)));
-        const label=document.createElement('small');label.textContent=day.day.slice(5);
-        item.append(bar,label);chart.append(item);
+        const cell=document.createElement('div');cell.className='activity-day';
+        cell.style.setProperty('--activity',String(day.answers/max));
+        cell.title=day.day+' · '+day.answers+' answers · '+day.correct+' correct · '+day.xp+' XP';
+        const count=document.createElement('strong');count.textContent=String(day.answers);
+        const label=document.createElement('span');label.textContent=day.day.slice(5);
+        cell.append(count,label);dayGrid.append(cell);
       }
-      activity.append(chart);
     }else{
-      const empty=document.createElement('p');empty.className='inline-status';empty.textContent='No review activity in the last 30 days.';activity.append(empty);
+      const empty=document.createElement('p');empty.className='inline-status';empty.textContent='No review activity in the last 30 days.';dayGrid.append(empty);
     }
+    activity.append(activityHeading,dayGrid);
 
-    const cefr=document.createElement('section');cefr.className='progress-panel';
-    const ch=document.createElement('h2');ch.textContent='CEFR progression';cefr.append(ch);
-    const cefrGrid=document.createElement('div');cefrGrid.className='cefr-grid';
-    for(const level of ['A1','A2','B1','B2']){
-      const raw=promotions[level];
-      const row=raw&&typeof raw==='object'?raw as Record<string,unknown>:{};
-      const earned=Number(row.earnedAt)>0;
-      const card=document.createElement('article');card.className='cefr-card'+(earned?' is-earned':'');
-      const l=document.createElement('strong');l.textContent=level;
-      const state=document.createElement('span');state.textContent=earned?'Earned':'Not yet earned';
-      const detail=document.createElement('small');
-      detail.textContent=earned&&Number(row.earnedAt)>0?new Date(Number(row.earnedAt)).toLocaleDateString():text(row.reason,'');
-      card.append(l,state,detail);cefrGrid.append(card);
-    }
-    cefr.append(cefrGrid);
-
-    host.replaceChildren(metrics,mastery,skill,activity,cefr);
+    host.replaceChildren(metrics,mastery,skills,activity);
   }catch(error){
     if(signal.aborted)return;
     status.textContent='Could not read progress evidence.';
