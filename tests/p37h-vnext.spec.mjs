@@ -37,11 +37,15 @@ test('Listen exposes support-aware contextual evidence without moving SRS',async
   await expect(page.getByRole('textbox',{name:'Type what you hear'})).toBeVisible();
 });
 
-test('Speak exposes shadowing and capability-aware recognition',async({page})=>{
+test('Speak exposes four modes, local recording and conservative recognition',async({page})=>{
   await page.goto('/#speak');
   await expect(page.getByRole('heading',{name:'Speak'})).toBeVisible();
+  for(const name of ['Pronunciation','Shadowing','Spoken recall','Spoken transfer'])await expect(page.getByRole('button',{name})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play model'})).toBeVisible({timeout:30_000});
-  await expect(page.getByRole('button',{name:/Speak now|Recognition unavailable/})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Check recognition|Recognition unavailable/})).toBeVisible();
+  await expect(page.getByText(/not an accent or pronunciation score/i)).toBeVisible();
+  await expect(page.getByText('Self-assessment')).toBeVisible();
 });
 
 test('installed vNext shell survives a real offline reload',async({page,context})=>{

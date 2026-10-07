@@ -66,7 +66,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   let recognition:RecognitionLike|null=null,stream:MediaStream|null=null,recorder:MediaRecorder|null=null,audioUrl='',chunks:Blob[]=[];
   const revokeAudio=()=>{if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}};
   const stopStream=()=>{recorder=null;for(const track of stream?.getTracks()??[])track.stop();stream=null;chunks=[];};
-  const discardRecording=()=>{try{if(recorder?.state==='recording')recorder.stop();}catch{}revokeAudio();stopStream();};
+  const discardRecording=()=>{try{if(recorder){recorder.ondataavailable=null;recorder.onstop=null;if(recorder.state==='recording')recorder.stop();}}catch{}revokeAudio();stopStream();};
   const modeButtons=[...main.querySelectorAll<HTMLButtonElement>('[data-mode]')];
 
   const setMode=(next:Mode)=>{
@@ -82,7 +82,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const target=mode==='pronunciation'?prompt.word.word:prompt.text;
     const cue=mode==='pronunciation'?prompt.word.meaning:prompt.translation;
     let support=mode==='pronunciation'||mode==='shadowing'?1:0;
-    let modelUsed=false,revealUsed=false,recognized='',recognitionScore=0,started=performance.now(),saved=false;
+    let recognized='',recognitionScore=0,started=performance.now(),saved=false;
 
     host.innerHTML='<article class="practice-card speak-card"><div class="practice-meta"><span data-count></span><span data-mode-label></span></div><p class="practice-meaning" data-cue></p><div class="speak-target" data-target></div><div class="practice-feedback speech-principle">Speech recognition checks intelligibility only. It is not an accent or pronunciation score.</div><div class="practice-controls"><button class="primary-action compact-action" data-model type="button">Play model</button><button class="secondary-action compact-action" data-record type="button">Start recording</button><button class="secondary-action compact-action" data-recognize type="button">Check recognition</button><button class="secondary-action compact-action" data-reveal type="button">Reveal target</button></div><audio data-playback controls hidden></audio><div class="practice-feedback" data-feedback>Record one attempt, play it back, then use recognition or self-assessment if useful.</div><div class="self-assess"><span>Self-assessment</span><div><button data-self="again" type="button">Needs work</button><button data-self="hard" type="button">Understandable</button><button data-self="good" type="button">Good</button></div></div><button class="secondary-action compact-action" data-next type="button">Next prompt</button></article>';
     const count=host.querySelector<HTMLElement>('[data-count]');if(count)count.textContent=(cursor%prompts.length+1)+' / '+prompts.length;
@@ -110,10 +110,10 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     if(!Recognition&&recognize){recognize.disabled=true;recognize.textContent='Recognition unavailable';}
 
     model?.addEventListener('click',()=>{
-      modelUsed=true;support=Math.max(support,1);if(mode==='recall'||mode==='transfer')support=Math.max(support,2);
+      support=Math.max(support,1);if(mode==='recall'||mode==='transfer')support=Math.max(support,2);
       if(!say(target,mode==='pronunciation'?.75:.85))status.textContent='Speech synthesis is unavailable in this browser.';
     });
-    reveal?.addEventListener('click',()=>{revealUsed=true;support=Math.max(support,2);showTarget();reveal.disabled=true;});
+    reveal?.addEventListener('click',()=>{support=Math.max(support,2);showTarget();reveal.disabled=true;});
 
     record?.addEventListener('click',async()=>{
       if(recorder?.state==='recording'){recorder.stop();record.disabled=true;record.textContent='Finishing…';return;}
@@ -123,6 +123,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       try{
         discardRecording();
         stream=await navigator.mediaDevices.getUserMedia({audio:true});
+        if(signal.aborted){for(const track of stream.getTracks())track.stop();stream=null;return;}
         chunks=[];recorder=new MediaRecorder(stream);
         recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
         recorder.onstop=()=>{
