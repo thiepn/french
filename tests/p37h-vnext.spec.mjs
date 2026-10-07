@@ -33,6 +33,7 @@ test('Read restores the native P14 corpus and paired listening bridge',async({pa
   const firstOpen=page.getByRole('button',{name:/Open|Resume/}).first();
   await firstOpen.click();
   await expect(page.getByRole('button',{name:'Listen pair'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Speak context'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Extensive'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Intensive'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Targeted'})).toBeVisible();
@@ -62,7 +63,11 @@ test('Speak exposes four modes, local recording and conservative recognition',as
   await expect(page.getByRole('button',{name:'Start recording'})).toBeVisible();
   await expect(page.getByRole('button',{name:/Check recognition|Recognition unavailable/})).toBeVisible();
   await expect(page.getByText(/not an accent or pronunciation score/i)).toBeVisible();
-  await expect(page.getByText('Self-assessment')).toBeVisible();
+  await expect(page.getByText('Manual judgment')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Slow model'})).toBeVisible();
+  await page.getByRole('button',{name:'Spoken transfer'}).click();
+  await expect(page.getByText(/P12 p12-/)).toBeVisible();
+  await expect(page.getByText(/Required:/)).toBeVisible();
 });
 
 test('installed vNext shell survives a real offline reload',async({page,context})=>{

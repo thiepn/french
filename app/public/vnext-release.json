@@ -17,7 +17,10 @@
     "p15-support-aware-listening",
     "p16-spoken-production-foundation",
     "p14-native-reading",
-    "p15-read-listen-pairing"
+    "p15-read-listen-pairing",
+    "p12-sentence-diagnosis",
+    "p16-p12-spoken-transfer",
+    "read-listen-speak-context"
   ],
   "fullP35FeatureParity": false
 }

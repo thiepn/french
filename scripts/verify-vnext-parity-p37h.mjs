@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const [progress,settings,listen,speak,read,repository,styles,backup,main,index,swBuilder,manifest,contentBuilder,readingSource,router,shell]=await Promise.all([
+const [progress,settings,listen,speak,read,repository,styles,backup,main,index,swBuilder,manifest,contentBuilder,readingSource,sentenceSource,sentenceDiagnosis,router,shell]=await Promise.all([
   readFile(new URL('../app/src/routes/progress.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/settings.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/listen.ts',import.meta.url),'utf8'),
@@ -15,6 +15,8 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
   readFile(new URL('../app/public/manifest.webmanifest',import.meta.url),'utf8'),
   readFile(new URL('./build-vnext-content.mjs',import.meta.url),'utf8'),
   readFile(new URL('./data/stable-readings-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('./data/stable-sentence-exercises-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/content/sentence-diagnosis.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/router.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/shell.ts',import.meta.url),'utf8')
 ]);
@@ -26,10 +28,13 @@ const reject=(source,token,label=token)=>{if(source.includes(token))failures.pus
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
-for(const token of ['webkitSpeechRecognition','Pronunciation','Shadowing','Spoken recall','Spoken transfer','Start recording','MediaRecorder','getUserMedia','Check recognition','Self-assessment','never an accent','recordPracticeEvidence','spoken-'])need(speak,token,'Speak evidence '+token);
+for(const token of ['webkitSpeechRecognition','Pronunciation','Shadowing','Spoken recall','Spoken transfer','Start recording','MediaRecorder','getUserMedia','Check recognition','Manual judgment','never an accent','recordPracticeEvidence','spoken-','loadStableSentenceExercises','diagnoseSentence','Slow model','paceRatio','french-vnext-speak-reading'])need(speak,token,'Speak evidence '+token);
 for(const token of ['loadStableReadingPack','Extensive','Intensive','Targeted','Save discovery','Finish reading','reading-context','replaceCanonicalFeatureState','french-vnext-listen-reading','french-vnext-read-open'])need(read,token,'Reading workspace '+token);
 for(const token of ['READING_SOURCE_FILE','reading-stable-p35','thiepn-french-reading-pack-v1','stable-readings.json'])need(contentBuilder,token,'reading content '+token);
 for(const token of ['"count": 25','"read-a1-matin"','"read-b2-association"'])need(readingSource,token,'stable reading source '+token);
+for(const token of ['"count": 36','"p12-001"','"p12-036"','"type": "transfer"'])need(sentenceSource,token,'stable sentence source '+token);
+for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Needs your judgment','Target construction missing'])need(sentenceDiagnosis,token,'P12 diagnosis '+token);
+for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['recordPracticeEvidence','practiceOnly:true','supportLevel','firstListen','errorCategory'])need(repository,token,'practice evidence '+token);
@@ -55,6 +60,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['p12-backed-spoken-transfer-and-final-p16-calibration','thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
+  remainingCutoverBlockers:['thiepn-account-sync','whole-product-p35-parity-acceptance','five-engine-final-matrix','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;
