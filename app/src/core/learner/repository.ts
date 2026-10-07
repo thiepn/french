@@ -914,6 +914,7 @@ export interface CanonicalBackupV1 {
 export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<void>{
   if(backup.schema!=='thiepn-french-vnext-backup-v1')throw new Error('Unsupported French backup schema.');
   if(!backup.learner||backup.learner.schema!=='thiepn-french-learner-state-v1')throw new Error('French backup has no learner state.');
+  const learnerState=backup.learner;
   if(!Array.isArray(backup.srs)||!Array.isArray(backup.activity))throw new Error('French backup records are invalid.');
   const userContent=backup.userContent?.schema==='thiepn-french-user-content-v1'
     ?backup.userContent
@@ -925,17 +926,17 @@ export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<v
       const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
       const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),activity=tx.objectStore('activity');
       learner.clear();srs.clear();activity.clear();tx.objectStore('user-content').clear();tx.objectStore('session').clear();
-      learner.put(backup.learner,'state-v1');
+      learner.put(learnerState,'state-v1');
       for(const row of backup.srs)if(row?.schema==='thiepn-french-srs-record-v1')srs.put(row,row.id);
       for(const row of backup.activity)if(row?.schema==='thiepn-french-review-event-v1')activity.put(row,row.eventId);
       tx.objectStore('user-content').put(userContent,'content-v1');
       const active=normalizeStudySession(backup.session);
       if(active)tx.objectStore('session').put(active,'active');
-      tx.objectStore('meta').put(backup.learner.sourceFingerprint,MIGRATION_MARKER);
+      tx.objectStore('meta').put(learnerState.sourceFingerprint,MIGRATION_MARKER);
       tx.objectStore('meta').put({
-        currentLevel:highestEarnedLevel(backup.learner.promotions),
+        currentLevel:highestEarnedLevel(learnerState.promotions),
         dueCount:backup.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
-        streakDays:studyStreak(backup.learner.studyDays)
+        streakDays:studyStreak(learnerState.studyDays)
       },'learner-summary');
       tx.oncomplete=()=>resolve();
       tx.onerror=()=>reject(tx.error??new Error('Could not replace canonical French state.'));
