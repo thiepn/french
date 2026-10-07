@@ -43,7 +43,7 @@ for(const token of [
 ])need(account,token,'account '+token);
 for(const token of ['decideReconciliation','upload-new','upload-current','apply-remote','conflict'])need(reconcile,token,'account reconcile '+token);
 for(const token of ["schema:'thiepn-french-p37h-account-reconciliation'","fixtures:8"])need(accountTest,token,'account fixture '+token);
-for(const token of ['/auth/v1/settings','/rest/v1/','/rpc/connect_thiepn_app','/rpc/sync_thiepn_french_state','destructiveWrites:false'])need(accountProbe,token,'live account probe '+token);
+for(const token of ['/auth/v1/settings','/rest/v1/french_sync_state','connect_thiepn_app','sync_thiepn_french_state','public OpenAPI introspection is intentionally unavailable','destructiveWrites:false'])need(accountProbe,token,'live account probe '+token);
 need(accountWorkflow,'Probe production account contract without writes','account backend workflow');
 for(const token of ['hasAccountSignal',"import('./account/sync')",'hydrateLearnerState'])need(startup,token,'startup '+token);
 for(const token of ['account-chip','french:vnext-account-state'])need(shell,token,'shell '+token);
@@ -59,7 +59,7 @@ for(const token of ["target==='vnext'","P35 Stable Release, Live Browser/Device 
 for(const token of ['workflow_dispatch','CUTOVER VNEXT','ROLLBACK P35','actions/deploy-pages@v4','french-production-pages'])need(deploymentWorkflow,token,'controlled deployment '+token);
 for(const token of ['"phase": "P37H"','"productionCutover": false','"rollback": "p35-rollback"'])need(releaseMarker,token,'release marker '+token);
 for(const token of ["countPracticeEvents(page,'listening')","countPracticeEvents(page,'speaking')",'__speechStarts','content/search/vocabulary-index.json',"context.setOffline(true)","navigator.serviceWorker.ready"])need(tests,token,'browser media/PWA '+token);
-for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','Slice H4 — Account Contract Qualification','Slice H5 — Controlled Deployment & Rollback','GitHub Actions','real cloud sync/restore round-trip'])need(docs,token,'documentation '+token);
+for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','Slice H4 — Account Contract Qualification','Slice H5 — Controlled Deployment & Rollback','GitHub Actions','real cloud sync/restore round-trip','public OpenAPI/schema introspection'])need(docs,token,'documentation '+token);
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-cutover-readiness',
