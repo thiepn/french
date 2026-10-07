@@ -31,6 +31,10 @@ if(target==='vnext'){
   if(!html.includes('data-runtime="vnext"'))failures.push('vNext runtime marker');
   if(!sw.includes("VERSION='p37h-1'"))failures.push('vNext service worker');
   if(!(await exists('vnext-release.json')))failures.push('vNext release marker');
+  else{
+    const release=JSON.parse(await readFile(resolve(site,'vnext-release.json'),'utf8'));
+    if(release.phase!=='P37H'||release.productionCutover!==true||release.stage!=='production')failures.push('vNext production release identity');
+  }
   if(!(await exists('assets')))failures.push('vNext hashed assets');
 }else{
   if(!html.includes('P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening'))failures.push('P35 stable marker');
