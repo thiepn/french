@@ -12,6 +12,13 @@ export async function beginBackgroundStartup(shell:ShellApi):Promise<void>{
     shell.setStatus(state.currentLevel?`${state.currentLevel} · ready`:'Ready');
   }catch(error){console.warn('French vNext hydration degraded gracefully.',error);shell.setStatus('Ready · local fallback');}
   const work=()=>void import('./telemetry/performance').then(m=>m.recordRuntimePerformance());
+  const accountWork=()=>void import('./account/runtime').then(m=>m.bootstrapAccountInBackground());
   const idle=window.requestIdleCallback?.bind(window);
-  if(idle)idle(work,{timeout:1500});else globalThis.setTimeout(work,250);
+  if(idle){
+    idle(work,{timeout:1500});
+    idle(accountWork,{timeout:2500});
+  }else{
+    globalThis.setTimeout(work,250);
+    globalThis.setTimeout(accountWork,500);
+  }
 }

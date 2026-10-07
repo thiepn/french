@@ -1,4 +1,4 @@
-import { openFrenchDatabase,readMetaValue,writeMetaValue } from '../storage/idb';
+import { openFrenchDatabase,readMetaValue,readMigrationValue,writeMetaValue,writeMigrationValue } from '../storage/idb';
 import type {
   CanonicalLearnerStateV1,
   CanonicalMigrationV1,
@@ -8,9 +8,11 @@ import type {
   SkillId
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
+import type { CanonicalCloudSnapshotV1 } from './snapshot';
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
+function announceLocalStateChanged():void{if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('french:local-state-changed'));}
 
 function object(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
@@ -563,6 +565,7 @@ export async function recordStudySessionReview(
     });
   }finally{db.close();}
 
+  announceLocalStateChanged();
   return{next,event,session};
 }
 export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
@@ -760,4 +763,225 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
       tx.onabort=()=>reject(tx.error??new Error('Batch note skill read was aborted.'));
     });
   }finally{db.close();}
+}
+
+
+async function readAllStoreValues<T>(storeName:string):Promise<T[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const rows:T[]=[];
+      const tx=db.transaction(storeName,'readonly');
+      const request=tx.objectStore(storeName).openCursor();
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor)return;
+        rows.push(cursor.value as T);
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not enumerate '+storeName+'.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not enumerate '+storeName+'.'));
+      tx.onabort=()=>reject(tx.error??new Error('Enumeration aborted for '+storeName+'.'));
+    });
+  }finally{db.close();}
+}
+
+export function readAllSrsRecords():Promise<CanonicalSrsRecordV1[]>{
+  return readAllStoreValues<CanonicalSrsRecordV1>('srs');
+}
+
+export function readAllReviewEvents():Promise<CanonicalReviewEventV1[]>{
+  return readAllStoreValues<CanonicalReviewEventV1>('activity');
+}
+
+export async function exportCanonicalCloudSnapshot(appVersion='6.0.0-vnext'):Promise<CanonicalCloudSnapshotV1>{
+  const [learner,userContent,srs,reviews,legacyPreservation]=await Promise.all([
+    ensureCanonicalLearnerState(),
+    readCanonicalUserContent(),
+    readAllSrsRecords(),
+    readAllReviewEvents(),
+    readMigrationValue<import('../migration/legacy-contract').LegacySnapshotEnvelope>('legacy-import-v1')
+  ]);
+  return{
+    schema:'thiepn-french-cloud-state-v1',
+    revision:1,
+    updatedAt:Date.now(),
+    appVersion,
+    learner,
+    srs,
+    reviews,
+    userContent:userContent??{
+      schema:'thiepn-french-user-content-v1',
+      userCards:{},cardEdits:{},smartDecks:{},customDecks:{}
+    },
+    legacyPreservation:legacyPreservation?.schema==='thiepn-french-legacy-import-v1'?legacyPreservation:undefined
+  };
+}
+
+export async function replaceCanonicalState(
+  migration:CanonicalMigrationV1,
+  sourceFingerprint='cloud-import'
+):Promise<void>{
+  const learner:CanonicalLearnerStateV1={
+    ...migration.learner,
+    sourceFingerprint:sourceFingerprint||migration.learner.sourceFingerprint,
+    sourceUpdatedAt:Date.now()
+  };
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learnerStore=tx.objectStore('learner');
+      const srs=tx.objectStore('srs');
+      const activity=tx.objectStore('activity');
+      const userContent=tx.objectStore('user-content');
+      learnerStore.put(learner,'state-v1');
+      userContent.put(migration.userContent,'content-v1');
+      srs.clear();
+      for(const row of migration.srs)srs.put(row,row.id);
+      activity.clear();
+      for(const row of migration.reviews)activity.put(row,row.eventId);
+      tx.objectStore('session').delete('active');
+      tx.objectStore('meta').put({
+        currentLevel:highestEarnedLevel(learner.promotions),
+        dueCount:migration.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+        streakDays:studyStreak(learner.studyDays)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Canonical state replacement failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Canonical state replacement was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+export async function replaceCanonicalCloudSnapshot(snapshot:CanonicalCloudSnapshotV1):Promise<void>{
+  await replaceCanonicalState({
+    learner:snapshot.learner,
+    srs:snapshot.srs,
+    reviews:snapshot.reviews,
+    userContent:snapshot.userContent
+  },'cloud:'+String(snapshot.updatedAt||Date.now()));
+  if(snapshot.legacyPreservation?.schema==='thiepn-french-legacy-import-v1'){
+    await writeMigrationValue('legacy-import-v1',snapshot.legacyPreservation);
+  }
+}
+
+export async function updateLearnerSettings(
+  updater:(settings:Record<string,unknown>)=>Record<string,unknown>
+):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,settings:updater({...learner.settings}),sourceUpdatedAt:Date.now()};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not update learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings update was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
+}
+
+
+export interface StandalonePracticeInput {
+  noteId:string;
+  skill:SkillId;
+  practice:string;
+  correct:boolean;
+  responseMs?:number;
+  typed?:boolean;
+  typedQuality?:string;
+  level?:string;
+  pos?:string;
+  direction?:string;
+  xp?:number;
+}
+
+export async function recordStandalonePractice(input:StandalonePracticeInput,timestamp=Date.now()):Promise<CanonicalReviewEventV1>{
+  const learner=await ensureCanonicalLearnerState(timestamp);
+  const record=input.noteId?await readSrsById(input.noteId+'::d31:0:'+input.skill):null;
+  const event:CanonicalReviewEventV1={
+    schema:'thiepn-french-review-event-v1',
+    eventId:'practice:'+timestamp+':'+input.noteId+':'+input.skill+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
+    t:timestamp,
+    id:record?.id??input.noteId+'::d31:0:'+input.skill,
+    noteId:input.noteId,
+    skill:input.skill,
+    rating:input.correct?'good':'again',
+    responseMs:Math.max(0,Math.round(input.responseMs??0)),
+    wasNew:false,
+    intervalDays:record?.intervalDays??0,
+    direction:input.direction??'',
+    typed:input.typed===true,
+    typedQuality:input.typedQuality??'none',
+    level:input.level??'',
+    pos:input.pos??'',
+    theme:'',
+    practice:input.practice,
+    correct:input.correct,
+    xp:Math.max(0,Math.round(input.xp??(input.correct?3:1))),
+    practiceOnly:true,
+    stability:record?.stability??0,
+    difficulty:record?.difficulty??5,
+    retrievability:record?.retrievability??0,
+    scheduledDays:record?.scheduledDays??0,
+    fsrsState:record?.fsrsState??'new'
+  };
+  const today=dayKey(timestamp);
+  const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();
+  const profile={...learner.profile};
+  profile.xp=Math.max(0,Math.round(number(profile.xp,0)))+event.xp;
+  profile.lifetimeAnswers=Math.max(0,Math.round(number(profile.lifetimeAnswers,0)))+1;
+  if(input.correct)profile.lifetimeCorrect=Math.max(0,Math.round(number(profile.lifetimeCorrect,0)))+1;
+  if(input.typed===true)profile.typedAnswers=Math.max(0,Math.round(number(profile.typedAnswers,0)))+1;
+  if(input.skill==='listening'||input.practice==='listening'||input.practice==='dictation'){
+    profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  }
+  const updated={...learner,studyDays,profile,sourceUpdatedAt:timestamp};
+  const summary=(await readMetaValue<{currentLevel?:string;dueCount?:number;streakDays?:number}>('learner-summary'))??{};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','activity','meta'],'readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.objectStore('activity').put(event,event.eventId);
+      tx.objectStore('meta').put({
+        currentLevel:summary.currentLevel??highestEarnedLevel(updated.promotions),
+        dueCount:Math.max(0,Math.round(number(summary.dueCount,0))),
+        streakDays:studyStreak(studyDays,timestamp)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Practice evidence write failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Practice evidence write was aborted.'));
+    });
+  }finally{db.close();}
+  announceLocalStateChanged();
+  return event;
+}
+
+
+export async function updateLearnerFeatureState<T>(
+  key:string,
+  updater:(current:T|undefined)=>T
+):Promise<T>{
+  const learner=await ensureCanonicalLearnerState();
+  const featureState={...learner.featureState};
+  const next=updater(featureState[key] as T|undefined);
+  featureState[key]=next;
+  const updated:CanonicalLearnerStateV1={...learner,featureState,sourceUpdatedAt:Date.now()};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not update learner feature state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner feature-state update was aborted.'));
+    });
+  }finally{db.close();}
+  announceLocalStateChanged();
+  return next;
 }
