@@ -260,6 +260,23 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   listeningPanel.append(listeningGrid);
   if(topListeningErrors.length)listeningPanel.append(textNode('p','Top aural errors: '+topListeningErrors.map(([name,count])=>name+' ('+count+')').join(' · '),'intel-note'));
 
+  const spokenEvents=recent.filter(event=>event.practiceOnly===true&&event.practice.startsWith('spoken-'));
+  const spokenGood=spokenEvents.filter(event=>event.correct).length;
+  const spokenModes=new Set(spokenEvents.map(event=>event.practice.replace(/^spoken-/,'')));
+  const spokenUnassisted=spokenEvents.filter(event=>event.correct&&Number(event.supportLevel??0)===0).length;
+  const spokenPanel=document.createElement('section');spokenPanel.className='data-panel';
+  spokenPanel.append(textNode('h2','Spoken production evidence'));
+  const spokenGrid=document.createElement('div');spokenGrid.className='pressure-grid';
+  for(const [label,value] of [
+    ['Attempts',spokenEvents.length],
+    ['Self-rated success',spokenGood],
+    ['Unassisted',spokenUnassisted],
+    ['Modes used',spokenModes.size]
+  ] as Array<[string,number]>){
+    const card=document.createElement('div');card.className='pressure-card';card.append(textNode('span',label),textNode('strong',String(value)));spokenGrid.append(card);
+  }
+  spokenPanel.append(spokenGrid,textNode('p','Recognition is treated as an optional intelligibility aid, never as an accent score.','intel-note'));
+
   const evidencePanel=document.createElement('section');evidencePanel.className='data-panel compact-evidence';
   evidencePanel.append(textNode('h2','Recent evidence'));
   const evidenceGrid=document.createElement('div');evidenceGrid.className='progress-grid';
@@ -274,6 +291,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   evidencePanel.append(evidenceGrid);
 
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,listeningPanel,activityPanel,evidencePanel);
+  host.append(actions,funnel,pressurePanel,skills,cefr,weak,listeningPanel,spokenPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }

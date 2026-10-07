@@ -58,6 +58,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const listen=document.createElement('button');listen.type='button';listen.className='secondary-action compact-action word-context-action';listen.textContent='Listen in context';
         listen.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-listen-note',String(word.id));navigate('listen');});
         detail.append(listen);
+        const speak=document.createElement('button');speak.type='button';speak.className='secondary-action compact-action word-context-action';speak.textContent='Speak this word';
+        speak.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-speak-note',String(word.id));navigate('speak');});
+        detail.append(speak);
       }
     }catch(error){
       if(signal.aborted)return;
