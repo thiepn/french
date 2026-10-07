@@ -6,7 +6,7 @@
   "scripts": {
     "dev:vnext": "vite --config vite.config.ts",
     "content:vnext": "node scripts/build-vnext-content.mjs",
-    "build:vnext": "npm run content:vnext && vite build --config vite.config.ts",
+    "build:vnext": "npm run content:vnext && vite build --config vite.config.ts && node scripts/build-vnext-service-worker.mjs",
     "typecheck:vnext": "tsc -p tsconfig.json --noEmit",
     "verify:vnext": "node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs && node scripts/verify-vnext-typed-review-p37f.mjs && node scripts/verify-vnext-study-session-p37g.mjs && node scripts/verify-vnext-parity-p37h.mjs",
     "test:vnext:scheduler": "node scripts/test-vnext-scheduler.mts",
