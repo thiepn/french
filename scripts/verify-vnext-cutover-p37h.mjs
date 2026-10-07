@@ -54,8 +54,8 @@ if(/SHELL=\[[^\]]*content\//.test(serviceWorker))failures.push('service worker p
 for(const token of ['"start_url": "/"','"display": "standalone"','"/icon-192.png"','"/icon-512.png"'])need(manifest,token,'manifest '+token);
 need(indexHtml,'rel="manifest"','installable index manifest link');
 for(const token of ['icon-192.png','icon-512.png','maskable-icon.svg'])need(finalize,token,'artifact icon '+token);
-for(const token of ["target==='vnext'","'p35-rollback'","deployment-marker.json"])need(deploymentPrepare,token,'deployment prepare '+token);
-for(const token of ["target==='vnext'","P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening","vNext service worker"])need(deploymentVerify,token,'deployment verify '+token);
+for(const token of ["target==='vnext'","'p35-rollback'","deployment-marker.json","productionCutover:true","stage:'production'"])need(deploymentPrepare,token,'deployment prepare '+token);
+for(const token of ["target==='vnext'","P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening","vNext service worker","productionCutover!==true"])need(deploymentVerify,token,'deployment verify '+token);
 for(const token of ['workflow_dispatch','CUTOVER VNEXT','ROLLBACK P35','actions/deploy-pages@v4','french-production-pages'])need(deploymentWorkflow,token,'controlled deployment '+token);
 for(const token of ['"phase": "P37H"','"productionCutover": false','"rollback": "p35-rollback"'])need(releaseMarker,token,'release marker '+token);
 for(const token of ["countPracticeEvents(page,'listening')","countPracticeEvents(page,'speaking')",'__speechStarts','content/search/vocabulary-index.json',"context.setOffline(true)","navigator.serviceWorker.ready"])need(tests,token,'browser media/PWA '+token);
