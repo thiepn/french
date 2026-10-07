@@ -130,11 +130,32 @@ The live probe never authenticates as a user and never writes data.
 
 A final authenticated Google sign-in + cloud round-trip remains a human qualification gate because CI has no user session.
 
-## Still blocking cutover
+## Slice H5 — Controlled Deployment & Rollback
 
-P37H remains incomplete until:
+Production deployment is now represented by a manual-only GitHub Actions workflow.
 
-- authenticated account round-trip is human-qualified;
-- final production artifact promotion and rollback path are qualified.
+The workflow accepts exactly two targets:
+
+- `vnext` with confirmation `CUTOVER VNEXT`;
+- `p35-rollback` with confirmation `ROLLBACK P35`.
+
+For vNext it re-runs the complete vNext qualification, builds a fresh `dist-vnext`, packages only that artifact, and deploys it to GitHub Pages.
+
+For rollback it re-runs the P34/P35 production qualification and packages the untouched stable P35 root, release marker, service worker, manifest, icons and vendor runtime.
+
+Both artifacts are independently constructed and verified in `qualify:vnext`, including deployment markers and release identity.
+
+The workflow does not run automatically on a merge or push. Cutover remains an explicit production action.
+
+GitHub Pages currently uses the legacy branch-based source. Before the new deployment workflow can own production, the repository Pages source must be changed once to **GitHub Actions** in repository settings.
+
+## Remaining human gates
+
+Automated cutover readiness is otherwise complete. Two explicit human gates remain:
+
+1. sign in with Google in vNext and perform one real cloud sync/restore round-trip;
+2. change GitHub Pages → Build and deployment → Source to **GitHub Actions**.
+
+P35 remains the production root until both gates are completed and the guarded `vnext` deployment is explicitly run.
 
 P35 remains the production root until these gates pass.
