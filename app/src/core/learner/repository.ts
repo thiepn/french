@@ -889,3 +889,44 @@ export async function exportCanonicalBackup():Promise<Record<string,unknown>>{
     };
   }finally{db.close();}
 }
+
+
+export interface CanonicalBackupV1 {
+  schema:'thiepn-french-vnext-backup-v1';
+  exportedAt?:string;
+  learner:CanonicalLearnerStateV1|null;
+  srs:CanonicalSrsRecordV1[];
+  activity:CanonicalReviewEventV1[];
+  userContent:CanonicalUserContentV1|null;
+}
+
+export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<void>{
+  if(backup.schema!=='thiepn-french-vnext-backup-v1')throw new Error('Unsupported French backup schema.');
+  if(!backup.learner||backup.learner.schema!=='thiepn-french-learner-state-v1')throw new Error('French backup has no learner state.');
+  if(!Array.isArray(backup.srs)||!Array.isArray(backup.activity))throw new Error('French backup records are invalid.');
+  const userContent=backup.userContent?.schema==='thiepn-french-user-content-v1'
+    ?backup.userContent
+    :{schema:'thiepn-french-user-content-v1' as const,userCards:{},cardEdits:{},smartDecks:{},customDecks:{}};
+
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),activity=tx.objectStore('activity');
+      learner.clear();srs.clear();activity.clear();tx.objectStore('user-content').clear();tx.objectStore('session').clear();
+      learner.put(backup.learner,'state-v1');
+      for(const row of backup.srs)if(row?.schema==='thiepn-french-srs-record-v1')srs.put(row,row.id);
+      for(const row of backup.activity)if(row?.schema==='thiepn-french-review-event-v1')activity.put(row,row.eventId);
+      tx.objectStore('user-content').put(userContent,'content-v1');
+      tx.objectStore('meta').put(backup.learner.sourceFingerprint,MIGRATION_MARKER);
+      tx.objectStore('meta').put({
+        currentLevel:highestEarnedLevel(backup.learner.promotions),
+        dueCount:backup.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+        streakDays:studyStreak(backup.learner.studyDays)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not replace canonical French state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Canonical French state replacement was aborted.'));
+    });
+  }finally{db.close();}
+}
