@@ -9,7 +9,7 @@ function percent(value:number,total:number):number{
 }
 
 export async function mount({main,signal}:RouteContext):Promise<void>{
-  main.innerHTML='<section class="page progress-page"><p class="eyebrow">Learning evidence</p><h1>Progress</h1><p class="lede">Mastery, review activity, and skill coverage are calculated only when this page opens.</p><p class="inline-status" data-status>Reading learner evidence…</p><div data-content></div></section>';
+  main.innerHTML='<section class="page progress-page"><p class="eyebrow">Learning evidence</p><h1>Progress</h1><p class="lede">CEFR progression, Skill records, mastery evidence, and 30-day accuracy are calculated only when this page opens.</p><p class="inline-status" data-status>Reading learner evidence…</p><div data-content></div></section>';
   const status=main.querySelector<HTMLElement>('[data-status]');
   const host=main.querySelector<HTMLElement>('[data-content]');
   if(!status||!host)return;
@@ -43,7 +43,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     metric('Level',currentLevel,'earned CEFR promotion');
     metric('Learned',learnedShare+'%',snapshot.srs.learned.toLocaleString()+' skill records in review state');
     metric('Due',snapshot.srs.due.toLocaleString(),'scheduled now');
-    metric('Accuracy',accuracy==null?'—':accuracy+'%',snapshot.activity.total.toLocaleString()+' recent answers');
+    metric('30-day accuracy',accuracy==null?'—':accuracy+'%',snapshot.activity.total.toLocaleString()+' recent answers');
     metric('XP',xp.toLocaleString(),lifetimeAnswers.toLocaleString()+' lifetime answers');
     metric('Practice',snapshot.activity.practiceOnly.toLocaleString(),'adaptive reinforcement answers');
 
