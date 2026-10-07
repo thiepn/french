@@ -100,15 +100,15 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 60); do
-            html="$(curl -fsS --max-time 15 https://french.thiepn.dev/ || true)"
-            marker="$(curl -fsS --max-time 15 https://french.thiepn.dev/deployment-marker.json || true)"
-            if [[ "$TARGET" == "vnext" ]]; then
-              if grep -Fq 'data-runtime="vnext"' <<<"$html" && grep -Fq '"target": "vnext"' <<<"$marker"; then
-                exit 0
-              fi
-            else
-              if grep -Fq 'P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening' <<<"$html" && grep -Fq '"target": "p35-rollback"' <<<"$marker"; then
-                exit 0
+            if html="$(curl -fsS --max-time 15 https://french.thiepn.dev/)" && marker="$(curl -fsS --max-time 15 https://french.thiepn.dev/deployment-marker.json)"; then
+              if [[ "$TARGET" == "vnext" ]]; then
+                if grep -Fq 'data-runtime="vnext"' <<<"$html" && grep -Fq '"target": "vnext"' <<<"$marker"; then
+                  exit 0
+                fi
+              else
+                if grep -Fq 'P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening' <<<"$html" && grep -Fq '"target": "p35-rollback"' <<<"$marker"; then
+                  exit 0
+                fi
               fi
             fi
             sleep 10
