@@ -17,7 +17,7 @@ function progress(payload:BackupPayload):Record<string,unknown>{
 function reviews(payload:BackupPayload):unknown[]{return payload.stores.activity.map(row=>{const v=obj(row.value);return{...v,interval:v.intervalDays??0};});}
 export async function createFrenchCloudSnapshot():Promise<FrenchCloudSnapshot>{
   const payload=await createBackupPayload(),learner=obj(at(payload,'learner','state-v1')),content=obj(at(payload,'user-content','content-v1')),feature=obj(learner.featureState),reviewLog=reviews(payload);
-  const lastReview=reviewLog.reduce((max,row)=>Math.max(max,Number(obj(row).t)||0),0);
+  const lastReview=reviewLog.reduce<number>((max,row)=>Math.max(max,Number(obj(row).t)||0),0);
   return{version:'vnext-p37h',schema:13,updatedAt:Math.max(Date.now(),lastReview),progress:progress(payload),settings:obj(learner.settings),reviewLog,
     studyDays:Array.isArray(learner.studyDays)?learner.studyDays:[],profile:obj(learner.profile),studyPlan:obj(learner.studyPlan),
     userCards:obj(content.userCards),cardEdits:obj(content.cardEdits),smartDecks:obj(content.smartDecks),customDecks:obj(content.customDecks),...feature,
