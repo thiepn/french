@@ -13,7 +13,9 @@
     "test:vnext:adaptive":"node scripts/test-vnext-adaptive.mts",
     "test:vnext:account":"node scripts/test-vnext-account-reconcile.mts",
     "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
-    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:account && npm run build:vnext && npm run verify:vnext:dist"
+    "test:vnext:rollback-artifact":"node scripts/prepare-pages-artifact.mjs p35-rollback && node scripts/verify-pages-artifact.mjs p35-rollback",
+    "test:vnext:cutover-artifact":"node scripts/prepare-pages-artifact.mjs vnext && node scripts/verify-pages-artifact.mjs vnext",
+    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:account && npm run test:vnext:rollback-artifact && npm run build:vnext && npm run verify:vnext:dist && npm run test:vnext:cutover-artifact"
   },
   "devDependencies":{"typescript":"7.0.2","vite":"8.3.3"}
 }
