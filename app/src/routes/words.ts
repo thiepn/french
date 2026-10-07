@@ -55,6 +55,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const fr=document.createElement('p');fr.textContent=example.text;block.append(fr);
         if(example.translation){const en=document.createElement('small');en.textContent=example.translation;block.append(en);}
         detail.append(block);
+        const read=document.createElement('button');read.type='button';read.className='secondary-action compact-action word-context-action';read.textContent='Read in context';
+        read.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-read-note',String(word.id));navigate('read');});
+        detail.append(read);
         const listen=document.createElement('button');listen.type='button';listen.className='secondary-action compact-action word-context-action';listen.textContent='Listen in context';
         listen.addEventListener('click',()=>{sessionStorage.setItem('french-vnext-listen-note',String(word.id));navigate('listen');});
         detail.append(listen);
