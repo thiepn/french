@@ -3,7 +3,16 @@ const labels:Record<RouteId,string>={home:'Home',learn:'Learn',review:'Review',w
 export function createShell(app:HTMLElement):ShellApi{
   app.textContent='';
   const header=document.createElement('header');header.className='app-header';
-  header.innerHTML='<div class="brand-copy"><strong>French</strong><span>Adaptive French · scalable vNext runtime</span></div><div class="runtime-status" id="runtime-status" aria-live="polite">Ready</div>';
+  header.innerHTML='<div class="brand-copy"><strong>French</strong><span>Adaptive French · scalable vNext runtime</span></div><div class="header-actions"><button type="button" class="account-chip" data-account-chip data-status="guest">Account</button><div class="runtime-status" id="runtime-status" aria-live="polite">Ready</div></div>';
+  const accountChip=header.querySelector<HTMLButtonElement>('[data-account-chip]');
+  accountChip?.addEventListener('click',()=>{location.hash='#settings';});
+  window.addEventListener('french:vnext-account-state',event=>{
+    const detail=(event as CustomEvent<{status?:string;user?:{email?:string}|null}>).detail??{};
+    if(!accountChip)return;
+    accountChip.dataset.status=detail.status??'guest';
+    accountChip.textContent=detail.user?.email?detail.user.email:(detail.status==='guest'?'Guest':'Account');
+    accountChip.setAttribute('aria-label','THIEPN Account: '+(detail.status??'guest'));
+  });
   const layout=document.createElement('div');layout.className='app-layout';
   const nav=document.createElement('nav');nav.className='primary-nav';nav.setAttribute('aria-label','Primary navigation');
   for(const route of ROUTE_IDS){const b=document.createElement('button');b.type='button';b.dataset.route=route;b.textContent=labels[route];b.addEventListener('click',()=>{location.hash='#'+route;});nav.append(b);}

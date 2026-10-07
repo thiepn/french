@@ -13,5 +13,5 @@ export function createRouter(shell:ShellApi){
     try{const module=await loaders[route]();if(controller.signal.aborted)return;const context:RouteContext={main:shell.main,route,signal:controller.signal,navigate};await module.mount(context);if(controller.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.focus({preventScroll:true});}
     catch(error){if(controller.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.innerHTML='<section class="route-error"><h1>Could not open this section</h1><p>The route failed without taking down the rest of French.</p></section>';console.error('French vNext route failed',route,error);}
   };
-  return{start(){window.addEventListener('hashchange',()=>void render(current()));if(!location.hash)history.replaceState(null,'','#home');void render(current());}};
+  return{start(){window.addEventListener('hashchange',()=>void render(current()));window.addEventListener('french:vnext-state-replaced',()=>void render(current()));if(!location.hash)history.replaceState(null,'','#home');void render(current());}};
 }

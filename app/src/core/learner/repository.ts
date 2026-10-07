@@ -5,12 +5,16 @@ import type {
   CanonicalReviewEventV1,
   CanonicalSrsRecordV1,
   CanonicalUserContentV1,
-  SkillId
+  SkillId,
+  Rating
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
+function notifyCanonicalChange():void{
+  if(typeof window!=='undefined')window.dispatchEvent(new Event('french:vnext-local-change'));
+}
 
 function object(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
@@ -390,6 +394,7 @@ export async function writeActiveStudySession(session:StudySessionStateV1):Promi
       tx.onabort=()=>reject(tx.error??new Error('Study session save was aborted.'));
     });
   }finally{db.close();}
+  notifyCanonicalChange();
 }
 
 export async function clearActiveStudySession():Promise<void>{
@@ -403,6 +408,7 @@ export async function clearActiveStudySession():Promise<void>{
       tx.onabort=()=>reject(tx.error??new Error('Study session clear was aborted.'));
     });
   }finally{db.close();}
+  notifyCanonicalChange();
 }
 
 function cloneSessionStats(session:StudySessionStateV1):StudySessionStateV1['stats']{
@@ -563,6 +569,7 @@ export async function recordStudySessionReview(
     });
   }finally{db.close();}
 
+  notifyCanonicalChange();
   return{next,event,session};
 }
 export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
@@ -610,6 +617,7 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
     });
   }finally{db.close();}
 
+  notifyCanonicalChange();
   return restored;
 }
 
@@ -760,4 +768,259 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
       tx.onabort=()=>reject(tx.error??new Error('Batch note skill read was aborted.'));
     });
   }finally{db.close();}
+}
+
+
+export interface CanonicalProgressSnapshot {
+  learner:CanonicalLearnerStateV1;
+  srs:{
+    total:number;notes:number;newCount:number;learning:number;learned:number;due:number;suspended:number;
+    bySkill:Record<string,number>;
+  };
+  activity:{
+    total:number;scheduled:number;practiceOnly:number;correct:number;accuracy:number|null;
+    last30Days:Array<{day:string;answers:number;correct:number;xp:number}>;
+  };
+}
+
+export async function readCanonicalProgressSnapshot(now=Date.now()):Promise<CanonicalProgressSnapshot>{
+  const learner=await ensureCanonicalLearnerState(now);
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const notes=new Set<string>();
+      const bySkill:Record<string,number>={};
+      const srs={total:0,notes:0,newCount:0,learning:0,learned:0,due:0,suspended:0,bySkill};
+      let total=0,scheduled=0,practiceOnly=0,correct=0;
+      const days=new Map<string,{day:string;answers:number;correct:number;xp:number}>();
+      const cutoff=now-30*86_400_000;
+      const tx=db.transaction(['srs','activity'],'readonly');
+
+      const srsCursor=tx.objectStore('srs').openCursor();
+      srsCursor.onsuccess=()=>{
+        const cursor=srsCursor.result;
+        if(!cursor)return;
+        const row=cursor.value as CanonicalSrsRecordV1;
+        srs.total++;notes.add(row.noteId);bySkill[row.skill||'unknown']=(bySkill[row.skill||'unknown']??0)+1;
+        if(row.status==='new')srs.newCount++;else if(row.status==='learning')srs.learning++;else if(row.status==='learned')srs.learned++;
+        if(row.suspended)srs.suspended++;
+        if(!row.suspended&&row.status!=='new'&&row.dueAt>0&&row.dueAt<=now)srs.due++;
+        cursor.continue();
+      };
+      srsCursor.onerror=()=>reject(srsCursor.error??new Error('Could not aggregate SRS progress.'));
+
+      const activityCursor=tx.objectStore('activity').index('t').openCursor(IDBKeyRange.lowerBound(cutoff));
+      activityCursor.onsuccess=()=>{
+        const cursor=activityCursor.result;
+        if(!cursor)return;
+        const row=cursor.value as CanonicalReviewEventV1;
+        total++;
+        if(row.practiceOnly)practiceOnly++;else scheduled++;
+        if(row.correct)correct++;
+        const key=dayKey(row.t);
+        const day=days.get(key)??{day:key,answers:0,correct:0,xp:0};
+        day.answers++;if(row.correct)day.correct++;day.xp+=Math.max(0,Math.round(row.xp||0));days.set(key,day);
+        cursor.continue();
+      };
+      activityCursor.onerror=()=>reject(activityCursor.error??new Error('Could not aggregate activity progress.'));
+
+      tx.oncomplete=()=>{
+        srs.notes=notes.size;
+        const last30Days=[...days.values()].sort((a,b)=>a.day.localeCompare(b.day));
+        resolve({
+          learner,
+          srs,
+          activity:{
+            total,scheduled,practiceOnly,correct,
+            accuracy:total?Math.round(correct/total*100):null,
+            last30Days
+          }
+        });
+      };
+      tx.onerror=()=>reject(tx.error??new Error('Could not read progress snapshot.'));
+      tx.onabort=()=>reject(tx.error??new Error('Progress snapshot read was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+export async function updateCanonicalSettings(
+  patch:Record<string,unknown>,
+  sessionPatch:Record<string,unknown>={}
+):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const currentSession=object(learner.settings.session);
+  const next:CanonicalLearnerStateV1={
+    ...learner,
+    settings:{...learner.settings,...patch,session:{...currentSession,...sessionPatch}}
+  };
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(next,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings write was aborted.'));
+    });
+  }finally{db.close();}
+  notifyCanonicalChange();
+  return next;
+}
+
+export async function exportCanonicalBackup():Promise<CanonicalBackupV1>{
+  const db=await openFrenchDatabase();
+  try{
+    const readStore=<T>(storeName:string)=>new Promise<T[]>((resolve,reject)=>{
+      const rows:T[]=[];
+      const tx=db.transaction(storeName,'readonly');
+      const request=tx.objectStore(storeName).openCursor();
+      request.onsuccess=()=>{
+        const cursor=request.result;if(!cursor)return;
+        rows.push(cursor.value as T);cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not export '+storeName+'.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not export '+storeName+'.'));
+    });
+    const [learner,srs,activity,userContent,session]=await Promise.all([
+      readStore<CanonicalLearnerStateV1>('learner'),
+      readStore<CanonicalSrsRecordV1>('srs'),
+      readStore<CanonicalReviewEventV1>('activity'),
+      readStore<CanonicalUserContentV1>('user-content'),
+      readStore<StudySessionStateV1>('session')
+    ]);
+    return{
+      schema:'thiepn-french-vnext-backup-v1',
+      exportedAt:new Date().toISOString(),
+      learner:learner[0]??null,
+      srs,
+      activity,
+      userContent:userContent[0]??null,
+      session:session[0]??null
+    };
+  }finally{db.close();}
+}
+
+
+export interface CanonicalBackupV1 {
+  schema:'thiepn-french-vnext-backup-v1';
+  exportedAt?:string;
+  learner:CanonicalLearnerStateV1|null;
+  srs:CanonicalSrsRecordV1[];
+  activity:CanonicalReviewEventV1[];
+  userContent:CanonicalUserContentV1|null;
+  session?:StudySessionStateV1|null;
+}
+
+export async function replaceCanonicalBackup(backup:CanonicalBackupV1):Promise<void>{
+  if(backup.schema!=='thiepn-french-vnext-backup-v1')throw new Error('Unsupported French backup schema.');
+  if(!backup.learner||backup.learner.schema!=='thiepn-french-learner-state-v1')throw new Error('French backup has no learner state.');
+  const learnerState=backup.learner;
+  if(!Array.isArray(backup.srs)||!Array.isArray(backup.activity))throw new Error('French backup records are invalid.');
+  const userContent=backup.userContent?.schema==='thiepn-french-user-content-v1'
+    ?backup.userContent
+    :{schema:'thiepn-french-user-content-v1' as const,userCards:{},cardEdits:{},smartDecks:{},customDecks:{}};
+
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),activity=tx.objectStore('activity');
+      learner.clear();srs.clear();activity.clear();tx.objectStore('user-content').clear();tx.objectStore('session').clear();
+      learner.put(learnerState,'state-v1');
+      for(const row of backup.srs)if(row?.schema==='thiepn-french-srs-record-v1')srs.put(row,row.id);
+      for(const row of backup.activity)if(row?.schema==='thiepn-french-review-event-v1')activity.put(row,row.eventId);
+      tx.objectStore('user-content').put(userContent,'content-v1');
+      const active=normalizeStudySession(backup.session);
+      if(active)tx.objectStore('session').put(active,'active');
+      tx.objectStore('meta').put(learnerState.sourceFingerprint,MIGRATION_MARKER);
+      tx.objectStore('meta').put({
+        currentLevel:highestEarnedLevel(learnerState.promotions),
+        dueCount:backup.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+        streakDays:studyStreak(learnerState.studyDays)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not replace canonical French state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Canonical French state replacement was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+
+export interface StandalonePracticeInput {
+  noteId:string;
+  skill:SkillId;
+  rating:Exclude<Rating,''>;
+  correct:boolean;
+  responseMs?:number;
+  typed?:boolean;
+  typedQuality?:string;
+  level?:string;
+  pos?:string;
+  direction?:string;
+  practice:string;
+}
+
+export async function recordStandalonePractice(
+  input:StandalonePracticeInput,
+  timestamp=Date.now()
+):Promise<CanonicalReviewEventV1>{
+  const learner=await ensureCanonicalLearnerState(timestamp);
+  const today=dayKey(timestamp);
+  const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();
+  const profile={...learner.profile};
+  const xp=input.rating==='easy'?5:input.rating==='good'?4:input.rating==='hard'?2:1;
+  profile.xp=Math.max(0,Math.round(number(profile.xp,0)))+xp;
+  profile.lifetimeAnswers=Math.max(0,Math.round(number(profile.lifetimeAnswers,0)))+1;
+  if(input.correct)profile.lifetimeCorrect=Math.max(0,Math.round(number(profile.lifetimeCorrect,0)))+1;
+  if(input.practice==='listening')profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  if(input.practice==='speaking')profile.speakingAnswers=Math.max(0,Math.round(number(profile.speakingAnswers,0)))+1;
+
+  const event:CanonicalReviewEventV1={
+    schema:'thiepn-french-review-event-v1',
+    eventId:'vnext-practice:'+timestamp+':'+input.noteId+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
+    t:timestamp,
+    id:input.noteId+'::practice:'+input.practice,
+    noteId:input.noteId,
+    skill:input.skill,
+    rating:input.rating,
+    responseMs:Math.max(0,Math.round(input.responseMs??0)),
+    wasNew:false,
+    intervalDays:0,
+    direction:input.direction??'',
+    typed:input.typed===true,
+    typedQuality:input.typedQuality??'none',
+    level:input.level??'',
+    pos:input.pos??'',
+    theme:'',
+    practice:input.practice,
+    correct:input.correct,
+    xp,
+    practiceOnly:true,
+    stability:0,
+    difficulty:5,
+    retrievability:0,
+    scheduledDays:0,
+    fsrsState:''
+  };
+
+  const previousSummary=(await readMetaValue<{currentLevel?:string;dueCount?:number;streakDays?:number}>('learner-summary'))??{};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','activity','meta'],'readwrite');
+      tx.objectStore('learner').put({...learner,studyDays,profile},'state-v1');
+      tx.objectStore('activity').put(event,event.eventId);
+      tx.objectStore('meta').put({
+        currentLevel:previousSummary.currentLevel,
+        dueCount:Math.max(0,Math.round(number(previousSummary.dueCount,0))),
+        streakDays:studyStreak(studyDays,timestamp)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save standalone practice.'));
+      tx.onabort=()=>reject(tx.error??new Error('Standalone practice write was aborted.'));
+    });
+  }finally{db.close();}
+  notifyCanonicalChange();
+  return event;
 }
