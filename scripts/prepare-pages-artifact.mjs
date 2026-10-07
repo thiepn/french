@@ -1,4 +1,4 @@
-import { cp,mkdir,rm,writeFile } from 'node:fs/promises';
+import { cp,mkdir,readFile,rm,writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const target=process.argv[2];
@@ -12,6 +12,15 @@ await mkdir(output,{recursive:true});
 if(target==='vnext'){
   await cp(resolve(root,'dist-vnext'),output,{recursive:true});
   await cp(resolve(root,'CNAME'),resolve(output,'CNAME'));
+  const releasePath=resolve(output,'vnext-release.json');
+  const release=JSON.parse(await readFile(releasePath,'utf8'));
+  await writeFile(releasePath,JSON.stringify({
+    ...release,
+    stage:'production',
+    productionCutover:true,
+    deployedFrom:'p37h-controlled-production',
+    deployedSourceSha:process.env.GITHUB_SHA||'local'
+  },null,2)+'\n');
 }else{
   for(const file of [
     'index.html','release.json','service-worker.js','manifest.webmanifest',
