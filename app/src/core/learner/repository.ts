@@ -8,6 +8,7 @@ import type {
   SkillId
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
+import type { CanonicalCloudSnapshotV1 } from './snapshot';
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
@@ -760,4 +761,119 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
       tx.onabort=()=>reject(tx.error??new Error('Batch note skill read was aborted.'));
     });
   }finally{db.close();}
+}
+
+
+async function readAllStoreValues<T>(storeName:string):Promise<T[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const rows:T[]=[];
+      const tx=db.transaction(storeName,'readonly');
+      const request=tx.objectStore(storeName).openCursor();
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor)return;
+        rows.push(cursor.value as T);
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error??new Error('Could not enumerate '+storeName+'.'));
+      tx.oncomplete=()=>resolve(rows);
+      tx.onerror=()=>reject(tx.error??new Error('Could not enumerate '+storeName+'.'));
+      tx.onabort=()=>reject(tx.error??new Error('Enumeration aborted for '+storeName+'.'));
+    });
+  }finally{db.close();}
+}
+
+export function readAllSrsRecords():Promise<CanonicalSrsRecordV1[]>{
+  return readAllStoreValues<CanonicalSrsRecordV1>('srs');
+}
+
+export function readAllReviewEvents():Promise<CanonicalReviewEventV1[]>{
+  return readAllStoreValues<CanonicalReviewEventV1>('activity');
+}
+
+export async function exportCanonicalCloudSnapshot(appVersion='6.0.0-vnext'):Promise<CanonicalCloudSnapshotV1>{
+  const [learner,userContent,srs,reviews]=await Promise.all([
+    ensureCanonicalLearnerState(),
+    readCanonicalUserContent(),
+    readAllSrsRecords(),
+    readAllReviewEvents()
+  ]);
+  return{
+    schema:'thiepn-french-cloud-state-v1',
+    revision:1,
+    updatedAt:Date.now(),
+    appVersion,
+    learner,
+    srs,
+    reviews,
+    userContent:userContent??{
+      schema:'thiepn-french-user-content-v1',
+      userCards:{},cardEdits:{},smartDecks:{},customDecks:{}
+    }
+  };
+}
+
+export async function replaceCanonicalState(
+  migration:CanonicalMigrationV1,
+  sourceFingerprint='cloud-import'
+):Promise<void>{
+  const learner:CanonicalLearnerStateV1={
+    ...migration.learner,
+    sourceFingerprint:sourceFingerprint||migration.learner.sourceFingerprint,
+    sourceUpdatedAt:Date.now()
+  };
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learnerStore=tx.objectStore('learner');
+      const srs=tx.objectStore('srs');
+      const activity=tx.objectStore('activity');
+      const userContent=tx.objectStore('user-content');
+      learnerStore.put(learner,'state-v1');
+      userContent.put(migration.userContent,'content-v1');
+      srs.clear();
+      for(const row of migration.srs)srs.put(row,row.id);
+      activity.clear();
+      for(const row of migration.reviews)activity.put(row,row.eventId);
+      tx.objectStore('session').delete('active');
+      tx.objectStore('meta').put({
+        currentLevel:highestEarnedLevel(learner.promotions),
+        dueCount:migration.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+        streakDays:studyStreak(learner.studyDays)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Canonical state replacement failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Canonical state replacement was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+export async function replaceCanonicalCloudSnapshot(snapshot:CanonicalCloudSnapshotV1):Promise<void>{
+  await replaceCanonicalState({
+    learner:snapshot.learner,
+    srs:snapshot.srs,
+    reviews:snapshot.reviews,
+    userContent:snapshot.userContent
+  },'cloud:'+String(snapshot.updatedAt||Date.now()));
+}
+
+export async function updateLearnerSettings(
+  updater:(settings:Record<string,unknown>)=>Record<string,unknown>
+):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,settings:updater({...learner.settings}),sourceUpdatedAt:Date.now()};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not update learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings update was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
 }
