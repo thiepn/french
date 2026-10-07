@@ -1,6 +1,7 @@
 import { exportCanonicalBackup,replaceCanonicalBackup,writeCanonicalMigration,type CanonicalBackupV1 } from '../learner/repository';
 import { legacyEnvelopeToCanonical } from '../learner/from-legacy';
 import type { JsonObject,LegacySnapshotEnvelope } from '../migration/legacy-contract';
+import { decideReconciliation } from './reconcile';
 
 const SUPABASE_URL='https://hycegznamzjhwinegaai.supabase.co';
 const SUPABASE_KEY='sb_publishable_1rZzRPzfLMaAH5pIgCwIjA_19UPMIsR';
@@ -294,19 +295,23 @@ export async function reconcileNow(background=false):Promise<void>{
   try{
     const local=await exportCanonicalBackup(),localHash=await stableHash(local),hasLocal=meaningfulLocal(local);
     const remote=await fetchRemote();
-    if(!remote){
-      const uploaded=await upload(local,null);saveBaseline(user.id,uploaded.revision,localHash);
-      state.status='synced';return;
+    const decision=decideReconciliation({
+      remoteExists:Boolean(remote),
+      remoteRevision:remote?.revision??null,
+      baselineRevision:meta.revision,
+      baselineHash:meta.localHash,
+      localHash,
+      meaningfulLocal:hasLocal
+    });
+    if(decision.action==='upload-new'||decision.action==='upload-current'){
+      const uploaded=await upload(local,decision.expectedRevision);
+      saveBaseline(user.id,uploaded.revision,localHash);state.status='synced';return;
     }
-    if(meta.revision===null){
-      if(hasLocal){state.conflict=remote;state.status='conflict';return;}
+    if(decision.action==='apply-remote'){
+      if(!remote)throw new Error('Cloud reconciliation selected a missing remote state.');
       await applyRemote(remote);return;
     }
-    if(remote.revision===meta.revision){
-      if(meta.localHash&&meta.localHash===localHash){state.status='synced';return;}
-      const uploaded=await upload(local,remote.revision);saveBaseline(user.id,uploaded.revision,localHash);state.status='synced';return;
-    }
-    if(meta.localHash&&meta.localHash===localHash){await applyRemote(remote);return;}
+    if(decision.action==='synced'){state.status='synced';return;}
     state.conflict=remote;state.status='conflict';
   }catch(error){
     state.status=isConflict(error)?'conflict':'error';state.error=errorMessage(error);
