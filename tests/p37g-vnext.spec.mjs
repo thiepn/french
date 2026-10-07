@@ -178,3 +178,37 @@ test('offline runtime reloads the used shell and listening pack without network'
     await context.setOffline(false);
   }
 });
+
+
+test('Progress renders canonical evidence without loading the corpus search index',async({page})=>{
+  await page.goto('/#progress');
+  await expect(page.getByRole('heading',{name:'Progress'})).toBeVisible();
+  await expect(page.locator('.progress-metrics')).toBeVisible({timeout:30_000});
+  await expect(page.locator('.progress-section').filter({hasText:'Memory state'})).toBeVisible();
+  await expect(page.locator('.progress-section').filter({hasText:'Skill coverage'})).toBeVisible();
+
+  const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(entry=>entry.name));
+  expect(resources.some(url=>url.includes('/content/search/vocabulary-index.json'))).toBeFalsy();
+  expect(resources.some(url=>url.includes('/content/packs/'))).toBeFalsy();
+});
+
+test('Settings persists canonical workload and session preferences',async({page})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('heading',{name:'Settings'})).toBeVisible();
+  const newLimit=page.locator('input[name="dailyNewLimit"]');
+  const reviewLimit=page.locator('input[name="dailyReviewLimit"]');
+  const mix=page.locator('select[name="mix"]');
+  await expect(newLimit).toBeVisible({timeout:30_000});
+
+  await newLimit.fill('13');
+  await reviewLimit.fill('77');
+  await mix.selectOption('interleave');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toHaveText('Settings saved.');
+
+  await page.reload();
+  await expect(newLimit).toHaveValue('13');
+  await expect(reviewLimit).toHaveValue('77');
+  await expect(mix).toHaveValue('interleave');
+  await expect(page.getByText('THIEPN Account',{exact:true})).toBeVisible();
+});
