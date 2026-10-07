@@ -11,6 +11,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = resolve(ROOT, 'app/public/content');
 const PACK_DIR = resolve(CONTENT_DIR, 'packs');
 const SEARCH_DIR = resolve(CONTENT_DIR, 'search');
+const READINGS_DIR = resolve(CONTENT_DIR, 'readings');
+const READINGS_SOURCE = resolve(ROOT, 'app/content-source/readings-v550.json');
 
 function gitBlobSha(buffer) {
   const header = Buffer.from('blob ' + buffer.length + '\0');
@@ -49,8 +51,10 @@ if (countMismatch) {
 
 await rm(PACK_DIR, { recursive: true, force: true });
 await rm(SEARCH_DIR, { recursive: true, force: true });
+await rm(READINGS_DIR, { recursive: true, force: true });
 await mkdir(PACK_DIR, { recursive: true });
 await mkdir(SEARCH_DIR, { recursive: true });
+await mkdir(READINGS_DIR, { recursive: true });
 
 const byLevel = new Map();
 for (const word of source.words) {
@@ -124,6 +128,24 @@ const vocabularySearch = {
   revision: searchPayload.revision
 };
 
+const readingSource = JSON.parse(await readFile(READINGS_SOURCE, 'utf8'));
+if (readingSource?.schema !== 'thiepn-french-reading-corpus-v1' || !Array.isArray(readingSource.readings)) {
+  throw new Error('French reading source is invalid.');
+}
+if (Number(readingSource.count) !== readingSource.readings.length) {
+  throw new Error('French reading source count mismatch.');
+}
+const readingBytes = Buffer.from(JSON.stringify(readingSource));
+await writeFile(resolve(READINGS_DIR, 'library.json'), readingBytes);
+const readingLibrary = {
+  schema: readingSource.schema,
+  path: '/content/readings/library.json',
+  count: readingSource.readings.length,
+  bytes: readingBytes.length,
+  sha256: sha256(readingBytes),
+  revision: String(readingSource.revision || 'p37h-v550-freeze-1')
+};
+
 const manifest = {
   schema: 'thiepn-french-content-manifest-v1',
   revision: 'sakana-' + SOURCE_BLOB.slice(0, 12),
@@ -142,11 +164,12 @@ const manifest = {
       ? source.sources.map(row => ({ name: row.name, license: row.license, url: row.url }))
       : []
   },
-  indexes: { vocabulary: vocabularySearch },
+  indexes: { vocabulary: vocabularySearch, readings: readingLibrary },
   totals: {
     records: source.words.length,
     packs: packs.length,
-    levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length]))
+    levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length])),
+    readings: readingSource.readings.length
   },
   packs
 };
@@ -162,5 +185,7 @@ console.log(JSON.stringify({
   packSize: PACK_SIZE,
   packs: packs.length,
   levels: manifest.totals.levels,
-  searchIndexBytes: searchBytes.length
+  searchIndexBytes: searchBytes.length,
+  readingCount: readingSource.readings.length,
+  readingBytes: readingBytes.length
 }, null, 2));
