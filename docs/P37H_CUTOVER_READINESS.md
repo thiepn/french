@@ -106,11 +106,35 @@ Browser acceptance now takes a used Listen route fully offline, reloads the page
 
 Activation removes stale P35/vNext French shell caches only after the vNext worker installs successfully. A repository rollback can reinstall the P35 worker and shell.
 
+## Slice H4 — Account Contract Qualification
+
+Account reconciliation is now a pure deterministic policy with fixtures covering:
+
+- first upload when no cloud state exists;
+- first-device conflict when both local and cloud contain meaningful state;
+- safe cloud adoption for an empty local profile;
+- already-synced baseline;
+- local-only change with expected-revision upload;
+- cloud-only change with safe remote adoption;
+- true divergence conflict;
+- legacy/untrusted baseline conflict safety.
+
+A non-destructive live CI probe checks the production Supabase project for:
+
+- Google OAuth enabled;
+- `french_sync_state`;
+- `connect_thiepn_app`;
+- `sync_thiepn_french_state`.
+
+The live probe never authenticates as a user and never writes data.
+
+A final authenticated Google sign-in + cloud round-trip remains a human qualification gate because CI has no user session.
+
 ## Still blocking cutover
 
 P37H remains incomplete until:
 
-- live account sync is qualified;
+- authenticated account round-trip is human-qualified;
 - final production artifact promotion and rollback path are qualified.
 
 P35 remains the production root until these gates pass.
