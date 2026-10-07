@@ -1,0 +1,34 @@
+name: P37 scalable runtime rebuild
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: p37-vnext-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  qualify-vnext:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Discover stable P35 storage contract
+        run: node scripts/extract-legacy-storage-contract.mjs
+      - name: Install pinned vNext toolchain
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Typecheck, build, and enforce startup budgets
+        run: npm run qualify:vnext
+      - name: Preserve vNext build and migration discovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-vnext-${{ github.sha }}
+          path: |
+            dist-vnext
+            legacy-storage-contract.json
+          retention-days: 14

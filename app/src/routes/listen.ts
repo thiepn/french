@@ -1,0 +1,1 @@
+import type { RouteContext } from '../core/types';export function mount({main}:RouteContext):void{main.innerHTML='<section class="page"><p class="eyebrow">Audio on demand</p><h1>Listen</h1><p class="lede">Audio and transcripts load only for the lesson being used.</p></section>';}

@@ -1,0 +1,1 @@
+import type { RouteContext } from '../core/types';export function mount({main}:RouteContext):void{main.innerHTML='<section class="page"><p class="eyebrow">Configuration</p><h1>Settings</h1><p class="lede">Backup, diagnostics, account management, and migration tools stay outside the critical startup path.</p></section>';}
