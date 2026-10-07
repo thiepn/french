@@ -1,6 +1,5 @@
 import { createThiepnAccountSession,readThiepnOAuthCallback,type ThiepnIdentity } from './account-session-vendor';
 import { FRENCH_AUTH_RETURN_KEY,FRENCH_AUTH_STORAGE_KEY,FRENCH_OAUTH_CALLBACK_URL,FRENCH_OAUTH_CLIENT_ID,FRENCH_PRODUCTION_ORIGIN,THIEPN_ACCOUNT_PUBLISHABLE_KEY,THIEPN_ACCOUNT_URL,hasFrenchAccountConfiguration,isFrenchProductionOrigin } from './config';
-import { accountJson } from './api';
 export interface FrenchAccountUser{id:string;email:string|null}
 let session:ReturnType<typeof createThiepnAccountSession>|null=null;
 export function getFrenchAccountSession(){if(session)return session;if(!hasFrenchAccountConfiguration())throw new Error('FRENCH_OAUTH_CLIENT_NOT_REGISTERED');session=createThiepnAccountSession({issuer:THIEPN_ACCOUNT_URL,publishableKey:THIEPN_ACCOUNT_PUBLISHABLE_KEY,clientId:FRENCH_OAUTH_CLIENT_ID,redirectUri:FRENCH_OAUTH_CALLBACK_URL,scopes:['openid','email','profile','offline_access'],storageKey:FRENCH_AUTH_STORAGE_KEY,authPolicy:'guest-first'});return session;}
@@ -11,7 +10,5 @@ export async function completeFrenchAccountCallback():Promise<FrenchAccountUser|
 export function consumeFrenchAccountReturnTo():string{let value='/';try{value=sessionStorage.getItem(FRENCH_AUTH_RETURN_KEY)??'/';sessionStorage.removeItem(FRENCH_AUTH_RETURN_KEY);}catch{}return safeReturn(value);}
 export async function beginFrenchAccountSso(returnTo=location.href):Promise<void>{if(!isFrenchProductionOrigin())throw new Error('FRENCH_PRODUCTION_ORIGIN_REQUIRED');sessionStorage.setItem(FRENCH_AUTH_RETURN_KEY,safeReturn(returnTo));location.assign(await getFrenchAccountSession().authorizationUrl());}
 export async function getVerifiedFrenchAccountUser():Promise<FrenchAccountUser|null>{if(!hasFrenchAccountConfiguration()||!isFrenchProductionOrigin())return null;return user(await getFrenchAccountSession().verify());}
-export async function isFrenchAccountConnectionActive():Promise<boolean>{const rows=await accountJson<Array<{status?:string}>>('/rest/v1/account_app_connections?select=status&app_slug=eq.french&limit=1');return rows[0]?.status==='connected'||rows[0]?.status==='limited';}
-export async function getConnectedFrenchAccountUser():Promise<FrenchAccountUser|null>{const value=await getVerifiedFrenchAccountUser();if(!value)return null;if(!(await isFrenchAccountConnectionActive())){getFrenchAccountSession().signOutLocal();return null;}return value;}
 export function signOutFrenchAppSession():void{session?.signOutLocal();}
 export function subscribeFrenchAccount(listener:(identity:ThiepnIdentity)=>void):()=>void{return hasFrenchAccountConfiguration()?getFrenchAccountSession().subscribe(listener):()=>{};}
