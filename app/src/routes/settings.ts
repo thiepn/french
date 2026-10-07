@@ -167,7 +167,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       accountHost.append(actions);
     };
     const unsubscribe=account.subscribeAccount(renderAccount);
-    signal.addEventListener('abort',unsubscribe,{once:true});
+    signal.addEventListener('abort',()=>unsubscribe(),{once:true});
     await account.initializeAccount(false);
   }catch(error){
     if(signal.aborted)return;
