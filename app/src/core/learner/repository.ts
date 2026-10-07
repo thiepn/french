@@ -5,7 +5,8 @@ import type {
   CanonicalReviewEventV1,
   CanonicalSrsRecordV1,
   CanonicalUserContentV1,
-  SkillId
+  SkillId,
+  Rating
 } from './model';
 import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQuality } from './scheduler';
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
