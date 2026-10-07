@@ -882,3 +882,79 @@ export async function updateLearnerSettings(
   }finally{db.close();}
   return updated;
 }
+
+
+export interface StandalonePracticeInput {
+  noteId:string;
+  skill:SkillId;
+  practice:string;
+  correct:boolean;
+  responseMs?:number;
+  typed?:boolean;
+  typedQuality?:string;
+  level?:string;
+  pos?:string;
+  direction?:string;
+  xp?:number;
+}
+
+export async function recordStandalonePractice(input:StandalonePracticeInput,timestamp=Date.now()):Promise<CanonicalReviewEventV1>{
+  const learner=await ensureCanonicalLearnerState(timestamp);
+  const record=input.noteId?await readSrsById(input.noteId+'::d31:0:'+input.skill):null;
+  const event:CanonicalReviewEventV1={
+    schema:'thiepn-french-review-event-v1',
+    eventId:'practice:'+timestamp+':'+input.noteId+':'+input.skill+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
+    t:timestamp,
+    id:record?.id??input.noteId+'::d31:0:'+input.skill,
+    noteId:input.noteId,
+    skill:input.skill,
+    rating:input.correct?'good':'again',
+    responseMs:Math.max(0,Math.round(input.responseMs??0)),
+    wasNew:false,
+    intervalDays:record?.intervalDays??0,
+    direction:input.direction??'',
+    typed:input.typed===true,
+    typedQuality:input.typedQuality??'none',
+    level:input.level??'',
+    pos:input.pos??'',
+    theme:'',
+    practice:input.practice,
+    correct:input.correct,
+    xp:Math.max(0,Math.round(input.xp??(input.correct?3:1))),
+    practiceOnly:true,
+    stability:record?.stability??0,
+    difficulty:record?.difficulty??5,
+    retrievability:record?.retrievability??0,
+    scheduledDays:record?.scheduledDays??0,
+    fsrsState:record?.fsrsState??'new'
+  };
+  const today=dayKey(timestamp);
+  const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();
+  const profile={...learner.profile};
+  profile.xp=Math.max(0,Math.round(number(profile.xp,0)))+event.xp;
+  profile.lifetimeAnswers=Math.max(0,Math.round(number(profile.lifetimeAnswers,0)))+1;
+  if(input.correct)profile.lifetimeCorrect=Math.max(0,Math.round(number(profile.lifetimeCorrect,0)))+1;
+  if(input.typed===true)profile.typedAnswers=Math.max(0,Math.round(number(profile.typedAnswers,0)))+1;
+  if(input.skill==='listening'||input.practice==='listening'||input.practice==='dictation'){
+    profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  }
+  const updated={...learner,studyDays,profile,sourceUpdatedAt:timestamp};
+  const summary=(await readMetaValue<{currentLevel?:string;dueCount?:number;streakDays?:number}>('learner-summary'))??{};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','activity','meta'],'readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.objectStore('activity').put(event,event.eventId);
+      tx.objectStore('meta').put({
+        currentLevel:summary.currentLevel??highestEarnedLevel(updated.promotions),
+        dueCount:Math.max(0,Math.round(number(summary.dueCount,0))),
+        streakDays:studyStreak(studyDays,timestamp)
+      },'learner-summary');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Practice evidence write failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Practice evidence write was aborted.'));
+    });
+  }finally{db.close();}
+  return event;
+}
