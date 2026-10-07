@@ -11,6 +11,9 @@ import { scheduleRating,type SchedulerConfig,type SchedulerRating,type TypedQual
 import { advanceSession,insertReinforcement,normalizeStudySession,reinforcementAt,type StudySessionStateV1,type StudyUndoEntryV1 } from './session';
 
 const MIGRATION_MARKER='canonical-migration-v1';
+function notifyCanonicalChange():void{
+  if(typeof window!=='undefined')window.dispatchEvent(new Event('french:vnext-local-change'));
+}
 
 function object(value:unknown):Record<string,unknown>{
   return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
@@ -390,6 +393,7 @@ export async function writeActiveStudySession(session:StudySessionStateV1):Promi
       tx.onabort=()=>reject(tx.error??new Error('Study session save was aborted.'));
     });
   }finally{db.close();}
+  notifyCanonicalChange();
 }
 
 export async function clearActiveStudySession():Promise<void>{
@@ -403,6 +407,7 @@ export async function clearActiveStudySession():Promise<void>{
       tx.onabort=()=>reject(tx.error??new Error('Study session clear was aborted.'));
     });
   }finally{db.close();}
+  notifyCanonicalChange();
 }
 
 function cloneSessionStats(session:StudySessionStateV1):StudySessionStateV1['stats']{
@@ -563,6 +568,7 @@ export async function recordStudySessionReview(
     });
   }finally{db.close();}
 
+  notifyCanonicalChange();
   return{next,event,session};
 }
 export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
@@ -610,6 +616,7 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
     });
   }finally{db.close();}
 
+  notifyCanonicalChange();
   return restored;
 }
 
@@ -855,6 +862,7 @@ export async function updateCanonicalSettings(
       tx.onabort=()=>reject(tx.error??new Error('Learner settings write was aborted.'));
     });
   }finally{db.close();}
+  notifyCanonicalChange();
   return next;
 }
 
