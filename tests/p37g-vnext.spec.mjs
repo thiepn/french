@@ -66,7 +66,13 @@ test('new-card session persists practice-only reinforcement, undo, and reload re
   expect(after.queueIds.filter(id=>id===firstId).length).toBeGreaterThanOrEqual(2);
   expect(after.reinforcements.every(item=>after.queueIds[item.index]===firstId)).toBeTruthy();
 
-  await page.getByRole('button',{name:'Undo answer'}).click();
+  const undoButton=page.getByRole('button',{name:'Undo answer'});
+  await undoButton.click();
+  await expect(undoButton).toBeHidden();
+  await expect.poll(async()=>{
+    const current=await readActiveSession(page);
+    return current?.currentId??'';
+  }).toBe(firstId);
   const undone=await readActiveSession(page);
   expect(undone.currentId).toBe(firstId);
   expect(undone.cursor).toBe(0);
