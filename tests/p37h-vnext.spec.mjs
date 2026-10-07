@@ -8,7 +8,7 @@ test('Progress is a real evidence workspace',async({page})=>{
   await expect(page.getByRole('heading',{name:'30-day skill mix'})).toBeVisible();
 });
 
-test('Settings persist canonical learner preferences',async({page})=>{
+test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');
   await expect(newLimit).toBeVisible();
@@ -18,6 +18,8 @@ test('Settings persist canonical learner preferences',async({page})=>{
   await page.goto('/#home');
   await page.goto('/#settings');
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('17');
+  await expect(page.getByRole('button',{name:'Export backup'})).toBeVisible();
+  await expect(page.locator('input[data-import]')).toHaveAttribute('accept',/json/);
 });
 
 test('Listen exposes an on-demand dictation session',async({page})=>{
@@ -31,6 +33,25 @@ test('Speak exposes shadowing and capability-aware recognition',async({page})=>{
   await page.goto('/#speak');
   await expect(page.getByRole('heading',{name:'Speak'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Play model'})).toBeVisible({timeout:30_000});
-  const speak=page.getByRole('button',{name:/Speak now|Recognition unavailable/});
-  await expect(speak).toBeVisible();
+  await expect(page.getByRole('button',{name:/Speak now|Recognition unavailable/})).toBeVisible();
+});
+
+test('installed vNext shell survives a real offline reload',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>{
+    if(!('serviceWorker' in navigator))throw new Error('service worker unavailable');
+    await navigator.serviceWorker.ready;
+  });
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBeTruthy();
+  }
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-shell-ready','true');
+  }finally{
+    await context.setOffline(false);
+  }
 });
