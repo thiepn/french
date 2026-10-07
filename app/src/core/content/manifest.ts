@@ -31,8 +31,8 @@ export interface ContentManifest {
   revision:string;
   generatedAt?:string;
   source?:ContentSourceMetadata;
-  indexes?:{vocabulary?:ContentIndexDescriptor};
-  totals?:{records?:number;packs?:number;levels?:Record<string,number>};
+  indexes?:{vocabulary?:ContentIndexDescriptor;readings?:ContentIndexDescriptor};
+  totals?:{records?:number;packs?:number;levels?:Record<string,number>;readings?:number};
   packs:ContentPackDescriptor[];
 }
 let manifestPromise:Promise<ContentManifest>|null=null;
