@@ -83,11 +83,33 @@ Speak provides:
 
 Five-engine browser acceptance verifies bounded content loading and confirms microphone recognition does not initialize before learner action.
 
+## Slice H3 — PWA & Offline Ownership
+
+vNext now owns its installable artifact:
+
+- its own production manifest;
+- its own root service worker;
+- existing 192 px, 512 px and maskable production icons copied into the build artifact;
+- service-worker registration after hydration/idle rather than before first paint.
+
+The service worker precaches only:
+
+- the root shell;
+- the PWA manifest;
+- the vNext release marker.
+
+It does **not** precache the vocabulary corpus, search index, route chunks or content packs.
+
+Hashed route/runtime chunks, search data and vocabulary packs are cached only after the learner actually requests them. Previously used content therefore remains available offline without making a fresh install download the full corpus.
+
+Browser acceptance now takes a used Listen route fully offline, reloads the page and requires the shell plus previously fetched pack to remain usable.
+
+Activation removes stale P35/vNext French shell caches only after the vNext worker installs successfully. A repository rollback can reinstall the P35 worker and shell.
+
 ## Still blocking cutover
 
 P37H remains incomplete until:
 
-- vNext owns service worker / offline shell / manifest behavior;
 - live account sync is qualified;
 - final production artifact promotion and rollback path are qualified.
 
