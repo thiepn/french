@@ -51,7 +51,11 @@ function articleForms(word:ReviewWord):string[]{
 }
 function frenchCandidates(word:ReviewWord,skill:SkillId,strictArticles:boolean):{values:string[];articleExpected:boolean}{
   const forms=articleForms(word);
-  const articleExpected=skill==='article'||(skill==='production'&&strictArticles&&Boolean(word.article));
+  if(skill==='article'){
+    const values=forms.length?forms:[word.word];
+    return{values:[...new Set(values.filter(Boolean))],articleExpected:Boolean(forms.length)};
+  }
+  const articleExpected=skill==='production'&&strictArticles&&Boolean(word.article);
   const values=articleExpected?[...forms,word.word,...word.aliases]:[word.word,...word.aliases,...forms];
   return{values:[...new Set(values.filter(Boolean))],articleExpected};
 }
