@@ -15,7 +15,9 @@
     "offline-pwa",
     "p5-progress-intelligence",
     "p15-support-aware-listening",
-    "p16-spoken-production-foundation"
+    "p16-spoken-production-foundation",
+    "p14-native-reading",
+    "p15-read-listen-pairing"
   ],
   "fullP35FeatureParity": false
 }

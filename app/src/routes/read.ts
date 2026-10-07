@@ -123,8 +123,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const cleanupObserver=()=>{observer?.disconnect();observer=null;};
   signal.addEventListener('abort',cleanupObserver,{once:true});
 
-  let level='ALL',type='ALL',selected='',mode:Mode='extensive',targetNoteId=sessionStorage.getItem('french-vnext-read-note')??'';
+  let level='ALL',type='ALL',selected='',mode:Mode='extensive',targetNoteId=sessionStorage.getItem('french-vnext-read-note')??'',openReadingId=sessionStorage.getItem('french-vnext-read-open')??'';
   sessionStorage.removeItem('french-vnext-read-note');
+  sessionStorage.removeItem('french-vnext-read-open');
 
   const recommendationScore=(reading:ReadingItem):number=>{
     const coverage=coverageCache.get(reading.id)?.knownPct??0;
@@ -299,6 +300,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }
   }
 
+  if(openReadingId){
+    const requested=pack.readings.find(reading=>reading.id===openReadingId);
+    if(requested){mode=state.history[requested.id]?.mode??'extensive';renderReader(requested);return;}
+  }
   if(targetNoteId){
     const target=pack.readings.filter(reading=>readingNoteIds.get(reading.id)?.has(targetNoteId)).sort((a,b)=>recommendationScore(a)-recommendationScore(b))[0];
     if(target){mode='targeted';renderReader(target);return;}

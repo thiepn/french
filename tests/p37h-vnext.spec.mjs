@@ -25,6 +25,23 @@ test('Settings persist preferences and expose recovery controls',async({page})=>
   await expect(page.locator('input[data-import]')).toHaveAttribute('accept',/json/);
 });
 
+test('Read restores the native P14 corpus and paired listening bridge',async({page})=>{
+  await page.goto('/#read');
+  await expect(page.getByRole('heading',{name:'Read'})).toBeVisible();
+  await expect(page.getByText(/25 original graded texts/i)).toBeVisible({timeout:30_000});
+  await expect(page.getByRole('heading',{name:'Recommended now'})).toBeVisible();
+  const firstOpen=page.getByRole('button',{name:/Open|Resume/}).first();
+  await firstOpen.click();
+  await expect(page.getByRole('button',{name:'Listen pair'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Extensive'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Intensive'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Targeted'})).toBeVisible();
+  await page.getByRole('button',{name:'Listen pair'}).click();
+  await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
+  await expect(page.getByText(/aligned segments ready/i)).toBeVisible({timeout:30_000});
+  await expect(page.getByRole('button',{name:/Back to /})).toBeVisible();
+});
+
 test('Listen exposes support-aware contextual evidence without moving SRS',async({page})=>{
   await page.goto('/#listen');
   await expect(page.getByRole('heading',{name:'Listen'})).toBeVisible();
