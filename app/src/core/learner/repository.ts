@@ -866,7 +866,7 @@ export async function updateCanonicalSettings(
   return next;
 }
 
-export async function exportCanonicalBackup():Promise<Record<string,unknown>>{
+export async function exportCanonicalBackup():Promise<CanonicalBackupV1>{
   const db=await openFrenchDatabase();
   try{
     const readStore=<T>(storeName:string)=>new Promise<T[]>((resolve,reject)=>{
