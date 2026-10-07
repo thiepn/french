@@ -1,1 +1,9 @@
-{"app":"French","runtime":"vnext","phase":"P37","stage":"foundation","productionCutover":false,"stableProduction":"5.24.0/P35"}
+{
+  "app": "French",
+  "runtime": "vnext",
+  "phase": "P37H",
+  "stage": "controlled-cutover-readiness",
+  "productionCutover": false,
+  "stableProduction": "5.24.0/P35",
+  "rollback": "p35-rollback"
+}
