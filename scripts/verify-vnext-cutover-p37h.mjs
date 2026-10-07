@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-const [progress,settings,listen,speak,practice,repo,account,reconcile,accountTest,accountProbe,accountWorkflow,startup,shell,router,pwaRegister,serviceWorker,manifest,indexHtml,finalize,tests,docs]=await Promise.all([
+const [progress,settings,listen,speak,practice,repo,account,reconcile,accountTest,accountProbe,accountWorkflow,startup,shell,router,pwaRegister,serviceWorker,manifest,indexHtml,finalize,deploymentPrepare,deploymentVerify,deploymentWorkflow,releaseMarker,tests,docs]=await Promise.all([
   readFile(new URL('../app/src/routes/progress.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/settings.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/routes/listen.ts',import.meta.url),'utf8'),
@@ -20,6 +20,10 @@ const [progress,settings,listen,speak,practice,repo,account,reconcile,accountTes
   readFile(new URL('../app/public/manifest.webmanifest',import.meta.url),'utf8'),
   readFile(new URL('../app/index.html',import.meta.url),'utf8'),
   readFile(new URL('./finalize-vnext-dist.mjs',import.meta.url),'utf8'),
+  readFile(new URL('./prepare-pages-artifact.mjs',import.meta.url),'utf8'),
+  readFile(new URL('./verify-pages-artifact.mjs',import.meta.url),'utf8'),
+  readFile(new URL('../.github/workflows/french-controlled-production.yml',import.meta.url),'utf8'),
+  readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'),
   readFile(new URL('../tests/p37g-vnext.spec.mjs',import.meta.url),'utf8'),
   readFile(new URL('../docs/P37H_CUTOVER_READINESS.md',import.meta.url),'utf8')
 ]);
@@ -50,14 +54,18 @@ if(/SHELL=\[[^\]]*content\//.test(serviceWorker))failures.push('service worker p
 for(const token of ['"start_url": "/"','"display": "standalone"','"/icon-192.png"','"/icon-512.png"'])need(manifest,token,'manifest '+token);
 need(indexHtml,'rel="manifest"','installable index manifest link');
 for(const token of ['icon-192.png','icon-512.png','maskable-icon.svg'])need(finalize,token,'artifact icon '+token);
+for(const token of ["target==='vnext'","'p35-rollback'","deployment-marker.json"])need(deploymentPrepare,token,'deployment prepare '+token);
+for(const token of ["target==='vnext'","P35 Stable Release, Live Browser/Device Acceptance & Defect-Only Hardening","vNext service worker"])need(deploymentVerify,token,'deployment verify '+token);
+for(const token of ['workflow_dispatch','CUTOVER VNEXT','ROLLBACK P35','actions/deploy-pages@v4','french-production-pages'])need(deploymentWorkflow,token,'controlled deployment '+token);
+for(const token of ['"phase": "P37H"','"productionCutover": false','"rollback": "p35-rollback"'])need(releaseMarker,token,'release marker '+token);
 for(const token of ["countPracticeEvents(page,'listening')","countPracticeEvents(page,'speaking')",'__speechStarts','content/search/vocabulary-index.json',"context.setOffline(true)","navigator.serviceWorker.ready"])need(tests,token,'browser media/PWA '+token);
-for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','Slice H4 — Account Contract Qualification','authenticated account round-trip is human-qualified'])need(docs,token,'documentation '+token);
+for(const token of ['P35 remains the production root','Slice H2 — Listen & Speak','Slice H3 — PWA & Offline Ownership','Slice H4 — Account Contract Qualification','Slice H5 — Controlled Deployment & Rollback','GitHub Actions','real cloud sync/restore round-trip'])need(docs,token,'documentation '+token);
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-cutover-readiness',
   ok:failures.length===0,
   failures,
-  completed:['progress','settings','account-architecture','listen','speak','pwa-offline-architecture','account-contract-qualification'],
+  completed:['progress','settings','account-architecture','listen','speak','pwa-offline-architecture','account-contract-qualification','deployment-rollback-architecture'],
   cutoverReady:false
 },null,2));
 if(failures.length)process.exitCode=1;
