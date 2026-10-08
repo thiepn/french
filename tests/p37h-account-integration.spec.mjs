@@ -126,6 +126,9 @@ test('first-party OAuth callback attaches identity without uploading study data'
 test('invalid OAuth state never leaves authorization code in the URL or uploads data', async ({ page, context }) => {
   const api = await interceptProduction(context);
   const state = 'x'.repeat(48);
+  await context.addInitScript(({ origin, key }) => {
+    if (location.origin === origin) sessionStorage.setItem(key, '/#settings');
+  }, { origin: ORIGIN, key: RETURN_KEY });
   // No matching PKCE pending authorization exists, so this callback must be rejected.
   await page.goto(ORIGIN + '/?code=invalid-synthetic-code&state=' + state);
   await expect.poll(() => page.url(), { timeout: 20_000 }).not.toContain('code=');
