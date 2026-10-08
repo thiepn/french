@@ -1,5 +1,5 @@
 import { hasFrenchAccountConfiguration,isFrenchProductionOrigin } from './config';
-import { beginFrenchAccountSso,completeFrenchAccountCallback,consumeFrenchAccountReturnTo,getVerifiedFrenchAccountUser,isFrenchOAuthCallback,signOutFrenchAppSession,subscribeFrenchAccount } from './session';
+import { beginFrenchAccountSso,completeFrenchAccountCallback,consumeFrenchAccountReturnTo,getVerifiedFrenchAccountUser,isFrenchOAuthCallback,subscribeFrenchAccount } from './session';
 import { probeFrenchAccountSession } from './sso-probe';
 import { isFrenchAccountConnectionActive,isFrenchSyncEnabled,pauseFrenchSync,reconcileFrenchSync } from './sync';
 
@@ -23,7 +23,7 @@ export function mountFrenchAccountRuntime():()=>void{
         }
       }else{
         const connected=await isFrenchAccountConnectionActive().catch(()=>false);
-        if(!connected){if(isFrenchSyncEnabled(user.id))pauseFrenchSync(user.id);signOutFrenchAppSession();return;}
+        if(!connected){if(isFrenchSyncEnabled(user.id))pauseFrenchSync(user.id);return;}
         if(isFrenchSyncEnabled(user.id))await reconcileFrenchSync(user);
       }
     }catch(error){console.warn('French Account runtime degraded gracefully',error);}

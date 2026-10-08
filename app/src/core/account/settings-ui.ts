@@ -29,9 +29,15 @@ export async function mountFrenchAccountSettings(host:HTMLElement):Promise<void>
     }
     const connected=await isFrenchAccountConnectionActive().catch(()=>false);
     if(!connected){
-      status.textContent='This French app connection is disconnected in THIEPN Account.';
-      signOutFrenchAppSession();
-      const reconnect=el('button','Reconnect THIEPN Account','primary-action compact-action');reconnect.type='button';reconnect.onclick=()=>void beginFrenchAccountSso(location.href);actions.append(reconnect);return;
+      status.textContent=(user.email??'THIEPN Account')+' · signed in, French sync not connected. Your local progress is unchanged.';
+      const connect=el('button','Connect French sync','primary-action compact-action');
+      connect.type='button';connect.onclick=async()=>render(await enableFrenchSync(user));
+      const out=el('button','Sign out of French','secondary-action compact-action');
+      out.type='button';out.onclick=()=>{pauseFrenchSync(user.id);signOutFrenchAppSession();void render();};
+      const manage=el('a','Manage THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/apps/french';manage.rel='noopener';
+      actions.append(connect,out,manage);
+      if(result)conflict.append(el('p',result.message,'muted-copy'));
+      return;
     }
     const meta=readFrenchSyncMeta(),enabled=isFrenchSyncEnabled(user.id);
     status.textContent=(user.email??'THIEPN Account')+' · '+(enabled?'sync enabled':'signed in, local-only')+(meta?.lastSyncedAt?' · last sync '+new Date(meta.lastSyncedAt).toLocaleString():'');
@@ -45,8 +51,8 @@ export async function mountFrenchAccountSettings(host:HTMLElement):Promise<void>
     const manage=el('a','Manage THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/apps/french';manage.rel='noopener';actions.append(manage);
     if(result?.status==='conflict'){
       conflict.append(el('strong','Choose the source of truth'),el('p',result.message));
-      const device=el('button','Use this device','primary-action compact-action');device.type='button';device.onclick=async()=>render(await chooseThisDevice(user));
-      const cloud=el('button','Use cloud','secondary-action compact-action');cloud.type='button';cloud.onclick=async()=>render(await chooseCloud(user));conflict.append(device,cloud);
+      const device=el('button','Use this device','primary-action compact-action');device.type='button';device.onclick=async()=>{if(!confirm('Replace the cloud French progress with this device’s progress? This overwrites the cloud copy. Export a backup first if you need it.'))return;await render(await chooseThisDevice(user));};
+      const cloud=el('button','Use cloud','secondary-action compact-action');cloud.type='button';cloud.onclick=async()=>{if(!confirm('Replace the French progress on this device with the cloud copy? Export a local backup first if you need this device’s progress.'))return;await render(await chooseCloud(user));};conflict.append(device,cloud);
     }else if(result)conflict.append(el('p',result.message,'muted-copy'));
   };
   await render();
