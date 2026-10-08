@@ -270,3 +270,44 @@ test('Registered first-party French client remains local-only outside production
   await expect(page.getByText(/Configured public client bf2e7fca-98dd-4833-9fee-306ecd6fc7d7/i)).toBeVisible();
   await expect(page.getByRole('button',{name:'Sync this device'})).toHaveCount(0);
 });
+
+test('C2 restores P10 source frames, persists phrase evidence, and opens repair without typed answers',async({page})=>{
+  await page.goto('/#write');
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  await expect(page.getByText('67 source-tagged P10 frames',{exact:false})).toBeVisible({timeout:30_000});
+  await expect(page.getByText('Frame 1 / 67')).toBeVisible();
+  await expect(page.getByText('Complete the source frame: apprendre _____ + infinitif')).toBeVisible();
+  await expect(page.getByRole('link',{name:/Tex.s French Grammar/})).toHaveAttribute('href',/^https:\/\//);
+  await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill('à');
+  await page.getByRole('button',{name:'Check phrase'}).click();
+  await expect(page.getByText('Exact verified frame')).toBeVisible();
+  await page.getByRole('button',{name:'Save exact & next'}).click();
+  await expect(page.getByText('Frame 2 / 67')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  await expect(page.getByText('Frame 2 / 67')).toBeVisible();
+  await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill('de');
+  await page.getByRole('button',{name:'Check phrase'}).click();
+  await expect(page.getByText('Different connector')).toBeVisible();
+  await page.getByRole('button',{name:'Needs practice & next'}).click();
+  await page.getByRole('button',{name:'Repair (1)'}).click();
+  await expect(page.getByText(/Rebuild the previously missed construction for: arriver/)).toBeVisible();
+  const stored=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['meta','activity'],'readonly');
+      const state=tx.objectStore('meta').get('native-usage-v1'),events=tx.objectStore('activity').getAll();
+      tx.oncomplete=()=>{db.close();resolve({state:state.result,events:events.result});};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(stored).toBeTruthy();
+  expect(stored.state.history).toHaveLength(2);
+  const events=stored.events.filter(row=>String(row.practice||'').startsWith('verified-usage-'));
+  expect(events).toHaveLength(2);
+  expect(events.every(row=>row.practiceOnly===true)).toBe(true);
+  expect(JSON.stringify(stored)).not.toContain('apprendre à + infinitif');
+  await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
+  await expect(page.getByText('Prompt 1 / 12')).toBeVisible();
+});
