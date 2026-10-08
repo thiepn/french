@@ -15,12 +15,13 @@
     "test:vnext:session": "node scripts/test-vnext-session.mts",
     "test:vnext:adaptive": "node scripts/test-vnext-adaptive.mts",
     "verify:vnext:dist": "node scripts/check-vnext-budget.mjs",
-    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:mission && npm run test:vnext:curriculum && npm run test:vnext:migration && npm run build:vnext && npm run verify:vnext:dist",
+    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:mission && npm run test:vnext:curriculum && npm run test:vnext:variants && npm run test:vnext:migration && npm run build:vnext && npm run verify:vnext:dist",
     "test:vnext:migration": "node scripts/test-vnext-migration.mts",
     "test:vnext:coach": "node scripts/test-vnext-study-coach.mts",
     "test:vnext:conversation": "node scripts/test-vnext-conversation.mts",
     "test:vnext:mission": "node scripts/test-vnext-mission.mts",
-    "test:vnext:curriculum": "node scripts/test-vnext-curriculum.mts"
+    "test:vnext:curriculum": "node scripts/test-vnext-curriculum.mts",
+    "test:vnext:variants": "node scripts/test-vnext-variants.mts"
   },
   "devDependencies": {
     "typescript": "7.0.2",

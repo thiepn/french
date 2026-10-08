@@ -126,6 +126,31 @@ test('B4 function evidence flows from a real turn into Progress without claiming
   await expect(page.getByText('Ask for a croissant.',{exact:true})).toBeVisible();
 });
 
+test('Dialogue wording rotates after a full run and repeat help survives reload',async({page})=>{
+  await page.goto('/#conversation');
+  await page.getByRole('button',{name:/A1 At the bakery/}).click();
+  const firstPrompt=await page.locator('.conversation-prompt').textContent();
+  await page.getByRole('button',{name:'Ask to repeat'}).click();
+  await expect(page.getByText(/Partner repeats · /)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/Partner repeats · /)).toBeVisible();
+  await expect(page.locator('.conversation-prompt')).toHaveText(firstPrompt??'');
+  for(const row of [
+    {goal:'Greet the seller.',reply:'Bonjour madame'},
+    {goal:'Ask for a croissant.',reply:'Je voudrais un croissant'},
+    {goal:'Ask how much it costs.',reply:'Combien ça coûte ?'}
+  ]){
+    await expect(page.getByText(row.goal,{exact:true})).toBeVisible();
+    await page.getByRole('textbox',{name:'Your French response'}).fill(row.reply);
+    await page.getByRole('button',{name:'Send response'}).click();
+  }
+  await expect(page.getByRole('heading',{name:'Conversation complete'})).toBeVisible();
+  await expect(page.getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
+  await page.getByRole('button',{name:/A1 At the bakery/}).click();
+  const nextPrompt=await page.locator('.conversation-prompt').textContent();
+  expect(nextPrompt).not.toBe(firstPrompt);
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');
