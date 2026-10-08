@@ -45,8 +45,9 @@ need(router,"read:()=>import('../routes/read')",'lazy Read route');
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
 for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','__PENDING_FRENCH_OAUTH_CLIENT_ID__'])need(accountConfig,token,'Account config '+token);
-for(const token of ['connect_thiepn_app','sync_thiepn_french_state','Sync this device','chooseThisDevice','chooseCloud'])need(accountSync+accountUi,token,'Account sync '+token);
+for(const token of ['isFrenchAccountConnectionActive','sync_thiepn_french_state','Sync this device','chooseThisDevice','chooseCloud'])need(accountSync+accountUi,token,'Account sync '+token);
 for(const token of ['probeFrenchAccountSession','isFrenchOAuthCallback','reconcileFrenchSync'])need(accountRuntime,token,'Account runtime '+token);
+reject(accountSync,"connect_thiepn_app","native-only connection RPC must not run from French OAuth token");
 for(const token of ["is_thiepn_first_party_oauth_client_for_app('french')","app_data.read","app_data.write","FRENCH_APP_NOT_CONNECTED"])need(accountMigration,token,'Account RLS '+token);
 for(const source of [accountSessionVendor,accountSync,accountRuntime,accountUi]){reject(source,"signInWithOAuth","direct Google/Supabase provider flow");reject(source,"provider:'google'","direct Google provider");}
 for(const token of ['recordPracticeEvidence','practiceOnly:true','supportLevel','firstListen','errorCategory'])need(repository,token,'practice evidence '+token);

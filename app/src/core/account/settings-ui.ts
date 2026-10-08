@@ -27,15 +27,21 @@ export async function mountFrenchAccountSettings(host:HTMLElement):Promise<void>
       const signIn=el('button','Connect THIEPN Account','primary-action compact-action');signIn.type='button';signIn.onclick=()=>void beginFrenchAccountSso(location.href);actions.append(signIn);
       const manage=el('a','Open THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/';manage.rel='noopener';actions.append(manage);return;
     }
-    const connected=await isFrenchAccountConnectionActive().catch(()=>false);
-    if(!connected){
-      status.textContent=(user.email??'THIEPN Account')+' · signed in, French sync not connected. Your local progress is unchanged.';
-      const connect=el('button','Connect French sync','primary-action compact-action');
-      connect.type='button';connect.onclick=async()=>render(await enableFrenchSync(user));
+    const connection=await isFrenchAccountConnectionActive()
+      .then(active=>active?'active' as const:'disconnected' as const)
+      .catch(()=>'unavailable' as const);
+    if(connection!=='active'){
+      status.textContent=connection==='disconnected'
+        ?'French is disconnected in THIEPN Account. Local progress remains on this device.'
+        :'THIEPN Account connection cannot be checked. Local progress remains available.';
+      if(connection==='disconnected'){
+        const reconnect=el('button','Reconnect French through THIEPN Account','primary-action compact-action');
+        reconnect.type='button';reconnect.onclick=()=>void beginFrenchAccountSso(location.href);
+        actions.append(reconnect);
+      }
+      const manage=el('a','Manage THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/apps/french';manage.rel='noopener';actions.append(manage);
       const out=el('button','Sign out of French','secondary-action compact-action');
-      out.type='button';out.onclick=()=>{pauseFrenchSync(user.id);signOutFrenchAppSession();void render();};
-      const manage=el('a','Manage THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/apps/french';manage.rel='noopener';
-      actions.append(connect,out,manage);
+      out.type='button';out.onclick=()=>{pauseFrenchSync(user.id);signOutFrenchAppSession();void render();};actions.append(out);
       if(result)conflict.append(el('p',result.message,'muted-copy'));
       return;
     }

@@ -34,7 +34,10 @@ async function pull(userId:string,cloud:Cloud):Promise<FrenchSyncResult>{
   await applyFrenchCloudSnapshot(cloud.state);const hash=await hashFrenchCloudSnapshot(cloud.state);baseline(userId,cloud,hash);
   const result:FrenchSyncResult={status:'pulled',message:'Cloud French progress was restored on this device.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(result);return result;
 }
-export async function enableFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{await rpc('connect_thiepn_app',{p_app_slug:'french'});const m=metaFor(user.id);writeMeta({...m,enabled:true});return reconcileFrenchSync(user);}
+export async function enableFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{
+  if(!(await isFrenchAccountConnectionActive()))return{status:'disabled',message:'Reconnect French through THIEPN Account before enabling cloud sync.'};
+  const m=metaFor(user.id);writeMeta({...m,enabled:true});return reconcileFrenchSync(user);
+}
 export async function reconcileFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{
   const m=metaFor(user.id);if(!m.enabled)return{status:'disabled',message:'Cloud sync is not enabled on this device.'};
   if(!navigator.onLine)return{status:'offline',message:'Offline. French remains fully local and sync will resume when connected.'};

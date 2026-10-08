@@ -22,7 +22,7 @@ export function mountFrenchAccountRuntime():()=>void{
           if(probe==='signed-in'){await beginFrenchAccountSso(location.href);return;}
         }
       }else{
-        const connected=await isFrenchAccountConnectionActive().catch(()=>false);
+        const connected=await isFrenchAccountConnectionActive();
         if(!connected){if(isFrenchSyncEnabled(user.id))pauseFrenchSync(user.id);return;}
         if(isFrenchSyncEnabled(user.id))await reconcileFrenchSync(user);
       }
