@@ -25,7 +25,7 @@ export async function isFrenchAccountConnectionActive():Promise<boolean>{
 }
 async function readCloud():Promise<Cloud|undefined>{const rows=await accountJson<Array<Record<string,unknown>>>('/rest/v1/french_sync_state?select=revision,state,updated_at&limit=1');return rows[0]?cloudRow(rows[0]):undefined;}
 async function writeCloud(expected:number|null,state:FrenchCloudSnapshot,device:string):Promise<Cloud>{return cloudRow(await rpc('sync_thiepn_french_state',{p_expected_revision:expected,p_state:state,p_app_version:APP_VERSION,p_device_id:device,p_client_updated_at:new Date().toISOString()}));}
-function baseline(userId:string,cloud:Cloud,hash:string):void{const m=metaFor(userId);writeMeta({...m,enabled:true,revision:cloud.revision,hash,lastSyncedAt:new Date().toISOString()});}
+function baseline(userId:string,cloud:Cloud,hash:string):void{const m=metaFor(userId);writeMeta({...m,revision:cloud.revision,hash,lastSyncedAt:new Date().toISOString()});}
 async function push(userId:string,cloud:Cloud|undefined,local:FrenchCloudSnapshot):Promise<FrenchSyncResult>{
   const m=metaFor(userId),uploaded=await writeCloud(cloud?.revision??null,local,m.deviceId),hash=await hashFrenchCloudSnapshot(local);baseline(userId,uploaded,hash);
   const result:FrenchSyncResult={status:'pushed',message:'This device is now synced to THIEPN Account.',revision:uploaded.revision,...(uploaded.updated_at?{cloudUpdatedAt:uploaded.updated_at}:{})};emit(result);return result;

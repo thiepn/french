@@ -15,7 +15,7 @@ const RETURN_KEY = 'thiepn:french-sso:return:v1';
 const ROOT = process.env.P37H_BASE_URL || 'http://127.0.0.1:4175';
 
 async function interceptProduction(context, options = {}) {
-  const state = { connected: options.connected !== false, cloud: null, uploads: 0, tokenExchanges: 0, requests: [] };
+  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, tokenExchanges: 0, requests: [] };
 
   // Routes registered on the browser context also cover independently created pages.
   await context.route(ORIGIN + '/**', async route => {
@@ -76,6 +76,8 @@ async function interceptProduction(context, options = {}) {
     if (path === '/rest/v1/rpc/sync_thiepn_french_state') {
       const data = request.postDataJSON();
       if (!state.connected) return json(route, { message: 'FRENCH_APP_NOT_CONNECTED' }, 403);
+      state.writeStarted++;
+      if (state.delayWriteMs > 0) await new Promise(resolve => setTimeout(resolve, state.delayWriteMs));
       const expected = data.p_expected_revision;
       if (expected !== (state.cloud?.revision ?? null)) {
         return json(route, { message: 'FRENCH_SYNC_CONFLICT' }, 409);
@@ -234,4 +236,44 @@ test('sync requires deliberate adoption and preserves data across two devices', 
   } finally {
     await second.close();
   }
+});
+
+test('Account disconnection never auto-reconnects or uploads local changes', async ({ page, context }) => {
+  const api = await interceptProduction(context, { connected: false });
+  await seedSession(context);
+  await page.goto(ORIGIN + '/#settings');
+  await expect(page.getByRole('button', { name: 'Reconnect French through THIEPN Account' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sync this device' })).toHaveCount(0);
+  const limit = page.locator('input[name="dailyNewLimit"]');
+  await limit.fill('27');
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('27');
+  expect(api.uploads).toBe(0);
+  expect(api.tokenExchanges).toBe(0);
+  expect(api.requests.some(request => request.includes('oauth/authorize'))).toBe(false);
+});
+
+test('pausing during an in-flight sync never turns cloud sync back on', async ({ page, context }) => {
+  const api = await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN + '/#settings');
+  await page.getByRole('button', { name: 'Sync this device' }).click();
+  await expect(page.getByRole('button', { name: 'Sync now' })).toBeVisible({ timeout: 30_000 });
+  await expect.poll(() => api.cloud?.revision).toBe(1);
+
+  await page.locator('input[name="dailyNewLimit"]').fill('31');
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  api.delayWriteMs = 650;
+  await page.getByRole('button', { name: 'Sync now' }).click();
+  await expect.poll(() => api.writeStarted).toBe(2);
+  await page.getByRole('button', { name: 'Pause sync' }).click();
+  await expect.poll(() => api.cloud?.revision).toBe(2);
+  await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sync now' })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
+  expect(api.uploads).toBe(2);
 });
