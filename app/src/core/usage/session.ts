@@ -1,4 +1,5 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
+import {rankUsageCandidates,transferCueVariant} from './mastery';
 
 export const USAGE_MODES=['usage','production','transfer','repair'] as const;
 export type UsageMode=typeof USAGE_MODES[number];
@@ -6,11 +7,17 @@ export type UsageCode='exact'|'orthography'|'connector'|'collocate'|'neighbor'|'
 export type UsageOutcome='matched'|'self-assessed'|'needs-practice';
 export interface UsageAttempt{
   recordId:string;mode:UsageMode;at:number;outcome:UsageOutcome;diagnosis:UsageCode;support:0|1|2;
+  variant?:0|1|2;
+}
+export interface UsageTally{
+  attempts:number;exact:number;lastAt:number;lastIndependent:boolean;variantMask:number;
+  lastOutcome:UsageOutcome;lastDiagnosis:UsageCode;
 }
 export interface UsageState{
   schema:'thiepn-french-usage-v1';
   modes:Record<UsageMode,{index:number;support:0|1|2}>;
   history:UsageAttempt[];
+  tallies:Record<string,Partial<Record<UsageMode,UsageTally>>>;
 }
 export interface UsageDiagnosis{code:UsageCode;label:string;detail:string;correct:boolean;quality:'exact'|'close'|'review';}
 
@@ -86,7 +93,7 @@ export function diagnoseUsage(answer:string,record:UsageRecord,mode:UsageMode,re
 export function freshUsageState():UsageState{
   return{schema:'thiepn-french-usage-v1',
     modes:{usage:{index:0,support:0},production:{index:0,support:0},transfer:{index:0,support:0},repair:{index:0,support:0}},
-    history:[]};
+    history:[],tallies:{}};
 }
 export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):UsageState{
   const empty=freshUsageState();
@@ -106,35 +113,78 @@ export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):Usag
     Number.isSafeInteger(r.at)&&r.at>=0&&r.at<=Date.now()+86400_000&&
     ['matched','self-assessed','needs-practice'].includes(r.outcome)&&
     Object.hasOwn(LABELS,r.diagnosis)&&[0,1,2].includes(r.support)&&
+    (r.variant===undefined||r.variant===0||r.variant===1||r.variant===2)&&
     (r.outcome!=='matched'||r.diagnosis==='exact')
   ).slice(0,300):[];
-  return{schema:empty.schema,modes,history};
+  // Backward-compatible C2 migration: reconstruct summaries from the bounded
+  // legacy history. New C3 attempts update a compact cumulative per-record
+  // ledger so the 300-entry UI history limit never inflates mastery accuracy.
+  const tallies:UsageState['tallies']={};
+  const update=(attempt:UsageAttempt)=>{
+    const group=tallies[attempt.recordId]??{},prior=group[attempt.mode];
+    group[attempt.mode]=accumulateUsageTally(prior,attempt);
+    tallies[attempt.recordId]=group;
+  };
+  for(const attempt of [...history].sort((a,b)=>a.at-b.at))update(attempt);
+  const supplied=x.tallies;
+  if(supplied&&typeof supplied==='object'&&!Array.isArray(supplied)){
+    for(const [id,group] of Object.entries(supplied)){
+      if(!/^p10-\d{3}$/.test(id)||(ids&&!ids.has(id))||!group||typeof group!=='object')continue;
+      for(const mode of USAGE_MODES){
+        const row=group[mode];
+        const current=tallies[id]?.[mode];
+        if(!row||!Number.isSafeInteger(row.attempts)||row.attempts<0||row.attempts>10_000_000||
+           !Number.isSafeInteger(row.exact)||row.exact<0||row.exact>row.attempts||
+           !Number.isSafeInteger(row.lastAt)||row.lastAt<0||row.lastAt>Date.now()+86_400_000||
+           typeof row.lastIndependent!=='boolean'||!Number.isSafeInteger(row.variantMask)||
+           row.variantMask<0||row.variantMask>7||
+           !['matched','self-assessed','needs-practice'].includes(row.lastOutcome)||
+           !Object.hasOwn(LABELS,row.lastDiagnosis)||row.exact>(row.attempts)||
+           (row.lastIndependent&&(row.lastOutcome!=='matched'||row.lastDiagnosis!=='exact'))||
+           (current&&(row.attempts<current.attempts||row.lastAt<current.lastAt)))continue;
+        tallies[id]??={};tallies[id][mode]={...row};
+      }
+    }
+  }
+  return{schema:empty.schema,modes,history,tallies};
 }
 export function repairCandidates(pack:Pick<UsagePack,'records'>,state:UsageState):UsageRecord[]{
-  const byId=new Map(pack.records.map(r=>[r.id,r]));
-  const seen=new Set<string>(),pending:UsageRecord[]=[];
-  for(const event of state.history){
-    if(seen.has(event.recordId))continue;seen.add(event.recordId);
-    const record=byId.get(event.recordId);
-    if(record&&event.outcome==='needs-practice')pending.push(record);
-  }
-  return pending;
+  return rankUsageCandidates(pack,state,'repair').map(row=>row.record);
 }
 export function currentUsageRecord(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode):UsageRecord|undefined{
-  const rows=mode==='repair'?repairCandidates(pack,state):pack.records;
+  const rows=rankUsageCandidates(pack,state,mode);
   if(!rows.length)return undefined;
-  return rows[state.modes[mode].index%rows.length];
+  const latest=state.history.find(e=>e.mode===mode);
+  // Avoid immediate repeats when several candidates exist. A single error
+  // remains available in Repair so a learner can actually resolve it.
+  const pick=rows.length>1&&latest?rows.find(row=>row.record.id!==latest.recordId):undefined;
+  return (pick??rows[0]).record;
 }
 export function revealUsageSupport(state:UsageState,mode:UsageMode,level:1|2):UsageState{
   const old=state.modes[mode];
   return{...state,modes:{...state.modes,[mode]:{...old,support:Math.max(old.support,level) as 1|2}}};
 }
+export function accumulateUsageTally(previous:UsageTally|undefined,attempt:UsageAttempt):UsageTally{
+  const independent=attempt.outcome==='matched'&&attempt.diagnosis==='exact'&&attempt.support===0;
+  const fresh=previous??{attempts:0,exact:0,lastAt:0,lastIndependent:false,
+    variantMask:0,lastOutcome:'needs-practice' as const,lastDiagnosis:'blank' as const};
+  return {attempts:fresh.attempts+1,exact:fresh.exact+Number(independent),
+    lastAt:Math.max(fresh.lastAt,attempt.at),lastIndependent:independent,
+    variantMask:fresh.variantMask|(independent?1<<(attempt.variant??0):0),
+    lastOutcome:attempt.outcome,lastDiagnosis:attempt.diagnosis};
+}
 export function completeUsageAttempt(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,
- recordId:string,judgment:UsageOutcome,code:UsageCode,at=Date.now()):UsageState{
-  if(!currentUsageRecord(pack,state,mode)||currentUsageRecord(pack,state,mode)?.id!==recordId)throw Error('STALE_USAGE_RECORD');
+ recordId:string,judgment:UsageOutcome,code:UsageCode,at=Date.now(),variant:0|1|2=0):UsageState{
+  if(currentUsageRecord(pack,state,mode)?.id!==recordId)throw Error('STALE_USAGE_RECORD');
   if(!['matched','needs-practice','self-assessed'].includes(judgment)||
-     !Object.hasOwn(LABELS,code)||(judgment==='matched'&&code!=='exact'))throw Error('INVALID_USAGE_OUTCOME');
+     !Object.hasOwn(LABELS,code)||(judgment==='matched'&&code!=='exact')||
+     ![0,1,2].includes(variant))throw Error('INVALID_USAGE_OUTCOME');
   const old=state.modes[mode];
-  return{...state,modes:{...state.modes,[mode]:{index:mode==='repair'?0:old.index+1,support:0}},
-    history:[{recordId,mode,at,outcome:judgment,diagnosis:code,support:old.support},...state.history].slice(0,300)};
+  const attempt:UsageAttempt={recordId,mode,at,outcome:judgment,diagnosis:code,support:old.support,
+    ...(mode==='transfer'?{variant}:{})};
+  const group={...(state.tallies[recordId]??{})};
+  group[mode]=accumulateUsageTally(group[mode],attempt);
+  return {...state,modes:{...state.modes,[mode]:{index:mode==='repair'?0:old.index+1,support:0}},
+    history:[attempt,...state.history].slice(0,300),
+    tallies:{...state.tallies,[recordId]:group}};
 }
