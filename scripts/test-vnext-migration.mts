@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { legacyEnvelopeToCanonical } from '../app/src/core/learner/from-legacy.ts';
-import { backupPayloadToFrenchCloudSnapshot,hashFrenchCloudSnapshot,snapshotHasMeaningfulState } from '../app/src/core/account/cloud-snapshot.ts';
-import type { BackupPayload } from '../app/src/core/backup/archive.ts';
+import { backupPayloadToFrenchCloudSnapshot,hashFrenchCloudSnapshot,snapshotHasMeaningfulState,type CloudBackupPayload } from '../app/src/core/account/cloud-format.ts';
 import type { LegacySnapshotEnvelope } from '../app/src/core/migration/legacy-contract.ts';
 
 const legacyId='bonjour::d31:2:production';
@@ -60,7 +59,7 @@ assert.deepEqual(canonical.userContent.cardEdits,payload.cardEdits);
 assert.deepEqual(canonical.userContent.smartDecks,payload.smartDecks);
 assert.deepEqual(canonical.userContent.customDecks,payload.customDecks);
 
-const backup:BackupPayload={
+const backup:CloudBackupPayload={
   dbName:'thiepn-french-vnext',dbVersion:5,
   stores:{
     learner:[{key:'state-v1',value:canonical.learner}],
