@@ -144,6 +144,18 @@ usageHintOnly.stores.meta.push({
 });
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(usageHintOnly)),true,
   'P10/P11 hint-only local usage progress must not be overwritten');
+const usageLedgerOnly=structuredClone(emptyFresh);
+usageLedgerOnly.stores.meta.push({
+  key:'native-usage-v1',
+  value:{schema:'thiepn-french-usage-v1',history:[],
+    modes:{usage:{index:0,support:0},production:{index:0,support:0},
+      transfer:{index:0,support:0},repair:{index:0,support:0}},
+    tallies:{'p10-001':{usage:{attempts:400,exact:380,lastAt:Date.now(),
+      lastIndependent:true,variantMask:1,lastOutcome:'matched',lastDiagnosis:'exact'}}}}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(usageLedgerOnly)),true,
+  'cumulative-only P10/P11 usage ledger must block silent cloud overwrite');
+
 const usageAttemptOnly=structuredClone(emptyFresh);
 usageAttemptOnly.stores.meta.push({
   key:'native-usage-v1',
