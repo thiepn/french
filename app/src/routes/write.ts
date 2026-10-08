@@ -142,6 +142,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const persist=async(outcome:UsageOutcome)=>{
       if(busy||!diagnosis)return;
       busy=true;decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=true);
+      let committed=false;
       try{
         const at=Date.now();
         const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code,at,cueVariant);
@@ -156,10 +157,13 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
           supportLevel:usageState.modes[usageMode].support,errorCategory:diagnosis.code,
           theme:record.kind,manualJudgment:outcome
         },at,{key:'native-usage-v1',value:next});
+        committed=true;
         usageState=next;usageStarted=performance.now();draw();
       }catch(error){
-        decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
-        feedback.textContent='The practice result was not committed. Please retry.';console.error(error);
+        if(!committed)decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
+        feedback.textContent=committed?'Practice saved; the next task could not be displayed. Reload to continue.':
+          'The practice result was not committed. Please retry.';
+        console.error(error);
       }finally{busy=false;}
     };
     form.addEventListener('submit',event=>{
@@ -256,7 +260,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const currentSupport=state.modes[mode].support;
       // Only exact, independently produced answers receive objective credit.
       // A revealed hint or human self-assessment is practice, not verified skill.
-      const correct=outcome==='matched'&&diagnosis.quality==='exact'&&currentSupport===0;
+      const correct=outcome==='matched'&&diagnosis.correct===true&&diagnosis.quality==='exact'&&currentSupport===0;
+      let committed=false;
       try{
         const at=Date.now();
         const updated=completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code,at);
@@ -271,11 +276,14 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
           sentenceExerciseId:exercise.id,sentenceDiagnosis:diagnosis.code,
           theme:exercise.context,manualJudgment:outcome
         },at,{key:'native-writing-v1',value:updated});
+        committed=true;
         state=updated;
         started=performance.now();draw();
       }catch(error){
-        next.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
-        feedback.textContent='The result was not committed. Please retry.';console.error(error);
+        if(!committed)next.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
+        feedback.textContent=committed?'Practice saved; the next prompt could not be displayed. Reload to continue.':
+          'The result was not committed. Please retry.';
+        console.error(error);
       }finally{busy=false;}
     };
     form.addEventListener('submit',event=>{
