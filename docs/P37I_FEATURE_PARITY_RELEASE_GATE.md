@@ -23,6 +23,15 @@ P37I-C1 adds an offline written-practice workspace using the verified P12 36-exe
 
 P37I-C2 preserves the **67 exact P10 source frames** and P35 provenance metadata in an integrity-checked lazy pack. Four new native writing tracks cover verified-frame gap completion, full-frame production, structural-cue phrase transfer, and error repair. Typed prose is never stored; practice outcomes are metadata-only and cannot reschedule vocabulary SRS. Local-only usage attempts or hints block silent first-cloud adoption. Source links carry the original P35 attribution, **not a claim of independently rechecking those sources**. This remains **partial P10/P11 parity** because P35's source-dependent study prerequisites, phrase-secure thresholds, contextual variation and adaptive task/repair prioritization have not yet been reproduced or signed off.
 
+
+### P37I-C3 — Adaptive usage mastery (still NO-GO)
+
+The native C3 ledger extends C2 without changing production: P35-derived thresholds are **three usage attempts, 80% accuracy, latest independent success and a 60-day freshness limit**; transfer uses **two attempts, 80% accuracy and latest independent success**, with an additional vNext safeguard requiring success on two structural-cue variants. Assisted exact matches and manual self-assessment are formative, not secure credit. Unfinished and error-prone constructions get higher priority; a recent answer is spaced against another available frame. Errors are prioritized using the recent 120-day window.
+
+C3 maintains compact per-record cumulative counts and variant coverage even when the detailed 300-entry history is truncated. Atomic IndexedDB transactions commit C3 progress with practice evidence; failures cannot commit one without the other. Only source IDs, outcome codes, support, variant IDs, tallies and timestamps are stored: **no typed answers**, SRS rescheduling, new backend authority or CEFR promotion.
+
+**Unclosed parity gaps:** P35 permits phrase-transfer entry from verified production SRS for a linked vocabulary note; C3 does not assume a free-text P10 anchor identifies a unique canonical note. C3's three cues are a structured recall variation, **not open-ended semantic usage or validated real-world transfer**. The original P35 task-eligibility, cross-skill ranking and assessment model still need a source-accurate comparison and physical user testing. No release flags were changed.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
