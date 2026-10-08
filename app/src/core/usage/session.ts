@@ -53,7 +53,7 @@ export function maskUsageFrame(record:UsageRecord):string{
   if(!match)throw Error('INVALID_VERIFIED_BLANK');
   return record.frame.slice(0,match.index)+'_____ '+record.frame.slice(match.index+match[0].length).trimStart();
 }
-export function usageCue(record:UsageRecord,mode:UsageMode):string{
+export function usageCue(record:UsageRecord,mode:UsageMode,variant:0|1|2=0):string{
   if(mode==='usage')return 'Complete the source frame: '+maskUsageFrame(record);
   if(mode==='production')return 'Produce the full verified '+record.kind+' with this anchor: '+record.anchor;
   if(mode==='repair')return 'Rebuild the previously missed '+record.kind+' for: '+record.anchor;
@@ -62,8 +62,14 @@ export function usageCue(record:UsageRecord,mode:UsageMode):string{
   if(/quelque chose/i.test(record.frame))slots.push('a thing');
   if(/infinitif/i.test(record.frame))slots.push('an infinitive');
   if(/\bnom\b/i.test(record.frame))slots.push('a noun');
-  return 'From a new structural cue, produce a '+record.kind+' for '+record.anchor+
-    (slots.length?' involving '+slots.join(' and '):'')+'.';
+  const details=slots.length?' Include '+slots.join(' and ')+'.':'';
+  // These are different structural retrieval cues, NOT a claim of semantic
+  // conversation transfer. The task still checks only the P10 source frame.
+  if(variant===1)return 'You are editing a French message. Which complete '+record.kind+
+    ' with anchor '+record.anchor+' belongs in the message?'+details;
+  if(variant===2)return 'A partner asks you to recall a natural French '+record.kind+
+    ' built around '+record.anchor+'. Produce the full source pattern.'+details;
+  return 'From a new structural cue, produce a '+record.kind+' for '+record.anchor+'.'+details;
 }
 export function diagnoseUsage(answer:string,record:UsageRecord,mode:UsageMode,records:UsageRecord[]):UsageDiagnosis{
   const typed=String(answer||'').trim();
