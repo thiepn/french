@@ -57,8 +57,14 @@ export async function mountFrenchAccountSettings(host:HTMLElement):Promise<void>
     const manage=el('a','Manage THIEPN Account');manage.href=THIEPN_ACCOUNT_ORIGIN+'/apps/french';manage.rel='noopener';actions.append(manage);
     if(result?.status==='conflict'){
       conflict.append(el('strong','Choose the source of truth'),el('p',result.message));
-      const device=el('button','Use this device','primary-action compact-action');device.type='button';device.onclick=async()=>{if(!confirm('Replace the cloud French progress with this device’s progress? This overwrites the cloud copy. Export a backup first if you need it.'))return;await render(await chooseThisDevice(user));};
-      const cloud=el('button','Use cloud','secondary-action compact-action');cloud.type='button';cloud.onclick=async()=>{if(!confirm('Replace the French progress on this device with the cloud copy? Export a local backup first if you need this device’s progress.'))return;await render(await chooseCloud(user));};conflict.append(device,cloud);
+      if(!result.reviewedLocalHash){
+        const review=el('button','Review latest state','secondary-action compact-action');review.type='button';
+        review.onclick=async()=>render(await reconcileFrenchSync(user));conflict.append(review);return;
+      }
+      const reviewedLocalHash=result.reviewedLocalHash;
+      const expectedRevision=result.revision??null;
+      const device=el('button','Use this device','primary-action compact-action');device.type='button';device.onclick=async()=>{if(!confirm('Replace the cloud French progress with this device’s progress? This overwrites the cloud copy. Export a backup first if you need it.'))return;await render(await chooseThisDevice(user,expectedRevision,reviewedLocalHash));};
+      const cloud=el('button','Use cloud','secondary-action compact-action');cloud.type='button';cloud.onclick=async()=>{if(!confirm('Replace the French progress on this device with the cloud copy? Export a local backup first if you need this device’s progress.'))return;await render(await chooseCloud(user,expectedRevision,reviewedLocalHash));};conflict.append(device,cloud);
     }else if(result)conflict.append(el('p',result.message,'muted-copy'));
   };
   await render();
