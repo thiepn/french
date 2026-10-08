@@ -1,5 +1,5 @@
 import { ROUTE_IDS,type RouteId,type ShellApi } from './types';
-const labels:Record<RouteId,string>={home:'Home',learn:'Learn',review:'Review',read:'Read',words:'Words',listen:'Listen',speak:'Speak',progress:'Progress',settings:'Settings'};
+const labels:Record<RouteId,string>={home:'Home',learn:'Learn',review:'Review',read:'Read',words:'Words',listen:'Listen',speak:'Speak',conversation:'Conversation',progress:'Progress',settings:'Settings'};
 export function createShell(app:HTMLElement):ShellApi{
   app.textContent='';
   const header=document.createElement('header');header.className='app-header';

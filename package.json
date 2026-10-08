@@ -15,9 +15,10 @@
     "test:vnext:session": "node scripts/test-vnext-session.mts",
     "test:vnext:adaptive": "node scripts/test-vnext-adaptive.mts",
     "verify:vnext:dist": "node scripts/check-vnext-budget.mjs",
-    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:migration && npm run build:vnext && npm run verify:vnext:dist",
+    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:migration && npm run build:vnext && npm run verify:vnext:dist",
     "test:vnext:migration": "node scripts/test-vnext-migration.mts",
-    "test:vnext:coach": "node scripts/test-vnext-study-coach.mts"
+    "test:vnext:coach": "node scripts/test-vnext-study-coach.mts",
+    "test:vnext:conversation": "node scripts/test-vnext-conversation.mts"
   },
   "devDependencies": {
     "typescript": "7.0.2",

@@ -19,6 +19,29 @@ test('Home ranks real learning actions and avoids static placeholder recommendat
   await expect(page.getByText(/Recommendations use stored learning activity/)).toBeVisible();
 });
 
+test('Guided conversation is resumable and records independent versus manual practice',async({page})=>{
+  await page.goto('/#conversation');
+  await expect(page.getByRole('heading',{name:'Conversation'})).toBeVisible();
+  await expect(page.getByText('At the bakery')).toBeVisible();
+  await page.getByRole('button',{name:/A1 At the bakery/}).click();
+  const field=page.getByRole('textbox',{name:'Your French response'});
+  await expect(field).toBeVisible();
+  await field.fill('Bonjour madame');
+  await page.getByRole('button',{name:'Send response'}).click();
+  await expect(page.getByText(/Ask for a croissant/)).toBeVisible();
+  await page.getByRole('button',{name:'Show hint'}).click();
+  await expect(page.getByText(/Hint · Say you would like a croissant/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/Ask for a croissant/)).toBeVisible();
+  await page.getByRole('textbox',{name:'Your French response'}).fill('Je voudrais un croissant');
+  await page.getByRole('button',{name:'Send response'}).click();
+  await expect(page.getByText(/Ask how much it costs/)).toBeVisible();
+  await page.getByRole('textbox',{name:'Your French response'}).fill('Combien ça coûte ?');
+  await page.getByRole('button',{name:'Send response'}).click();
+  await expect(page.getByRole('heading',{name:'Conversation complete'})).toBeVisible();
+  await expect(page.getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');
