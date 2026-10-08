@@ -11,6 +11,14 @@ test('Progress is a real evidence workspace',async({page})=>{
   await expect(page.getByRole('heading',{name:'What to do next'})).toBeVisible();
 });
 
+test('Home ranks real learning actions and avoids static placeholder recommendations',async({page})=>{
+  await page.goto('/#home');
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Other ways to practise'})).toBeVisible({timeout:30_000});
+  await expect(page.getByRole('button',{name:/Open learning|Review due items|Resume session|Open reading|Open listening|Open speaking/}).toBeVisible();
+  await expect(page.getByText(/Recommendations use stored learning activity/)).toBeVisible();
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');
