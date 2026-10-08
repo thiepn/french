@@ -50,6 +50,36 @@ export function backupPayloadToFrenchCloudSnapshot(payload:CloudBackupPayload,no
     _vnext:{schema:'thiepn-french-cloud-vnext-v1',payload}
   };
 }
+const FRESH_SETTINGS={
+  session:{
+    deck:'A1',direction:'fr-en',order:'smart',size:50,mode:'today',practice:'review',
+    skillMode:'adaptive',scheduleMode:'review',typed:false,requeueAgain:true,
+    mix:'due-first',siblingSpacing:true,strictArticles:true
+  },
+  dailyNewLimit:20,dailyReviewLimit:200,leechThreshold:8,autoSuspendLeeches:false,
+  desiredRetention:.9,maxInterval:3650,learningSteps:[1,10,1440],
+  relearningSteps:[10],gradingMode:'learning'
+};
+const FRESH_PROFILE={
+  xp:0,bestCombo:0,lifetimeAnswers:0,lifetimeCorrect:0,typedAnswers:0,
+  choiceAnswers:0,listeningAnswers:0,clozeAnswers:0,perfectSessions:0,
+  achievements:[],claimedMissions:{}
+};
+const FRESH_PLAN={targetLevel:'B1',targetDate:'',studyDaysPerWeek:6,dailyMinutes:30,masteryGoal:90};
+function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
+  const vnext=obj(snapshot._vnext),payload=vnext.payload as CloudBackupPayload|undefined;
+  // An unrecognized local payload must never be silently overwritten as empty.
+  if(vnext.schema!=='thiepn-french-cloud-vnext-v1'||!payload?.stores?.learner)return true;
+  const learner=obj(at(payload,'learner','state-v1'));
+  if(learner.sourceFingerprint!=='fresh-vnext')return true;
+  if(stable(obj(learner.settings))!==stable(FRESH_SETTINGS))return true;
+  if(stable(obj(learner.profile))!==stable(FRESH_PROFILE))return true;
+  if(stable(obj(learner.studyPlan))!==stable(FRESH_PLAN))return true;
+  if(Object.keys(obj(learner.promotions)).length>0)return true;
+  if(Object.keys(obj(learner.featureState)).length>0)return true;
+  if(payload.stores.session?.length>0)return true;
+  return false;
+}
 export function snapshotHasMeaningfulState(snapshot:FrenchCloudSnapshot):boolean{
   return Object.keys(obj(snapshot.progress)).length>0
     ||(Array.isArray(snapshot.reviewLog)&&snapshot.reviewLog.length>0)

@@ -92,6 +92,47 @@ assert.deepEqual(cloud.v550Reading,payload.v550Reading);
 assert.deepEqual(cloud._vnext?.payload,backup);
 assert.equal(snapshotHasMeaningfulState(cloud),true);
 
+// A fresh second device is safe to hydrate automatically, but any edited
+// preferences, study plan, feature state or active session must trigger conflict.
+const emptyFresh:CloudBackupPayload={
+  dbName:'thiepn-french-vnext',dbVersion:5,
+  stores:{
+    learner:[{key:'state-v1',value:{
+      sourceFingerprint:'fresh-vnext',
+      settings:{
+        session:{deck:'A1',direction:'fr-en',order:'smart',size:50,mode:'today',practice:'review',
+          skillMode:'adaptive',scheduleMode:'review',typed:false,requeueAgain:true,
+          mix:'due-first',siblingSpacing:true,strictArticles:true},
+        dailyNewLimit:20,dailyReviewLimit:200,leechThreshold:8,autoSuspendLeeches:false,
+        desiredRetention:.9,maxInterval:3650,learningSteps:[1,10,1440],
+        relearningSteps:[10],gradingMode:'learning'
+      },
+      profile:{xp:0,bestCombo:0,lifetimeAnswers:0,lifetimeCorrect:0,
+        typedAnswers:0,choiceAnswers:0,listeningAnswers:0,clozeAnswers:0,
+        perfectSessions:0,achievements:[],claimedMissions:{}},
+      studyPlan:{targetLevel:'B1',targetDate:'',studyDaysPerWeek:6,dailyMinutes:30,masteryGoal:90},
+      promotions:{},featureState:{},studyDays:[]
+    }}],
+    srs:[],activity:[],
+    'user-content':[{key:'content-v1',value:{userCards:{},cardEdits:{},smartDecks:{},customDecks:{}}}],
+    session:[],meta:[],migration:[]
+  }
+};
+const untouchedCloud=backupPayloadToFrenchCloudSnapshot(emptyFresh,1_700_000_000_000);
+assert.equal(snapshotHasMeaningfulState(untouchedCloud),false,'a fresh device should hydrate from cloud');
+const editedFresh=structuredClone(emptyFresh);
+(editedFresh.stores.learner[0].value as {settings:{dailyNewLimit:number}}).settings.dailyNewLimit=17;
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(editedFresh)),true,
+  'local settings must not be silently overwritten');
+const plannedFresh=structuredClone(emptyFresh);
+(plannedFresh.stores.learner[0].value as {studyPlan:{targetLevel:string}}).studyPlan.targetLevel='B2';
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(plannedFresh)),true,
+  'local study plan must not be silently overwritten');
+const activeFresh=structuredClone(emptyFresh);
+activeFresh.stores.session.push({key:'active',value:{cursor:2}});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeFresh)),true,
+  'unfinished study session must not be silently overwritten');
+
 const same={...cloud,updatedAt:Number(cloud.updatedAt)+99_999};
 assert.equal(await hashFrenchCloudSnapshot(cloud),await hashFrenchCloudSnapshot(same));
 assert.notEqual(await hashFrenchCloudSnapshot(cloud),await hashFrenchCloudSnapshot({...cloud,profile:{xp:89}}));
@@ -104,5 +145,7 @@ console.log(JSON.stringify({
   preservedFeatureKeys:Object.keys(canonical.learner.featureState).sort(),
   rollbackReadable:true,
   exactVnextPayload:true,
-  timestampStableHash:true
+  timestampStableHash:true,
+  preferencesConflictProtected:true,
+  activeSessionConflictProtected:true
 },null,2));
