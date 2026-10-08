@@ -1,4 +1,4 @@
-import {getConversationScenario,type ConversationTurn} from './scenarios';
+import {getConversationScenario,type ConversationTurn} from './scenarios.ts';
 
 export interface TurnEvidence{
   index:number;functionId:string;independent:boolean;manual:boolean;
