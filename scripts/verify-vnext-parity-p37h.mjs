@@ -27,7 +27,13 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
   readFile(new URL('../supabase/migrations/20261007221500_french_first_party_sso_access.sql',import.meta.url),'utf8')
 ]);
 
+// A passing compatibility suite must not accidentally authorize a production cutover.
+const release=JSON.parse(await readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'));
 const failures=[];
+if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
+if(release.fullP35FeatureParity!==false)failures.push('P35 feature parity was marked complete without the P37I sign-off');
+if(!release.remainingCutoverBlockers?.includes('p35-feature-parity-signoff'))
+  failures.push('P37I feature parity release gate is missing');
 const need=(source,token,label=token)=>{if(!source.includes(token))failures.push('missing '+label);};
 const reject=(source,token,label=token)=>{if(source.includes(token))failures.push('placeholder remains '+label);};
 

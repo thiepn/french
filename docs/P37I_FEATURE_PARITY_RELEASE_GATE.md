@@ -10,6 +10,8 @@
 - Candidate manifest must remain `productionCutover: false`, `fullP35FeatureParity: false` until evidence supports a deliberate release decision.
 - Account: production public OAuth client `bf2e7fca-98dd-4833-9fee-306ecd6fc7d7`, exact callback `https://french.thiepn.dev/`.
 
+For the audited P35→vNext contract-by-contract gap list, see [P37I parity inventory](./P37I_PARITY_INVENTORY.md). This first tranche deliberately retains the production no-go state.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |

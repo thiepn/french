@@ -75,7 +75,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       ['Due now',String(due)],
       ['Saved session',remaining?remaining+' left':'None'],
       ['Recent review answers',String(recent.reviews)],
-      ['Current level',String(learner?.studyPlan?.targetLevel??'A1')+' target']
+      ['Study target',String(learner?.studyPlan?.targetLevel??'A1')]
     ];
     for(const [label,value] of facts){
       const cell=node('div','','home-fact');
