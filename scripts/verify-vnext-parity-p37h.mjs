@@ -29,6 +29,10 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
 
 // A passing compatibility suite must not accidentally authorize a production cutover.
 const release=JSON.parse(await readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'));
+const [curriculum,coaching]=await Promise.all([
+  readFile(new URL('../app/src/core/conversation/curriculum.ts',import.meta.url),'utf8'),
+  readFile(new URL('../scripts/test-vnext-curriculum.mts',import.meta.url),'utf8')
+]);
 const [conversationRoute,conversationEngine,conversationScenes,missionDefinitions,missionTests]=await Promise.all([
   readFile(new URL('../app/src/routes/conversation.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/conversation/engine.ts',import.meta.url),'utf8'),
@@ -66,6 +70,14 @@ for(const term of ['beginMission','completeMission','independencePass','fullyUns
   need(conversationEngine,term,'Mission completion contract '+term);
 for(const term of ['selectMission','Mission complete','Mission history','Mission  '])
   if(term!=='Mission  ')need(conversationRoute,term,'Mission UI '+term);
+for(const term of ['FUNCTION_CATALOG','functionProfiles','rankedNativeScenarios','chooseAdaptiveQueue','evidenceCredit'])
+  need(curriculum,term,'Curriculum '+term);
+for(const term of ['beginAdaptiveSet','functionEvents','adaptiveHistory','changeConversationCeiling'])
+  need(conversationEngine,term,'Adaptive state '+term);
+for(const term of ['Adaptive set · 3 tasks','Function map','Start recommendation','Adaptive task'])
+  need(conversationRoute,term,'Adaptive UI '+term);
+for(const term of ['scenarioId','transcriptsPersisted','adaptiveTasks'])
+  need(coaching,term,'Adaptive tests '+term);
 for(const term of ['safeConversationState','manual continuations','independencePass'])
   if(term!=='manual continuations')need(missionTests,term,'Mission tests '+term);
 

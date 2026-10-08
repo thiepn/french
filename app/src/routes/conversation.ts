@@ -146,7 +146,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       );
       stage.append(finishedMission);
     }
-    if(lastResult&&!lastMissionResult){
+    if(lastResult&&!lastMissionResult&&!lastAdaptiveResult){
       const finished=item('section','','conversation-result');
       finished.append(item('h2','Conversation complete'),item('p',summary(lastResult)),
         item('p','These results describe this practice scenario, not a CEFR proficiency score.','muted-copy'));

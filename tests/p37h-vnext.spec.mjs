@@ -85,6 +85,26 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
   await expect(page.getByText('Independence passes')).toBeVisible();
 });
 
+test('Function map and adaptive set survive a reload without claiming proficiency',async({page})=>{
+  await page.goto('/#conversation');
+  await expect(page.getByRole('heading',{name:'Communicative practice'})).toBeVisible();
+  await expect(page.getByText(/23 functions with functional evidence/)).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Conversation practice level'})).toHaveValue('A1');
+  await page.getByRole('button',{name:'Start adaptive set'}).click();
+  await expect(page.getByText('Adaptive task 1 of 3',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Show hint'}).click();
+  await page.getByRole('button',{name:'Pause & home'}).click();
+  await expect(page.getByRole('button',{name:'Resume active'})).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Adaptive task 1 of 3',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Pause & home'}).click();
+  await expect(page.getByText(/Function map · 0 recorded attempts/)).toBeVisible();
+  await page.getByRole('button',{name:'Resume active'}).click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'End adaptive set'}).click();
+  await expect(page.getByRole('button',{name:'Start adaptive set'})).toBeEnabled();
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');

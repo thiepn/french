@@ -166,6 +166,24 @@ pausedMissionFresh.stores.meta.push({
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(pausedMissionFresh)),true,
   'active mission alone must block silent cloud overwrite');
 
+const functionOnlyFresh=structuredClone(emptyFresh);
+functionOnlyFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:null,history:[],mission:null,
+    adaptive:null,missionHistory:[],adaptiveHistory:[],functionEvents:[
+      {scenarioId:'bakery',functionId:'request',accepted:false,at:Date.now(),credit:0}]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(functionOnlyFresh)),true,
+  'failed function evidence must not be silently overwritten by cloud adoption');
+const adaptiveOnlyFresh=structuredClone(emptyFresh);
+adaptiveOnlyFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:null,history:[],mission:null,
+    adaptive:{step:1,queue:['bakery','cafe','opening-hours']},missionHistory:[],adaptiveHistory:[],functionEvents:[]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(adaptiveOnlyFresh)),true,
+  'adaptive task state must not be silently overwritten by cloud adoption');
+
 const wireUnequal=structuredClone(emptyFresh);
 wireUnequal.stores.meta.push({
   key:'learner-summary',

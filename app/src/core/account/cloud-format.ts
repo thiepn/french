@@ -80,7 +80,9 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
   // Conversation history lives in the backed-up meta store, not learner/SRS.
   // It must block silent adoption of an unrelated cloud snapshot.
   const conversation=obj(at(payload,'meta','native-conversation-v1'));
-  if(conversation.active||conversation.mission)return true;
+  if(conversation.active||conversation.mission||conversation.adaptive)return true;
+  if(Array.isArray(conversation.functionEvents)&&conversation.functionEvents.length>0)return true;
+  if(Array.isArray(conversation.adaptiveHistory)&&conversation.adaptiveHistory.length>0)return true;
   if(Array.isArray(conversation.missionHistory)&&conversation.missionHistory.length>0)return true;
   if(Array.isArray(conversation.history)&&conversation.history.length>0)return true;
   if(payload.stores.session?.length>0)return true;

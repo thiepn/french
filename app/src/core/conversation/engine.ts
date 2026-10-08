@@ -224,7 +224,7 @@ export function safeConversationState(raw:unknown):ConversationState{
     .filter(row=>row&&Array.isArray(row.queue)&&row.queue.length===3&&
       row.queue.every(id=>typeof id==='string'&&getConversationScenario(id))&&
       Array.isArray(row.tasks)&&row.tasks.length===3).slice(0,60);
-  const levelCeiling:['A1','A2','B1'][number]=
+  const levelCeiling:ConversationLevel=
     ['A1','A2','B1'].includes(String(value.levelCeiling))?value.levelCeiling as ConversationLevel:'A1';
   return{schema:'thiepn-french-native-conversation-v1',active,history,
     mission:adaptive?null:mission,missionHistory,
