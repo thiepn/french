@@ -89,7 +89,11 @@ export function functionProfiles(events:readonly FunctionEvidence[]):FunctionPro
       (Math.min(days,4)/4)*.35+(Math.min(contexts,3)/3)*.3);
     const independence=successful.length?independentSuccesses/successful.length:0;
     const reliability=rows.length?successful.length/rows.length:0;
-    const strength=quality*independence*reliability*confidence;
+    // A single memorized match must not cross into developing ability.
+    // Require at least three independent successful attempts before counting
+    // the full confidence-weighted score, even when no mistakes were logged.
+    const strength=quality*independence*reliability*confidence*
+      Math.min(1,independentSuccesses/3);
     const state:FunctionProfile['state']=rows.length===0?'unseen'
       :strength>=.72&&confidence>=.78&&days>=3&&independentSuccesses>=3&&contexts>=2&&availableContexts>=2?'secure'
       :strength>=.47&&independentSuccesses>=2&&days>=2?'functional'
