@@ -127,7 +127,7 @@ export function rankNativeMissions(events:readonly FunctionEvidence[],
     .map(m=>{
       const score=m.scenarioIds.reduce((sum,id)=>sum+(ranks.get(id)??0),0)
         -missionHistory.filter(row=>row.missionId===m.id&&row.completedAt>=now-7*86_400_000).length*60
-        -missionHistory.some(row=>row.missionId===m.id&&row.independencePass)?0:0;
+        -(missionHistory.some(row=>row.missionId===m.id&&row.independencePass)?20:0);
       return{mission:m,score};
     }).sort((a,b)=>b.score-a.score||a.mission.id.localeCompare(b.mission.id)).map(row=>row.mission);
 }
