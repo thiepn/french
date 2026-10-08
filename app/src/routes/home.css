@@ -1,0 +1,31 @@
+/* P37I — native Study Coach. Compact study-desk layout, not a landing/dashboard hero. */
+.home-workbench{max-width:1140px}
+.home-topline{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.home-topline h1{font-size:1.15rem;letter-spacing:-.025em;line-height:1.3;font-weight:750}
+.home-topline time{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.home-study-grid{display:grid;grid-template-columns:minmax(0,1.17fr) minmax(270px,.83fr);gap:clamp(.8rem,2vw,1.65rem);padding-top:1.25rem}
+.home-focus{display:flex;flex-direction:column;align-items:flex-start;min-height:355px;padding:clamp(1.2rem,3vw,2.2rem);border:1px solid var(--line);border-radius:.4rem;background:color-mix(in srgb,var(--surface) 65%,var(--bg))}
+.home-section-label{margin:0 0 1rem;font-size:.7rem;letter-spacing:.14em;font-weight:800;color:var(--muted)}
+.home-focus h2{margin:.9rem 0 .8rem;font-size:clamp(1.8rem,4vw,3.15rem);letter-spacing:-.055em;line-height:1.04}
+.home-focus-detail{margin:0;max-width:36ch;color:var(--muted);line-height:1.7}
+.home-start{margin-top:auto;min-height:48px;padding:.85rem 1.25rem;border:0;border-radius:.2rem;background:var(--accent);color:var(--accent-ink);font-size:.9rem;font-weight:750;text-align:left;cursor:pointer}
+.home-note{font-size:.74rem;color:var(--muted);max-width:47ch;line-height:1.5}
+.home-choices{align-self:start}
+.home-choices h2{font-size:.94rem;letter-spacing:-.015em;margin:.15rem 0 .7rem}
+.home-option-list{border-top:1px solid var(--line)}
+.home-option{width:100%;display:flex;gap:1rem;justify-content:space-between;align-items:center;padding:1rem .25rem;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.home-option-copy{display:grid;gap:.25rem}
+.home-option-copy strong{font-size:.92rem}
+.home-option-copy small{color:var(--muted);font-size:.76rem;line-height:1.45}
+.home-option-arrow{color:var(--muted);font-size:1.1rem}
+.home-start:focus-visible,.home-option:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.home-evidence{margin-top:1.7rem;border-top:1px solid var(--line);padding-top:1rem}
+.home-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem}
+.home-fact{display:grid;gap:.3rem;padding-right:.8rem;border-right:1px solid var(--line)}
+.home-fact:last-child{border-right:0}
+.home-fact span{font-size:.72rem;color:var(--muted)}
+.home-fact strong{font-size:1.12rem;font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+.home-disclaimer,.home-loading{font-size:.73rem;color:var(--muted);line-height:1.55;margin-top:1rem}
+@media(max-width:790px){.home-study-grid{grid-template-columns:1fr}.home-focus{min-height:285px}.home-facts{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:1.2rem}.home-fact:nth-child(2){border-right:0}}
+@media(max-width:420px){.home-facts{grid-template-columns:1fr 1fr}.home-focus{padding:1.2rem}.home-focus h2{font-size:2rem}.home-option{padding:.8rem .2rem}}
+

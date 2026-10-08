@@ -1,3 +1,4 @@
+import './conversation.css';
 import type {RouteContext} from '../core/types';
 import {CONVERSATION_STARTERS,getConversationScenario,type ConversationScenario} from '../core/conversation/scenarios';
 import {

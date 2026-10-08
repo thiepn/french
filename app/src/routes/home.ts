@@ -1,3 +1,4 @@
+import './home.css';
 import type { RouteContext } from '../core/types';
 import { countDueSrs,readActiveStudySession,readCanonicalLearnerState,readRecentReviewEvents } from '../core/learner/repository';
 import { rankNativeActivities,type CoachAction,type CoachInput } from '../core/learner/study-coach';
