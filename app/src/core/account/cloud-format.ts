@@ -98,6 +98,14 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
   // It must block silent cloud adoption exactly like C1 writing progress.
   const usage=obj(at(payload,'meta','native-usage-v1'));
   if(Array.isArray(usage.history)&&usage.history.length>0)return true;
+  // C3's cumulative ledger can outlive the bounded recent history and must
+  // independently qualify as local study data on a fresh device.
+  const usageTallies=obj(usage.tallies);
+  for(const group of Object.values(usageTallies)){
+    for(const row of Object.values(obj(group))){
+      if(Number(obj(row).attempts)>0)return true;
+    }
+  }
   const usageModes=obj(usage.modes);
   for(const name of ['usage','production','transfer','repair']){
     const entry=obj(usageModes[name]);
