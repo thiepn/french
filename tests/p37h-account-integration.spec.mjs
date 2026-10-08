@@ -286,12 +286,15 @@ test('a conflict choice cannot overwrite an unreviewed newer cloud revision', as
   await page.getByRole('button', { name: 'Sync this device' }).click();
   await expect.poll(() => api.cloud?.revision).toBe(1);
 
-  // Create genuine local + remote divergence after the first baseline.
+  // Hold the device offline while creating both independent changes.
+  // Otherwise the automatic online listener can legitimately pull first.
+  await context.setOffline(true);
   api.cloud.revision = 2;
   api.cloud.state.settings.dailyNewLimit = 88;
   await page.locator('input[name="dailyNewLimit"]').fill('21');
   await page.getByRole('button', { name: 'Save settings' }).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  await context.setOffline(false);
   await page.getByRole('button', { name: 'Sync now' }).click();
   await expect(page.getByRole('button', { name: 'Use this device' })).toBeVisible();
 
@@ -314,11 +317,13 @@ test('a conflict choice cannot restore cloud over local changes made after revie
   await page.getByRole('button', { name: 'Sync this device' }).click();
   await expect.poll(() => api.cloud?.revision).toBe(1);
 
+  await context.setOffline(true);
   api.cloud.revision = 2;
   api.cloud.state.settings.dailyNewLimit = 88;
   await page.locator('input[name="dailyNewLimit"]').fill('21');
   await page.getByRole('button', { name: 'Save settings' }).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  await context.setOffline(false);
   await page.getByRole('button', { name: 'Sync now' }).click();
   await expect(page.getByRole('button', { name: 'Use cloud' })).toBeVisible();
 
