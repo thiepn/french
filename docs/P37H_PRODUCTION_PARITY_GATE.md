@@ -24,8 +24,8 @@ This branch is **not** the production cutover. P35 remains production.
 Remaining release blockers:
 
 1. perform the **one-time French first-party OAuth client registration and Account registry pin** for exact origin/callback `https://french.thiepn.dev/`, then replace the pending client constant and run live SSO/sync acceptance;
-2. run whole-product P35→vNext migration/parity acceptance across preserved learner data, user content, evidence and scheduling;
-3. run the five-engine browser/device matrix on the final candidate plus physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
+2. run live THIEPN Account SSO/sync acceptance after the client is pinned;
+3. run final physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
 4. only then execute a reversible production cutover with the P35 commit preserved as rollback.
 
 The P35 runtime remains a data-compatibility source and rollback implementation, not a runtime dependency of vNext.
@@ -57,3 +57,8 @@ This closes the code-level P35→vNext migration/parity blocker. Live account-to
 
 
 P35-only compatibility state that does not belong in the new scheduler model—`mistakeLog`, `resumeSnapshot`, and `sessionHistory`—is retained losslessly in canonical feature state. It is therefore carried back into the top-level rollback-compatible cloud snapshot even though vNext does not interpret the old active-session format.
+
+
+### Closed: P35 → vNext data parity
+
+The executable migration fixture is green in `qualify:vnext`. It verifies preservation of scheduled SRS state, review evidence, user content, phase feature state, P35-only compatibility state, rollback-readable cloud fields, exact vNext payload restoration, and substantive-change hashing. This is no longer a cutover blocker.

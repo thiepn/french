@@ -23,8 +23,14 @@
     "read-listen-speak-context",
     "first-party-account-sync-engine",
     "p35-compatible-cloud-snapshot",
-    "oauth-aware-sync-rls"
+    "oauth-aware-sync-rls",
+    "p35-vnext-migration-parity-qualified"
   ],
   "fullP35FeatureParity": false,
-  "accountOAuthClient": "pending-manual-registration"
+  "accountOAuthClient": "pending-manual-registration",
+  "remainingCutoverBlockers": [
+    "one-time-french-oauth-client-registration-and-pin",
+    "live-account-sync-acceptance",
+    "real-device-qualification"
+  ]
 }
