@@ -77,6 +77,11 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
   if(stable(obj(learner.studyPlan))!==stable(FRESH_PLAN))return true;
   if(Object.keys(obj(learner.promotions)).length>0)return true;
   if(Object.keys(obj(learner.featureState)).length>0)return true;
+  // Conversation history lives in the backed-up meta store, not learner/SRS.
+  // It must block silent adoption of an unrelated cloud snapshot.
+  const conversation=obj(at(payload,'meta','native-conversation-v1'));
+  if(conversation.active)return true;
+  if(Array.isArray(conversation.history)&&conversation.history.length>0)return true;
   if(payload.stores.session?.length>0)return true;
   return false;
 }

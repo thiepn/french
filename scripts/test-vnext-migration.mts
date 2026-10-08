@@ -133,6 +133,22 @@ activeFresh.stores.session.push({key:'active',value:{cursor:2}});
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeFresh)),true,
   'unfinished study session must not be silently overwritten');
 
+const conversationFresh=structuredClone(emptyFresh);
+conversationFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:null,
+    history:[{scenarioId:'bakery',totalTurns:3,independentTurns:2,completedAt:Date.now()}]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(conversationFresh)),true,
+  'conversation-only evidence must not be silently overwritten by cloud adoption');
+const activeConversationFresh=structuredClone(emptyFresh);
+activeConversationFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:{scenarioId:'bakery',cursor:2},history:[]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeConversationFresh)),true,
+  'an unfinished conversation must not be silently overwritten');
+
 const wireUnequal=structuredClone(emptyFresh);
 wireUnequal.stores.meta.push({
   key:'learner-summary',
