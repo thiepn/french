@@ -91,9 +91,10 @@ test('installed vNext shell survives a real offline reload',async({page,context}
 });
 
 
-test('Settings keeps Account sync disabled until the first-party French client is registered',async({page})=>{
+test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
-  await expect(page.getByText(/pending control-plane registration/i)).toBeVisible();
-  await expect(page.getByText(/no French data is uploaded/i)).toBeVisible();
+  await expect(page.getByText(/Account sync is production-origin only/i)).toBeVisible();
+  await expect(page.getByText(/Configured public client bf2e7fca-98dd-4833-9fee-306ecd6fc7d7/i)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Sync this device'})).toHaveCount(0);
 });

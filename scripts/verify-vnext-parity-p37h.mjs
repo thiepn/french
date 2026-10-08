@@ -44,7 +44,8 @@ for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
-for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','__PENDING_FRENCH_OAUTH_CLIENT_ID__'])need(accountConfig,token,'Account config '+token);
+for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','bf2e7fca-98dd-4833-9fee-306ecd6fc7d7'])need(accountConfig,token,'Account config '+token);
+reject(accountConfig,'__PENDING_FRENCH_OAUTH_CLIENT_ID__','stale OAuth registration blocker');
 for(const token of ['isFrenchAccountConnectionActive','sync_thiepn_french_state','Sync this device','chooseThisDevice','chooseCloud'])need(accountSync+accountUi,token,'Account sync '+token);
 for(const token of ['probeFrenchAccountSession','isFrenchOAuthCallback','reconcileFrenchSync'])need(accountRuntime,token,'Account runtime '+token);
 reject(accountSync,"connect_thiepn_app","native-only connection RPC must not run from French OAuth token");
@@ -73,6 +74,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['one-time-french-oauth-client-registration-and-pin','live-account-sync-acceptance','real-device-qualification']
+  remainingCutoverBlockers:['live-account-sync-acceptance','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;

@@ -27,9 +27,8 @@
     "p35-vnext-migration-parity-qualified"
   ],
   "fullP35FeatureParity": false,
-  "accountOAuthClient": "pending-manual-registration",
+  "accountOAuthClient": "registered-and-pinned",
   "remainingCutoverBlockers": [
-    "one-time-french-oauth-client-registration-and-pin",
     "live-account-sync-acceptance",
     "real-device-qualification"
   ]

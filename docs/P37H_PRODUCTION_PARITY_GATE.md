@@ -13,7 +13,7 @@ The merged P37A–G runtime had functional Home, Learn, Review and Words routes,
 - **Backup/recovery** exports every vNext IndexedDB store with a SHA-256 payload checksum, validates imports before mutation, performs one cross-store replacement transaction, and forces a pre-restore safety export from the UI.
 - **Offline/PWA** restores installable metadata and generates a build-specific service worker. Shell and lazy route chunks are precached while the large vocabulary corpus remains on-demand and caches only as used.
 
-These are functional foundations, **not yet a production-cutover claim**. P5 core progress intelligence, P14 Reading, P15 reading-aligned listening, and the P12-backed core of P16 are now represented natively in vNext. The first-party THIEPN Account client, rollback-compatible cloud snapshot, silent SSO probe, explicit device adoption, conflict handling, Settings controls, and OAuth-aware RLS/RPC are implemented. The only Account blocker left is the one-time production OAuth client registration/pin, after which the pending client constant can be replaced with the issued UUID.
+These are functional foundations, **not yet a production-cutover claim**. P5 core progress intelligence, P14 Reading, P15 reading-aligned listening, and the P12-backed core of P16 are now represented natively in vNext. The first-party THIEPN Account client, rollback-compatible cloud snapshot, silent SSO probe, explicit device adoption, conflict handling, Settings controls, and OAuth-aware RLS/RPC are implemented. The French public OAuth client is registered and pinned in the Account registry as `bf2e7fca-98dd-4833-9fee-306ecd6fc7d7`, with an exact client URI and redirect URI of `https://french.thiepn.dev/`. Client registration and database SSO-probe verification are complete; live browser-session acceptance remains open.
 
 None of these feature modules is imported into the critical startup bundle.
 
@@ -23,10 +23,9 @@ This branch is **not** the production cutover. P35 remains production.
 
 Remaining release blockers:
 
-1. perform the **one-time French first-party OAuth client registration and Account registry pin** for exact origin/callback `https://french.thiepn.dev/`, then replace the pending client constant and run live SSO/sync acceptance;
-2. run live THIEPN Account SSO/sync acceptance after the client is pinned;
-3. run final physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
-4. only then execute a reversible production cutover with the P35 commit preserved as rollback.
+1. run live THIEPN Account sign-in, silent SSO, app reconnect, first-device adoption and two-device conflict acceptance against the pinned French client;
+2. run final physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
+3. only then execute a reversible production cutover with the P35 commit preserved as rollback.
 
 The P35 runtime remains a data-compatibility source and rollback implementation, not a runtime dependency of vNext.
 
@@ -37,7 +36,7 @@ vNext uses the shared THIEPN first-party OAuth 2.1 + PKCE session contract. It d
 
 Cloud snapshots keep P35-compatible top-level fields for rollback while carrying an exact `_vnext` IndexedDB payload. vNext can restore either format. Production RLS/RPC now accepts native P35 Account sessions and, once registered, only the exact OAuth client that Account maps to `app_slug='french'`; unknown delegated clients remain denied.
 
-The repository deliberately contains `__PENDING_FRENCH_OAUTH_CLIENT_ID__` until the manual production registration is completed. This is a fail-closed release blocker, not a fallback to direct Google auth.
+The repository now pins the exact, manually registered public client UUID `bf2e7fca-98dd-4833-9fee-306ecd6fc7d7`. The client is trusted only for the production French origin; localhost and previews do not initiate Account sessions. No direct Google auth is used.
 
 
 ## Executable migration/parity acceptance
