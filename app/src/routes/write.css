@@ -25,3 +25,12 @@
 .write-assess{margin-top:1rem}
 .write-tab:focus-visible,.write-answer:focus-visible,.write-actions button:focus-visible,.write-assess button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:600px){.write-actions,.write-assess{display:grid;grid-template-columns:1fr 1fr}.write-actions button:first-child,.write-assess button:first-child{grid-column:1/-1}.write-progress{display:grid;gap:.2rem}}
+
+/* C2 extends the existing writing desk rather than adding bootstrap styles. */
+.write-switcher{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.4rem 0 .4rem}
+.write-switch{min-height:44px;padding:.72rem 1.05rem;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:.2rem;cursor:pointer;font:inherit;font-size:.86rem}
+.write-switch.is-active{border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:700}
+.write-source{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem;color:var(--muted);font-size:.78rem;line-height:1.55}
+.write-source a{color:var(--accent);text-underline-offset:3px}
+.write-source a:focus-visible,.write-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:600px){.write-switcher{display:grid;grid-template-columns:1fr 1fr}.write-switch{padding:.65rem .6rem}}
