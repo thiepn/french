@@ -56,7 +56,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     for(const name of USAGE_MODES){
       const count=name==='repair'?repairCandidates(usagePack,usageState).length:
         rankUsageCandidates(usagePack,usageState,name).length;
-      const label=name==='usage'?'Usage':name==='production'?'Produce':name==='transfer'?'Transfer':'Repair ('+count+')';
+      const label=name==='usage'?'Usage':name==='production'?'Produce ('+count+')':name==='transfer'?'Transfer ('+count+')':'Repair ('+count+')';
       const btn=control(label,'write-tab'+(usageMode===name?' is-active':''));
       btn.setAttribute('aria-pressed',String(usageMode===name));
       btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
