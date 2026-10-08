@@ -65,7 +65,7 @@ if(usageSource.schema!=='thiepn-french-stable-usage-source-v1'||
    usageSource.sourceBlob!=='8a354063b20421ad53b3417b3f677adc926f3cb5'||
    usageSource.records?.length!==67||usageSource.count!==67) failures.push('incomplete P10 original verified source frames');
 for(const item of usageSource.records??[]){
-  if(!usageSource.sources?.[item.sourceKey]||!item.frame.includes(item.blank)||!/^p10-\\d{3}$/.test(item.id))
+  if(!usageSource.sources?.[item.sourceKey]||!item.frame.includes(item.blank)||!/^p10-\d{3}$/.test(item.id))
     failures.push('invalid P10 provenance or frame '+item.id);
 }
 for(const token of ['loadStableUsageCorpus','Usage & phrase transfer (P10/P11)','Check phrase','recordPracticeEvidence','practiceOnly'])
