@@ -53,7 +53,7 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
   candidates.push({
     id:'write',route:'write',title:'Write in French',
     detail:'Construct expressions and apply sentences in new situations.',
-    action:'Open writing',score:112+Math.round(36/(1+count(r.writing??0)))
+    action:'Open writing',score:96+Math.round(26/(1+count(r.writing??0)))
   });
   candidates.push({
     id:'conversation',route:'conversation',title:'Practise a real exchange',
