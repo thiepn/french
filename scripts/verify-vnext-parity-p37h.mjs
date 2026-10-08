@@ -29,10 +29,12 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
 
 // A passing compatibility suite must not accidentally authorize a production cutover.
 const release=JSON.parse(await readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'));
-const [conversationRoute,conversationEngine,conversationScenes]=await Promise.all([
+const [conversationRoute,conversationEngine,conversationScenes,missionDefinitions,missionTests]=await Promise.all([
   readFile(new URL('../app/src/routes/conversation.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/conversation/engine.ts',import.meta.url),'utf8'),
-  readFile(new URL('../app/src/core/conversation/scenarios.ts',import.meta.url),'utf8')
+  readFile(new URL('../app/src/core/conversation/scenarios.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/missions.ts',import.meta.url),'utf8'),
+  readFile(new URL('../scripts/test-vnext-mission.mts',import.meta.url),'utf8')
 ]);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
@@ -57,6 +59,16 @@ need(router,"conversation:()=>import('../routes/conversation')",'lazy conversati
 for(const term of ['Pause & home','My response fits','Show hint','Send response'])need(conversationRoute,term,'Conversation UI '+term);
 for(const term of ['submitConversationResponse','independent:!manual','safeConversationState'])need(conversationEngine,term,'Conversation evidence '+term);
 for(const term of ["id:'bakery'","id:'cafe'","id:'directions'","id:'rail'","id:'repair'"])need(conversationScenes,term,'Conversation starter '+term);
+for(const missionId of ['morning-town','arrival-day','meet-plan-decide','solve-problems','independent-living']){
+  need(missionDefinitions,"id:'"+missionId+"'","Mission definition "+missionId);
+}
+for(const term of ['beginMission','completeMission','independencePass','fullyUnsupported','missionHistory'])
+  need(conversationEngine,term,'Mission completion contract '+term);
+for(const term of ['selectMission','Mission complete','Mission history','Mission  '])
+  if(term!=='Mission  ')need(conversationRoute,term,'Mission UI '+term);
+for(const term of ['safeConversationState','manual continuations','independencePass'])
+  if(term!=='manual continuations')need(missionTests,term,'Mission tests '+term);
+
 for(const token of ["params.has('state')","params.has('code')","params.has('error')","!location.hash&&!oauthReturn"])need(router,token,'preserved OAuth callback '+token);
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
