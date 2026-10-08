@@ -180,6 +180,7 @@ test('Native writing feedback and practice-only progress survive reload without 
   expect(written).toHaveLength(1);
   expect(written[0].practiceOnly).toBe(true);
   expect(written[0].sentenceExerciseId).toBe('p12-001');
+  expect(written[0].correct).toBe(true);
   expect(JSON.stringify(saved)).not.toContain('Nous devons tenir compte de la météo.');
 });
 
@@ -216,6 +217,39 @@ test('P37I-C4 writing treats a hinted exact response as supported and commits it
   expect(written[0].supportLevel).toBe(1);
   expect(written[0].typedQuality).toBe('review');
   expect(JSON.stringify(saved)).not.toContain('Nous devons tenir compte de la météo.');
+});
+
+test('P37I-C4 close and manually assessed sentences cannot earn independently verified credit',async({page})=>{
+  await page.goto('/#write');
+  await expect(page.getByText('Prompt 1 / 12')).toBeVisible();
+  await page.getByRole('textbox',{name:'Your written French answer'}).fill('Nous devons tenir compte de la meteo.');
+  await page.getByRole('button',{name:'Check answer'}).click();
+  await expect(page.getByText('Orthography / small form issue')).toBeVisible();
+  await page.getByRole('button',{name:'Save close & next'}).click();
+  await expect(page.getByText('Prompt 2 / 12')).toBeVisible();
+  await page.getByRole('textbox',{name:'Your written French answer'}).fill("J'ai besoin de trente minutes pour finir.");
+  await page.getByRole('button',{name:'Check answer'}).click();
+  await expect(page.getByText('Needs your judgment')).toBeVisible();
+  await page.getByRole('button',{name:'Self-assess correct'}).click();
+  await expect(page.getByText('Prompt 3 / 12')).toBeVisible();
+  const stored=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['meta','activity'],'readonly');
+      const a=tx.objectStore('meta').get('native-writing-v1');
+      const b=tx.objectStore('activity').getAll();
+      tx.oncomplete=()=>{db.close();resolve({state:a.result,events:b.result});};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(stored.state.modes.phrase.index).toBe(2);
+  const written=stored.events.filter(event=>event.practice==='written-phrase');
+  expect(written).toHaveLength(2);
+  expect(written.every(event=>event.correct===false&&event.practiceOnly===true)).toBe(true);
+  expect(written.some(event=>event.typedQuality==='manual-self-assessed')).toBe(true);
+  expect(stored.state.history).toHaveLength(2);
+  expect(JSON.stringify(stored)).not.toContain('trente minutes');
 });
 
 test('Settings persist preferences and expose recovery controls',async({page})=>{
