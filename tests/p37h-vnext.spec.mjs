@@ -8,6 +8,8 @@ test('Progress is a real evidence workspace',async({page})=>{
   await expect(page.getByRole('heading',{name:'CEFR coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Review pressure'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Functional missions'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Communicative function evidence'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Practise weak functions'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Weakest vocabulary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'What to do next'})).toBeVisible();
 });
@@ -40,7 +42,7 @@ test('Guided conversation is resumable and records independent versus manual pra
   await page.getByRole('textbox',{name:'Your French response'}).fill('Combien ça coûte ?');
   await page.getByRole('button',{name:'Send response'}).click();
   await expect(page.getByRole('heading',{name:'Conversation complete'})).toBeVisible();
-  await expect(page.getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
+  await expect(page.locator('.conversation-result').getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
 });
 
 test('Three-scene mission resumes on reload and distinguishes independent completion',async({page})=>{
@@ -76,7 +78,7 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
   }
   await expect(page.getByRole('heading',{name:'Mission complete'})).toBeVisible();
   await expect(page.locator('.conversation-result').getByText('Morning in town · Independence pass',{exact:true})).toBeVisible();
-  await expect(page.getByText(/9 \/ 9 independent turns/)).toBeVisible();
+  await expect(page.locator('.conversation-result').getByText(/9 \/ 9 independent turns/)).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Mission history'})).toBeVisible();
   await expect(page.getByText(/Morning in town · independence pass/)).toBeVisible();

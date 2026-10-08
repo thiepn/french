@@ -215,11 +215,31 @@ export function safeConversationState(raw:unknown):ConversationState{
     &&queue[a.step]===active.scenarioId&&Array.isArray(a.completed)&&a.completed.length===a.step
     &&a.completed.every((row,index)=>row?.scenarioId===queue[index])&&!mission
     ?a:null;
+  // Imported/synchronized progress is untrusted. Only internally consistent,
+  // known scenario turns may contribute to communicative-function strength.
+  // A mismatched function, source level or forged independence flag cannot
+  // manufacture "secure" evidence through an edited backup.
   const functionEvents=(Array.isArray(value.functionEvents)?value.functionEvents:[])
-    .filter(row=>row&&typeof row.functionId==='string'&&getConversationScenario(row.scenarioId)
-      &&typeof row.at==='number'&&Number.isFinite(row.at)&&row.at>=0
-      &&typeof row.accepted==='boolean'&&typeof row.manual==='boolean'
-      &&Number.isFinite(row.credit)&&row.credit>=0&&row.credit<=1).slice(-1800);
+    .filter((row):row is FunctionEvidence=>{
+      if(!row||typeof row!=='object')return false;
+      const scenario=getConversationScenario(row.scenarioId);
+      if(!scenario||!Number.isInteger(row.turnIndex)||row.turnIndex<0||
+        row.turnIndex>=scenario.turns.length)return false;
+      const turn=scenario.turns[row.turnIndex];
+      if(row.functionId!==turn.functionId||row.level!==scenario.level)return false;
+      if(!Number.isFinite(row.at)||row.at<0||
+        typeof row.accepted!=='boolean'||typeof row.manual!=='boolean'||
+        typeof row.independent!=='boolean')return false;
+      if(!Number.isInteger(row.support)||row.support<0||row.support>2||
+        !Number.isInteger(row.retries)||row.retries<0||row.retries>100||
+        !Number.isInteger(row.matched)||row.matched<0||
+        row.matched>turn.slots.length||row.required!==turn.slots.length)return false;
+      if(row.manual&&!row.accepted)return false;
+      if(row.independent!==(row.accepted&&!row.manual&&row.support===0&&row.retries===0))
+        return false;
+      const credit=evidenceCredit(row.manual,row.support,row.retries,row.accepted);
+      return Number.isFinite(row.credit)&&Math.abs(credit-row.credit)<1e-8;
+    }).slice(-1800);
   const adaptiveHistory=(Array.isArray(value.adaptiveHistory)?value.adaptiveHistory:[])
     .filter(row=>row&&Array.isArray(row.queue)&&row.queue.length===3&&
       row.queue.every(id=>typeof id==='string'&&getConversationScenario(id))&&

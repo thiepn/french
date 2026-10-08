@@ -6,6 +6,7 @@ import { retrievability } from '../core/learner/scheduler';
 import { loadVocabularySearchIndex,type VocabularySearchRow } from '../core/content/loader';
 import { loadConversationState } from '../core/conversation/storage';
 import { getMission } from '../core/conversation/missions';
+import {functionProfiles,FUNCTION_CATALOG} from '../core/conversation/curriculum';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -349,6 +350,42 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   missionPanel.append(textNode('p',
     'Scenario-level practice results are not CEFR certification. Raw learner responses are not stored.','intel-note'));
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,activityPanel,evidencePanel);
+  const functionsPanel=document.createElement('section');functionsPanel.className='data-panel';
+  functionsPanel.append(textNode('h2','Communicative function evidence'));
+  const profiles=functionProfiles(conversations.functionEvents);
+  const functional=profiles.filter(profile=>profile.state==='functional'||profile.state==='secure').length;
+  const notYet=profiles.filter(profile=>profile.state==='unseen').length;
+  const overview=document.createElement('div');overview.className='pressure-grid';
+  for(const [label,value] of [
+    ['Observable functions',FUNCTION_CATALOG.length],
+    ['Functional or secure',functional],
+    ['Unpractised functions',notYet],
+    ['Recorded attempts',conversations.functionEvents.length]
+  ] as Array<[string,number]>){
+    const cell=document.createElement('div');cell.className='pressure-card';
+    cell.append(textNode('span',label),textNode('strong',String(value)));overview.append(cell);
+  }
+  functionsPanel.append(overview);
+  const groupList=document.createElement('div');groupList.className='skill-list';
+  for(const group of ['Foundation','Interaction','Problem solving','Planning & opinion','Narrative']){
+    const groupName=textNode('h3',group,'intel-note');groupList.append(groupName);
+    const ordered=profiles.filter(profile=>profile.group===group)
+      .sort((a,b)=>a.strength-b.strength||a.id.localeCompare(b.id));
+    for(const profile of ordered){
+      const line=document.createElement('div');line.className='skill-row';
+      line.append(textNode('strong',profile.label),
+        textNode('span',profile.state+' · '+profile.independentSuccesses+' independent · '+
+          profile.contexts+' situations · '+Math.round(profile.confidence*100)+'% evidence confidence'));
+      groupList.append(line);
+    }
+  }
+  functionsPanel.append(groupList);
+  const openConversation=document.createElement('button');
+  openConversation.type='button';openConversation.className='secondary-action compact-action';
+  openConversation.textContent='Practise weak functions';
+  openConversation.addEventListener('click',()=>navigate('conversation'));
+  functionsPanel.append(openConversation,
+    textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
+  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }

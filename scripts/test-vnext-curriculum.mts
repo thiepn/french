@@ -41,6 +41,30 @@ const singleScene=functionProfiles(Array.from({length:12},(_,i)=>row({
   at:now+i*86_400_000,scenarioId:'bakery',functionId:'greeting',turnIndex:0,matched:1,required:1
 }))).find(x=>x.id==='greeting');
 assert.notEqual(singleScene?.state,'secure','one memorized scene cannot be secure');
+// Imported rows may not claim a different function, level, or unsupported score.
+let honest=beginAdaptiveSet(initialConversationState(),now);
+const firstScene=getConversationScenario(honest.active?.scenarioId??'');
+assert.ok(firstScene);
+if(!firstScene)throw Error('missing adaptive scenario');
+honest=submitConversationResponse(honest,firstScene.turns[0].model,false,now+1).state;
+const evidence=honest.functionEvents[0];
+assert.equal(safeConversationState(honest).functionEvents.length,1);
+for(const mutation of [
+  {...evidence,functionId:'negotiation'},
+  {...evidence,level:'B1'},
+  {...evidence,credit:1.1},
+  {...evidence,independent:false},
+  {...evidence,turnIndex:99},
+  {...evidence,required:99},
+  {...evidence,support:2}
+]){
+  const imported=safeConversationState({...honest,functionEvents:[mutation]});
+  assert.equal(imported.functionEvents.length,0,'tampered function evidence must not be counted');
+}
+assert.equal(safeConversationState({
+  ...honest,functionEvents:[{...evidence,accepted:false,independent:false,credit:0}]
+}).functionEvents.length,1,'a valid failed attempt is evidence of a gap');
+
 const a1=rankedNativeScenarios([],[],'A1',now),a2=rankedNativeScenarios([],[],'A2',now);
 assert.equal(a1.length,3);
 assert.ok(a2.length>a1.length);
