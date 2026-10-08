@@ -256,7 +256,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const currentSupport=state.modes[mode].support;
       // Only exact, independently produced answers receive objective credit.
       // A revealed hint or human self-assessment is practice, not verified skill.
-      const correct=outcome==='matched'&&diagnosis.correct===true&&currentSupport===0;
+      const correct=outcome==='matched'&&diagnosis.quality==='exact'&&currentSupport===0;
       try{
         const at=Date.now();
         const updated=completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code,at);
@@ -288,7 +288,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         element('p','Reference · '+exercise.expected,'write-reference'));
       next.replaceChildren();
       if(diagnosis.correct===true){
-        const yes=control(state.modes[mode].support?'Save supported & next':'Save correct & next','primary-action compact-action');
+        const label=state.modes[mode].support?'Save supported & next':
+          diagnosis.quality==='exact'?'Save correct & next':'Save close & next';
+        const yes=control(label,'primary-action compact-action');
         yes.onclick=()=>void record('matched');next.append(yes);
       }else if(diagnosis.correct===null){
         const manual=control('Self-assess correct','primary-action compact-action');
