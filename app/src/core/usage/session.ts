@@ -39,9 +39,13 @@ function outcome(code:UsageCode):UsageDiagnosis{
   return{code,label,detail,correct:code==='exact',quality:code==='exact'?'exact':code==='orthography'?'close':'review'};
 }
 export function maskUsageFrame(record:UsageRecord):string{
-  const start=record.frame.indexOf(record.blank);
+  // Match a complete lexical element, never a substring inside "décider" or "demander".
+  const escaped=record.blank.replace(/[.*+?^$\x7b\x7d()|[\]\\]/g,'\\  const start=record.frame.indexOf(record.blank);
   if(start<0)throw Error('INVALID_VERIFIED_BLANK');
-  return record.frame.slice(0,start)+'_____ '+record.frame.slice(start+record.blank.length).trimStart();
+  return record.frame.slice(0,start)+'_____ '+record.frame.slice(start+record.blank.length).trimStart();');
+  const match=new RegExp('(?<![\\p{L}\\p{N}])'+escaped+'(?![\\p{L}\\p{N}])','iu').exec(record.frame);
+  if(!match)throw Error('INVALID_VERIFIED_BLANK');
+  return record.frame.slice(0,match.index)+'_____ '+record.frame.slice(match.index+match[0].length).trimStart();
 }
 export function usageCue(record:UsageRecord,mode:UsageMode):string{
   if(mode==='usage')return 'Complete the source frame: '+maskUsageFrame(record);
