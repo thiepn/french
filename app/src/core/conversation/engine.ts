@@ -68,8 +68,8 @@ export function raiseConversationSupport(state:ConversationState,level:1|2,now=D
 export type SubmitResult={state:ConversationState;accepted:boolean;finished:boolean;matched:number;total:number};
 function evidenceCredit(turn:TurnEvidence):number{
   if(turn.manual)return 0;
-  const support=turn.support===0?1:turn.support===1?.65:.2;
-  return support*(turn.attempts>0?.65:1);
+  const support=turn.support===0?1:turn.support===1?0.65:0.2;
+  return support*(turn.attempts>0?0.65:1);
 }
 function completeMission(mission:MissionActive,tasks:ConversationResult[],now:number):MissionResult{
   const totalTurns=tasks.reduce((total,row)=>total+row.totalTurns,0);
@@ -141,7 +141,7 @@ export function safeConversationState(raw:unknown):ConversationState{
   const m=value.mission,definition=m&&getMission(m.missionId);
   // If a stored mission and its in-progress scenario disagree, keep the scene
   // but do not invent missing completed tasks or silently award a mission pass.
-  const mission=definition&&active&&Number.isInteger(m?.step)&&m.step>=0&&m.step<3
+  const mission=m&&definition&&active&&Number.isInteger(m.step)&&m.step>=0&&m.step<3
     &&definition.scenarioIds[m.step]===active.scenarioId&&Array.isArray(m.completed)
     &&m.completed.length===m.step&&m.completed.every((row,index)=>row?.scenarioId===definition.scenarioIds[index])
     ?m:null;
