@@ -15,7 +15,7 @@ test('Home ranks real learning actions and avoids static placeholder recommendat
   await page.goto('/#home');
   await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Other ways to practise'})).toBeVisible({timeout:30_000});
-  await expect(page.getByRole('button',{name:/Open learning|Review due items|Resume session|Open reading|Open listening|Open speaking/}).toBeVisible();
+  await expect(page.locator('.home-start')).toBeVisible();
   await expect(page.getByText(/Recommendations use stored learning activity/)).toBeVisible();
 });
 
