@@ -311,3 +311,51 @@ test('C2 restores P10 source frames, persists phrase evidence, and opens repair 
   await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
   await expect(page.getByText('Prompt 1 / 12')).toBeVisible();
 });
+
+test('C3 gates and rotates transfer using independently exact usage evidence',async({page})=>{
+  await page.goto('/#write');
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  await expect(page.getByRole('button',{name:'Transfer (0)'})).toBeVisible();
+  await expect(page.getByText('Usage secure')).toBeVisible();
+  await expect(page.getByText('Frame 1 / 67')).toBeVisible();
+  const typeAndSave=async(answer)=>{
+    await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill(answer);
+    await page.getByRole('button',{name:'Check phrase'}).click();
+    await expect(page.getByText('Exact verified frame')).toBeVisible();
+    await page.getByRole('button',{name:'Save exact & next'}).click();
+  };
+  await typeAndSave('à');
+  await expect(page.getByText('Record p10-002',{exact:false})).toBeVisible();
+  await typeAndSave('à');
+  await expect(page.getByText('Record p10-001',{exact:false})).toBeVisible();
+  await typeAndSave('à');
+  await expect(page.getByRole('button',{name:'Transfer (1)'})).toBeVisible();
+  await page.getByRole('button',{name:'Transfer (1)'}).click();
+  await expect(page.getByText(/Structural cue 1 of 3/)).toBeVisible();
+  await typeAndSave('apprendre à + infinitif');
+  await expect(page.getByText(/Structural cue 2 of 3/)).toBeVisible();
+  await page.reload();
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  await page.getByRole('button',{name:'Transfer (1)'}).click();
+  await expect(page.getByText(/Structural cue 2 of 3/)).toBeVisible();
+  await typeAndSave('apprendre à + infinitif');
+  await expect(page.locator('.write-mastery-stat').filter({hasText:'Transfer secure'})).toContainText('1');
+  const result=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['meta','activity'],'readonly');
+      const a=tx.objectStore('meta').get('native-usage-v1'),b=tx.objectStore('activity').getAll();
+      tx.oncomplete=()=>{db.close();resolve({state:a.result,events:b.result});};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(result).toBeTruthy();
+  expect(result.state.tallies['p10-001'].usage.attempts).toBe(2);
+  expect(result.state.tallies['p10-001'].transfer.attempts).toBe(2);
+  expect(result.state.tallies['p10-001'].transfer.variantMask).toBe(3);
+  const usageEvents=result.events.filter(e=>String(e.practice).startsWith('verified-usage-'));
+  expect(usageEvents).toHaveLength(5);
+  expect(usageEvents.every(e=>e.practiceOnly===true)).toBe(true);
+  expect(JSON.stringify(result)).not.toContain('apprendre à + infinitif');
+});
