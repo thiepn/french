@@ -7,6 +7,7 @@ test('Progress is a real evidence workspace',async({page})=>{
   await expect(page.getByRole('heading',{name:'Skill health'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'CEFR coverage'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Review pressure'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Functional missions'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Weakest vocabulary'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'What to do next'})).toBeVisible();
 });
@@ -79,6 +80,9 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
   await page.reload();
   await expect(page.getByRole('heading',{name:'Mission history'})).toBeVisible();
   await expect(page.getByText(/Morning in town · independence pass/)).toBeVisible();
+  await page.goto('/#progress');
+  await expect(page.getByRole('heading',{name:'Functional missions'})).toBeVisible();
+  await expect(page.getByText('Independence passes')).toBeVisible();
 });
 
 test('Settings persist preferences and expose recovery controls',async({page})=>{

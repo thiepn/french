@@ -4,6 +4,8 @@ import type { CanonicalReviewEventV1,CanonicalSrsRecordV1,SkillId } from '../cor
 import { evidenceFromEvents,weaknessScore } from '../core/learner/queue';
 import { retrievability } from '../core/learner/scheduler';
 import { loadVocabularySearchIndex,type VocabularySearchRow } from '../core/content/loader';
+import { loadConversationState } from '../core/conversation/storage';
+import { getMission } from '../core/conversation/missions';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -54,11 +56,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(!host||!status)return;
 
   const now=Date.now();
-  const [learner,records,recent,index]=await Promise.all([
+  const [learner,records,recent,index,conversations]=await Promise.all([
     readCanonicalLearnerState(),
     readAllSrsRecords(),
     readRecentReviewEvents(10_000),
-    loadVocabularySearchIndex(signal)
+    loadVocabularySearchIndex(signal),
+    loadConversationState()
   ]);
   if(signal.aborted)return;
 
@@ -318,6 +321,34 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
   evidencePanel.append(evidenceGrid);
 
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,activityPanel,evidencePanel);
+  const missionPanel=document.createElement('section');missionPanel.className='data-panel';
+  missionPanel.append(textNode('h2','Functional missions'));
+  const missionGrid=document.createElement('div');missionGrid.className='pressure-grid';
+  const passes=conversations.missionHistory.filter(item=>item.independencePass).length;
+  const unsupported=conversations.missionHistory.filter(item=>item.fullyUnsupported).length;
+  for(const [label,value] of [
+    ['Mission runs',conversations.missionHistory.length],
+    ['Independence passes',passes],
+    ['Fully unsupported',unsupported],
+    ['Finished scenarios',conversations.history.length]
+  ] as Array<[string,number]>){
+    const card=document.createElement('div');card.className='pressure-card';
+    card.append(textNode('span',label),textNode('strong',String(value)));missionGrid.append(card);
+  }
+  missionPanel.append(missionGrid);
+  if(conversations.mission){
+    const mission=getMission(conversations.mission.missionId);
+    missionPanel.append(textNode('p','Unfinished: '+(mission?.title??'Mission')+' · task '+
+      (conversations.mission.step+1)+' of 3. Resume in Conversation.','intel-note'));
+  }
+  for(const result of conversations.missionHistory.slice(0,5)){
+    const mission=getMission(result.missionId);
+    if(mission)missionPanel.append(textNode('p',mission.title+' · '+
+      (result.independencePass?'independence pass':'completed with support')+
+      ' · '+result.independentTurns+'/'+result.totalTurns+' independent turns.','intel-note'));
+  }
+  missionPanel.append(textNode('p',
+    'Scenario-level practice results are not CEFR certification. Raw learner responses are not stored.','intel-note'));
+  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
