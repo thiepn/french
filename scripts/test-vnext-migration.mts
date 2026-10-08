@@ -133,6 +133,27 @@ activeFresh.stores.session.push({key:'active',value:{cursor:2}});
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeFresh)),true,
   'unfinished study session must not be silently overwritten');
 
+
+const usageHintOnly=structuredClone(emptyFresh);
+usageHintOnly.stores.meta.push({
+  key:'native-usage-v1',
+  value:{schema:'thiepn-french-usage-v1',history:[],modes:{
+    usage:{index:0,support:1},production:{index:0,support:0},
+    transfer:{index:0,support:0},repair:{index:0,support:0}
+  }}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(usageHintOnly)),true,
+  'P10/P11 hint-only local usage progress must not be overwritten');
+const usageAttemptOnly=structuredClone(emptyFresh);
+usageAttemptOnly.stores.meta.push({
+  key:'native-usage-v1',
+  value:{schema:'thiepn-french-usage-v1',history:[{
+    recordId:'p10-001',mode:'usage',at:Date.now(),outcome:'needs-practice',diagnosis:'connector',support:0
+  }],modes:{}}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(usageAttemptOnly)),true,
+  'P10/P11 usage-only history must require cloud conflict review');
+
 const conversationFresh=structuredClone(emptyFresh);
 conversationFresh.stores.meta.push({
   key:'native-conversation-v1',
