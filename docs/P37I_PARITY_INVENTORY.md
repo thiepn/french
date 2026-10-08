@@ -22,7 +22,7 @@ Legend: **Native** = an implementable core path exists with automated acceptance
 | P15 contextual listening | `routes/listen.ts`, Read↔Listen pairing | **Partial** | Full support-aware scoring and difficulty/adaptive sequencing |
 | P16 spoken production | `routes/speak.ts`, 36 sentence exercises, recording | **Partial** | All stable transfer and feedback modes; physical speech-service acceptance |
 | P17 guided conversation | `routes/conversation.ts`, `core/conversation/{engine,scenarios,storage}.ts`, five starter scenes with 15 turns | **Partial — first native vertical slice** | Port original P35 P17 scenario bank/variant rotation, richer response/repair rules, calibrated multi-context evidence; current practice results are **not** P17 mastery |
-| P18 real-world missions | Historical mission state retained in feature state | **Missing native flow** | Five scenario chains with genuine independence evidence and resume |
+| P18 real-world missions | `core/conversation/missions.ts` has five new three-scenario chains; mission-aware engine, UI, resume and pass evidence | **Partial — P37I-B2 native missions** | Preserve full original P35 P18 wording/variant rotation, function-aware task recommendations and calibrated breadth parity |
 | P19 communicative calibration | No native multi-turn response evidence pipeline | **Missing native flow** | Confidence-aware independent/repair scoring, replay checks |
 | P20 communicative function profiles | Legacy function history retained | **Missing native flow** | 25-function taxonomy, next scenario/adaptive three-task set |
 | P21 open-world French input | No native open-world capture workflow | **Missing native flow** | Source links, private aggregate exposure, learner consent and source limits |

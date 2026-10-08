@@ -42,6 +42,37 @@ test('Guided conversation is resumable and records independent versus manual pra
   await expect(page.getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
 });
 
+test('Three-scene mission resumes on reload and distinguishes independent completion',async({page})=>{
+  await page.goto('/#conversation');
+  await expect(page.getByRole('heading',{name:'Real-world missions'})).toBeVisible();
+  await page.getByRole('button',{name:/A1 Morning in town/}).click();
+  const responses=[
+    ['Bonjour madame','Je voudrais un croissant, s’il vous plaît.','Combien ça coûte ?'],
+    ['Je voudrais un café, s’il vous plaît.','Sur place, merci.','L’addition, s’il vous plaît.'],
+    ['À quelle heure le magasin ouvre ?','Donc, à neuf heures, c’est bien ça ?','Merci beaucoup pour votre aide.']
+  ];
+  for(let task=0;task<3;task++){
+    await expect(page.getByText('Mission '+(task+1)+' of 3')).toBeVisible();
+    if(task===1){
+      await page.getByRole('button',{name:'Pause & home'}).click();
+      await expect(page.getByRole('button',{name:'Resume active'})).toBeVisible();
+      await page.reload();
+      await expect(page.getByText('Mission 2 of 3')).toBeVisible();
+    }
+    for(const response of responses[task]){
+      await page.getByRole('textbox',{name:'Your French response'}).fill(response);
+      await page.getByRole('button',{name:'Send response'}).click();
+      await expect(page.getByRole('textbox',{name:'Your French response'}).or(page.getByRole('heading',{name:'Mission complete'}))).toBeVisible();
+    }
+  }
+  await expect(page.getByRole('heading',{name:'Mission complete'})).toBeVisible();
+  await expect(page.getByText('Morning in town · Independence pass')).toBeVisible();
+  await expect(page.getByText(/9 \/ 9 independent turns/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Mission history'})).toBeVisible();
+  await expect(page.getByText(/Morning in town · independence pass/)).toBeVisible();
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');

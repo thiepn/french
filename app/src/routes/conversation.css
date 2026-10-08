@@ -34,3 +34,10 @@
 .conversation-danger{color:#b54739}
 .conversation-choice:focus-visible,.conversation-link:focus-visible,.conversation-controls button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:550px){.conversation-controls{display:grid;grid-template-columns:1fr 1fr}.conversation-controls button:first-child{grid-column:1/-1}.conversation-top{gap:.8rem}.conversation-bottom{display:grid}.conversation-prompt{font-size:1.55rem}}
+
+.conversation-mission-list{border-top:1px solid var(--line)}
+.conversation-mission-choice{min-height:86px}
+.conversation-mission-banner{display:flex;gap:1rem;align-items:center;justify-content:space-between;border-left:3px solid var(--accent);padding:.65rem .85rem;margin:1rem 0;background:var(--surface)}
+.conversation-mission-banner strong{font-size:.9rem}
+.conversation-mission-banner span{color:var(--muted);font-size:.8rem}
+@media(max-width:550px){.conversation-mission-banner{display:grid;gap:.3rem}}
