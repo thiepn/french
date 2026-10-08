@@ -209,7 +209,8 @@ for (const [index, record] of usageSource.records.entries()) {
   const provenance = usageSource.sources?.[record.sourceKey];
   if (!provenance || provenance.tier !== 'verified' || !/^https:\/\//.test(provenance.url) ||
     !record.anchor || !record.frame || !record.blank || !record.kind ||
-    !record.frame.includes(record.blank)) throw new Error('P10 record provenance/shape mismatch: ' + record.id);
+    !new RegExp('(?<![\\p{L}\\p{N}])' + record.blank + '(?![\\p{L}\\p{N}])','iu').test(record.frame))
+    throw new Error('P10 record provenance/whole-token shape mismatch: ' + record.id);
 }
 const usagePayload = {
   schema: 'thiepn-french-usage-pack-v1',
