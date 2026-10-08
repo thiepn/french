@@ -202,6 +202,10 @@ test('sync requires deliberate adoption and preserves data across two devices', 
     await page2.reload(); // Rehydrate the restored local state into the route's form.
     await expect(page2.locator('input[name="dailyNewLimit"]')).toHaveValue('18');
 
+    // A genuinely concurrent edit requires device B to stop receiving
+    // automatic focus/online cloud pulls before device A commits revision 2.
+    await second.setOffline(true);
+
     await limit1.fill('19');
     await page.getByRole('button', { name: 'Save settings' }).click();
     await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
@@ -213,6 +217,8 @@ test('sync requires deliberate adoption and preserves data across two devices', 
     await limit2.fill('23');
     await page2.getByRole('button', { name: 'Save settings' }).click();
     await expect(page2.locator('[data-status]')).toContainText('Saved on this device.');
+    // No online reconciliation can have run on B since it was disconnected.
+    await second.setOffline(false);
     await page2.getByRole('button', { name: 'Sync now' }).click();
     await expect(page2.getByText(/French changed on this device and in the cloud/)).toBeVisible();
     await expect(page2.getByRole('button', { name: 'Use cloud' })).toBeVisible();

@@ -38,7 +38,21 @@ export async function enableFrenchSync(user:FrenchAccountUser):Promise<FrenchSyn
   if(!(await isFrenchAccountConnectionActive()))return{status:'disabled',message:'Reconnect French through THIEPN Account before enabling cloud sync.'};
   const m=metaFor(user.id);writeMeta({...m,enabled:true});return reconcileFrenchSync(user);
 }
-export async function reconcileFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{
+// Serialize overlapping automatic/manual reconciliations for one identity.
+// Two callers must never race to create the same initial cloud revision.
+const reconciliations=new Map<string,Promise<FrenchSyncResult>>();
+export function reconcileFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{
+  const pending=reconciliations.get(user.id);
+  if(pending)return pending;
+  const work=reconcileFrenchSyncOnce(user);
+  reconciliations.set(user.id,work);
+  void work.then(
+    ()=>{if(reconciliations.get(user.id)===work)reconciliations.delete(user.id);},
+    ()=>{if(reconciliations.get(user.id)===work)reconciliations.delete(user.id);}
+  );
+  return work;
+}
+async function reconcileFrenchSyncOnce(user:FrenchAccountUser):Promise<FrenchSyncResult>{
   const m=metaFor(user.id);if(!m.enabled)return{status:'disabled',message:'Cloud sync is not enabled on this device.'};
   if(!navigator.onLine)return{status:'offline',message:'Offline. French remains fully local and sync will resume when connected.'};
   try{
