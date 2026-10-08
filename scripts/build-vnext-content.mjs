@@ -15,6 +15,8 @@ const READING_DIR = resolve(CONTENT_DIR, 'readings');
 const READING_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-readings-v1.json');
 const SENTENCE_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-sentence-exercises-v1.json');
 const SENTENCE_DIR = resolve(CONTENT_DIR, 'sentences');
+const USAGE_SOURCE_FILE = resolve(ROOT, 'scripts/data/stable-usage-corpus-v1.json');
+const USAGE_DIR = resolve(CONTENT_DIR, 'usage');
 
 function gitBlobSha(buffer) {
   const header = Buffer.from('blob ' + buffer.length + '\0');
@@ -55,10 +57,12 @@ await rm(PACK_DIR, { recursive: true, force: true });
 await rm(SEARCH_DIR, { recursive: true, force: true });
 await rm(READING_DIR, { recursive: true, force: true });
 await rm(SENTENCE_DIR, { recursive: true, force: true });
+await rm(USAGE_DIR, { recursive: true, force: true });
 await mkdir(PACK_DIR, { recursive: true });
 await mkdir(SEARCH_DIR, { recursive: true });
 await mkdir(READING_DIR, { recursive: true });
 await mkdir(SENTENCE_DIR, { recursive: true });
+await mkdir(USAGE_DIR, { recursive: true });
 
 const byLevel = new Map();
 for (const word of source.words) {
@@ -191,6 +195,38 @@ packs.push({
   revision: sentencePayload.revision
 });
 
+
+const usageSource = JSON.parse(await readFile(USAGE_SOURCE_FILE, 'utf8'));
+if (usageSource.schema !== 'thiepn-french-stable-usage-source-v1' ||
+    usageSource.sourceBlob !== '8a354063b20421ad53b3417b3f677adc926f3cb5' ||
+    !Array.isArray(usageSource.records) || usageSource.records.length !== 67 ||
+    Number(usageSource.count) !== 67) throw new Error('P10 source corpus integrity mismatch.');
+const ids = new Set();
+for (const [index, record] of usageSource.records.entries()) {
+  if (record.id !== 'p10-' + String(index + 1).padStart(3, '0') || ids.has(record.id))
+    throw new Error('P10 source record identity mismatch.');
+  ids.add(record.id);
+  const provenance = usageSource.sources?.[record.sourceKey];
+  if (!provenance || provenance.tier !== 'verified' || !/^https:\/\//.test(provenance.url) ||
+    !record.anchor || !record.frame || !record.blank || !record.kind ||
+    !record.frame.includes(record.blank)) throw new Error('P10 record provenance/shape mismatch: ' + record.id);
+}
+const usagePayload = {
+  schema: 'thiepn-french-usage-pack-v1',
+  id: 'usage-stable-p10',
+  revision: usageSource.sourceBlob.slice(0, 12) + '-p10',
+  sourceRuntime: usageSource.sourceRuntime, sourcePhase: usageSource.sourcePhase,
+  sourceBlob: usageSource.sourceBlob, sources: usageSource.sources,
+  records: usageSource.records
+};
+const usageBytes = Buffer.from(JSON.stringify(usagePayload));
+await writeFile(resolve(USAGE_DIR, 'stable-usage.json'), usageBytes);
+packs.push({
+  id: usagePayload.id, kind: 'usage', level: 'A1-B2',
+  path: '/content/usage/stable-usage.json', count: usagePayload.records.length,
+  bytes: usageBytes.length, sha256: sha256(usageBytes), revision: usagePayload.revision
+});
+
 const manifest = {
   schema: 'thiepn-french-content-manifest-v1',
   revision: 'sakana-' + SOURCE_BLOB.slice(0, 12),
@@ -215,7 +251,8 @@ const manifest = {
     packs: packs.length,
     levels: Object.fromEntries([...byLevel.entries()].map(([level, rows]) => [level, rows.length])),
     readings: readingPayload.readings.length,
-    sentenceExercises: sentencePayload.exercises.length
+    sentenceExercises: sentencePayload.exercises.length,
+    verifiedUsagePatterns: usagePayload.records.length
   },
   packs
 };
@@ -235,5 +272,7 @@ console.log(JSON.stringify({
   readings: readingPayload.readings.length,
   readingBytes: readingBytes.length,
   sentenceExercises: sentencePayload.exercises.length,
-  sentenceBytes: sentenceBytes.length
+  sentenceBytes: sentenceBytes.length,
+  verifiedUsagePatterns: usagePayload.records.length,
+  usageBytes: usageBytes.length
 }, null, 2));
