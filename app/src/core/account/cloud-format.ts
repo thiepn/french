@@ -94,6 +94,15 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
     const entry=obj(modes[name]);
     if(Number(entry.index)>0||Number(entry.support)>0)return true;
   }
+  // P37I-C2 source-frame practice is meta-only until evidence is recorded.
+  // It must block silent cloud adoption exactly like C1 writing progress.
+  const usage=obj(at(payload,'meta','native-usage-v1'));
+  if(Array.isArray(usage.history)&&usage.history.length>0)return true;
+  const usageModes=obj(usage.modes);
+  for(const name of ['usage','production','transfer','repair']){
+    const entry=obj(usageModes[name]);
+    if(Number(entry.index)>0||Number(entry.support)>0)return true;
+  }
   if(payload.stores.session?.length>0)return true;
   return false;
 }
