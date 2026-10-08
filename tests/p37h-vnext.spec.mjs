@@ -46,10 +46,16 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
   await page.goto('/#conversation');
   await expect(page.getByRole('heading',{name:'Real-world missions'})).toBeVisible();
   await page.getByRole('button',{name:/A1 Morning in town/}).click();
-  const responses=[
-    ['Bonjour madame','Je voudrais un croissant, s’il vous plaît.','Combien ça coûte ?'],
-    ['Je voudrais un café, s’il vous plaît.','Sur place, merci.','L’addition, s’il vous plaît.'],
-    ['À quelle heure le magasin ouvre ?','Donc, à neuf heures, c’est bien ça ?','Merci beaucoup pour votre aide.']
+  const turns=[
+    [{goal:'Greet the seller.',answer:'Bonjour madame'},
+     {goal:'Ask for a croissant.',answer:'Je voudrais un croissant, s’il vous plaît.'},
+     {goal:'Ask how much it costs.',answer:'Combien ça coûte ?'}],
+    [{goal:'Order a coffee or tea.',answer:'Je voudrais un café, s’il vous plaît.'},
+     {goal:'Say that you will drink it here.',answer:'Sur place, merci.'},
+     {goal:'Ask for the bill.',answer:'L’addition, s’il vous plaît.'}],
+    [{goal:'Ask what time the shop opens.',answer:'À quelle heure le magasin ouvre ?'},
+     {goal:'Confirm the opening time is nine.',answer:'Donc, à neuf heures, c’est bien ça ?'},
+     {goal:'Thank the seller.',answer:'Merci beaucoup pour votre aide.'}]
   ];
   for(let task=0;task<3;task++){
     await expect(page.getByText('Mission '+(task+1)+' of 3')).toBeVisible();
@@ -59,11 +65,13 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
       await page.reload();
       await expect(page.getByText('Mission 2 of 3')).toBeVisible();
     }
-    for(const response of responses[task]){
-      await page.getByRole('textbox',{name:'Your French response'}).fill(response);
+    for(let turn=0;turn<3;turn++){
+      await expect(page.getByText(turns[task][turn].goal,{exact:true})).toBeVisible();
+      await page.getByRole('textbox',{name:'Your French response'}).fill(turns[task][turn].answer);
       await page.getByRole('button',{name:'Send response'}).click();
-      await expect(page.getByRole('textbox',{name:'Your French response'}).or(page.getByRole('heading',{name:'Mission complete'}))).toBeVisible();
+      if(turn<2)await expect(page.getByText(turns[task][turn+1].goal,{exact:true})).toBeVisible();
     }
+    if(task<2)await expect(page.getByText('Mission '+(task+2)+' of 3')).toBeVisible();
   }
   await expect(page.getByRole('heading',{name:'Mission complete'})).toBeVisible();
   await expect(page.getByText('Morning in town · Independence pass')).toBeVisible();
