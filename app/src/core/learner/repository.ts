@@ -824,7 +824,10 @@ export interface PracticeEvidenceInput{
   paceRatio?:number;
 }
 
-export async function recordPracticeEvidence(input:PracticeEvidenceInput,timestamp=Date.now()):Promise<CanonicalReviewEventV1>{
+export async function recordPracticeEvidence(
+  input:PracticeEvidenceInput,timestamp=Date.now(),
+  metaUpdate?:{key:string;value:unknown}
+):Promise<CanonicalReviewEventV1>{
   const learner=await ensureCanonicalLearnerState(timestamp);
   const id=input.id??(input.noteId+'::d31:0:'+input.skill);
   const source=await readSrsById(id);
@@ -885,6 +888,12 @@ export async function recordPracticeEvidence(input:PracticeEvidenceInput,timesta
       tx.objectStore('learner').put(updated,'state-v1');
       tx.objectStore('activity').put(event,event.eventId);
       const meta=tx.objectStore('meta');
+      // C3: write usage progress in the same IDB transaction as its activity.
+      // A failure aborts both; duplicate phantom usage attempts are avoided.
+      if(metaUpdate){
+        if(metaUpdate.key!=='native-usage-v1')throw Error('INVALID_PRACTICE_META_KEY');
+        meta.put(metaUpdate.value,metaUpdate.key);
+      }
       const summaryRequest=meta.get('learner-summary');
       summaryRequest.onsuccess=()=>{
         const current=object(summaryRequest.result);
