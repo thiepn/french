@@ -1,21 +1,23 @@
 import {getConversationScenario,type ConversationTurn} from './scenarios.ts';
 import {getMission} from './missions.ts';
+import {nextWordingVariant,type WordingVariant} from './variants.ts';
 import {
   chooseAdaptiveQueue,evidenceCredit,type FunctionEvidence,type ConversationLevel
 } from './curriculum.ts';
 
 export interface TurnEvidence{
   index:number;functionId:string;independent:boolean;manual:boolean;
-  support:number;attempts:number;matched:number;at:number;
+  support:number;attempts:number;matched:number;at:number;repairMoves?:number;
 }
 export interface ConversationActive{
   scenarioId:string;startedAt:number;updatedAt:number;cursor:number;
   support:0|1|2;attempts:number;turns:TurnEvidence[];
+  variant?:WordingVariant;repairMoves?:number;
 }
 export interface ConversationResult{
   scenarioId:string;completedAt:number;totalTurns:number;independentTurns:number;
   manualTurns:number;maxSupport:number;repairAttempts:number;
-  averageEvidence?:number;
+  averageEvidence?:number;variant?:WordingVariant;
 }
 export interface MissionActive{
   missionId:string;step:number;startedAt:number;updatedAt:number;
@@ -57,27 +59,28 @@ export function evaluateConversationTurn(turn:ConversationTurn,response:string):
   })).length;
   return{accepted:matched===turn.slots.length&&normalizeFrench(response).length>=2,matched,total:turn.slots.length};
 }
-function activeFor(scenarioId:string,now:number):ConversationActive{
-  return{scenarioId,startedAt:now,updatedAt:now,cursor:0,support:0,attempts:0,turns:[]};
+function activeFor(scenarioId:string,now:number,history:readonly ConversationResult[]):ConversationActive{
+  return{scenarioId,startedAt:now,updatedAt:now,cursor:0,support:0,attempts:0,
+    variant:nextWordingVariant(scenarioId,history),repairMoves:0,turns:[]};
 }
 export function startConversation(state:ConversationState,id:string,now=Date.now()):ConversationState{
   if(!getConversationScenario(id))throw new Error('UNKNOWN_CONVERSATION');
   if(state.active||state.mission||state.adaptive)throw new Error('CONVERSATION_ALREADY_ACTIVE');
-  return{...state,active:activeFor(id,now)};
+  return{...state,active:activeFor(id,now,state.history)};
 }
 export function beginMission(state:ConversationState,id:string,now=Date.now()):ConversationState{
   const mission=getMission(id);
   if(!mission)throw new Error('UNKNOWN_MISSION');
   if(state.active||state.mission||state.adaptive)throw new Error('CONVERSATION_ALREADY_ACTIVE');
   return{...state,mission:{missionId:id,step:0,startedAt:now,updatedAt:now,completed:[]},
-    active:activeFor(mission.scenarioIds[0],now)};
+    active:activeFor(mission.scenarioIds[0],now,state.history)};
 }
 export function beginAdaptiveSet(state:ConversationState,now=Date.now()):ConversationState{
   if(state.active||state.mission||state.adaptive)throw new Error('CONVERSATION_ALREADY_ACTIVE');
   const queue=chooseAdaptiveQueue(state.functionEvents,state.history,state.levelCeiling,now);
   const focus=[...new Set(queue.flatMap(id=>getConversationScenario(id)?.turns.map(row=>row.functionId)??[]))];
   return{...state,adaptive:{queue,step:0,startedAt:now,updatedAt:now,completed:[],focus},
-    active:activeFor(queue[0],now)};
+    active:activeFor(queue[0],now,state.history)};
 }
 export function changeConversationCeiling(state:ConversationState,level:ConversationLevel):ConversationState{
   if(!['A1','A2','B1'].includes(level))throw new Error('INVALID_LEVEL');
@@ -91,14 +94,28 @@ export function raiseConversationSupport(state:ConversationState,level:1|2,now=D
   if(!state.active)throw new Error('NO_ACTIVE_CONVERSATION');
   return{...state,active:{...state.active,updatedAt:now,support:Math.max(state.active.support,level) as 1|2}};
 }
+// A repeat request changes the learner's support/attempt evidence, but never
+// advances the script or awards a correct answer. No text/audio is persisted.
+export function requestConversationRepeat(state:ConversationState,now=Date.now()):ConversationState{
+  const active=state.active;if(!active)throw new Error('NO_ACTIVE_CONVERSATION');
+  const scene=getConversationScenario(active.scenarioId),turn=scene?.turns[active.cursor];
+  if(!scene||!turn)throw new Error('INVALID_CONVERSATION_CURSOR');
+  const attempts=Math.min(100,active.attempts+1);
+  const repairs=Math.min(100,(active.repairMoves??0)+1);
+  const support=Math.max(1,active.support) as 1|2;
+  const event=compactFunctionEvidence(scene.id,scene.level,active.cursor,turn.functionId,now,
+    {matched:0,total:turn.slots.length},false,false,support,attempts,active.variant??0,true);
+  return{...state,functionEvents:addEvidence(state,event),
+    active:{...active,updatedAt:now,attempts,support,repairMoves:repairs}};
+}
 export type SubmitResult={state:ConversationState;accepted:boolean;finished:boolean;matched:number;total:number};
 // Raw learner text is never part of the persisted function evidence.
 function compactFunctionEvidence(sceneId:string,level:ConversationLevel,index:number,functionId:string,
   at:number,check:{matched:number;total:number},accepted:boolean,manual:boolean,
-  support:number,retries:number):FunctionEvidence{
+  support:number,retries:number,variant:WordingVariant,repair=false):FunctionEvidence{
   const independent=accepted&&!manual&&support===0&&retries===0;
   return{scenarioId:sceneId,level,functionId,turnIndex:index,at,accepted,manual,independent,
-    support,retries,matched:check.matched,required:check.total,
+    support,retries,matched:check.matched,required:check.total,variant,repair,
     credit:evidenceCredit(manual,support,retries,accepted)};
 }
 function addEvidence(state:ConversationState,row:FunctionEvidence):FunctionEvidence[]{
@@ -129,22 +146,23 @@ export function submitConversationResponse(state:ConversationState,response:stri
   if(!manual&&!check.accepted){
     const nextAttempts=Math.min(100,active.attempts+1);
     const evidence=compactFunctionEvidence(scene.id,scene.level,active.cursor,turn.functionId,
-      now,check,false,false,active.support,nextAttempts);
+      now,check,false,false,active.support,nextAttempts,active.variant??0);
     return{state:{...state,functionEvents:addEvidence(state,evidence),
       active:{...active,updatedAt:now,attempts:nextAttempts}},
       accepted:false,finished:false,matched:check.matched,total:check.total};
   }
   const result:TurnEvidence={
     index:active.cursor,functionId:turn.functionId,independent:!manual&&active.support===0&&active.attempts===0,
-    manual,support:active.support,attempts:active.attempts,matched:manual?0:check.matched,at:now
+    manual,support:active.support,attempts:active.attempts,
+    repairMoves:active.repairMoves??0,matched:manual?0:check.matched,at:now
   };
   const turns=[...active.turns,result],cursor=active.cursor+1;
   const evidence=compactFunctionEvidence(scene.id,scene.level,active.cursor,turn.functionId,
-    now,check,true,manual,active.support,active.attempts);
+    now,check,true,manual,active.support,active.attempts,active.variant??0);
   const functionEvents=addEvidence(state,evidence);
   if(cursor<scene.turns.length){
     return{state:{...state,functionEvents,
-      active:{...active,cursor,turns,attempts:0,support:0,updatedAt:now}},
+      active:{...active,cursor,turns,attempts:0,support:0,repairMoves:0,updatedAt:now}},
       accepted:true,finished:false,matched:check.matched,total:check.total};
   }
   const completed:ConversationResult={
@@ -154,7 +172,8 @@ export function submitConversationResponse(state:ConversationState,response:stri
     maxSupport:Math.max(0,...turns.map(row=>row.support)),
     repairAttempts:turns.reduce((sum,row)=>sum+row.attempts,0),
     averageEvidence:turns.reduce((sum,row)=>sum+
-      evidenceCredit(row.manual,row.support,row.attempts,true),0)/turns.length
+      evidenceCredit(row.manual,row.support,row.attempts,true),0)/turns.length,
+    variant:active.variant??0
   };
   const history=[completed,...state.history].slice(0,120);
   if(state.adaptive){
@@ -163,7 +182,7 @@ export function submitConversationResponse(state:ConversationState,response:stri
     if(step<adaptive.queue.length)
       return{state:{...state,functionEvents,history,
         adaptive:{...adaptive,step,updatedAt:now,completed:completedTasks},
-        active:activeFor(adaptive.queue[step],now)},
+        active:activeFor(adaptive.queue[step],now,history)},
         accepted:true,finished:true,matched:check.matched,total:check.total};
     const totalTurns=completedTasks.reduce((n,row)=>n+row.totalTurns,0);
     const independentTurns=completedTasks.reduce((n,row)=>n+row.independentTurns,0);
@@ -183,7 +202,7 @@ export function submitConversationResponse(state:ConversationState,response:stri
   const step=mission.step+1;
   if(step<definition.scenarioIds.length){
     return{state:{...state,functionEvents,history,mission:{...mission,step,updatedAt:now,completed:finishedTasks},
-      active:activeFor(definition.scenarioIds[step],now)},accepted:true,finished:true,matched:check.matched,total:check.total};
+      active:activeFor(definition.scenarioIds[step],now,history)},accepted:true,finished:true,matched:check.matched,total:check.total};
   }
   const missionResult=completeMission(mission,finishedTasks,now);
   return{state:{...state,functionEvents,history,active:null,mission:null,
@@ -198,7 +217,12 @@ export function safeConversationState(raw:unknown):ConversationState{
     .filter(row=>row&&getConversationScenario(row.scenarioId)).slice(0,120);
   const candidate=value.active,scene=candidate&&getConversationScenario(candidate.scenarioId);
   const active=scene&&Number.isInteger(candidate?.cursor)&&candidate.cursor>=0&&candidate.cursor<scene.turns.length
-    &&Array.isArray(candidate.turns)&&candidate.turns.length===candidate.cursor?candidate:null;
+    &&Array.isArray(candidate.turns)&&candidate.turns.length===candidate.cursor&&
+    (candidate.variant===undefined||candidate.variant===0||candidate.variant===1)
+    ?{...candidate,variant:candidate.variant??0,
+      repairMoves:Number.isInteger(candidate.repairMoves)&&
+        (candidate.repairMoves??0)>=0&&(candidate.repairMoves??0)<=100
+          ?candidate.repairMoves:0}:null;
   const m=value.mission,definition=m&&getMission(m.missionId);
   // If a stored mission and its in-progress scenario disagree, keep the scene
   // but do not invent missing completed tasks or silently award a mission pass.
@@ -227,6 +251,10 @@ export function safeConversationState(raw:unknown):ConversationState{
         row.turnIndex>=scenario.turns.length)return false;
       const turn=scenario.turns[row.turnIndex];
       if(row.functionId!==turn.functionId||row.level!==scenario.level)return false;
+      if(row.variant!==undefined&&row.variant!==0&&row.variant!==1)return false;
+      if(row.repair!==undefined&&typeof row.repair!=='boolean')return false;
+      if(row.repair&&(row.accepted||row.manual||row.independent||row.credit!==0||row.matched!==0))
+        return false;
       if(!Number.isFinite(row.at)||row.at<0||
         typeof row.accepted!=='boolean'||typeof row.manual!=='boolean'||
         typeof row.independent!=='boolean')return false;

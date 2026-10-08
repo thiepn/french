@@ -38,7 +38,7 @@ export interface FunctionEvidence{
   at:number;level:ConversationLevel;
   accepted:boolean;manual:boolean;independent:boolean;
   support:number;retries:number;matched:number;required:number;
-  credit:number;
+  credit:number;variant?:0|1;repair?:boolean;
 }
 export interface FunctionProfile{
   id:string;label:string;group:FunctionGroup;
@@ -80,6 +80,10 @@ export function functionProfiles(events:readonly FunctionEvidence[]):FunctionPro
     const successful=rows.filter(row=>row.accepted&&!row.manual);
     const independentSuccesses=successful.filter(row=>row.independent).length;
     const contexts=new Set(successful.map(row=>row.scenarioId)).size;
+    const successfulIndependentVariants=new Set(successful.filter(row=>row.independent)
+      .map(row=>String(row.scenarioId)+':'+String(row.variant??0))).size;
+    const coveredVariants=new Set(successful.filter(row=>row.independent)
+      .map(row=>row.variant??0)).size;
     const days=new Set(successful.map(row=>new Date(row.at).toISOString().slice(0,10))).size;
     const quality=successful.length?successful.reduce((n,row)=>n+Math.max(0,Math.min(1,row.credit)),0)/successful.length:0;
     // No "secure" from one day or one script. One-scene functions remain
@@ -95,7 +99,8 @@ export function functionProfiles(events:readonly FunctionEvidence[]):FunctionPro
     const strength=quality*independence*reliability*confidence*
       Math.min(1,independentSuccesses/3);
     const state:FunctionProfile['state']=rows.length===0?'unseen'
-      :strength>=.72&&confidence>=.78&&days>=3&&independentSuccesses>=3&&contexts>=2&&availableContexts>=2?'secure'
+      :strength>=.72&&confidence>=.78&&days>=3&&independentSuccesses>=3&&(availableContexts>=2?contexts>=2:
+        coveredVariants>=2&&successfulIndependentVariants>=2)?'secure'
       :strength>=.47&&independentSuccesses>=2&&days>=2?'functional'
       :strength>=.20&&independentSuccesses>=1?'developing':'emerging';
     return{id:fn.id,label:fn.label,group:fn.group,attempts:rows.length,
