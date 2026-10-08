@@ -1,6 +1,6 @@
 import './write.css';
 import type {RouteContext} from '../core/types';
-import {loadStableSentenceExercises,type SentenceExercise} from '../core/content/loader';
+import {loadStableSentenceExercises,loadStableUsageCorpus} from '../core/content/loader';
 import {diagnoseSentence,type SentenceDiagnosis} from '../core/content/sentence-diagnosis';
 import {recordPracticeEvidence} from '../core/learner/repository';
 import {
@@ -8,6 +8,11 @@ import {
   writingExercises,type WritingMode,type WritingState,type WritingAttempt
 } from '../core/writing/session';
 import {loadWritingState,saveWritingState} from '../core/writing/storage';
+import {
+  USAGE_MODES,currentUsageRecord,repairCandidates,revealUsageSupport,completeUsageAttempt,
+  diagnoseUsage,usageCue,safeUsageState,type UsageMode,type UsageState,type UsageDiagnosis,type UsageOutcome
+} from '../core/usage/session';
+import {loadUsageState,saveUsageState} from '../core/usage/storage';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
   const e=document.createElement(tag);if(content)e.textContent=content;if(className)e.className=className;return e;
@@ -25,17 +30,157 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const host=element('section','','page write-workspace');
   host.append(element('p','ACTIVE PRODUCTION','eyebrow'),element('h1','Write'),
     element('p','Produce French from a prompt, inspect deterministic feedback, and decide whether the answer needs more practice. This does not change scheduled SRS.','lede'));
+  const switcher=element('div','','write-switcher');
+  switcher.setAttribute('role','group');switcher.setAttribute('aria-label','Writing workspaces');
   const tabs=element('div','','write-modes');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Writing practice track');
   const message=element('p','Loading sentence exercises…','inline-status');message.setAttribute('aria-live','polite');
   const stage=element('div','','write-stage');
-  host.append(tabs,message,stage);main.replaceChildren(host);
+  host.append(switcher,tabs,message,stage);main.replaceChildren(host);
 
-  const [pack,stateValue]=await Promise.all([loadStableSentenceExercises(signal),loadWritingState()]);
+  const [pack,stateValue,usagePack,usageSaved]=await Promise.all([
+    loadStableSentenceExercises(signal),loadWritingState(),loadStableUsageCorpus(signal),loadUsageState()
+  ]);
   if(signal.aborted)return;
   let state:WritingState=stateValue,mode:WritingMode='phrase',busy=false,started=performance.now();
+  let family:'writing'|'usage'='writing',usageMode:UsageMode='usage';
+  let usageState:UsageState=safeUsageState(usageSaved,usagePack),usageStarted=performance.now();
   const save=async(next:WritingState)=>{await saveWritingState(next);state=next;};
+
+  const drawUsage=()=>{
+    const titles:Record<UsageMode,string>={
+      usage:'Verified usage',production:'Active phrase production',
+      transfer:'Phrase transfer',repair:'Repair previous errors'
+    };
+    tabs.replaceChildren();
+    for(const name of USAGE_MODES){
+      const count=name==='repair'?repairCandidates(usagePack,usageState).length:usagePack.records.length;
+      const label=name==='usage'?'Usage':name==='production'?'Produce':name==='transfer'?'Transfer':'Repair ('+count+')';
+      const btn=control(label,'write-tab'+(usageMode===name?' is-active':''));
+      btn.setAttribute('aria-pressed',String(usageMode===name));
+      btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
+      tabs.append(btn);
+    }
+    const rows=usageMode==='repair'?repairCandidates(usagePack,usageState):usagePack.records;
+    const record=currentUsageRecord(usagePack,usageState,usageMode);
+    stage.replaceChildren();
+    if(!record){
+      message.textContent='No phrase errors need repair. Practice usage or production first.';
+      stage.append(element('p','Your repair queue is empty.','write-note'));
+      return;
+    }
+    const completed=usageState.history.filter(row=>row.mode===usageMode).length;
+    message.textContent=rows.length+' source-tagged P10 frames · '+completed+' recorded attempts · practice-only';
+    const heading=element('div','','write-heading');
+    heading.append(element('p','P10 / P11 · '+record.kind,'write-context'),
+      element('h2',titles[usageMode]),
+      element('p','Answer from memory; different valid French phrases are not automatically treated as mistakes. This practice never reschedules vocabulary cards.','write-note'));
+    const progress=element('div','','write-progress');
+    progress.append(element('strong','Frame '+((usageState.modes[usageMode].index%rows.length)+1)+' / '+rows.length),
+      element('small','Record '+record.id+' · '+completed+' attempts'));
+    const task=element('article','','write-task');
+    task.append(element('p','SOURCE-FRAME TASK','write-label'),element('p',usageCue(record,usageMode),'write-prompt'));
+    const form=element('form','','write-form');
+    const input=element('textarea','','write-answer');
+    input.setAttribute('aria-label','Your French usage or phrase answer');
+    input.rows=usageMode==='usage'?2:3;input.maxLength=400;input.spellcheck=true;
+    input.placeholder=usageMode==='usage'?'Write the missing French element…':'Write the complete French frame…';
+    const actions=element('div','','write-actions');
+    const check=control('Check phrase','primary-action compact-action');check.type='submit';
+    const hint=control('Show cue');const reference=control('Show verified frame');
+    actions.append(check,hint,reference);form.append(input,actions);
+    const support=element('p','','write-support');
+    const showSupport=()=>{
+      const level=usageState.modes[usageMode].support;
+      support.textContent=level===2?'Verified frame · '+record.frame:
+        level===1?'Hint · '+record.kind+'; anchor '+record.anchor:'';
+    };
+    showSupport();
+    const feedback=element('div','','write-feedback');feedback.setAttribute('role','status');
+    const decision=element('div','','write-assess');
+    decision.setAttribute('aria-label','Save usage practice result');
+    task.append(form,support,feedback,decision);
+    const source=usagePack.sources[record.sourceKey];
+    if(source?.url){
+      const attribution=element('p','','write-source');
+      attribution.append(document.createTextNode('P35 provenance · '));
+      const link=element('a',source.label);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';
+      attribution.append(link);task.append(attribution);
+    }
+    stage.append(heading,progress,task);
+    let diagnosis:UsageDiagnosis|null=null,submitted='';
+    const setSupport=async(level:1|2)=>{
+      if(busy)return;busy=true;
+      try{usageState=revealUsageSupport(usageState,usageMode,level);await saveUsageState(usageState);showSupport();}
+      catch(error){feedback.textContent='Could not persist the hint. Try again.';console.error(error);}
+      finally{busy=false;}
+    };
+    hint.onclick=()=>void setSupport(1);
+    reference.onclick=()=>void setSupport(2);
+    const persist=async(outcome:UsageOutcome)=>{
+      if(busy||!diagnosis)return;
+      busy=true;decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=true);
+      try{
+        await recordPracticeEvidence({
+          noteId:'usage:'+record.id,skill:'production',practice:'verified-usage-'+usageMode,
+          direction:'en-fr',typed:true,correct:outcome==='matched',
+          typedQuality:outcome==='matched'?'exact':outcome==='self-assessed'?'manual-self-assessed':'review',
+          responseMs:Math.max(0,Math.round(performance.now()-usageStarted)),
+          supportLevel:usageState.modes[usageMode].support,errorCategory:diagnosis.code,
+          theme:record.kind,manualJudgment:outcome
+        });
+      }catch(error){
+        busy=false;decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
+        feedback.textContent='Practice evidence was not saved; retry the save.';
+        console.error(error);return;
+      }
+      try{
+        const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code);
+        await saveUsageState(next);usageState=next;usageStarted=performance.now();draw();
+      }catch(error){
+        // The activity event may already be committed. Do not allow duplicate submission.
+        feedback.textContent='Evidence was saved but the next frame could not open. Reload before continuing.';
+        console.error(error);
+      }finally{busy=false;}
+    };
+    form.addEventListener('submit',event=>{
+      event.preventDefault();if(busy)return;
+      submitted=input.value.trim();
+      if(!submitted){feedback.textContent='Write an answer before checking.';return;}
+      diagnosis=diagnoseUsage(submitted,record,usageMode,usagePack.records);
+      feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail),
+        element('p','Verified reference · '+(usageMode==='usage'?record.blank:record.frame),'write-reference'));
+      decision.replaceChildren();
+      if(diagnosis.correct){
+        const matched=control('Save exact & next','primary-action compact-action');
+        matched.onclick=()=>void persist('matched');decision.append(matched);
+      }else{
+        const manual=control('Mark as self-assessed','primary-action compact-action');
+        manual.onclick=()=>void persist('self-assessed');decision.append(manual);
+      }
+      const missed=control('Needs practice & next');
+      missed.onclick=()=>void persist('needs-practice');
+      const retry=control('Edit answer');
+      retry.onclick=()=>{diagnosis=null;decision.replaceChildren();feedback.textContent='Edit and recheck to continue.';input.focus();};
+      decision.append(missed,retry);
+    });
+    input.addEventListener('input',()=>{
+      if(diagnosis&&input.value.trim()!==submitted){
+        diagnosis=null;decision.replaceChildren();feedback.textContent='Answer changed. Recheck before saving.';
+      }
+    });
+    input.focus({preventScroll:true});
+  };
   const draw=()=>{
     if(signal.aborted)return;
+    switcher.replaceChildren();
+    for(const choice of ['writing','usage'] as const){
+      const btn=control(choice==='writing'?'Sentence writing (P12)':'Usage & phrase transfer (P10/P11)',
+        'write-switch'+(family===choice?' is-active':''));
+      btn.setAttribute('aria-pressed',String(family===choice));
+      btn.onclick=()=>{if(busy)return;family=choice;started=performance.now();usageStarted=performance.now();draw();};
+      switcher.append(btn);
+    }
+    if(family==='usage'){drawUsage();return;}
     tabs.replaceChildren();
     for(const name of WRITING_MODES){
       const btn=control(name==='phrase'?'Phrases':name==='sentence'?'Sentences':'Transfer','write-tab'+(mode===name?' is-active':''));
