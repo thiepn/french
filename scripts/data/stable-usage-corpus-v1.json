@@ -1,0 +1,633 @@
+{
+  "schema": "thiepn-french-stable-usage-source-v1",
+  "sourceRuntime": "5.24.0/P35",
+  "sourcePhase": "P10/v5.1.0 and P11/v5.2.0",
+  "sourceBlob": "8a354063b20421ad53b3417b3f677adc926f3cb5",
+  "sourceNote": "67 rows extracted verbatim from P35 V510_CORPUS_ROWS; provenance labels are inherited claims, not newly re-verified external pages.",
+  "count": 67,
+  "sources": {
+    "tex": {
+      "label": "Tex's French Grammar · UT Austin",
+      "url": "https://laits.utexas.edu/tex/gr/pre4.html",
+      "tier": "verified"
+    },
+    "lawlessA": {
+      "label": "Progress with Lawless French · à + infinitive",
+      "url": "https://progress.lawlessfrench.com/learn/theme/3603304",
+      "tier": "verified"
+    },
+    "lawlessDe": {
+      "label": "Progress with Lawless French · de + infinitive",
+      "url": "https://progress.lawlessfrench.com/learn/theme/3744352",
+      "tier": "verified"
+    },
+    "lawlessBoth": {
+      "label": "Progress with Lawless French · à + object + de",
+      "url": "https://progress.lawlessfrench.com/learn/theme/4050945",
+      "tier": "verified"
+    },
+    "lawlessIO": {
+      "label": "Progress with Lawless French · indirect objects",
+      "url": "https://progress.lawlessfrench.com/learn/theme/3907306",
+      "tier": "verified"
+    },
+    "acadAvoir": {
+      "label": "Dictionnaire de l'Académie française · avoir",
+      "url": "https://www.dictionnaire-academie.fr/article/A9A3461",
+      "tier": "verified"
+    },
+    "acadAttention": {
+      "label": "Dictionnaire de l'Académie française · attention",
+      "url": "https://www.dictionnaire-academie.fr/article/A9A3040",
+      "tier": "verified"
+    },
+    "acadCompte": {
+      "label": "Dictionnaire de l'Académie française · compte",
+      "url": "https://www.dictionnaire-academie.fr/article/A9C3317",
+      "tier": "verified"
+    },
+    "acadFaire": {
+      "label": "Dictionnaire de l'Académie française · faire",
+      "url": "https://www.dictionnaire-academie.fr/article/A9F0112",
+      "tier": "verified"
+    },
+    "acadPrendre": {
+      "label": "Dictionnaire de l'Académie française · prendre",
+      "url": "https://www.dictionnaire-academie.fr/article/A9P4070",
+      "tier": "verified"
+    },
+    "acadDecision": {
+      "label": "Dictionnaire de l'Académie française · décision",
+      "url": "https://www.dictionnaire-academie.fr/article/A7D0285",
+      "tier": "verified"
+    },
+    "acadPartie": {
+      "label": "Dictionnaire de l'Académie française · partie",
+      "url": "https://www.dictionnaire-academie.fr/article/A9P0783",
+      "tier": "verified"
+    },
+    "acadFin": {
+      "label": "Dictionnaire de l'Académie française · fin",
+      "url": "https://www.dictionnaire-academie.fr/article/A9F0804",
+      "tier": "verified"
+    },
+    "acadRdv": {
+      "label": "Dictionnaire de l'Académie française · rendez-vous",
+      "url": "https://www.dictionnaire-academie.fr/article/A9R1684",
+      "tier": "verified"
+    },
+    "acadQuestion": {
+      "label": "Dictionnaire de l'Académie française · poser",
+      "url": "https://www.dictionnaire-academie.fr/article/A9P3569",
+      "tier": "verified"
+    },
+    "acadChance": {
+      "label": "Dictionnaire de l'Académie française · chance",
+      "url": "https://www.dictionnaire-academie.fr/article/A9C1567",
+      "tier": "verified"
+    },
+    "legacy": {
+      "label": "French pre-P10 reference metadata",
+      "url": "",
+      "tier": "reference"
+    }
+  },
+  "records": [
+    {
+      "id": "p10-001",
+      "anchor": "apprendre",
+      "frame": "apprendre à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-002",
+      "anchor": "arriver",
+      "frame": "arriver à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-003",
+      "anchor": "chercher",
+      "frame": "chercher à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-004",
+      "anchor": "aider",
+      "frame": "aider quelqu’un à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-005",
+      "anchor": "encourager",
+      "frame": "encourager quelqu’un à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-006",
+      "anchor": "inviter",
+      "frame": "inviter quelqu’un à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-007",
+      "anchor": "penser",
+      "frame": "penser à + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessA",
+      "blank": "à"
+    },
+    {
+      "id": "p10-008",
+      "anchor": "servir",
+      "frame": "servir à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-009",
+      "anchor": "tenir",
+      "frame": "tenir à + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-010",
+      "anchor": "enseigner",
+      "frame": "enseigner à + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessA",
+      "blank": "à"
+    },
+    {
+      "id": "p10-011",
+      "anchor": "obliger",
+      "frame": "obliger quelqu’un à + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessA",
+      "blank": "à"
+    },
+    {
+      "id": "p10-012",
+      "anchor": "arrêter",
+      "frame": "arrêter de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessDe",
+      "blank": "de"
+    },
+    {
+      "id": "p10-013",
+      "anchor": "décider",
+      "frame": "décider de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-014",
+      "anchor": "essayer",
+      "frame": "essayer de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-015",
+      "anchor": "finir",
+      "frame": "finir de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-016",
+      "anchor": "oublier",
+      "frame": "oublier de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-017",
+      "anchor": "permettre",
+      "frame": "permettre à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-018",
+      "anchor": "promettre",
+      "frame": "promettre de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-019",
+      "anchor": "proposer",
+      "frame": "proposer de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-020",
+      "anchor": "refuser",
+      "frame": "refuser de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-021",
+      "anchor": "rêver",
+      "frame": "rêver de + infinitif",
+      "kind": "construction",
+      "sourceKey": "tex",
+      "blank": "de"
+    },
+    {
+      "id": "p10-022",
+      "anchor": "accepter",
+      "frame": "accepter de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessDe",
+      "blank": "de"
+    },
+    {
+      "id": "p10-023",
+      "anchor": "demander",
+      "frame": "demander à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-024",
+      "anchor": "parler",
+      "frame": "parler à quelqu’un de + nom / infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-025",
+      "anchor": "promettre",
+      "frame": "promettre à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-026",
+      "anchor": "refuser",
+      "frame": "refuser à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-027",
+      "anchor": "souhaiter",
+      "frame": "souhaiter à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-028",
+      "anchor": "pardonner",
+      "frame": "pardonner à quelqu’un de + infinitif",
+      "kind": "construction",
+      "sourceKey": "lawlessBoth",
+      "blank": "de"
+    },
+    {
+      "id": "p10-029",
+      "anchor": "expliquer",
+      "frame": "expliquer quelque chose à quelqu’un",
+      "kind": "valency",
+      "sourceKey": "lawlessIO",
+      "blank": "à"
+    },
+    {
+      "id": "p10-030",
+      "anchor": "montrer",
+      "frame": "montrer quelque chose à quelqu’un",
+      "kind": "valency",
+      "sourceKey": "lawlessIO",
+      "blank": "à"
+    },
+    {
+      "id": "p10-031",
+      "anchor": "manquer",
+      "frame": "manquer à quelqu’un",
+      "kind": "valency",
+      "sourceKey": "lawlessIO",
+      "blank": "à"
+    },
+    {
+      "id": "p10-032",
+      "anchor": "attention",
+      "frame": "faire attention à + nom",
+      "kind": "collocation",
+      "sourceKey": "acadAttention",
+      "blank": "à"
+    },
+    {
+      "id": "p10-033",
+      "anchor": "attention",
+      "frame": "faire attention à + infinitif",
+      "kind": "collocation",
+      "sourceKey": "acadAttention",
+      "blank": "à"
+    },
+    {
+      "id": "p10-034",
+      "anchor": "attention",
+      "frame": "faire attention de + infinitif",
+      "kind": "collocation",
+      "sourceKey": "acadAttention",
+      "blank": "de"
+    },
+    {
+      "id": "p10-035",
+      "anchor": "attention",
+      "frame": "prêter attention à + nom",
+      "kind": "collocation",
+      "sourceKey": "acadAttention",
+      "blank": "à"
+    },
+    {
+      "id": "p10-036",
+      "anchor": "tenir",
+      "frame": "tenir compte de + nom",
+      "kind": "collocation",
+      "sourceKey": "acadCompte",
+      "blank": "de"
+    },
+    {
+      "id": "p10-037",
+      "anchor": "raison",
+      "frame": "avoir raison",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "raison"
+    },
+    {
+      "id": "p10-038",
+      "anchor": "tort",
+      "frame": "avoir tort",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "tort"
+    },
+    {
+      "id": "p10-039",
+      "anchor": "faim",
+      "frame": "avoir faim",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "faim"
+    },
+    {
+      "id": "p10-040",
+      "anchor": "soif",
+      "frame": "avoir soif",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "soif"
+    },
+    {
+      "id": "p10-041",
+      "anchor": "chaud",
+      "frame": "avoir chaud",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "chaud"
+    },
+    {
+      "id": "p10-042",
+      "anchor": "froid",
+      "frame": "avoir froid",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "froid"
+    },
+    {
+      "id": "p10-043",
+      "anchor": "peur",
+      "frame": "avoir peur",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "peur"
+    },
+    {
+      "id": "p10-044",
+      "anchor": "envie",
+      "frame": "avoir envie",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "envie"
+    },
+    {
+      "id": "p10-045",
+      "anchor": "besoin",
+      "frame": "avoir besoin",
+      "kind": "fixed phrase",
+      "sourceKey": "acadAvoir",
+      "blank": "besoin"
+    },
+    {
+      "id": "p10-046",
+      "anchor": "soin",
+      "frame": "avoir soin de + nom",
+      "kind": "collocation",
+      "sourceKey": "acadAvoir",
+      "blank": "de"
+    },
+    {
+      "id": "p10-047",
+      "anchor": "mal",
+      "frame": "avoir mal à + nom",
+      "kind": "collocation",
+      "sourceKey": "acadAvoir",
+      "blank": "à"
+    },
+    {
+      "id": "p10-048",
+      "anchor": "mal",
+      "frame": "avoir du mal à + infinitif",
+      "kind": "collocation",
+      "sourceKey": "tex",
+      "blank": "à"
+    },
+    {
+      "id": "p10-049",
+      "anchor": "décision",
+      "frame": "prendre une décision",
+      "kind": "collocation",
+      "sourceKey": "acadDecision",
+      "blank": "décision"
+    },
+    {
+      "id": "p10-050",
+      "anchor": "note",
+      "frame": "prendre des notes",
+      "kind": "collocation",
+      "sourceKey": "acadPrendre",
+      "blank": "notes"
+    },
+    {
+      "id": "p10-051",
+      "anchor": "note",
+      "frame": "prendre note de + nom",
+      "kind": "collocation",
+      "sourceKey": "acadPrendre",
+      "blank": "de"
+    },
+    {
+      "id": "p10-052",
+      "anchor": "effort",
+      "frame": "faire un effort",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "effort"
+    },
+    {
+      "id": "p10-053",
+      "anchor": "progrès",
+      "frame": "faire des progrès",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "progrès"
+    },
+    {
+      "id": "p10-054",
+      "anchor": "promenade",
+      "frame": "faire une promenade",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "promenade"
+    },
+    {
+      "id": "p10-055",
+      "anchor": "ménage",
+      "frame": "faire le ménage",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "ménage"
+    },
+    {
+      "id": "p10-056",
+      "anchor": "plaisir",
+      "frame": "faire plaisir à quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "à"
+    },
+    {
+      "id": "p10-057",
+      "anchor": "mal",
+      "frame": "faire mal à quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "à"
+    },
+    {
+      "id": "p10-058",
+      "anchor": "peur",
+      "frame": "faire peur à quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "à"
+    },
+    {
+      "id": "p10-059",
+      "anchor": "appel",
+      "frame": "faire appel à quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "à"
+    },
+    {
+      "id": "p10-060",
+      "anchor": "face",
+      "frame": "faire face à + nom",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "à"
+    },
+    {
+      "id": "p10-061",
+      "anchor": "rêve",
+      "frame": "faire un rêve",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "rêve"
+    },
+    {
+      "id": "p10-062",
+      "anchor": "faute",
+      "frame": "faire une faute",
+      "kind": "collocation",
+      "sourceKey": "acadFaire",
+      "blank": "faute"
+    },
+    {
+      "id": "p10-063",
+      "anchor": "partie",
+      "frame": "faire partie de + nom",
+      "kind": "collocation",
+      "sourceKey": "acadPartie",
+      "blank": "de"
+    },
+    {
+      "id": "p10-064",
+      "anchor": "fin",
+      "frame": "mettre fin à + nom",
+      "kind": "collocation",
+      "sourceKey": "acadFin",
+      "blank": "à"
+    },
+    {
+      "id": "p10-065",
+      "anchor": "rendez-vous",
+      "frame": "prendre rendez-vous avec quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadRdv",
+      "blank": "avec"
+    },
+    {
+      "id": "p10-066",
+      "anchor": "question",
+      "frame": "poser une question à quelqu’un",
+      "kind": "collocation",
+      "sourceKey": "acadQuestion",
+      "blank": "à"
+    },
+    {
+      "id": "p10-067",
+      "anchor": "chance",
+      "frame": "avoir de la chance",
+      "kind": "fixed phrase",
+      "sourceKey": "acadChance",
+      "blank": "chance"
+    }
+  ]
+}
