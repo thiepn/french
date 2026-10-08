@@ -39,7 +39,7 @@ export const CONVERSATION_STARTERS:readonly ConversationScenario[]=[
   {id:'hotel',title:'Resolve a hotel problem',level:'A2',setting:'Your reserved room is not ready.',partner:'La réceptionniste',turns:[
     {partner:'Bonsoir, vous avez une réservation ?',goal:'Say you have a reservation.',functionId:'information',slots:[['reservation','reserve']],hint:'Tell the receptionist about your booking.',model:'Oui, j’ai une réservation pour ce soir.'},
     {partner:'Votre chambre n’est pas encore prête.',goal:'Ask when it will be ready.',functionId:'clarification',slots:[['quand','a quelle heure','combien de temps'],['chambre','prete']],hint:'Ask about when the room will be ready.',model:'Quand est-ce que la chambre sera prête ?'},
-    {partner:'Dans trente minutes.',goal:'Ask where you can leave your luggage.',functionId:'problem-solving',slots:[['bagage','valise'],['ou','deposer','laisser','garder']],hint:'Ask where to leave your luggage.',model:'Où puis-je laisser mes bagages ?'}
+    {partner:'Dans trente minutes.',goal:'Ask where you can leave your luggage.',functionId:'problem-solving',slots:[['bagage','bagages','valise','valises'],['ou','deposer','laisser','garder']],hint:'Ask where to leave your luggage.',model:'Où puis-je laisser mes bagages ?'}
   ]},
   {id:'classmate',title:'Meet a classmate',level:'A2',setting:'Introduce yourself before class.',partner:'Une camarade',turns:[
     {partner:'Salut ! Comment tu t’appelles ?',goal:'Introduce yourself.',functionId:'introduction',slots:[['je m appelle','moi c est','je suis']],hint:'Introduce yourself in French.',model:'Salut, je m’appelle Alex.'},
