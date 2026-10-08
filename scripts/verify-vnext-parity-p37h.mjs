@@ -52,6 +52,10 @@ const [usageSourceText,usageRouteEngine,usageStore,cloudFormat,usageTests]=await
   readFile(new URL('../app/src/core/account/cloud-format.ts',import.meta.url),'utf8'),
   readFile(new URL('./test-vnext-usage.mts',import.meta.url),'utf8')
 ]);
+const [masteryEngine,masteryTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/mastery.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-usage-mastery.mts',import.meta.url),'utf8')
+]);
 const usageSource=JSON.parse(usageSourceText);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
@@ -77,6 +81,21 @@ need(usageStore,'native-usage-v1','C2 metadata store');
 need(cloudFormat,"at(payload,'meta','native-usage-v1')",'C2 local-first first-sync protection');
 for(const token of ['noTypedTranscripts:true','p10-067','repairCandidates','sourceFrames:67'])
   need(usageTests,token,'C2 source and privacy test '+token);
+
+
+for(const term of ['USAGE_SECURE_ATTEMPTS=3','USAGE_SECURE_ACCURACY=.8','USAGE_REFRESH_DAYS=60',
+  'TRANSFER_SECURE_ATTEMPTS=2','TRANSFER_SECURE_ACCURACY=.8',
+  'rankUsageCandidates','usageRecordMastery','transferCueVariant','REPAIR_ERROR_DAYS=120'])
+  need(masteryEngine,term,'C3 mastery '+term);
+for(const term of ['accumulateUsageTally','tallies','variantMask','rankUsageCandidates','usageCue'])
+  need(usageRouteEngine,term,'C3 cumulative usage/phrase '+term);
+for(const term of ['usageAggregate','rankUsageCandidates','transferCueVariant','write-mastery-stat',
+  "metaUpdate"])
+  if(term==='metaUpdate')need(repository,term,'C3 atomic evidence');
+  else if(term==='write-mastery-stat')need(writingRoute,'write-mastery-stat','C3 mastery workspace');
+  else need(writingRoute,term,'C3 active workspace '+term);
+for(const term of ['cumulativeLedger:true','TRANSFER_SECURE_ATTEMPTS','rankUsageCandidates','variantMask'])
+  need(masteryTests,term,'C3 deterministic regression '+term);
 
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
