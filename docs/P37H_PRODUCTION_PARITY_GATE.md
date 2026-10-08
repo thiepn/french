@@ -54,3 +54,6 @@ P37H now runs an executable P35→vNext fixture test in every `qualify:vnext` ru
 - cloud hashes ignore only volatile `updatedAt` while still detecting substantive changes.
 
 This closes the code-level P35→vNext migration/parity blocker. Live account-token and physical-device acceptance remain separate release gates.
+
+
+P35-only compatibility state that does not belong in the new scheduler model—`mistakeLog`, `resumeSnapshot`, and `sessionHistory`—is retained losslessly in canonical feature state. It is therefore carried back into the top-level rollback-compatible cloud snapshot even though vNext does not interpret the old active-session format.

@@ -22,6 +22,9 @@ const payload={
     retrievability:.84,scheduledDays:12.5,fsrsState:'review'
   }],
   settings:{desiredRetention:.91},profile:{xp:88},studyPlan:{targetLevel:'B1'},studyDays:['2026-10-06','2026-10-07'],
+  mistakeLog:[{id:legacyId,issue:'accent'}],
+  resumeSnapshot:{cursor:4,queue:[legacyId]},
+  sessionHistory:[{endedAt:1_699_200_000_000,correct:8,total:10}],
   userCards:{custom1:{word:'salut'}},cardEdits:{bonjour:{meaning:'hello'}},smartDecks:{weak:{name:'Weak'}},customDecks:{travel:{name:'Travel'}},
   v550Reading:{history:{'read-a1-matin':{completedAt:123}}},
   v560Listening:{attempts:3},
@@ -39,6 +42,9 @@ assert.equal(canonical.learner.sourceFingerprint,'fixture-p35');
 assert.equal(canonical.learner.settings.desiredRetention,.91);
 assert.deepEqual(canonical.learner.studyDays,['2026-10-06','2026-10-07']);
 assert.deepEqual(canonical.learner.promotions,{A1:{earnedAt:111},A2:{earnedAt:222}});
+assert.deepEqual(canonical.learner.featureState.mistakeLog,payload.mistakeLog);
+assert.deepEqual(canonical.learner.featureState.resumeSnapshot,payload.resumeSnapshot);
+assert.deepEqual(canonical.learner.featureState.sessionHistory,payload.sessionHistory);
 assert.deepEqual(canonical.learner.featureState.v550Reading,payload.v550Reading);
 assert.deepEqual(canonical.learner.featureState.v560Listening,payload.v560Listening);
 assert.deepEqual(canonical.learner.featureState.v570Speaking,payload.v570Speaking);
@@ -79,6 +85,9 @@ assert.equal((cloud.progress as Record<string,any>)[legacyId].due,1_700_100_000_
 assert.equal((cloud.progress as Record<string,any>)[legacyId].lastReviewed,1_699_000_000_000);
 assert.deepEqual(cloud.settings,canonical.learner.settings);
 assert.deepEqual(cloud.userCards,canonical.userContent.userCards);
+assert.deepEqual(cloud.mistakeLog,payload.mistakeLog);
+assert.deepEqual(cloud.resumeSnapshot,payload.resumeSnapshot);
+assert.deepEqual(cloud.sessionHistory,payload.sessionHistory);
 assert.deepEqual(cloud.v550Reading,payload.v550Reading);
 assert.deepEqual(cloud._vnext?.payload,backup);
 assert.equal(snapshotHasMeaningfulState(cloud),true);
