@@ -127,7 +127,8 @@ export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):Usag
   // ledger so the 300-entry UI history limit never inflates mastery accuracy.
   const tallies:UsageState['tallies']={};
   const update=(attempt:UsageAttempt)=>{
-    const group=tallies[attempt.recordId]??{},prior=group[attempt.mode];
+    const group:Partial<Record<UsageMode,UsageTally>>=tallies[attempt.recordId]??{};
+    const prior=group[attempt.mode];
     group[attempt.mode]=accumulateUsageTally(prior,attempt);
     tallies[attempt.recordId]=group;
   };
