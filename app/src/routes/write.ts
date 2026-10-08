@@ -253,30 +253,29 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const record=async(outcome:WritingAttempt['outcome'])=>{
       if(busy||!diagnosis)return;
       busy=true;next.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=true);
-      const correct=outcome!=='needs-practice';
       const currentSupport=state.modes[mode].support;
+      // Only exact, independently produced answers receive objective credit.
+      // A revealed hint or human self-assessment is practice, not verified skill.
+      const correct=outcome==='matched'&&diagnosis.correct===true&&currentSupport===0;
       try{
+        const at=Date.now();
+        const updated=completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code,at);
+        // C4: save P12 cursor and practice evidence in one IDB transaction.
         await recordPracticeEvidence({
           noteId:'sentence:'+exercise.id,skill:'production',practice:'written-'+mode,
           direction:'en-fr',correct,typed:true,
-          typedQuality:outcome==='self-assessed'?'manual-self-assessed':diagnosis.quality,
+          typedQuality:correct?diagnosis.quality:
+            outcome==='self-assessed'?'manual-self-assessed':'review',
           responseMs:Math.max(0,Math.round(performance.now()-started)),
           supportLevel:currentSupport,errorCategory:diagnosis.code,
           sentenceExerciseId:exercise.id,sentenceDiagnosis:diagnosis.code,
           theme:exercise.context,manualJudgment:outcome
-        });
-      }catch(error){
-        busy=false;next.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
-        feedback.textContent='The result was not saved. Please try again.';console.error(error);return;
-      }
-      try{
-        await save(completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code));
+        },at,{key:'native-writing-v1',value:updated});
+        state=updated;
         started=performance.now();draw();
       }catch(error){
-        // The practice event may already be committed. Do not re-enable the
-        // submit controls and risk recording duplicate evidence.
-        feedback.textContent='Your practice event was saved, but the next prompt could not be opened. Reload the page before continuing.';
-        console.error(error);
+        next.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
+        feedback.textContent='The result was not committed. Please retry.';console.error(error);
       }finally{busy=false;}
     };
     form.addEventListener('submit',event=>{
@@ -289,7 +288,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         element('p','Reference · '+exercise.expected,'write-reference'));
       next.replaceChildren();
       if(diagnosis.correct===true){
-        const yes=control('Save correct & next','primary-action compact-action');
+        const yes=control(state.modes[mode].support?'Save supported & next':'Save correct & next','primary-action compact-action');
         yes.onclick=()=>void record('matched');next.append(yes);
       }else if(diagnosis.correct===null){
         const manual=control('Self-assess correct','primary-action compact-action');
