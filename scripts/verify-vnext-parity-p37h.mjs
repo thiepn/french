@@ -45,6 +45,14 @@ const [writingRoute,writingEngine]=await Promise.all([
   readFile(new URL('../app/src/routes/write.ts',import.meta.url),'utf8'),
   readFile(new URL('../app/src/core/writing/session.ts',import.meta.url),'utf8')
 ]);
+const [usageSourceText,usageRouteEngine,usageStore,cloudFormat,usageTests]=await Promise.all([
+  readFile(new URL('./data/stable-usage-corpus-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/usage/session.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/usage/storage.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/cloud-format.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-usage.mts',import.meta.url),'utf8')
+]);
+const usageSource=JSON.parse(usageSourceText);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
 if(release.fullP35FeatureParity!==false)failures.push('P35 feature parity was marked complete without the P37I sign-off');
@@ -52,6 +60,23 @@ if(!release.remainingCutoverBlockers?.includes('p35-feature-parity-signoff'))
   failures.push('P37I feature parity release gate is missing');
 const need=(source,token,label=token)=>{if(!source.includes(token))failures.push('missing '+label);};
 const reject=(source,token,label=token)=>{if(source.includes(token))failures.push('placeholder remains '+label);};
+
+if(usageSource.schema!=='thiepn-french-stable-usage-source-v1'||
+   usageSource.sourceBlob!=='8a354063b20421ad53b3417b3f677adc926f3cb5'||
+   usageSource.records?.length!==67||usageSource.count!==67) failures.push('incomplete P10 original verified source frames');
+for(const item of usageSource.records??[]){
+  if(!usageSource.sources?.[item.sourceKey]||!item.frame.includes(item.blank)||!/^p10-\\d{3}$/.test(item.id))
+    failures.push('invalid P10 provenance or frame '+item.id);
+}
+for(const token of ['loadStableUsageCorpus','Usage & phrase transfer (P10/P11)','Check phrase','recordPracticeEvidence','practiceOnly'])
+  if(token==='practiceOnly')need(repository,token,'C2 practice-only evidence contract');
+  else need(writingRoute,token,'P37I-C2 writing workspace '+token);
+for(const token of ['diagnoseUsage','safeUsageState','repairCandidates','completeUsageAttempt','mode===\'repair\'?0:old.index+1'])
+  need(usageRouteEngine,token,'P37I-C2 usage engine '+token);
+need(usageStore,'native-usage-v1','C2 metadata store');
+need(cloudFormat,"at(payload,'meta','native-usage-v1')",'C2 local-first first-sync protection');
+for(const token of ['noTypedTranscripts:true','p10-067','repairCandidates','sourceFrames:67'])
+  need(usageTests,token,'C2 source and privacy test '+token);
 
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
