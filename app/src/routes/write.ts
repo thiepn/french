@@ -13,6 +13,7 @@ import {
   diagnoseUsage,usageCue,safeUsageState,type UsageMode,type UsageState,type UsageDiagnosis,type UsageOutcome
 } from '../core/usage/session';
 import {loadUsageState,saveUsageState} from '../core/usage/storage';
+import {rankUsageCandidates,usageAggregate,transferCueVariant,usageRecordMastery} from '../core/usage/mastery';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
   const e=document.createElement(tag);if(content)e.textContent=content;if(className)e.className=className;return e;
@@ -53,32 +54,54 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     };
     tabs.replaceChildren();
     for(const name of USAGE_MODES){
-      const count=name==='repair'?repairCandidates(usagePack,usageState).length:usagePack.records.length;
+      const count=name==='repair'?repairCandidates(usagePack,usageState).length:
+        rankUsageCandidates(usagePack,usageState,name).length;
       const label=name==='usage'?'Usage':name==='production'?'Produce':name==='transfer'?'Transfer':'Repair ('+count+')';
       const btn=control(label,'write-tab'+(usageMode===name?' is-active':''));
       btn.setAttribute('aria-pressed',String(usageMode===name));
       btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
       tabs.append(btn);
     }
-    const rows=usageMode==='repair'?repairCandidates(usagePack,usageState):usagePack.records;
+    const ranked=rankUsageCandidates(usagePack,usageState,usageMode);
+    const rows=ranked.map(entry=>entry.record);
     const record=currentUsageRecord(usagePack,usageState,usageMode);
+    const overview=usageAggregate(usagePack,usageState);
     stage.replaceChildren();
     if(!record){
-      message.textContent='No phrase errors need repair. Practice usage or production first.';
-      stage.append(element('p','Your repair queue is empty.','write-note'));
+      message.textContent=overview.sourceFrames+' source-tagged P10 frames · '+overview.usageSecure+' usage-secure · '+overview.transferSecure+' transfer-secure';
+      const reason=usageMode==='repair'?'No unresolved phrase errors.':
+        usageMode==='production'?'Complete a verified usage attempt to unlock full-frame production.':
+        usageMode==='transfer'?'Transfer unlocks after two independent-source-frame practice attempts on the same construction.':
+        'No source frames are available.';
+      stage.append(element('p',reason,'write-note'));
       return;
     }
     const completed=usageState.history.filter(row=>row.mode===usageMode).length;
-    message.textContent=rows.length+' source-tagged P10 frames · '+completed+' recorded attempts · practice-only';
+    message.textContent=overview.sourceFrames+' source-tagged P10 frames · '+completed+
+      ' recorded '+usageMode+' attempts · '+rows.length+' eligible · practice-only';
+    const metrics=element('div','','write-mastery-overview');
+    for(const [label,value] of [
+      ['Usage secure',overview.usageSecure],['Transfer ready',overview.transferReady],
+      ['Transfer secure',overview.transferSecure],['Need refresh',overview.refresh],['Repair queue',overview.repair]
+    ] as const){
+      const item=element('div','','write-mastery-stat');
+      item.append(element('strong',String(value)),element('span',label));metrics.append(item);
+    }
+    stage.append(metrics);
+    const mastery=usageRecordMastery(record.id,usageState);
     const heading=element('div','','write-heading');
     heading.append(element('p','P10 / P11 · '+record.kind,'write-context'),
       element('h2',titles[usageMode]),
-      element('p','Answer from memory; different valid French phrases are not automatically treated as mistakes. This practice never reschedules vocabulary cards.','write-note'));
+      element('p','Original P35 threshold: usage 3 attempts at 80%, refresh after 60 days; transfer 2 at 80%. C3 requires independent exact answers and distinct structural cues. These are practice indicators, not CEFR certification.','write-note'));
     const progress=element('div','','write-progress');
     progress.append(element('strong','Frame '+((usageState.modes[usageMode].index%rows.length)+1)+' / '+rows.length),
-      element('small','Record '+record.id+' · '+completed+' attempts'));
+      element('small','Record '+record.id+' · '+mastery.usage.status+' usage · '+
+        (mastery.transfer.secure?'transfer secure':mastery.transfer.ready?'transfer ready':'transfer locked')));
+    const cueVariant=usageMode==='transfer'?transferCueVariant(usageState,record.id):0;
     const task=element('article','','write-task');
-    task.append(element('p','SOURCE-FRAME TASK','write-label'),element('p',usageCue(record,usageMode),'write-prompt'));
+    task.append(element('p','SOURCE-FRAME TASK · '+ranked.find(item=>item.record.id===record.id)?.reason,'write-label'),
+      element('p',usageCue(record,usageMode,cueVariant),'write-prompt'));
+    if(usageMode==='transfer')task.append(element('p','Structural cue '+(cueVariant+1)+' of 3 · exact-source-frame exercise, not unrestricted conversation.','write-note'));
     const form=element('form','','write-form');
     const input=element('textarea','','write-answer');
     input.setAttribute('aria-label','Your French usage or phrase answer');
@@ -120,26 +143,23 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       if(busy||!diagnosis)return;
       busy=true;decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=true);
       try{
+        const at=Date.now();
+        const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code,at,cueVariant);
+        // Atomic learner/activity/meta IDB transaction: no double-credited
+        // activity when a separate progress write would otherwise fail.
         await recordPracticeEvidence({
           noteId:'usage:'+record.id,skill:'production',practice:'verified-usage-'+usageMode,
-          direction:'en-fr',typed:true,correct:outcome==='matched',
-          typedQuality:outcome==='matched'?'exact':outcome==='self-assessed'?'manual-self-assessed':'review',
+          direction:'en-fr',typed:true,correct:outcome==='matched'&&usageState.modes[usageMode].support===0,
+          typedQuality:outcome==='matched'&&usageState.modes[usageMode].support===0?'exact':
+            outcome==='self-assessed'?'manual-self-assessed':'review',
           responseMs:Math.max(0,Math.round(performance.now()-usageStarted)),
           supportLevel:usageState.modes[usageMode].support,errorCategory:diagnosis.code,
           theme:record.kind,manualJudgment:outcome
-        });
+        },at,{key:'native-usage-v1',value:next});
+        usageState=next;usageStarted=performance.now();draw();
       }catch(error){
-        busy=false;decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
-        feedback.textContent='Practice evidence was not saved; retry the save.';
-        console.error(error);return;
-      }
-      try{
-        const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code);
-        await saveUsageState(next);usageState=next;usageStarted=performance.now();draw();
-      }catch(error){
-        // The activity event may already be committed. Do not allow duplicate submission.
-        feedback.textContent='Evidence was saved but the next frame could not open. Reload before continuing.';
-        console.error(error);
+        decision.querySelectorAll('button').forEach(node=>(node as HTMLButtonElement).disabled=false);
+        feedback.textContent='The practice result was not committed. Please retry.';console.error(error);
       }finally{busy=false;}
     };
     form.addEventListener('submit',event=>{
@@ -151,7 +171,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         element('p','Verified reference · '+(usageMode==='usage'?record.blank:record.frame),'write-reference'));
       decision.replaceChildren();
       if(diagnosis.correct){
-        const matched=control('Save exact & next','primary-action compact-action');
+        const matched=control(usageState.modes[usageMode].support?'Save supported & next':'Save exact & next',
+          'primary-action compact-action');
         matched.onclick=()=>void persist('matched');decision.append(matched);
       }else{
         const manual=control('Mark as self-assessed','primary-action compact-action');
