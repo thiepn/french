@@ -133,6 +133,16 @@ activeFresh.stores.session.push({key:'active',value:{cursor:2}});
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeFresh)),true,
   'unfinished study session must not be silently overwritten');
 
+const wireUnequal=structuredClone(emptyFresh);
+wireUnequal.stores.meta.push({
+  key:'learner-summary',
+  value:{currentLevel:undefined,dueCount:0,streakDays:0,migratedAt:new Date('2026-10-08T18:00:00Z')}
+});
+const withOptionalMetadata=backupPayloadToFrenchCloudSnapshot(wireUnequal);
+const jsonRoundTrip=JSON.parse(JSON.stringify(withOptionalMetadata)) as typeof withOptionalMetadata;
+assert.equal(await hashFrenchCloudSnapshot(withOptionalMetadata),await hashFrenchCloudSnapshot(jsonRoundTrip),
+  'local IndexedDB-only values cannot create a false cloud divergence after JSON transport');
+
 const same={...cloud,updatedAt:Number(cloud.updatedAt)+99_999};
 assert.equal(await hashFrenchCloudSnapshot(cloud),await hashFrenchCloudSnapshot(same));
 assert.notEqual(await hashFrenchCloudSnapshot(cloud),await hashFrenchCloudSnapshot({...cloud,profile:{xp:89}}));

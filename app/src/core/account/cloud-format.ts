@@ -96,6 +96,10 @@ function stable(value:unknown):string{
   return'{'+Object.keys(row).filter(key=>key!=='updatedAt').sort().map(key=>JSON.stringify(key)+':'+stable(row[key])).join(',')+'}';
 }
 export async function hashFrenchCloudSnapshot(snapshot:FrenchCloudSnapshot):Promise<string>{
-  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(stable(snapshot)));
+  // Compute identity from the same JSON representation the server receives.
+  // IndexedDB can store `undefined` properties and Dates; JSON transport drops
+  // or transforms them. Hashing the raw IDB object created false cloud conflicts.
+  const wire=JSON.parse(JSON.stringify(snapshot)) as FrenchCloudSnapshot;
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(stable(wire)));
   return[...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
 }
