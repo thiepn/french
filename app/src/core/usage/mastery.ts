@@ -75,7 +75,7 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const transfer:TransferMastery={...basis,ready,distinctVariants,
     secure:transferSecure,status:transferSecure?'secure':basis.attempts?'building':'unseen'};
   const sorted=[...own].sort((a,b)=>b.at-a.at);
-  const snapshot=Object.values(state.tallies?.[recordId]??{}).sort((a,b)=>b.lastAt-a.lastAt)[0];
+  const snapshot=Object.values(state.tallies?.[recordId]??{}).filter((row):row is UsageTally=>Boolean(row)).sort((a,b)=>b.lastAt-a.lastAt)[0];
   const latest=sorted[0];
   const lastIndependent=latest?independentExact(latest):snapshot?.lastIndependent??false;
   const lastOutcome=latest?.outcome??snapshot?.lastOutcome??'matched';
