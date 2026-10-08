@@ -39,10 +39,9 @@ function outcome(code:UsageCode):UsageDiagnosis{
   return{code,label,detail,correct:code==='exact',quality:code==='exact'?'exact':code==='orthography'?'close':'review'};
 }
 export function maskUsageFrame(record:UsageRecord):string{
-  // Match a complete lexical element, never a substring inside "décider" or "demander".
-  const escaped=record.blank.replace(/[.*+?^$\x7b\x7d()|[\]\\]/g,'\\  const start=record.frame.indexOf(record.blank);
-  if(start<0)throw Error('INVALID_VERIFIED_BLANK');
-  return record.frame.slice(0,start)+'_____ '+record.frame.slice(start+record.blank.length).trimStart();');
+  // Match the complete lexical item; substring replacement breaks décider/de and demander/de.
+  const special=new Set(['\\','^','$','.','*','+','?','(',')','[',']','{','}','|']);
+  const escaped=[...record.blank].map(c=>special.has(c)?'\\'+c:c).join('');
   const match=new RegExp('(?<![\\p{L}\\p{N}])'+escaped+'(?![\\p{L}\\p{N}])','iu').exec(record.frame);
   if(!match)throw Error('INVALID_VERIFIED_BLANK');
   return record.frame.slice(0,match.index)+'_____ '+record.frame.slice(match.index+match[0].length).trimStart();
