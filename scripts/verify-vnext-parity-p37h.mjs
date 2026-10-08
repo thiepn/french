@@ -42,6 +42,7 @@ for(const token of ['"count": 36','"p12-001"','"p12-036"','"type": "transfer"'])
 for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Needs your judgment','Target construction missing'])need(sentenceDiagnosis,token,'P12 diagnosis '+token);
 for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
+for(const token of ["params.has('state')","params.has('code')","params.has('error')","!location.hash&&!oauthReturn"])need(router,token,'preserved OAuth callback '+token);
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
 for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','bf2e7fca-98dd-4833-9fee-306ecd6fc7d7'])need(accountConfig,token,'Account config '+token);

@@ -13,6 +13,9 @@ export function mountFrenchAccountRuntime():()=>void{
       if(isFrenchOAuthCallback()){
         const user=await completeFrenchAccountCallback();
         if(user){location.replace(consumeFrenchAccountReturnTo());return;}
+        // Rejected or cancelled OAuth callbacks must also remove the
+        // authorization query from browser history and return to local study.
+        location.replace(consumeFrenchAccountReturnTo());return;
       }
       const user=await getVerifiedFrenchAccountUser();
       dispatchEvent(new CustomEvent('thiepn:french-account',{detail:user}));

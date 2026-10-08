@@ -192,7 +192,7 @@ test('sync requires deliberate adoption and preserves data across two devices', 
     await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
     await page.getByRole('button', { name: 'Sync now' }).click();
     await expect(page.getByText('This device is now synced to THIEPN Account.')).toBeVisible();
-    expect(api.cloud?.revision).toBe(2);
+    await expect.poll(() => api.cloud?.revision).toBe(2);
 
     const limit2 = page2.locator('input[name="dailyNewLimit"]');
     await limit2.fill('23');
@@ -201,7 +201,7 @@ test('sync requires deliberate adoption and preserves data across two devices', 
     await page2.getByRole('button', { name: 'Sync now' }).click();
     await expect(page2.getByText(/French changed on this device and in the cloud/)).toBeVisible();
     await expect(page2.getByRole('button', { name: 'Use cloud' })).toBeVisible();
-    expect(api.cloud?.revision).toBe(2);
+    await expect.poll(() => api.cloud?.revision).toBe(2);
     expect(api.uploads).toBe(2);
 
     page2.once('dialog', dialog => dialog.accept());
