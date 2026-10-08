@@ -75,6 +75,6 @@ console.log(JSON.stringify({
   recovery:'transactional-vnext-backup-with-safety-export',
   offline:'lazy-corpus-pwa-shell',
   productionCutover:false,
-  remainingCutoverBlockers:['live-account-sync-acceptance','real-device-qualification']
+  remainingCutoverBlockers:['p35-feature-parity-signoff','live-account-sync-acceptance','real-device-qualification']
 },null,2));
 if(failures.length)process.exitCode=1;

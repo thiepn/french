@@ -29,6 +29,7 @@
   "fullP35FeatureParity": false,
   "accountOAuthClient": "registered-and-pinned",
   "remainingCutoverBlockers": [
+    "p35-feature-parity-signoff",
     "live-account-sync-acceptance",
     "real-device-qualification"
   ]

@@ -23,9 +23,10 @@ This branch is **not** the production cutover. P35 remains production.
 
 Remaining release blockers:
 
-1. run live THIEPN Account sign-in, silent SSO, app reconnect, first-device adoption and two-device conflict acceptance against the pinned French client;
-2. run final physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior;
-3. only then execute a reversible production cutover with the P35 commit preserved as rollback.
+1. **P35 feature parity sign-off**: the vNext manifest deliberately keeps `fullP35FeatureParity: false`; audit remaining stable P35 feature flows against the native vNext implementation before marking parity complete. Follow `P37I_FEATURE_PARITY_RELEASE_GATE.md`.
+2. Run live THIEPN Account sign-in, silent SSO, app reconnect, first-device adoption and two-device conflict acceptance against the pinned French client.
+3. Run final physical-device checks for installed-PWA, microphone/speech and mobile keyboard behavior.
+4. Only then execute a reversible production cutover with the P35 commit preserved as rollback.
 
 The P35 runtime remains a data-compatibility source and rollback implementation, not a runtime dependency of vNext.
 
