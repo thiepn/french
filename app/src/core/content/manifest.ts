@@ -1,6 +1,6 @@
 export interface ContentPackDescriptor {
   id:string;
-  kind:'vocabulary'|'grammar'|'reading'|'listening'|'speaking'|'assessment';
+  kind:'vocabulary'|'grammar'|'reading'|'listening'|'speaking'|'assessment'|'usage';
   level:string;
   path:string;
   count?:number;
@@ -32,7 +32,7 @@ export interface ContentManifest {
   generatedAt?:string;
   source?:ContentSourceMetadata;
   indexes?:{vocabulary?:ContentIndexDescriptor};
-  totals?:{records?:number;packs?:number;levels?:Record<string,number>;readings?:number;sentenceExercises?:number};
+  totals?:{records?:number;packs?:number;levels?:Record<string,number>;readings?:number;sentenceExercises?:number;verifiedUsagePatterns?:number};
   packs:ContentPackDescriptor[];
 }
 let manifestPromise:Promise<ContentManifest>|null=null;
