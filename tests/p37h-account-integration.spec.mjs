@@ -277,3 +277,60 @@ test('pausing during an in-flight sync never turns cloud sync back on', async ({
   await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
   expect(api.uploads).toBe(2);
 });
+
+test('a conflict choice cannot overwrite an unreviewed newer cloud revision', async ({ page, context }) => {
+  const api = await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN + '/#settings');
+  await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sync this device' }).click();
+  await expect.poll(() => api.cloud?.revision).toBe(1);
+
+  // Create genuine local + remote divergence after the first baseline.
+  api.cloud.revision = 2;
+  api.cloud.state.settings.dailyNewLimit = 88;
+  await page.locator('input[name="dailyNewLimit"]').fill('21');
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  await page.getByRole('button', { name: 'Sync now' }).click();
+  await expect(page.getByRole('button', { name: 'Use this device' })).toBeVisible();
+
+  // A third device writes revision 3 after the conflict prompt was rendered.
+  api.cloud.revision = 3;
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Use this device' }).click();
+  await expect(page.getByRole('button', { name: 'Review latest state' })).toBeVisible();
+  await expect(page.getByText(/cloud changed after you reviewed the conflict/i)).toBeVisible();
+  expect(api.cloud.revision).toBe(3);
+  expect(api.uploads).toBe(1);
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('21');
+});
+
+test('a conflict choice cannot restore cloud over local changes made after review', async ({ page, context }) => {
+  const api = await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN + '/#settings');
+  await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sync this device' }).click();
+  await expect.poll(() => api.cloud?.revision).toBe(1);
+
+  api.cloud.revision = 2;
+  api.cloud.state.settings.dailyNewLimit = 88;
+  await page.locator('input[name="dailyNewLimit"]').fill('21');
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  await page.getByRole('button', { name: 'Sync now' }).click();
+  await expect(page.getByRole('button', { name: 'Use cloud' })).toBeVisible();
+
+  // Local state is newer than the displayed decision, even though cloud revision is unchanged.
+  await page.locator('input[name="dailyNewLimit"]').fill('23');
+  await page.getByRole('button', { name: 'Save settings' }).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Use cloud' }).click();
+  await expect(page.getByRole('button', { name: 'Review latest state' })).toBeVisible();
+  await expect(page.getByText(/changed on this device while checking the cloud/i)).toBeVisible();
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('23');
+  expect(api.uploads).toBe(1);
+});
