@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {CONVERSATION_STARTERS} from '../app/src/core/conversation/scenarios.ts';
 import {evaluateConversationTurn,initialConversationState,startConversation,raiseConversationSupport,submitConversationResponse,safeConversationState} from '../app/src/core/conversation/engine.ts';
 const ids=new Set(CONVERSATION_STARTERS.map(x=>x.id));
-assert.equal(CONVERSATION_STARTERS.length,5);
-assert.equal(ids.size,5);
+assert.equal(CONVERSATION_STARTERS.length,15);
+assert.equal(ids.size,15);
 for(const s of CONVERSATION_STARTERS){
   assert.ok(s.turns.length>=3,'every starter needs multi-turn interaction');
   for(const turn of s.turns){
@@ -39,4 +39,4 @@ assert.equal(state.active?.turns[0].independent,false);
 assert.equal(safeConversationState({schema:'invalid'}).active,null);
 const malformed=safeConversationState({schema:'thiepn-french-native-conversation-v1',active:{scenarioId:'missing',cursor:999},history:[]});
 assert.equal(malformed.active,null);
-console.log(JSON.stringify({schema:'french-p37i-b1-native-conversation',ok:true,scenarios:5,turns:CONVERSATION_STARTERS.reduce((n,s)=>n+s.turns.length,0),noTranscriptPersistence:true}));
+console.log(JSON.stringify({schema:'french-p37i-b1-native-conversation',ok:true,scenarios:15,turns:CONVERSATION_STARTERS.reduce((n,s)=>n+s.turns.length,0),noTranscriptPersistence:true}));

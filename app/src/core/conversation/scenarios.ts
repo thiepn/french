@@ -43,7 +43,7 @@ export const CONVERSATION_STARTERS:readonly ConversationScenario[]=[
   ]},
   {id:'classmate',title:'Meet a classmate',level:'A2',setting:'Introduce yourself before class.',partner:'Une camarade',turns:[
     {partner:'Salut ! Comment tu t’appelles ?',goal:'Introduce yourself.',functionId:'introduction',slots:[['je m appelle','moi c est','je suis']],hint:'Introduce yourself in French.',model:'Salut, je m’appelle Alex.'},
-    {partner:'Enchantée ! Tu étudies quoi ?',goal:'Say what subject you study.',functionId:'information',slots:[['j etudie','je fais','etudiant','etudiante'],['math','informatique','economie','francais','histoire','biologie']],hint:'Mention your subject.',model:'J’étudie les mathématiques.'},
+    {partner:'Enchantée ! Tu étudies quoi ?',goal:'Say what subject you study.',functionId:'information',slots:[['j etudie','je fais','etudiant','etudiante'],['math','mathematiques','mathematique','informatique','economie','francais','histoire','biologie']],hint:'Mention your subject.',model:'J’étudie les mathématiques.'},
     {partner:'Ça te plaît ?',goal:'Give an opinion and a reason.',functionId:'opinion',slots:[['oui','j aime','interessant','passionnant','non'],['parce que','car','mais']],hint:'Express an opinion and explain why.',model:'Oui, parce que c’est intéressant.'}
   ]},
   {id:'weekend',title:'Plan the weekend',level:'A2',setting:'Arrange an activity with a friend.',partner:'Un ami',turns:[

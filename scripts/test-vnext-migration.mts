@@ -149,6 +149,23 @@ activeConversationFresh.stores.meta.push({
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(activeConversationFresh)),true,
   'an unfinished conversation must not be silently overwritten');
 
+const completedMissionFresh=structuredClone(emptyFresh);
+completedMissionFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:null,history:[],mission:null,
+    missionHistory:[{missionId:'morning-town',totalTurns:9,independentTurns:9,completedAt:Date.now()}]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(completedMissionFresh)),true,
+  'mission history alone must block silent cloud overwrite');
+const pausedMissionFresh=structuredClone(emptyFresh);
+pausedMissionFresh.stores.meta.push({
+  key:'native-conversation-v1',
+  value:{schema:'thiepn-french-native-conversation-v1',active:null,history:[],
+    mission:{missionId:'arrival-day',step:1},missionHistory:[]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(pausedMissionFresh)),true,
+  'active mission alone must block silent cloud overwrite');
+
 const wireUnequal=structuredClone(emptyFresh);
 wireUnequal.stores.meta.push({
   key:'learner-summary',
