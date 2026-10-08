@@ -4,10 +4,11 @@ import {CONVERSATION_STARTERS,getConversationScenario,type ConversationScenario}
 import {MISSION_CHAINS,getMission} from '../core/conversation/missions';
 import {
   startConversation,beginMission,beginAdaptiveSet,changeConversationCeiling,
-  endConversation,submitConversationResponse,raiseConversationSupport,
+  endConversation,submitConversationResponse,raiseConversationSupport,requestConversationRepeat,
   type ConversationState,type ConversationResult,type MissionResult,type AdaptiveResult
 } from '../core/conversation/engine';
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
+import {partnerWording} from '../core/conversation/variants';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
   allowedConversationLevel,type ConversationLevel
@@ -245,7 +246,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     track.setAttribute('aria-valuemax',String(scene.turns.length));track.setAttribute('aria-valuenow',String(active.cursor));
     const bar=item('div','','conversation-track-fill');bar.style.width=(active.cursor/scene.turns.length*100)+'%';track.append(bar);
     const exchange=item('div','','conversation-exchange');
-    exchange.append(item('p',scene.partner,'conversation-speaker'),item('blockquote',turn.partner,'conversation-prompt'));
+    exchange.append(item('p',scene.partner,'conversation-speaker'),item('blockquote',partnerWording(scene.id,active.cursor,active.variant??0),'conversation-prompt'));
     const goal=item('p',turn.goal,'conversation-goal');
     const form=item('form','','conversation-compose');
     const field=item('textarea','','conversation-input');
@@ -256,12 +257,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const send=button('Send response','primary-action compact-action');send.type='submit';
     const hint=button('Show hint');
     const example=button('Show model');
+    const repeat=button('Ask to repeat');
+    repeat.title='Ask the partner to rephrase the current turn. This counts as support, not an independent response.';
     const manual=button('My response fits');
     manual.title='Continue without scoring this turn as independently matched.';
-    controls.append(send,hint,example,manual);form.append(field,controls);
+    controls.append(send,repeat,hint,example,manual);form.append(field,controls);
     const assistance=item('p','','conversation-assistance');
     const feedback=item('p','','conversation-feedback');feedback.setAttribute('role','status');
-    if(active.support>=1)assistance.textContent=active.support===2?'Example · '+turn.model:'Hint · '+turn.hint;
+    if((active.repairMoves??0)>0)assistance.append(item('span',
+      'Partner repeats · '+partnerWording(scene.id,active.cursor,active.variant===1?0:1)));
+    if(active.support>=1)assistance.append(item('span',
+      active.support===2?'Example · '+turn.model:'Hint · '+turn.hint));
     const commands=item('div','','conversation-bottom');
     const pause=button('Pause & home','conversation-link');
     const quit=button(state.mission?'End unfinished mission':
@@ -289,6 +295,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     };
     hint.onclick=()=>void showSupport(1);
     example.onclick=()=>void showSupport(2);
+    repeat.onclick=async()=>{
+      if(busy||signal.aborted)return;
+      busy=true;
+      try{await save(requestConversationRepeat(state));renderActive(scene,field.value);}
+      catch(error){feedback.textContent='Could not save this repeat request.';console.error(error);}
+      finally{busy=false;}
+    };
     const advance=async(isManual:boolean)=>{
       if(busy||signal.aborted)return;
       const raw=field.value.trim();
