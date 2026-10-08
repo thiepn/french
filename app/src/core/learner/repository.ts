@@ -828,7 +828,7 @@ export async function recordPracticeEvidence(
   input:PracticeEvidenceInput,timestamp=Date.now(),
   metaUpdate?:{key:string;value:unknown}
 ):Promise<CanonicalReviewEventV1>{
-  if(metaUpdate?.key&&metaUpdate.key!=='native-usage-v1')throw Error('INVALID_PRACTICE_META_KEY');
+  if(metaUpdate&&!['native-usage-v1','native-writing-v1'].includes(metaUpdate.key))throw Error('INVALID_PRACTICE_META_KEY');
   const learner=await ensureCanonicalLearnerState(timestamp);
   const id=input.id??(input.noteId+'::d31:0:'+input.skill);
   const source=await readSrsById(id);
@@ -889,8 +889,8 @@ export async function recordPracticeEvidence(
       tx.objectStore('learner').put(updated,'state-v1');
       tx.objectStore('activity').put(event,event.eventId);
       const meta=tx.objectStore('meta');
-      // C3: write usage progress in the same IDB transaction as its activity.
-      // A failure aborts both; duplicate phantom usage attempts are avoided.
+      // C3/C4: write usage or writing progress in the same IDB transaction as
+      // activity. A failure aborts both instead of creating phantom evidence.
       if(metaUpdate)meta.put(metaUpdate.value,metaUpdate.key);
       const summaryRequest=meta.get('learner-summary');
       summaryRequest.onsuccess=()=>{
