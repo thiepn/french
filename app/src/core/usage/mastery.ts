@@ -110,7 +110,7 @@ export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageSt
       reason=mastery.transfer.secure?'Maintain transfer':'Build independent transfer across cues';
     }else{
       score=mastery.usage.status==='refresh'?180:
-        mastery.usage.secure?0:mastery.usage.status==='building'?100:130;
+        mastery.usage.secure?0:mastery.usage.status==='building'?170:130;
       score+=mastery.repairNeeded?22:0;
       score+=Math.max(0,24-Math.min(24,mastery.usage.attempts*4));
       reason=mastery.usage.status==='refresh'?'Refresh a stale construction':
