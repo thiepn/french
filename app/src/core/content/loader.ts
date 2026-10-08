@@ -127,3 +127,19 @@ export interface SentenceExercisePack{
 export function loadStableSentenceExercises(signal?:AbortSignal):Promise<SentenceExercisePack>{
   return loadContentPack<SentenceExercisePack>('sentence-stable-p12',signal);
 }
+
+/** Exact P35 P10 source frames, including their inherited provenance labels. */
+export interface UsageRecord{
+  id:string;anchor:string;frame:string;kind:string;sourceKey:string;blank:string;
+}
+export interface UsageSource{label:string;url:string;tier:'verified'|'reference'}
+export interface UsagePack{
+  schema:'thiepn-french-usage-pack-v1';
+  id:'usage-stable-p10';
+  revision:string;sourceRuntime:string;sourcePhase:string;sourceBlob:string;
+  sources:Record<string,UsageSource>;
+  records:UsageRecord[];
+}
+export function loadStableUsageCorpus(signal?:AbortSignal):Promise<UsagePack>{
+  return loadContentPack<UsagePack>('usage-stable-p10',signal);
+}
