@@ -145,7 +145,7 @@ test('Dialogue wording rotates after a full run and repeat help survives reload'
     await page.getByRole('button',{name:'Send response'}).click();
   }
   await expect(page.getByRole('heading',{name:'Conversation complete'})).toBeVisible();
-  await expect(page.getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
+  await expect(page.locator('.conversation-result').getByText(/2 \/ 3 first-try independent turns/)).toBeVisible();
   await page.getByRole('button',{name:/A1 At the bakery/}).click();
   const nextPrompt=await page.locator('.conversation-prompt').textContent();
   expect(nextPrompt).not.toBe(firstPrompt);
