@@ -3,10 +3,15 @@ import type {RouteContext} from '../core/types';
 import {CONVERSATION_STARTERS,getConversationScenario,type ConversationScenario} from '../core/conversation/scenarios';
 import {MISSION_CHAINS,getMission} from '../core/conversation/missions';
 import {
-  startConversation,beginMission,endConversation,submitConversationResponse,raiseConversationSupport,
-  type ConversationState,type ConversationResult,type MissionResult
+  startConversation,beginMission,beginAdaptiveSet,changeConversationCeiling,
+  endConversation,submitConversationResponse,raiseConversationSupport,
+  type ConversationState,type ConversationResult,type MissionResult,type AdaptiveResult
 } from '../core/conversation/engine';
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
+import {
+  FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
+  allowedConversationLevel,type ConversationLevel
+} from '../core/conversation/curriculum';
 function item<K extends keyof HTMLElementTagNameMap>(tag:K,text='',className=''):HTMLElementTagNameMap[K]{
   const node=document.createElement(tag);if(text)node.textContent=text;if(className)node.className=className;return node;
 }
@@ -30,30 +35,104 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(signal.aborted)return;
   let busy=false,lastSubmission:{key:string;at:number}|null=null;
   let lastResult:ConversationResult|null=null,lastMissionResult:MissionResult|null=null;
+  let lastAdaptiveResult:AdaptiveResult|null=null;
   const save=async(next:ConversationState)=>{
     await persistConversationState(next);
     state=next;
   };
   const select=async(id:string)=>{
-    if(busy||state.active||state.mission||signal.aborted)return;
+    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
     busy=true;
-    try{await save(startConversation(state,id));lastResult=null;lastMissionResult=null;render();}
+    try{await save(startConversation(state,id));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();}
     catch(error){status.textContent='Could not start this conversation. Your saved data was not changed.';console.error(error);}
     finally{busy=false;}
   };
   const selectMission=async(id:string)=>{
-    if(busy||state.active||state.mission||signal.aborted)return;
+    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
     busy=true;
     try{
-      await save(beginMission(state,id));lastResult=null;lastMissionResult=null;render();
+      await save(beginMission(state,id));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();
     }catch(error){
       status.textContent='Could not start this mission. Your progress remains saved.';console.error(error);
     }finally{busy=false;}
+  };
+  const selectAdaptive=async()=>{
+    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
+    busy=true;
+    try{
+      await save(beginAdaptiveSet(state));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();
+    }catch(error){
+      status.textContent='Could not build a three-task set. Existing work was preserved.';console.error(error);
+    }finally{busy=false;}
+  };
+  const updateCeiling=async(level:ConversationLevel)=>{
+    if(busy||state.active||state.mission||state.adaptive)return;
+    busy=true;
+    try{await save(changeConversationCeiling(state,level));renderHome();}
+    catch(error){status.textContent='Could not save the practice level.';console.error(error);}
+    finally{busy=false;}
   };
   const renderHome=()=>{
     stage.replaceChildren();
     const intro=item('p','Practise a short, structured exchange. The checker looks for required language patterns, not full conversational meaning. Your typed responses are not saved.','conversation-intro');
     stage.append(intro);
+    const functionSummary=functionProfiles(state.functionEvents);
+    const known=functionSummary.filter(row=>row.state==='functional'||row.state==='secure').length;
+    const lesson=item('section','','conversation-curriculum');
+    const heading=item('div','','conversation-curriculum-heading');
+    heading.append(item('h2','Communicative practice'),item('span',known+' / '+FUNCTION_CATALOG.length+' functions with functional evidence'));
+    lesson.append(heading);
+    const levelRow=item('label','','conversation-level-picker');
+    levelRow.append(item('span','Practice up to level'));
+    const picker=item('select');picker.setAttribute('aria-label','Conversation practice level');
+    for(const level of ['A1','A2','B1'] as const){
+      const option=item('option',level);option.value=level;picker.append(option);
+    }
+    picker.value=state.levelCeiling;
+    picker.disabled=Boolean(state.active||state.mission||state.adaptive);
+    picker.addEventListener('change',()=>void updateCeiling(picker.value as ConversationLevel));
+    levelRow.append(picker);lesson.append(levelRow);
+    const picks=rankedNativeScenarios(state.functionEvents,state.history,state.levelCeiling);
+    if(picks.length){
+      const top=picks[0],summary=item('div','','conversation-next');
+      summary.append(item('strong','Recommended · '+top.title),
+        item('small',top.reason+' · '+top.level));
+      const go=button('Start recommendation','primary-action compact-action');
+      go.disabled=Boolean(state.active||state.mission||state.adaptive);
+      go.onclick=()=>void select(top.scenarioId);
+      summary.append(go);lesson.append(summary);
+    }
+    const adaptive=item('div','','conversation-next');
+    adaptive.append(item('strong','Adaptive set · 3 tasks'),
+      item('small','Three distinct practice situations chosen from recent function evidence. This is practice, not a proficiency test.'));
+    const startAdaptive=button('Start adaptive set','secondary-action compact-action');
+    startAdaptive.disabled=Boolean(state.active||state.mission||state.adaptive);
+    startAdaptive.onclick=()=>void selectAdaptive();
+    adaptive.append(startAdaptive);lesson.append(adaptive);
+    const map=item('details','','conversation-function-map');
+    map.append(item('summary','Function map · '+state.functionEvents.length+' recorded attempts'));
+    for(const group of ['Foundation','Interaction','Problem solving','Planning & opinion','Narrative']){
+      const section=item('section','','conversation-function-group');
+      section.append(item('h3',group));
+      for(const profile of functionSummary.filter(row=>row.group===group)){
+        const row=item('div','','conversation-function-row');
+        row.append(item('span',profile.label),item('span',profile.state+' · '+
+          profile.independentSuccesses+' independent · '+profile.contexts+' situations'));
+        section.append(row);
+      }
+      map.append(section);
+    }
+    lesson.append(map);
+    lesson.append(item('p','Pattern matching is limited. Function evidence is confidence-damped and cannot certify independent proficiency.','muted-copy'));
+    stage.append(lesson);
+    if(lastAdaptiveResult){
+      const completedSet=item('section','','conversation-result');
+      completedSet.append(item('h2','Adaptive set complete'),
+        item('p',lastAdaptiveResult.independentTurns+' / '+lastAdaptiveResult.totalTurns+
+          ' independent turns across three practice tasks.'),
+        item('p','Task performance only; no CEFR award.','muted-copy'));
+      stage.append(completedSet);
+    }
     if(lastMissionResult){
       const finishedMission=item('section','','conversation-result');
       const definition=getMission(lastMissionResult.missionId);
@@ -78,8 +157,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       if(resumed){
         const active=item('section','','conversation-resume');
         const mission=state.mission?getMission(state.mission.missionId):null;
-        active.append(item('strong',mission?'Mission · '+mission.title:'Unfinished · '+resumed.title),
-          item('span',(mission?'Task '+(state.mission!.step+1)+' / 3 · ':'')+
+        active.append(item('strong',mission?'Mission · '+mission.title:
+          state.adaptive?'Adaptive set · '+resumed.title:'Unfinished · '+resumed.title),
+          item('span',(mission?'Task '+(state.mission!.step+1)+' / 3 · ':
+            state.adaptive?'Adaptive task '+(state.adaptive.step+1)+' / 3 · ':'')+
             'Turn '+(state.active.cursor+1)+' of '+resumed.turns.length));
         const resume=button('Resume active','primary-action compact-action');
         resume.onclick=()=>renderActive(resumed);
@@ -87,13 +168,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       }
     }
     const missions=item('div','','conversation-mission-list');
-    for(const mission of MISSION_CHAINS){
+    const missionRanking=rankNativeMissions(state.functionEvents,state.missionHistory,state.levelCeiling);
+    for(const mission of [...missionRanking,
+      ...MISSION_CHAINS.filter(row=>!missionRanking.some(m=>m.id===row.id))]){
       const choice=button('','conversation-choice conversation-mission-choice');
       const words=item('span','','conversation-choice-copy');
       words.append(item('strong',mission.title),
         item('small','3 connected scenarios · '+mission.scenarioIds.map(id=>getConversationScenario(id)?.title??id).join(' → ')));
       choice.append(item('span',mission.level,'conversation-level'),words,item('span','→','conversation-arrow'));
-      choice.disabled=Boolean(state.active||state.mission);
+      choice.disabled=Boolean(state.active||state.mission||state.adaptive)
+        ||!allowedConversationLevel(mission.level,state.levelCeiling);
       choice.onclick=()=>void selectMission(mission.id);
       missions.append(choice);
     }
@@ -110,12 +194,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       stage.append(records);
     }
     const list=item('div','','conversation-list');
-    for(const scene of CONVERSATION_STARTERS){
+    const ordered=rankedNativeScenarios(state.functionEvents,state.history,state.levelCeiling)
+      .map(row=>getConversationScenario(row.scenarioId))
+      .filter((row):row is ConversationScenario=>Boolean(row));
+    for(const scene of [...ordered,...CONVERSATION_STARTERS.filter(row=>!ordered.some(s=>s.id===row.id))]){
       const control=button('','conversation-choice');
       const words=item('span','','conversation-choice-copy');
       words.append(item('strong',scene.title),item('small',scene.setting+' · '+scene.turns.length+' turns'));
       control.append(item('span',scene.level,'conversation-level'),words,item('span','→','conversation-arrow'));
-      control.disabled=Boolean(state.active||state.mission);
+      control.disabled=Boolean(state.active||state.mission||state.adaptive)
+        ||!allowedConversationLevel(scene.level,state.levelCeiling);
       control.onclick=()=>void select(scene.id);
       list.append(control);
     }
@@ -130,7 +218,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       }
       stage.append(history);
     }
-    status.textContent=state.active?'An unfinished exchange is saved. Resume or end it before choosing another.':'Choose a situation. Work stays on this device unless you explicitly enable Account sync.';
+    status.textContent=state.active?'Unfinished conversation or task set saved. Resume or end it before choosing another.':
+      'Choose a task. Function evidence remains local unless you explicitly enable Account sync.';
   };
   const renderActive=(scene:ConversationScenario,preservedText='')=>{
     const active=state.active;if(!active||active.scenarioId!==scene.id){renderHome();return;}
@@ -138,6 +227,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     stage.replaceChildren();
     const context=item('div','','conversation-context');
     context.append(item('span',scene.level+' · '+scene.setting,'conversation-scene'),item('span','Turn '+(active.cursor+1)+' / '+scene.turns.length));
+    if(state.adaptive){
+      const banner=item('div','','conversation-mission-banner');
+      banner.append(item('strong','Adaptive set · 3 tasks'),
+        item('span','Adaptive task '+(state.adaptive.step+1)+' of 3 · '+scene.title));
+      stage.append(banner);
+    }
     if(state.mission){
       const definition=getMission(state.mission.missionId);
       const banner=item('div','','conversation-mission-banner');
@@ -169,11 +264,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(active.support>=1)assistance.textContent=active.support===2?'Example · '+turn.model:'Hint · '+turn.hint;
     const commands=item('div','','conversation-bottom');
     const pause=button('Pause & home','conversation-link');
-    const quit=button(state.mission?'End unfinished mission':'End unfinished exchange','conversation-link conversation-danger');
+    const quit=button(state.mission?'End unfinished mission':
+      state.adaptive?'End adaptive set':'End unfinished exchange','conversation-link conversation-danger');
     pause.onclick=()=>renderHome();
     quit.onclick=async()=>{
       if(busy||!confirm(state.mission
-        ?'End this unfinished mission? Completed individual conversations will remain in history, but this mission will not count as completed.'
+        ?'End this unfinished mission? Completed individual conversations remain in history, but this mission will not count.'
+        :state.adaptive?'End this adaptive set? Completed conversations stay in history, but the set will not count.'
         :'End this unfinished conversation? Completed runs will be kept.'))return;
       busy=true;
       try{await save(endConversation(state));renderHome();}
@@ -206,10 +303,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       lastSubmission={key,at:now};busy=true;
       try{
         const previousMission=state.mission;
+        const previousAdaptive=state.adaptive;
         const outcome=submitConversationResponse(state,raw,isManual);
         await save(outcome.state);
         if(previousMission&&!outcome.state.mission&&outcome.state.missionHistory.length)
           lastMissionResult=outcome.state.missionHistory[0];
+        if(previousAdaptive&&!outcome.state.adaptive&&outcome.state.adaptiveHistory.length)
+          lastAdaptiveResult=outcome.state.adaptiveHistory[0];
         if(!outcome.accepted){
           feedback.textContent='The checker recognized '+outcome.matched+' / '+outcome.total+
             ' required patterns. Try another wording, ask for a hint, or continue manually without independence credit.';
