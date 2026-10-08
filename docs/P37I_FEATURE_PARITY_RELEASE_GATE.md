@@ -16,6 +16,8 @@ The P37I-B1/B2 native conversation and missions comprise 15 newly authored three
 
 P37I-B3 now records 23 native observable communicative functions and chooses three distinct tasks from weakness-weighted recommendations. These are explicitly **not** a claim of source-identical 25-function P20 parity, CEFR promotion or general language proficiency. Adaptive function evidence contains no raw learner transcript. Its incomplete sets remain inside the same conversation backup and sync safety gate.
 
+P37I-B4 hardens the native 23-function evidence model. Imported records are accepted only when their scenario ID, turn index, function ID, scenario level, support/retry counters, matcher slots and evidence credit agree with the authored deterministic turn. The native Progress workspace now displays function-level evidence, but this is **formative practice**, not validated proficiency or full original P19/P20 parity. B4 regression tests exercise the real response → durable evidence → Progress → resume route.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |

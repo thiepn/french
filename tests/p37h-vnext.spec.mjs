@@ -107,6 +107,25 @@ test('Function map and adaptive set survive a reload without claiming proficienc
   await expect(page.getByRole('button',{name:'Start adaptive set'})).toBeEnabled();
 });
 
+test('B4 function evidence flows from a real turn into Progress without claiming proficiency',async({page})=>{
+  await page.goto('/#conversation');
+  await page.getByRole('button',{name:/A1 At the bakery/}).click();
+  await page.getByRole('textbox',{name:'Your French response'}).fill('Bonjour madame');
+  await page.getByRole('button',{name:'Send response'}).click();
+  await expect(page.getByText('Ask for a croissant.',{exact:true})).toBeVisible();
+  await page.goto('/#progress');
+  await expect(page.getByRole('heading',{name:'Communicative function evidence'})).toBeVisible();
+  await expect(page.getByText('Recorded attempts')).toBeVisible();
+  const greeting=page.locator('.skill-row').filter({hasText:'Greeting'});
+  await expect(greeting).toContainText('emerging');
+  await expect(greeting).toContainText('1 independent');
+  await expect(greeting).toContainText('1 situations');
+  await expect(page.getByText(/not verified CEFR performance/)).toBeVisible();
+  await page.getByRole('button',{name:'Practise weak functions'}).click();
+  await expect(page.getByRole('heading',{name:'Conversation'})).toBeVisible();
+  await expect(page.getByText('Ask for a croissant.',{exact:true})).toBeVisible();
+});
+
 test('Settings persist preferences and expose recovery controls',async({page})=>{
   await page.goto('/#settings');
   const newLimit=page.locator('input[name="dailyNewLimit"]');

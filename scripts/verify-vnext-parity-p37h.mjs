@@ -72,6 +72,10 @@ for(const term of ['selectMission','Mission complete','Mission history','Mission
   if(term!=='Mission  ')need(conversationRoute,term,'Mission UI '+term);
 for(const term of ['FUNCTION_CATALOG','functionProfiles','rankedNativeScenarios','chooseAdaptiveQueue','evidenceCredit'])
   need(curriculum,term,'Curriculum '+term);
+for(const term of ['Communicative function evidence','Practise weak functions','functionProfiles'])
+  need(progress,term,'B4 Progress evidence '+term);
+for(const term of ['turn.functionId','row.level!==scenario.level','Math.abs(credit-row.credit)'])
+  need(conversationEngine,term,'B4 import evidence validation '+term);
 for(const term of ['beginAdaptiveSet','functionEvents','adaptiveHistory','changeConversationCeiling'])
   need(conversationEngine,term,'Adaptive state '+term);
 for(const term of ['Adaptive set · 3 tasks','Function map','Start recommendation','Adaptive task'])
