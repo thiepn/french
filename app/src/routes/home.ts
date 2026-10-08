@@ -1,6 +1,7 @@
 import type { RouteContext } from '../core/types';
 import { countDueSrs,readActiveStudySession,readCanonicalLearnerState,readRecentReviewEvents } from '../core/learner/repository';
 import { rankNativeActivities,type CoachAction,type CoachInput } from '../core/learner/study-coach';
+import {loadConversationState} from '../core/conversation/storage';
 
 const DAY=86_400_000;
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,text='',className=''):HTMLElementTagNameMap[K]{
@@ -37,14 +38,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   const now=Date.now();
   try{
-    const [due,session,learner,events]=await Promise.all([
-      countDueSrs(now),readActiveStudySession(now),readCanonicalLearnerState(),readRecentReviewEvents(400)
+    const [due,session,learner,events,conversation]=await Promise.all([
+      countDueSrs(now),readActiveStudySession(now),readCanonicalLearnerState(),readRecentReviewEvents(400),loadConversationState()
     ]);
     if(signal.aborted)return;
     const remaining=session?Math.max(0,session.queueIds.length-session.cursor):0;
     const recent=summarize(events,now);
     const newLimit=quantity(learner?.settings?.dailyNewLimit,20);
-    const actions=rankNativeActivities({due,newLimit,remainingSession:remaining,recent});
+    const actions=rankNativeActivities({
+      due,newLimit,remainingSession:remaining,activeConversation:Boolean(conversation.active),
+      recent:{...recent,conversation:conversation.history.filter(run=>run.completedAt>=now-7*DAY).length}
+    });
     const first=actions[0];
     if(!first)return;
     const launch=(entry:CoachAction)=>{

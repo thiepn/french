@@ -12,6 +12,8 @@
 
 For the audited P35→vNext contract-by-contract gap list, see [P37I parity inventory](./P37I_PARITY_INVENTORY.md). This first tranche deliberately retains the production no-go state.
 
+The P37I-B1 native conversation starter implements five newly curated three-turn scenes, not a source-identical import of P35 P17. It preserves evidence metadata only and deliberately does not award P20 function mastery or CEFR promotion. See the [parity inventory](./P37I_PARITY_INVENTORY.md).
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |

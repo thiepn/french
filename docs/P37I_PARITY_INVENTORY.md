@@ -21,12 +21,12 @@ Legend: **Native** = an implementable core path exists with automated acceptance
 | P14 graded reading | `routes/read.ts`, 25 extracted texts | **Native core, partial total** | Full independent comprehension and source/evidence equivalence |
 | P15 contextual listening | `routes/listen.ts`, Read↔Listen pairing | **Partial** | Full support-aware scoring and difficulty/adaptive sequencing |
 | P16 spoken production | `routes/speak.ts`, 36 sentence exercises, recording | **Partial** | All stable transfer and feedback modes; physical speech-service acceptance |
-| P17 guided conversation | No `conversation` native route or scenario runner | **Missing native flow** | Port deterministic scenario bank, variant rotation, response matching and resume |
+| P17 guided conversation | `routes/conversation.ts`, `core/conversation/{engine,scenarios,storage}.ts`, five starter scenes with 15 turns | **Partial — first native vertical slice** | Port original P35 P17 scenario bank/variant rotation, richer response/repair rules, calibrated multi-context evidence; current practice results are **not** P17 mastery |
 | P18 real-world missions | Historical mission state retained in feature state | **Missing native flow** | Five scenario chains with genuine independence evidence and resume |
 | P19 communicative calibration | No native multi-turn response evidence pipeline | **Missing native flow** | Confidence-aware independent/repair scoring, replay checks |
 | P20 communicative function profiles | Legacy function history retained | **Missing native flow** | 25-function taxonomy, next scenario/adaptive three-task set |
 | P21 open-world French input | No native open-world capture workflow | **Missing native flow** | Source links, private aggregate exposure, learner consent and source limits |
-| P22 cross-skill Study Coach | `core/learner/study-coach.ts`, `routes/home.ts` | **Partial, new P37I work** | Native launch-history, transfer dependencies and unsupported-route replacement |
+| P22 cross-skill Study Coach | `core/learner/study-coach.ts`, `routes/home.ts`; newly launchable/resumable native Conversation | **Partial, P37I work** | Native launch history, actual cross-skill transfer dependencies, full P35 activities once rebuilt |
 | P23 adaptive session composition | `core/learner/study-session-builder.ts` | **Partial** | Multi-activity coherence and conflict-safe resumption across modes |
 | P24 longitudinal mastery | `routes/progress.ts` has FSRS/current recall | **Missing full longitudinal flow** | Proper 30-day strength and historical trend with evidence confidence |
 | P25 CEFR promotion gates | Historical promotions migrated, but no seven-gate native awarding | **Missing native flow** | Lexical, productive, reading, listening, speaking, interaction and mission gates |

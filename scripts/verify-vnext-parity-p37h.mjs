@@ -29,6 +29,11 @@ const [progress,settings,listen,speak,read,repository,styles,backup,main,index,s
 
 // A passing compatibility suite must not accidentally authorize a production cutover.
 const release=JSON.parse(await readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'));
+const [conversationRoute,conversationEngine,conversationScenes]=await Promise.all([
+  readFile(new URL('../app/src/routes/conversation.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/engine.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/scenarios.ts',import.meta.url),'utf8')
+]);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
 if(release.fullP35FeatureParity!==false)failures.push('P35 feature parity was marked complete without the P37I sign-off');
@@ -48,6 +53,10 @@ for(const token of ['"count": 36','"p12-001"','"p12-036"','"type": "transfer"'])
 for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Needs your judgment','Target construction missing'])need(sentenceDiagnosis,token,'P12 diagnosis '+token);
 for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
+need(router,"conversation:()=>import('../routes/conversation')",'lazy conversation route');
+for(const term of ['Pause & home','My response fits','Show hint','Send response'])need(conversationRoute,term,'Conversation UI '+term);
+for(const term of ['submitConversationResponse','independent:!manual','safeConversationState'])need(conversationEngine,term,'Conversation evidence '+term);
+for(const term of ["id:'bakery'","id:'cafe'","id:'directions'","id:'rail'","id:'repair'"])need(conversationScenes,term,'Conversation starter '+term);
 for(const token of ["params.has('state')","params.has('code')","params.has('error')","!location.hash&&!oauthReturn"])need(router,token,'preserved OAuth callback '+token);
 need(shell,"read:'Read'",'Read navigation');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);

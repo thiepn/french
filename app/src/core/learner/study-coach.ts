@@ -1,14 +1,15 @@
 import type { RouteId } from '../types';
 
-export type CoachRoute=Extract<RouteId,'review'|'learn'|'read'|'listen'|'speak'|'words'>;
+export type CoachRoute=Extract<RouteId,'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'words'>;
 export interface CoachInput{
   due:number;
   newLimit:number;
   remainingSession:number;
-  recent:{reviews:number;reading:number;listening:number;speaking:number};
+  activeConversation?:boolean;
+  recent:{reviews:number;reading:number;listening:number;speaking:number;conversation?:number};
 }
 export interface CoachAction{
-  id:'resume'|'review'|'learn'|'read'|'listen'|'speak';
+  id:'resume'|'conversation-resume'|'review'|'learn'|'read'|'listen'|'speak'|'conversation';
   route:CoachRoute;
   title:string;
   detail:string;
@@ -20,6 +21,11 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
   const due=count(raw.due),newLimit=count(raw.newLimit),remaining=count(raw.remainingSession);
   const r=raw.recent;
   const candidates:CoachAction[]=[];
+  if(raw.activeConversation)candidates.push({
+    id:'conversation-resume',route:'conversation',title:'Resume your conversation',
+    detail:'An unfinished exchange is waiting; return to the next French turn.',
+    action:'Resume conversation',score:1100
+  });
   if(remaining>0)candidates.push({
     id:'resume',route:'review',title:'Finish your session',
     detail:remaining+' saved item'+(remaining===1?'':'s')+' to complete. Keep your current study order.',
@@ -43,6 +49,11 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
   ];
   for(const stream of streams)candidates.push({
     ...stream,score:stream.base+Math.round(32/(1+stream.recent))
+  });
+  candidates.push({
+    id:'conversation',route:'conversation',title:'Practise a real exchange',
+    detail:'Five short text-first dialogues with hints and resumable turns.',
+    action:'Open conversation',score:99+Math.round(32/(1+count(r.conversation??0)))
   });
   return candidates.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
 }
