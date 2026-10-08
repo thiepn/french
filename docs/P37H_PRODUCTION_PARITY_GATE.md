@@ -38,3 +38,19 @@ vNext uses the shared THIEPN first-party OAuth 2.1 + PKCE session contract. It d
 Cloud snapshots keep P35-compatible top-level fields for rollback while carrying an exact `_vnext` IndexedDB payload. vNext can restore either format. Production RLS/RPC now accepts native P35 Account sessions and, once registered, only the exact OAuth client that Account maps to `app_slug='french'`; unknown delegated clients remain denied.
 
 The repository deliberately contains `__PENDING_FRENCH_OAUTH_CLIENT_ID__` until the manual production registration is completed. This is a fail-closed release blocker, not a fallback to direct Google auth.
+
+
+## Executable migration/parity acceptance
+
+P37H now runs an executable P35→vNext fixture test in every `qualify:vnext` run. It verifies:
+
+- depth-style skill IDs retain note, sense, and skill identity;
+- SRS interval/due/retrievability fields survive conversion;
+- scheduled review evidence and typed-quality metadata survive conversion;
+- settings, profile, study plan, study days, promotions, user cards, edits and decks survive conversion;
+- P14/P15/P16 and other phase state stays in canonical `featureState`;
+- vNext cloud snapshots expose P35-compatible top-level fields;
+- the exact vNext IndexedDB payload is retained under `_vnext`;
+- cloud hashes ignore only volatile `updatedAt` while still detecting substantive changes.
+
+This closes the code-level P35→vNext migration/parity blocker. Live account-token and physical-device acceptance remain separate release gates.

@@ -15,13 +15,16 @@ function progress(payload:BackupPayload):Record<string,unknown>{
   return out;
 }
 function reviews(payload:BackupPayload):unknown[]{return payload.stores.activity.map(row=>{const v=obj(row.value);return{...v,interval:v.intervalDays??0};});}
-export async function createFrenchCloudSnapshot():Promise<FrenchCloudSnapshot>{
-  const payload=await createBackupPayload(),learner=obj(at(payload,'learner','state-v1')),content=obj(at(payload,'user-content','content-v1')),feature=obj(learner.featureState),reviewLog=reviews(payload);
+export function backupPayloadToFrenchCloudSnapshot(payload:BackupPayload,now=Date.now()):FrenchCloudSnapshot{
+  const learner=obj(at(payload,'learner','state-v1')),content=obj(at(payload,'user-content','content-v1')),feature=obj(learner.featureState),reviewLog=reviews(payload);
   const lastReview=reviewLog.reduce<number>((max,row)=>Math.max(max,Number(obj(row).t)||0),0);
-  return{version:'vnext-p37h',schema:13,updatedAt:Math.max(Date.now(),lastReview),progress:progress(payload),settings:obj(learner.settings),reviewLog,
+  return{version:'vnext-p37h',schema:13,updatedAt:Math.max(now,lastReview),progress:progress(payload),settings:obj(learner.settings),reviewLog,
     studyDays:Array.isArray(learner.studyDays)?learner.studyDays:[],profile:obj(learner.profile),studyPlan:obj(learner.studyPlan),
     userCards:obj(content.userCards),cardEdits:obj(content.cardEdits),smartDecks:obj(content.smartDecks),customDecks:obj(content.customDecks),...feature,
     _vnext:{schema:'thiepn-french-cloud-vnext-v1',payload}};
+}
+export async function createFrenchCloudSnapshot():Promise<FrenchCloudSnapshot>{
+  return backupPayloadToFrenchCloudSnapshot(await createBackupPayload());
 }
 export function snapshotHasMeaningfulState(snapshot:FrenchCloudSnapshot):boolean{
   return Object.keys(obj(snapshot.progress)).length>0||(Array.isArray(snapshot.reviewLog)&&snapshot.reviewLog.length>0)||(Array.isArray(snapshot.studyDays)&&snapshot.studyDays.length>0)
