@@ -34,3 +34,12 @@
 .write-source a{color:var(--accent);text-underline-offset:3px}
 .write-source a:focus-visible,.write-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:600px){.write-switcher{display:grid;grid-template-columns:1fr 1fr}.write-switch{padding:.65rem .6rem}}
+
+/* P37I-C3: light data typography for formative usage mastery. */
+.write-mastery-overview{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:1rem 0 1.3rem}
+.write-mastery-stat{display:flex;flex-direction:column;gap:.2rem;padding:.9rem .7rem .85rem;border-right:1px solid var(--line)}
+.write-mastery-stat:last-child{border-right:0}
+.write-mastery-stat strong{font-size:clamp(1.1rem,2.6vw,1.6rem);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.write-mastery-stat span{color:var(--muted);font-size:.68rem;line-height:1.35}
+@media(max-width:700px){.write-mastery-overview{grid-template-columns:repeat(3,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:0}.write-mastery-stat:nth-child(n+4){border-top:1px solid var(--line)}}
+@media(max-width:400px){.write-mastery-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:1px solid var(--line)}.write-mastery-stat:nth-child(even){border-right:0}.write-mastery-stat:nth-child(n+3){border-top:1px solid var(--line)}}
