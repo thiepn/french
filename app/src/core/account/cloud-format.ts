@@ -85,6 +85,15 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
   if(Array.isArray(conversation.adaptiveHistory)&&conversation.adaptiveHistory.length>0)return true;
   if(Array.isArray(conversation.missionHistory)&&conversation.missionHistory.length>0)return true;
   if(Array.isArray(conversation.history)&&conversation.history.length>0)return true;
+  // Writing progress lives in the meta store and must be protected even when
+  // it is the only activity on this device.
+  const writing=obj(at(payload,'meta','native-writing-v1'));
+  if(Array.isArray(writing.history)&&writing.history.length>0)return true;
+  const modes=obj(writing.modes);
+  for(const name of ['phrase','sentence','transfer']){
+    const entry=obj(modes[name]);
+    if(Number(entry.index)>0||Number(entry.support)>0)return true;
+  }
   if(payload.stores.session?.length>0)return true;
   return false;
 }

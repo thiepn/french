@@ -17,7 +17,8 @@ function summarize(events:Awaited<ReturnType<typeof readRecentReviewEvents>>,now
     reviews:recent.filter(event=>!event.practiceOnly).length,
     reading:recent.filter(event=>/reading|read-/i.test(event.practice)).length,
     listening:recent.filter(event=>/listen/i.test(event.practice)).length,
-    speaking:recent.filter(event=>/spoken|speaking|shadow/i.test(event.practice)).length
+    speaking:recent.filter(event=>/spoken|speaking|shadow/i.test(event.practice)).length,
+    writing:recent.filter(event=>event.practice.startsWith('written-')).length
   };
 }
 export async function mount({main,signal,navigate}:RouteContext):Promise<void>{

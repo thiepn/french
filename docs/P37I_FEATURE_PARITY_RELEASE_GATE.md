@@ -18,6 +18,8 @@ P37I-B3 now records 23 native observable communicative functions and chooses thr
 
 P37I-B4 hardens the native 23-function evidence model. Imported records are accepted only when their scenario ID, turn index, function ID, scenario level, support/retry counters, matcher slots and evidence credit agree with the authored deterministic turn. The native Progress workspace now displays function-level evidence, but this is **formative practice**, not validated proficiency or full original P19/P20 parity. B4 regression tests exercise the real response → durable evidence → Progress → resume route.
 
+P37I-C1 adds an offline written-practice workspace using the verified P12 36-exercise corpus, with distinct phrase, sentence and situational-transfer tracks. Deterministic feedback explicitly abstains on open alternatives and user self-assessment never awards scheduled SRS mastery. This is **partial P11/P12 parity**, not a claim that the original P10/P11 practice banks have been fully ported.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |

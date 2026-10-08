@@ -9,5 +9,5 @@ assert.equal(rankNativeActivities({...fresh,due:50,activeConversation:true})[0].
 assert.equal(rankNativeActivities({...fresh,newLimit:0}).some(x=>x.id==='learn'),false,'honor configured zero-new-card limit');
 assert.equal(rankNativeActivities({...fresh,due:0,remainingSession:0,recent:{reviews:80,reading:8,listening:0,speaking:4}})[0].id,'listen','weak cross-skill practice stream should be eligible');
 assert.equal(rankNativeActivities({...fresh,due:-1,newLimit:0}).some(x=>x.route==='review'),false,'do not recommend an empty review');
-for(const action of rankNativeActivities(fresh))assert.ok(['learn','review','read','listen','speak','conversation'].includes(action.route),'no unavailable P35 route should be recommended');
-console.log(JSON.stringify({schema:'french-p37i-native-study-coach',ok:true,fixtures:8}));
+for(const action of rankNativeActivities(fresh))assert.ok(['learn','review','read','listen','speak','conversation','write'].includes(action.route),'no unavailable P35 route should be recommended');
+console.log(JSON.stringify({schema:'french-p37i-native-study-coach',ok:true,fixtures:8,writingLaunchAvailable:true}));

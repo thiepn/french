@@ -41,6 +41,10 @@ const [conversationRoute,conversationEngine,conversationScenes,missionDefinition
   readFile(new URL('../scripts/test-vnext-mission.mts',import.meta.url),'utf8')
 ]);
 const conversationVariants=await readFile(new URL('../app/src/core/conversation/variants.ts',import.meta.url),'utf8');
+const [writingRoute,writingEngine]=await Promise.all([
+  readFile(new URL('../app/src/routes/write.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/writing/session.ts',import.meta.url),'utf8')
+]);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
 if(release.fullP35FeatureParity!==false)failures.push('P35 feature parity was marked complete without the P37I sign-off');
@@ -61,6 +65,11 @@ for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Need
 for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
 need(router,"read:()=>import('../routes/read')",'lazy Read route');
 need(router,"conversation:()=>import('../routes/conversation')",'lazy conversation route');
+need(router,"write:()=>import('../routes/write')",'lazy written practice route');
+for(const term of ['loadStableSentenceExercises','diagnoseSentence','recordPracticeEvidence','Needs practice & next'])
+  need(writingRoute,term,'Native writing UI '+term);
+for(const term of ['safeWritingState','completeWritingAttempt','currentWritingExercise'])
+  need(writingEngine,term,'Native writing engine '+term);
 need(conversationVariants,'validateConversationVariants','authored variant completeness check');
 need(conversationEngine,'requestConversationRepeat','repeat evidence without automatic advancement');
 for(const term of ['Pause & home','My response fits','Show hint','Send response'])need(conversationRoute,term,'Conversation UI '+term);

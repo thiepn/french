@@ -15,8 +15,8 @@ Legend: **Native** = an implementable core path exists with automated acceptance
 | P6 smart vocabulary tools | `routes/words.ts` | **Partial** | Saved filters, edit/delete, custom cards/decks and bulk workflows |
 | P7/P8/P9 THIEPN Languages/Hub read model | P35 compatibility code retained, no complete native vNext Hub exporter verified | **Missing native flow** | Rebuild account-scoped projections without exposing raw learner responses |
 | P10 verified usage construction | Legacy fields under `learner.featureState` | **Missing native flow** | Native usage drill and scored, privacy-minimal evidence |
-| P11 phrase transfer | Historical state retained | **Missing native flow** | Native phrase-production task and evidence |
-| P12 sentence transfer | `core/content/sentence-diagnosis.ts`, `routes/speak.ts` | **Partial** | Native independent written sentence session, correction/feedback parity |
+| P11 phrase transfer | `routes/write.ts`, `core/writing/{session,storage}.ts`; P12 completion/cue subset used for phrase construction | **Partial — P37I-C1** | Source-identical P11 phrase bank and dedicated phrase-specific grading/ownership remain to be ported |
+| P12 sentence transfer | `core/content/sentence-diagnosis.ts`, `routes/speak.ts`, `routes/write.ts` with all 36 original P12 exercises and practice-only evidence | **Partial — P37I-C1 native writing** | Fully equivalent P12 scoring, longitudinal context variation, user-verified semantic alternatives and source-matched modes remain open |
 | P13 mixed retrieval and durability | `core/learner/{adaptive,queue,scheduler}.ts` | **Partial** | Mixed skill quotas, history and edge-case review equivalence |
 | P14 graded reading | `routes/read.ts`, 25 extracted texts | **Native core, partial total** | Full independent comprehension and source/evidence equivalence |
 | P15 contextual listening | `routes/listen.ts`, Read↔Listen pairing | **Partial** | Full support-aware scoring and difficulty/adaptive sequencing |

@@ -1,15 +1,15 @@
 import type { RouteId } from '../types';
 
-export type CoachRoute=Extract<RouteId,'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'words'>;
+export type CoachRoute=Extract<RouteId,'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'write'|'words'>;
 export interface CoachInput{
   due:number;
   newLimit:number;
   remainingSession:number;
   activeConversation?:boolean;
-  recent:{reviews:number;reading:number;listening:number;speaking:number;conversation?:number};
+  recent:{reviews:number;reading:number;listening:number;speaking:number;conversation?:number;writing?:number};
 }
 export interface CoachAction{
-  id:'resume'|'conversation-resume'|'review'|'learn'|'read'|'listen'|'speak'|'conversation';
+  id:'resume'|'conversation-resume'|'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'write';
   route:CoachRoute;
   title:string;
   detail:string;
@@ -49,6 +49,11 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
   ];
   for(const stream of streams)candidates.push({
     ...stream,score:stream.base+Math.round(32/(1+stream.recent))
+  });
+  candidates.push({
+    id:'write',route:'write',title:'Write in French',
+    detail:'Construct expressions and apply sentences in new situations.',
+    action:'Open writing',score:112+Math.round(36/(1+count(r.writing??0)))
   });
   candidates.push({
     id:'conversation',route:'conversation',title:'Practise a real exchange',

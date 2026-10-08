@@ -184,6 +184,24 @@ adaptiveOnlyFresh.stores.meta.push({
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(adaptiveOnlyFresh)),true,
   'adaptive task state must not be silently overwritten by cloud adoption');
 
+const writingFresh=structuredClone(emptyFresh);
+writingFresh.stores.meta.push({
+  key:'native-writing-v1',
+  value:{schema:'thiepn-french-writing-v1',
+    modes:{phrase:{index:1,support:0},sentence:{index:0,support:0},transfer:{index:0,support:0}},
+    history:[{exerciseId:'p12-001',mode:'phrase',at:Date.now(),outcome:'matched',diagnosis:'exact',support:0}]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(writingFresh)),true,
+  'writing-only local progress must never be treated as an empty new device');
+const supportedWritingFresh=structuredClone(emptyFresh);
+supportedWritingFresh.stores.meta.push({
+  key:'native-writing-v1',value:{schema:'thiepn-french-writing-v1',
+    modes:{phrase:{index:0,support:2},sentence:{index:0,support:0},transfer:{index:0,support:0}},
+    history:[]}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(supportedWritingFresh)),true,
+  'partially assisted writing attempts must not be silently overwritten');
+
 const wireUnequal=structuredClone(emptyFresh);
 wireUnequal.stores.meta.push({
   key:'learner-summary',
