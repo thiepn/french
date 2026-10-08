@@ -86,7 +86,8 @@ export function snapshotHasMeaningfulState(snapshot:FrenchCloudSnapshot):boolean
     ||(Array.isArray(snapshot.studyDays)&&snapshot.studyDays.length>0)
     ||Object.keys(obj(snapshot.userCards)).length>0
     ||Object.keys(obj(snapshot.cardEdits)).length>0
-    ||Object.keys(obj(snapshot.v550Reading)).length>0;
+    ||Object.keys(obj(snapshot.v550Reading)).length>0
+    ||hasDistinctLocalLearnerState(snapshot);
 }
 function stable(value:unknown):string{
   if(value===null||typeof value!=='object')return JSON.stringify(value);
