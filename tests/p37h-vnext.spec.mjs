@@ -23,7 +23,7 @@ test('Home ranks real learning actions and avoids static placeholder recommendat
 test('Guided conversation is resumable and records independent versus manual practice',async({page})=>{
   await page.goto('/#conversation');
   await expect(page.getByRole('heading',{name:'Conversation'})).toBeVisible();
-  await expect(page.getByText('At the bakery')).toBeVisible();
+  await expect(page.getByRole('button',{name:/A1 At the bakery/})).toBeVisible();
   await page.getByRole('button',{name:/A1 At the bakery/}).click();
   const field=page.getByRole('textbox',{name:'Your French response'});
   await expect(field).toBeVisible();
@@ -75,7 +75,7 @@ test('Three-scene mission resumes on reload and distinguishes independent comple
     if(task<2)await expect(page.getByText('Mission '+(task+2)+' of 3')).toBeVisible();
   }
   await expect(page.getByRole('heading',{name:'Mission complete'})).toBeVisible();
-  await expect(page.getByText('Morning in town · Independence pass')).toBeVisible();
+  await expect(page.locator('.conversation-result').getByText('Morning in town · Independence pass',{exact:true})).toBeVisible();
   await expect(page.getByText(/9 \/ 9 independent turns/)).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'Mission history'})).toBeVisible();

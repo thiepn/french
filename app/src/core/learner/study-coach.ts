@@ -52,7 +52,7 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
   });
   candidates.push({
     id:'conversation',route:'conversation',title:'Practise a real exchange',
-    detail:'Five short text-first dialogues with hints and resumable turns.',
+    detail:'Fifteen text-first scenarios, real-world missions and adaptive sets.',
     action:'Open conversation',score:99+Math.round(32/(1+count(r.conversation??0)))
   });
   return candidates.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
