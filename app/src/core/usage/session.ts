@@ -132,6 +132,6 @@ export function completeUsageAttempt(pack:Pick<UsagePack,'records'>,state:UsageS
   if(!['matched','needs-practice','self-assessed'].includes(judgment)||
      !Object.hasOwn(LABELS,code)||(judgment==='matched'&&code!=='exact'))throw Error('INVALID_USAGE_OUTCOME');
   const old=state.modes[mode];
-  return{...state,modes:{...state.modes,[mode]:{index:old.index+1,support:0}},
+  return{...state,modes:{...state.modes,[mode]:{index:mode==='repair'?0:old.index+1,support:0}},
     history:[{recordId,mode,at,outcome:judgment,diagnosis:code,support:old.support},...state.history].slice(0,300)};
 }
