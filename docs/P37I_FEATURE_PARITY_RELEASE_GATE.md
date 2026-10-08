@@ -20,6 +20,9 @@ P37I-B4 hardens the native 23-function evidence model. Imported records are acce
 
 P37I-C1 adds an offline written-practice workspace using the verified P12 36-exercise corpus, with distinct phrase, sentence and situational-transfer tracks. Deterministic feedback explicitly abstains on open alternatives and user self-assessment never awards scheduled SRS mastery. This is **partial P11/P12 parity**, not a claim that the original P10/P11 practice banks have been fully ported.
 
+
+P37I-C2 preserves the **67 exact P10 source frames** and P35 provenance metadata in an integrity-checked lazy pack. Four new native writing tracks cover verified-frame gap completion, full-frame production, structural-cue phrase transfer, and error repair. Typed prose is never stored; practice outcomes are metadata-only and cannot reschedule vocabulary SRS. Local-only usage attempts or hints block silent first-cloud adoption. Source links carry the original P35 attribution, **not a claim of independently rechecking those sources**. This remains **partial P10/P11 parity** because P35's source-dependent study prerequisites, phrase-secure thresholds, contextual variation and adaptive task/repair prioritization have not yet been reproduced or signed off.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
