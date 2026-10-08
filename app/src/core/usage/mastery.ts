@@ -1,5 +1,5 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
-import type {UsageAttempt,UsageMode,UsageState} from './session';
+import type {UsageAttempt,UsageMode,UsageState,UsageTally} from './session';
 
 const DAY=86_400_000;
 export const USAGE_SECURE_ATTEMPTS=3; // P35 P9
@@ -39,15 +39,35 @@ function performance(events:UsageAttempt[],min:number,refreshDays:number,now:num
   return {attempts,independentExact:independentExactCount,accuracy,lastAt,lastIndependent,
     status:secure?'secure':stale&&attempts>=min&&accuracy>=.8?'refresh':attempts?'building':'unseen',secure};
 }
+
+function talliedUsage(state:UsageState,recordId:string,mode:UsageMode):UsageTally|undefined{
+  return state.tallies?.[recordId]?.[mode];
+}
+function combinedPerformance(state:UsageState,recordId:string,modes:UsageMode[],min:number,refreshDays:number,now:number):UsageMastery{
+  const totals=modes.map(mode=>talliedUsage(state,recordId,mode)).filter((row):row is UsageTally=>Boolean(row));
+  if(!totals.length){
+    return performance(state.history.filter(e=>e.recordId===recordId&&modes.includes(e.mode)),min,refreshDays,now);
+  }
+  const attempts=totals.reduce((n,row)=>n+row.attempts,0);
+  const independentExactCount=totals.reduce((n,row)=>n+row.exact,0);
+  const last=totals.reduce<UsageTally|undefined>((best,row)=>!best||row.lastAt>best.lastAt?row:best,undefined);
+  const lastAt=last?.lastAt??0,lastIndependent=Boolean(last?.lastIndependent);
+  const accuracy=attempts?independentExactCount/attempts:0,stale=lastAt>0&&now-lastAt>refreshDays*DAY;
+  const qualified=attempts>=min&&accuracy>=.8&&lastIndependent;
+  const secure=qualified&&!stale;
+  return {attempts,independentExact:independentExactCount,accuracy,lastAt,lastIndependent,
+    status:secure?'secure':stale&&attempts>=min&&accuracy>=.8?'refresh':attempts?'building':'unseen',secure};
+}
 export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now()):UsageRecordMastery{
   const own=state.history.filter(e=>e.recordId===recordId&&validTime(e.at,now));
   // P35 P10 usage evidence includes recognition of verified construction and
   // its full-frame production, but only independent exact native evidence
   // can count as a success. Never interpret self-assessment as certainty.
-  const usage=performance(own.filter(e=>e.mode==='usage'||e.mode==='production'),USAGE_SECURE_ATTEMPTS,USAGE_REFRESH_DAYS,now);
+  const usage=combinedPerformance(state,recordId,['usage','production'],USAGE_SECURE_ATTEMPTS,USAGE_REFRESH_DAYS,now);
   const transferEvents=own.filter(e=>e.mode==='transfer');
-  const basis=performance(transferEvents,TRANSFER_SECURE_ATTEMPTS,3650,now);
-  const distinctVariants=new Set(transferEvents.filter(independentExact).map(e=>e.variant??0)).size;
+  const basis=combinedPerformance(state,recordId,['transfer'],TRANSFER_SECURE_ATTEMPTS,3650,now);
+  const mask=talliedUsage(state,recordId,'transfer')?.variantMask??transferEvents.filter(independentExact).reduce((n,e)=>n|(1<<(e.variant??0)),0);
+  const distinctVariants=[0,1,2].filter(bit=>(mask&(1<<bit))!==0).length;
   // P35 also allowed scheduled-vocabulary production mastery as a prerequisite.
   // C3 does not infer that from the frame's anchor string (ambiguous senses).
   const ready=usage.secure||usage.attempts>=2;
@@ -55,16 +75,18 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const transfer:TransferMastery={...basis,ready,distinctVariants,
     secure:transferSecure,status:transferSecure?'secure':basis.attempts?'building':'unseen'};
   const sorted=[...own].sort((a,b)=>b.at-a.at);
+  const snapshot=Object.values(state.tallies?.[recordId]??{}).sort((a,b)=>b.lastAt-a.lastAt)[0];
   const latest=sorted[0];
-  const repairNeeded=Boolean(latest&&!independentExact(latest)&&latest.outcome!=='self-assessed')||
-    // Manual self-assessment cannot resolve an earlier documented error.
-    Boolean(latest?.outcome==='self-assessed'&&sorted.slice(1).some(e=>!independentExact(e)));
-  const lastError=repairNeeded?sorted.find(e=>!independentExact(e))?.diagnosis??null:null;
+  const lastIndependent=latest?independentExact(latest):snapshot?.lastIndependent??false;
+  const lastOutcome=latest?.outcome??snapshot?.lastOutcome??'matched';
+  const priorError=sorted.slice(1).some(e=>!independentExact(e));
+  const repairNeeded=!lastIndependent&&(lastOutcome!=='self-assessed'||priorError);
+  const lastError=repairNeeded?latest?.diagnosis??snapshot?.lastDiagnosis??null:null;
   const errors120d=own.filter(e=>e.at>=now-REPAIR_ERROR_DAYS*DAY&&!independentExact(e)).length;
   return {usage,transfer,lastError,repairNeeded,errors120d};
 }
 export function transferCueVariant(state:UsageState,recordId:string):0|1|2{
-  const count=state.history.filter(e=>e.recordId===recordId&&e.mode==='transfer').length;
+  const count=talliedUsage(state,recordId,'transfer')?.attempts??state.history.filter(e=>e.recordId===recordId&&e.mode==='transfer').length;
   return (count%3) as 0|1|2;
 }
 export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,now=Date.now()):RankedUsageCandidate[]{
