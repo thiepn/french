@@ -22,6 +22,14 @@ for(const [i,r] of source.records.entries()){
 }
 const first=source.records[0];
 assert.equal(maskUsageFrame(first),'apprendre _____ + infinitif');
+for(const id of ['p10-013','p10-023']){
+  const row=pack.records.find(record=>record.id===id);
+  assert.ok(row,'verified P10 frame '+id);
+  const masked=maskUsageFrame(row);
+  assert.ok(masked.includes('_____ + infinitif'),'mask the entire connector token '+id);
+  assert.ok(masked.startsWith(id==='p10-013'?'décider ':'demander à quelqu’un '),
+    'mask must never remove letters inside the anchor '+id);
+}
 assert.equal(diagnoseUsage('à',first,'usage',pack.records).code,'exact');
 assert.equal(diagnoseUsage('a',first,'usage',pack.records).code,'orthography');
 assert.equal(diagnoseUsage('de',first,'usage',pack.records).code,'connector');
