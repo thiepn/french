@@ -11,10 +11,10 @@ export function mountFrenchAccountRuntime():()=>void{
     if(disposed||running)return;running=true;
     try{
       if(isFrenchOAuthCallback()){
-        const user=await completeFrenchAccountCallback();
-        if(user){location.replace(consumeFrenchAccountReturnTo());return;}
-        // Rejected or cancelled OAuth callbacks must also remove the
-        // authorization query from browser history and return to local study.
+        // Even a rejected, expired or mismatched callback must be removed
+        // from the URL. Never retain OAuth codes in browser history.
+        try{await completeFrenchAccountCallback();}
+        catch(error){console.warn('French Account callback was not completed',error);}
         location.replace(consumeFrenchAccountReturnTo());return;
       }
       const user=await getVerifiedFrenchAccountUser();

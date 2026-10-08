@@ -123,6 +123,18 @@ test('first-party OAuth callback attaches identity without uploading study data'
   await expect(page.getByText(/signed in, local-only/)).toBeVisible();
 });
 
+test('invalid OAuth state never leaves authorization code in the URL or uploads data', async ({ page, context }) => {
+  const api = await interceptProduction(context);
+  const state = 'x'.repeat(48);
+  // No matching PKCE pending authorization exists, so this callback must be rejected.
+  await page.goto(ORIGIN + '/?code=invalid-synthetic-code&state=' + state);
+  await expect.poll(() => page.url(), { timeout: 20_000 }).not.toContain('code=');
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: 'Connect THIEPN Account' })).toBeVisible();
+  expect(api.uploads).toBe(0);
+  expect(api.tokenExchanges).toBe(0);
+});
+
 test('sync requires deliberate adoption and preserves data across two devices', async ({ page, context, browser }) => {
   const api = await interceptProduction(context);
   await seedSession(context);
