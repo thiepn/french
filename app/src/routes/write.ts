@@ -10,10 +10,11 @@ import {
 import {loadWritingState,saveWritingState} from '../core/writing/storage';
 import {
   USAGE_MODES,currentUsageRecord,repairCandidates,revealUsageSupport,completeUsageAttempt,
-  diagnoseUsage,usageCue,safeUsageState,type UsageMode,type UsageState,type UsageDiagnosis,type UsageOutcome
+  diagnoseUsage,diagnoseContextUsage,usageCue,safeUsageState,type UsageMode,type UsageState,type UsageDiagnosis,type UsageOutcome
 } from '../core/usage/session';
 import {loadUsageState,saveUsageState} from '../core/usage/storage';
-import {rankUsageCandidates,usageAggregate,transferCueVariant,usageRecordMastery} from '../core/usage/mastery';
+import {rankUsageCandidates,usageAggregate,transferCueVariant,contextCueVariant,usageRecordMastery} from '../core/usage/mastery';
+import {contextScene} from '../core/usage/context';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
   const e=document.createElement(tag);if(content)e.textContent=content;if(className)e.className=className;return e;
@@ -50,13 +51,14 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const drawUsage=()=>{
     const titles:Record<UsageMode,string>={
       usage:'Verified usage',production:'Active phrase production',
-      transfer:'Phrase transfer',repair:'Repair previous errors'
+      transfer:'Structural phrase transfer',context:'Contextual French production',repair:'Repair previous errors'
     };
     tabs.replaceChildren();
     for(const name of USAGE_MODES){
       const count=name==='repair'?repairCandidates(usagePack,usageState).length:
         rankUsageCandidates(usagePack,usageState,name).length;
-      const label=name==='usage'?'Usage':name==='production'?'Produce ('+count+')':name==='transfer'?'Transfer ('+count+')':'Repair ('+count+')';
+      const label=name==='usage'?'Usage':name==='production'?'Produce ('+count+')':
+        name==='transfer'?'Structure ('+count+')':name==='context'?'Contexts ('+count+')':'Repair ('+count+')';
       const btn=control(label,'write-tab'+(usageMode===name?' is-active':''));
       btn.setAttribute('aria-pressed',String(usageMode===name));
       btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
@@ -71,7 +73,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       message.textContent=overview.sourceFrames+' source-tagged P10 frames · '+overview.usageSecure+' usage-secure · '+overview.transferSecure+' transfer-secure';
       const reason=usageMode==='repair'?'No unresolved phrase errors.':
         usageMode==='production'?'Complete a verified usage attempt to unlock full-frame production.':
-        usageMode==='transfer'?'Transfer unlocks after two independent-source-frame practice attempts on the same construction.':
+        usageMode==='transfer'?'Transfer unlocks after two source-frame practice attempts on the same construction.':
+        usageMode==='context'?'Authored situational tasks unlock after two usage attempts on a supported construction.':
         'No source frames are available.';
       stage.append(element('p',reason,'write-note'));
       return;
@@ -82,7 +85,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const metrics=element('div','','write-mastery-overview');
     for(const [label,value] of [
       ['Usage secure',overview.usageSecure],['Transfer ready',overview.transferReady],
-      ['Transfer secure',overview.transferSecure],['Need refresh',overview.refresh],['Repair queue',overview.repair]
+      ['Structure secure',overview.transferSecure],['Contexts ready',overview.contextReady],
+      ['Contexts secure',overview.contextSecure],['Need refresh',overview.refresh],['Repair queue',overview.repair]
     ] as const){
       const item=element('div','','write-mastery-stat');
       item.append(element('strong',String(value)),element('span',label));metrics.append(item);
@@ -92,30 +96,34 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const heading=element('div','','write-heading');
     heading.append(element('p','P10 / P11 · '+record.kind,'write-context'),
       element('h2',titles[usageMode]),
-      element('p','Original P35 threshold: usage 3 attempts at 80%, refresh after 60 days; transfer 2 at 80%. C3 requires independent exact answers and distinct structural cues. These are practice indicators, not CEFR certification.','write-note'));
+      element('p','Usage: three independent attempts at 80%, 60-day refresh. Structural and contextual production are separate: contextual evidence requires exact unassisted responses across two distinct authored situations. Other valid French answers require self-review. This is not CEFR certification.','write-note'));
     const progress=element('div','','write-progress');
     progress.append(element('strong','Frame '+((usageState.modes[usageMode].index%rows.length)+1)+' / '+rows.length),
       element('small','Record '+record.id+' · '+mastery.usage.status+' usage · '+
         (mastery.transfer.secure?'transfer secure':mastery.transfer.ready?'transfer ready':'transfer locked')));
-    const cueVariant=usageMode==='transfer'?transferCueVariant(usageState,record.id):0;
+    const cueVariant=usageMode==='transfer'?transferCueVariant(usageState,record.id):
+      usageMode==='context'?contextCueVariant(usageState,record.id):0;
+    const scene=usageMode==='context'?contextScene(record.id,cueVariant as 0|1):undefined;
     const task=element('article','','write-task');
-    task.append(element('p','SOURCE-FRAME TASK · '+ranked.find(item=>item.record.id===record.id)?.reason,'write-label'),
-      element('p',usageCue(record,usageMode,cueVariant),'write-prompt'));
-    if(usageMode==='transfer')task.append(element('p','Structural cue '+(cueVariant+1)+' of 3 · exact-source-frame exercise, not unrestricted conversation.','write-note'));
+    task.append(element('p',(scene?'SITUATION · '+scene.situation:'SOURCE-FRAME TASK')+' · '+ranked.find(item=>item.record.id===record.id)?.reason,'write-label'),
+      element('p',scene?'Write in French: '+scene.english:usageCue(record,usageMode,cueVariant),'write-prompt'));
+    if(usageMode==='transfer')task.append(element('p','Structural cue '+(cueVariant+1)+' of 3 · source-frame recall, not unrestricted conversation.','write-note'));
+    if(scene)task.append(element('p','Situation '+(scene.variant+1)+' of 2 · new subjects, grammar and meaning; exact-model checks only.','write-note'));
     const form=element('form','','write-form');
     const input=element('textarea','','write-answer');
     input.setAttribute('aria-label','Your French usage or phrase answer');
     input.rows=usageMode==='usage'?2:3;input.maxLength=400;input.spellcheck=true;
-    input.placeholder=usageMode==='usage'?'Write the missing French element…':'Write the complete French frame…';
+    input.placeholder=usageMode==='usage'?'Write the missing French element…':
+      scene?'Write the complete French sentence…':'Write the complete French frame…';
     const actions=element('div','','write-actions');
     const check=control('Check phrase','primary-action compact-action');check.type='submit';
-    const hint=control('Show cue');const reference=control('Show verified frame');
+    const hint=control('Show cue');const reference=control(scene?'Show model answer':'Show verified frame');
     actions.append(check,hint,reference);form.append(input,actions);
     const support=element('p','','write-support');
     const showSupport=()=>{
       const level=usageState.modes[usageMode].support;
-      support.textContent=level===2?'Verified frame · '+record.frame:
-        level===1?'Hint · '+record.kind+'; anchor '+record.anchor:'';
+      support.textContent=level===2?(scene?'Model sentence · '+scene.expected:'Verified frame · '+record.frame):
+        level===1?(scene?'Hint · '+scene.hint:'Hint · '+record.kind+'; anchor '+record.anchor):'';
     };
     showSupport();
     const feedback=element('div','','write-feedback');feedback.setAttribute('role','status');
@@ -123,7 +131,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     decision.setAttribute('aria-label','Save usage practice result');
     task.append(form,support,feedback,decision);
     const source=usagePack.sources[record.sourceKey];
-    if(source?.url){
+    if(source?.url&&!scene){
       const attribution=element('p','','write-source');
       attribution.append(document.createTextNode('P35 provenance · '));
       const link=element('a',source.label);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';
@@ -150,8 +158,8 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
         // activity when a separate progress write would otherwise fail.
         await recordPracticeEvidence({
           noteId:'usage:'+record.id,skill:'production',practice:'verified-usage-'+usageMode,
-          direction:'en-fr',typed:true,correct:outcome==='matched'&&usageState.modes[usageMode].support===0,
-          typedQuality:outcome==='matched'&&usageState.modes[usageMode].support===0?'exact':
+          direction:'en-fr',typed:true,correct:outcome==='matched'&&diagnosis.correct&&usageState.modes[usageMode].support===0,
+          typedQuality:outcome==='matched'&&diagnosis.correct&&usageState.modes[usageMode].support===0?'exact':
             outcome==='self-assessed'?'manual-self-assessed':'review',
           responseMs:Math.max(0,Math.round(performance.now()-usageStarted)),
           supportLevel:usageState.modes[usageMode].support,errorCategory:diagnosis.code,
@@ -170,9 +178,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       event.preventDefault();if(busy)return;
       submitted=input.value.trim();
       if(!submitted){feedback.textContent='Write an answer before checking.';return;}
-      diagnosis=diagnoseUsage(submitted,record,usageMode,usagePack.records);
+      diagnosis=scene?diagnoseContextUsage(submitted,scene):diagnoseUsage(submitted,record,usageMode,usagePack.records);
       feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail),
-        element('p','Verified reference · '+(usageMode==='usage'?record.blank:record.frame),'write-reference'));
+        element('p',(scene?'Model sentence':'Verified reference')+' · '+(scene?scene.expected:usageMode==='usage'?record.blank:record.frame),'write-reference'));
       decision.replaceChildren();
       if(diagnosis.correct){
         const matched=control(usageState.modes[usageMode].support?'Save supported & next':'Save exact & next',
