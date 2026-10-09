@@ -49,7 +49,7 @@ assert.equal(currentWritingExercise(sentences,state,'bridge',usage,usageState)?.
 state=completeWritingAttempt(sentences,state,'bridge','p12-001','matched','exact',now+2,usage,usageState);
 assert.equal(sentenceBridgeSummary(sentences,usage,usageState,state).pairedContexts,1,
   'distinct original P12 contexts have independent model evidence');
-assert.equal(sentenceBridgeSummary(sentences,usage,usageState,state).pairedPossible>=1,true);
+assert.equal(sentenceBridgeSummary(sentences,usage,usageState,state).pairedPossible,4,'original P12 has exactly four two-context construction pairs');
 
 const raw=JSON.parse(JSON.stringify(state));
 assert.equal(JSON.stringify(raw).includes('Nous devons tenir compte'),false,'metadata only, no typed answer');
