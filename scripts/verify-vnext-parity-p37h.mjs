@@ -109,6 +109,21 @@ for(const term of ['diagnoseContextUsage','contextScene','Contexts secure','Mode
   need(writingRoute,term,'C5 contextual production workspace '+term);
 for(const term of ['separateStructuralAndContextualEvidence:true','privacy:','variantMask','scenes:'])
   need(contextTests,term,'C5 deterministic regression '+term);
+const [sentenceBridgeEngine,sentenceBridgeTests]=await Promise.all([
+  readFile(new URL('../app/src/core/writing/bridge.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-sentence-bridge.mts',import.meta.url),'utf8')
+]);
+for(const term of ['sentenceSourceMap','rankedSentenceBridge','sentenceBridgeSummary','independentExact<2'])
+  need(sentenceBridgeEngine,term,'C4 P10 to P12 bridge '+term);
+for(const term of ['sourceLinked','independentlyExact','Practice construction','Connected'])
+  need(writingRoute,term==='sourceLinked'?'bridge.sourceLinked':term,
+    'C4 writing bridge '+term);
+for(const term of ['evidence','nextWritingTally','bridge','safeWritingState'])
+  need(writingEngine,term,'C4 durable writing '+term);
+for(const term of ['originalSentences:links.size','multiContext:true','independentGate:2','metadataOnly:true'])
+  need(sentenceBridgeTests,term,'C4 bridge test '+term);
+need(cloudFormat,'const writingEvidence=obj(writing.evidence)','C4 cloud-safety protection');
+
 need(repository,'native-writing-v1','C4 atomic writing save');
 need(writingRoute,"key:'native-writing-v1'",'C4 atomic writing progress');
 
