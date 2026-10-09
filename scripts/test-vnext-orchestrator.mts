@@ -43,7 +43,8 @@ assert.equal(resumed.actions[0].id,'resume-conversation','resumable conversation
 const event=(practice:string,correct:boolean,supportLevel:number,manualJudgment:string,t=now):CanonicalReviewEventV1=>({
   schema:'thiepn-french-review-event-v1',eventId:practice+':'+t,t,
   noteId:'test',skill:'production',practice,practiceOnly:true,correct,
-  supportLevel,manualJudgment,typedQuality:manualJudgment==='self-assessed'?'manual-self-assessed':'exact',
+  typed:true,sentenceDiagnosis:'exact',supportLevel,manualJudgment,
+  typedQuality:manualJudgment==='self-assessed'?'manual-self-assessed':'exact',
   transcriptUsed:false,translationUsed:false
 } as CanonicalReviewEventV1);
 const practice=[
@@ -59,6 +60,15 @@ assert.equal(rated.lanes.find(x=>x.lane==='write')?.independent,1,'hint/manual o
 assert.equal(rated.lanes.find(x=>x.lane==='speak')?.independent,0);
 assert.equal(rated.lanes.find(x=>x.lane==='listen')?.attempts,0,'30-day bound must exclude stale event');
 assert.ok(rated.actions.some(x=>x.id==='lane-speak'));
+const recentDictation={...event('contextual-listening',true,0,'matched',now-DAY),
+  playCount:1,firstListen:true,playbackRate:1,typed:true};
+const trusted=planFrenchPractice({...base,events:[recentDictation,
+  {...recentDictation,t:now-2*DAY,playCount:3,firstListen:false},
+  event('spoken-transfer',true,0,'matched',now-3*DAY)]});
+assert.equal(trusted.lanes.find(x=>x.lane==='listen')?.independent,1,
+  'only first normal-speed unaided listening may count independently');
+assert.equal(trusted.lanes.find(x=>x.lane==='speak')?.independent,0,
+  'manual/ASR native speech cannot enter the independently calibrated lane');
 let usage=freshUsageState();
 function usageAttempt(recordId:string,mode:'usage'|'context'|'production',at:number,variant:0|1=0,
   outcome:'matched'|'needs-practice'='matched',diagnosis:'exact'|'connector'='exact'){
