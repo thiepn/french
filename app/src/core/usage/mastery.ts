@@ -1,6 +1,6 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
 import type {UsageAttempt,UsageMode,UsageState,UsageTally} from './session';
-import {hasContextScenes} from './context';
+import {hasContextScenes} from './context.ts';
 
 const DAY=86_400_000;
 export const USAGE_SECURE_ATTEMPTS=3; // P35 P9
