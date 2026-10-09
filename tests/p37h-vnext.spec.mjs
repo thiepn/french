@@ -434,23 +434,25 @@ test('P37I-C5 genuinely different contexts earn independent metadata-only eviden
   await page.goto('/#write');
   await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
   await expect(page.getByRole('button',{name:'Contexts (0)'})).toBeVisible();
-  const solve=async(answer)=>{
+  const solve=async(answer,attempt,track='usage')=>{
     await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill(answer);
     await page.getByRole('button',{name:'Check phrase'}).click();
     await page.getByRole('button',{name:'Save exact & next'}).click();
+    await expect(page.locator('.inline-status')).toContainText(
+      attempt+' recorded '+track+' attempts');
   };
-  await solve('à');
-  await solve('à');
-  await solve('à');
+  await solve('à',1);
+  await solve('à',2);
+  await solve('à',3);
   await expect(page.getByRole('button',{name:'Contexts (1)'})).toBeVisible();
   await page.getByRole('button',{name:'Contexts (1)'}).click();
   await expect(page.getByText('Write in French: I am learning to read in French.')).toBeVisible();
   await expect(page.getByText(/VOCABULARY LINK/)).toBeVisible();
   await expect(page.getByText(/Contextual practice|production|dictionary|vocabulary|lemma/i).first()).toBeVisible();
   await expect(page.getByRole('link',{name:'Open vocabulary'})).toHaveAttribute('href','#words');
-  await solve("J'apprends à lire en français.");
+  await solve("J'apprends à lire en français.",1,'context');
   await expect(page.getByText('Write in French: She is learning to cook.')).toBeVisible();
-  await solve('Elle apprend à cuisiner.');
+  await solve('Elle apprend à cuisiner.',2,'context');
   await expect(page.locator('.write-mastery-stat').filter({hasText:'Contexts secure'})).toContainText('1');
   await expect(page.locator('.write-mastery-stat').filter({hasText:'Transfer secure'})).toContainText('0');
   await page.reload();
@@ -483,14 +485,15 @@ test('P37I-C4 bridges independent P10 recall to original P12 written application
   await page.getByRole('button',{name:'Connected'}).click();
   await expect(page.getByText(/Connected sentences become available after two independent exact recalls/)).toBeVisible();
   await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
-  const solveUsage=async()=>{
+  const solveUsage=async(attempt)=>{
     await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill('à');
     await page.getByRole('button',{name:'Check phrase'}).click();
     await page.getByRole('button',{name:'Save exact & next'}).click();
+    await expect(page.locator('.inline-status')).toContainText(attempt+' recorded usage attempts');
   };
-  await solveUsage();
-  await solveUsage();
-  await solveUsage();
+  await solveUsage(1);
+  await solveUsage(2);
+  await solveUsage(3);
   await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
   await page.getByRole('button',{name:'Connected'}).click();
   await expect(page.getByRole('heading',{name:'Connected sentence transfer'})).toBeVisible();
