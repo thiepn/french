@@ -84,4 +84,5 @@ assert.equal(JSON.stringify(summary).includes('recognizedText'),false);
 assert.equal(JSON.stringify(summary).includes('targetText'),false);
 console.log(JSON.stringify({schema:'french-p37i-d2-cefr-gates',ok:true,levels:4,
   levelSpecific:true,assessmentHold:true,senseSafe:true,windowDays:D2_WINDOW_DAYS,
-  readOnly:true,privacy:'aggregated-evidence-only'}));
+  readOnly:true,levelSpecific:true,assessmentHold:true,senseSafe:true,
+  privacy:'aggregated-evidence-only'}));
