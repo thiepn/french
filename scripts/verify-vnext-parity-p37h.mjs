@@ -192,14 +192,14 @@ const [longitudinalEngine,longitudinalTests,longitudinalCss]=await Promise.all([
   readFile(new URL('../app/src/routes/progress-longitudinal.css',import.meta.url),'utf8')
 ]);
 for(const token of ['evaluateLongitudinalEvidence','D3_WINDOW_DAYS=45','D3_LOOKBACK_DAYS=90',
-  'sourceLimited','repairTouches','D3_MIN_DAYS','independently'])
+  'sourceLimited','sourceLimited?\'insufficient\'','repairTouches','D3_MIN_DAYS','independently'])
   need(longitudinalEngine,token==='independently'?'independent':token,
     'D3 longitudinal comparison '+token);
 for(const token of ['evaluateLongitudinalEvidence','Longitudinal mastery',
   'trendPanel','trends.priority','trends.limitation'])
   need(progress,token,'D3 study Progress '+token);
 for(const token of ['noAutomaticCausation:true','failedFirstListenPreserved:true',
-  'assistedExcluded:true','deduplicated:true','readOnly:true'])
+  'assistedExcluded:true','deduplicated:true','cappedSourceAbstains:true','readOnly:true'])
   need(longitudinalTests,token,'D3 regression '+token);
 need(longitudinalCss,'.longitudinal-row summary:focus-visible','D3 accessible trend-ledger style');
 
