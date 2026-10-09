@@ -115,7 +115,7 @@ const [sentenceBridgeEngine,sentenceBridgeTests]=await Promise.all([
 ]);
 for(const term of ['sentenceSourceMap','rankedSentenceBridge','sentenceBridgeSummary','independentExact<2'])
   need(sentenceBridgeEngine,term,'C4 P10 to P12 bridge '+term);
-for(const term of ['sourceLinked','independentlyExact','Practice construction','Connected'])
+for(const term of ['sourceLinked','independentlyExact','Open usage practice','Connected'])
   need(writingRoute,term==='sourceLinked'?'bridge.sourceLinked':term,
     'C4 writing bridge '+term);
 for(const term of ['evidence','nextWritingTally','bridge','safeWritingState'])
