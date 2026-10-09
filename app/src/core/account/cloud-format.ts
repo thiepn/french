@@ -90,9 +90,14 @@ function hasDistinctLocalLearnerState(snapshot:FrenchCloudSnapshot):boolean{
   const writing=obj(at(payload,'meta','native-writing-v1'));
   if(Array.isArray(writing.history)&&writing.history.length>0)return true;
   const modes=obj(writing.modes);
-  for(const name of ['phrase','sentence','transfer']){
+  for(const name of ['phrase','sentence','transfer','bridge']){
     const entry=obj(modes[name]);
     if(Number(entry.index)>0||Number(entry.support)>0)return true;
+  }
+  // C4's cumulative P12 sentence ledger can survive the bounded history.
+  const writingEvidence=obj(writing.evidence);
+  for(const row of Object.values(writingEvidence)){
+    if(Number(obj(row).attempts)>0)return true;
   }
   // P37I-C2 source-frame practice is meta-only until evidence is recorded.
   // It must block silent cloud adoption exactly like C1 writing progress.
