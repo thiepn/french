@@ -44,7 +44,7 @@ function validTime(value:number,now:number):boolean{
   return Number.isFinite(value)&&value>0&&value<=now+DAY;
 }
 function independent(event:CanonicalReviewEventV1):boolean{
-  return event.correct===true&&event.supportLevel===0&&
+  return event.correct===true&&(event.supportLevel??0)===0&&
     event.manualJudgment!=='self-assessed'&&event.manualJudgment!=='manual'&&
     event.typedQuality!=='manual-self-assessed'&&
     !event.transcriptUsed&&!event.translationUsed;
