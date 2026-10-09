@@ -56,7 +56,7 @@ export const CONTEXT_SCENES:readonly ContextScene[]=[
     hint:'Use prendre rendez-vous avec in the passé composé.'},
   {id:'c5-065b',recordId:'p10-065',variant:1,situation:'Dental clinic',
     english:'She is making an appointment with the dentist.',expected:'Elle prend rendez-vous avec le dentiste.',
-    hint:'Use prendre rendez-vous avec in the present.'}
+    hint:'Use prendre rendez-vous avec in the present.'},
   {id:'c6-002a',recordId:'p10-002',variant:0,situation:'At home',
     english:'I manage to open the window.',expected:"J'arrive à ouvrir la fenêtre.",
     hint:'Use arriver à + infinitive with je.'},
