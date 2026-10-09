@@ -9,7 +9,7 @@ export interface CoachInput{
   recent:{reviews:number;reading:number;listening:number;speaking:number;conversation?:number;writing?:number};
 }
 export interface CoachAction{
-  id:'resume'|'conversation-resume'|'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'write';
+  id:'resume'|'conversation-resume'|'review'|'learn'|'read'|'listen'|'speak'|'conversation'|'write'|'open-world';
   route:CoachRoute;
   title:string;
   detail:string;
@@ -59,6 +59,13 @@ export function rankNativeActivities(raw:CoachInput):CoachAction[]{
     id:'conversation',route:'conversation',title:'Practise a real exchange',
     detail:'Fifteen text-first scenarios, real-world missions and adaptive sets.',
     action:'Open conversation',score:99+Math.round(32/(1+count(r.conversation??0)))
+  });
+  // P22 original prerequisite: graded reading AND prior vocabulary recall.
+  // This offers authentic exposure, never a CEFR promotion or SRS grade.
+  if(count(r.reading)>=2&&count(r.reviews)>=5)candidates.push({
+    id:'open-world',route:'read',title:'Read your own French',
+    detail:'Bring French you have permission to use; mapping is advisory and exposure-only.',
+    action:'Open personal reading',score:105
   });
   return candidates.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
 }

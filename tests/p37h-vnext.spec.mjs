@@ -744,3 +744,32 @@ test('P37I-D5 P21 personal reading persists aggregate exposure only, not pasted 
   await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
   await expect(page.locator('.open-world-input')).toHaveValue('');
 });
+
+test('P37I-D5 P23 retains an adaptive study block without awarding SRS or inventing completion',async({page})=>{
+  await page.goto('/#home');
+  await expect(page.getByRole('button',{name:'Build a short adaptive block'})).toBeVisible();
+  const before=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{const d=o.result,t=d.transaction(['srs','activity'],'readonly');
+      const s=t.objectStore('srs').count(),e=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve([s.result,e.result]);};};
+  }));
+  await page.getByRole('button',{name:'Build a short adaptive block'}).click();
+  await expect(page.locator('.home-focus')).toContainText('Step 1 of');
+  await page.reload();
+  await expect(page.locator('.home-focus')).toContainText('Step 1 of');
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{const d=o.result,t=d.transaction(['learner','srs','activity'],'readonly');
+      const q=t.objectStore('learner').get('state-v1'),s=t.objectStore('srs').count(),e=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve({block:q.result.featureState.v5130AdaptiveBlock,counts:[s.result,e.result]});};};
+  }));
+  expect(after.counts).toEqual(before);
+  expect(after.block.cursor).toBe(0);
+  expect(after.block.steps.length).toBeLessThanOrEqual(3);
+  expect(after.block.steps.reduce((n,s)=>n+s.minutes,0)).toBeLessThanOrEqual(26);
+  await page.getByRole('button',{name:'End block; keep study progress'}).click();
+  await expect(page.locator('.home-focus')).toContainText('Native study history remains unchanged');
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Build a short adaptive block'})).toBeVisible();
+});
