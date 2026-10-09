@@ -1,6 +1,6 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
-import {rankUsageCandidates,transferCueVariant} from './mastery';
-import {assessContextAnswer,contextScene,hasContextScenes,type ContextScene} from './context';
+import {rankUsageCandidates,transferCueVariant} from './mastery.ts';
+import {assessContextAnswer,contextScene,hasContextScenes,type ContextScene} from './context.ts';
 
 export const USAGE_MODES=['usage','production','transfer','context','repair'] as const;
 export type UsageMode=typeof USAGE_MODES[number];
