@@ -698,7 +698,7 @@ test('P37I-D3 shows matched-target recurring errors and decline from real Indexe
   const improving=rows.filter({hasText:'vnext-d3-improving'});
   await improving.locator('summary').click();
   await expect(improving).toContainText('Recent graded performance improved for this same target');
-  await expect(panel).toContainText('observational');
+  await expect(panel).toContainText(/observational/i);
   const after=await page.evaluate(async()=>new Promise(resolve=>{
     const open=indexedDB.open('thiepn-french-vnext');
     open.onsuccess=()=>{
