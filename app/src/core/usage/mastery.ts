@@ -1,6 +1,7 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
 import type {UsageAttempt,UsageMode,UsageState,UsageTally} from './session';
 import {hasContextScenes} from './context.ts';
+import {lexicalPriority,type LexicalSignal} from './lexical.ts';
 
 const DAY=86_400_000;
 export const USAGE_SECURE_ATTEMPTS=3; // P35 P9
@@ -9,6 +10,7 @@ export const USAGE_REFRESH_DAYS=60;
 export const TRANSFER_SECURE_ATTEMPTS=2; // P35 P11
 export const TRANSFER_SECURE_ACCURACY=.8;
 export const REPAIR_ERROR_DAYS=120;
+export const CONTEXT_REVALIDATION_DAYS=30;
 
 export type MasteryStatus='unseen'|'building'|'secure'|'refresh';
 export interface UsageMastery{
@@ -77,7 +79,7 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
     secure:transferSecure,status:transferSecure?'secure':basis.attempts?'building':'unseen'};
   // Authored situational responses are measured separately from structural
   // cue recall. Exact model matches are not general semantic certification.
-  const contextualBasis=combinedPerformance(state,recordId,['context'],2,3650,now);
+  const contextualBasis=combinedPerformance(state,recordId,['context'],2,CONTEXT_REVALIDATION_DAYS,now);
   const contextEvents=own.filter(e=>e.mode==='context');
   const contextMask=talliedUsage(state,recordId,'context')?.variantMask??
     contextEvents.filter(independentExact).reduce((n,e)=>n|(1<<(e.variant??0)),0);
@@ -85,7 +87,7 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const contextReady=ready&&hasContextScenes(recordId);
   const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2;
   const contextual:TransferMastery={...contextualBasis,ready:contextReady,distinctVariants:contextVariants,
-    secure:contextSecure,status:contextSecure?'secure':contextualBasis.attempts?'building':'unseen'};
+    secure:contextSecure,status:contextSecure?'secure':contextualBasis.status==='refresh'?'refresh':contextualBasis.attempts?'building':'unseen'};
   // Contextual sentence errors must not reopen a successfully learned source frame.
   const frameOnly=own.filter(e=>e.mode!=='context');
   const sorted=[...frameOnly].sort((a,b)=>b.at-a.at);
@@ -111,7 +113,7 @@ export function contextCueVariant(state:UsageState,recordId:string):0|1{
     state.history.filter(e=>e.recordId===recordId&&e.mode==='context').length;
   return (count%2) as 0|1;
 }
-export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,now=Date.now()):RankedUsageCandidate[]{
+export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,now=Date.now(),lexical?:ReadonlyMap<string,LexicalSignal>):RankedUsageCandidate[]{
   const result:RankedUsageCandidate[]=[];
   for(const [order,record] of pack.records.entries()){
     const mastery=usageRecordMastery(record.id,state,now);
@@ -127,10 +129,11 @@ export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageSt
         (mastery.lastError==='connector'?10:0);
       reason='Resolve '+(mastery.lastError??'an unverified construction');
     }else if(mode==='context'){
-      score=(mastery.contextual.secure?0:190)+
+      score=(mastery.contextual.status==='refresh'?290:mastery.contextual.secure?0:190)+
         (mastery.contextual.attempts===0?40:Math.max(0,24-mastery.contextual.attempts*4))+
-        (mastery.usage.secure?12:0);
-      reason=mastery.contextual.secure?'Maintain authored real-world contexts':'Produce across distinct situations';
+        (mastery.usage.secure?12:0)+lexicalPriority(lexical?.get(record.id));
+      reason=mastery.contextual.status==='refresh'?'Revalidate a context after 30 days':
+        mastery.contextual.secure?'Maintain authored real-world contexts':'Produce across distinct situations';
     }else if(mode==='transfer'){
       score=(mastery.transfer.secure?0:160)+
         (mastery.transfer.attempts===0?40:Math.max(0,24-mastery.transfer.attempts*4))+
