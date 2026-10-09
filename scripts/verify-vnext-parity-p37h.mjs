@@ -101,6 +101,13 @@ for(const term of ['usageAggregate','rankUsageCandidates','transferCueVariant','
 for(const term of ['cumulativeLedger:true','TRANSFER_SECURE_ATTEMPTS','rankUsageCandidates','variantMask'])
   need(masteryTests,term,'C3 deterministic regression '+term);
 
+for(const term of ['assert.equal(CONTEXT_SCENES.length,72)',
+  "new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,36",
+  'later failure in one contextual variant','mixed-age scene evidence'])
+  need(contextTests,term,'C5 expanded situational qualification '+term);
+for(const term of ['usage.independentExact>=2','latestContextVariants','variantCurrent','variantExpired'])
+  need(masteryEngine,term,'C5 per-variant independent mastery '+term);
+
 for(const term of ['CONTEXT_SCENES','assessContextAnswer','contextScene','hasContextScenes'])
   need(contextEngine,term,'C5 authored context engine '+term);
 for(const term of ['contextCueVariant','contextualBasis','contextSecure'])
