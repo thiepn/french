@@ -12,6 +12,8 @@
 
 For the audited P35→vNext contract-by-contract gap list, see [P37I parity inventory](./P37I_PARITY_INVENTORY.md). This first tranche deliberately retains the production no-go state.
 
+**P37I-D4 qualification record:** [Exact-head CI, P35 parity, live Account, physical-device and rollback acceptance matrix](./P37I_D4_ACCEPTANCE_MATRIX.md). Its human-only rows are NOT RUN until independently signed off.
+
 The P37I-B1/B2 native conversation and missions comprise 15 newly authored three-turn scenes and five three-task chains, not a source-identical import of P35 P17/P18. They preserve evidence metadata only and deliberately do not award P20 function mastery or CEFR promotion. Mission independence passes are evidence of the practised deterministic scenarios, not general fluency. See the [parity inventory](./P37I_PARITY_INVENTORY.md).
 
 P37I-B3 now records 23 native observable communicative functions and chooses three distinct tasks from weakness-weighted recommendations. These are explicitly **not** a claim of source-identical 25-function P20 parity, CEFR promotion or general language proficiency. Adaptive function evidence contains no raw learner transcript. Its incomplete sets remain inside the same conversation backup and sync safety gate.
