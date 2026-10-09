@@ -787,8 +787,11 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
   const offlineContent=await page.evaluate(async()=>{
     const cache=await caches.open('french-vnext-shell-v1');
     const keys=(await cache.keys()).map(request=>new URL(request.url).pathname);
+    const storedManifest=await cache.match('/content/manifest.json');
+    const manifest=storedManifest?await storedManifest.json():null;
+    const readingDescriptor=manifest?.packs?.find(row=>row.id==='reading-stable-p35');
     return{manifest:keys.includes('/content/manifest.json'),
-      reading:keys.some(path=>path.startsWith('/content/packs/')&&/reading/i.test(path)),
+      reading:Boolean(readingDescriptor?.path&&keys.includes(readingDescriptor.path)),
       vocabulary:keys.some(path=>path.includes('/content/search/'))};
   });
   expect(offlineContent).toEqual({manifest:true,reading:true,vocabulary:true});
