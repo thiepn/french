@@ -44,10 +44,21 @@ function validTime(value:number,now:number):boolean{
   return Number.isFinite(value)&&value>0&&value<=now+DAY;
 }
 function independent(event:CanonicalReviewEventV1):boolean{
-  return event.correct===true&&(event.supportLevel??0)===0&&
-    event.manualJudgment!=='self-assessed'&&event.manualJudgment!=='manual'&&
-    event.typedQuality!=='manual-self-assessed'&&
-    !event.transcriptUsed&&!event.translationUsed;
+  if(event.correct!==true||(event.supportLevel??0)>0||
+    event.transcriptUsed||event.translationUsed||
+    (event.manualJudgment&&event.manualJudgment!=='matched')||
+    event.typedQuality?.startsWith('manual-'))return false;
+  const practice=event.practice??'';
+  // P37I-D2: evidence thresholds are modality-specific. The native speaking
+  // recorder uses manual ratings and optional ASR: neither certifies speech.
+  if(practice.startsWith('spoken-')||practice==='reading-context')return false;
+  if(practice.startsWith('contextual-listening'))return event.typed===true&&
+    event.typedQuality==='exact'&&event.firstListen===true&&
+    event.playCount===1&&(event.playbackRate??1)>=1;
+  if(practice.startsWith('written-'))return event.typed===true&&
+    event.typedQuality==='exact'&&
+    ['exact','accepted'].includes(event.sentenceDiagnosis??'');
+  return event.practiceOnly!==true;
 }
 function laneFor(event:CanonicalReviewEventV1):Lane|null{
   const p=event.practice;
@@ -78,7 +89,9 @@ export function planFrenchPractice(input:LearningInputs):LearningPlan{
     .map(lane=>measured(recent,lane,now));
   const validFunctionEvents=input.conversations.functionEvents.filter(e=>validTime(e.at,now));
   const profiles=functionProfiles(validFunctionEvents);
-  const independentTurns=validFunctionEvents.filter(e=>e.independent&&!e.manual&&e.accepted&&e.support===0).length;
+  const independentTurns=validFunctionEvents.filter(e=>
+    e.independent&&!e.manual&&e.accepted&&e.support===0&&e.retries===0&&
+    e.required>0&&e.matched>=e.required).length;
   const functionDays=new Set(validFunctionEvents.map(e=>new Date(e.at).toISOString().slice(0,10))).size;
   const latestFunction=Math.max(0,...validFunctionEvents.map(e=>e.at));
   lanes.push({lane:'conversation',attempts:validFunctionEvents.length,independent:independentTurns,
