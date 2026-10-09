@@ -43,3 +43,8 @@
 .write-mastery-stat span{color:var(--muted);font-size:.68rem;line-height:1.35}
 @media(max-width:700px){.write-mastery-overview{grid-template-columns:repeat(3,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:0}.write-mastery-stat:nth-child(n+4){border-top:1px solid var(--line)}}
 @media(max-width:400px){.write-mastery-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:1px solid var(--line)}.write-mastery-stat:nth-child(even){border-right:0}.write-mastery-stat:nth-child(n+3){border-top:1px solid var(--line)}}
+
+/* P37I-C4: structural provenance only; avoid decorative progress cards. */
+.write-bridge-source{display:flex;align-items:center;justify-content:space-between;gap:.7rem;border-top:1px solid var(--line);margin-top:1rem;padding-top:.7rem;flex-wrap:wrap}
+.write-bridge-source span{font-size:.75rem;color:var(--muted)}
+.write-bridge-source button{font-size:.73rem}
