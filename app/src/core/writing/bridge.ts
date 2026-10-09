@@ -5,7 +5,7 @@
 import type {SentenceExercise,SentenceExercisePack,UsagePack,UsageRecord} from '../content/loader';
 import type {WritingState,WritingTally} from './session';
 import type {UsageState} from '../usage/session';
-import {usageRecordMastery} from '../usage/mastery';
+import {usageRecordMastery} from '../usage/mastery.ts';
 
 export interface SentenceBridgeCandidate{
   exercise:SentenceExercise;record:UsageRecord;score:number;reason:string;
