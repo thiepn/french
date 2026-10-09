@@ -1,6 +1,7 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
 import {rankUsageCandidates,transferCueVariant} from './mastery.ts';
 import {assessContextAnswer,contextScene,hasContextScenes,type ContextScene} from './context.ts';
+import type {LexicalSignal} from './lexical';
 
 export const USAGE_MODES=['usage','production','transfer','context','repair'] as const;
 export type UsageMode=typeof USAGE_MODES[number];
@@ -169,8 +170,9 @@ export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):Usag
 export function repairCandidates(pack:Pick<UsagePack,'records'>,state:UsageState):UsageRecord[]{
   return rankUsageCandidates(pack,state,'repair').map(row=>row.record);
 }
-export function currentUsageRecord(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode):UsageRecord|undefined{
-  const rows=rankUsageCandidates(pack,state,mode);
+export function currentUsageRecord(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,
+ lexical?:ReadonlyMap<string,LexicalSignal>):UsageRecord|undefined{
+  const rows=rankUsageCandidates(pack,state,mode,Date.now(),lexical);
   if(!rows.length)return undefined;
   const latest=state.history.find(e=>e.mode===mode);
   // Avoid immediate repeats when several candidates exist. A single error
@@ -192,8 +194,9 @@ export function accumulateUsageTally(previous:UsageTally|undefined,attempt:Usage
     lastOutcome:attempt.outcome,lastDiagnosis:attempt.diagnosis};
 }
 export function completeUsageAttempt(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,
- recordId:string,judgment:UsageOutcome,code:UsageCode,at=Date.now(),variant:0|1|2=0):UsageState{
-  if(currentUsageRecord(pack,state,mode)?.id!==recordId)throw Error('STALE_USAGE_RECORD');
+ recordId:string,judgment:UsageOutcome,code:UsageCode,at=Date.now(),variant:0|1|2=0,
+ lexical?:ReadonlyMap<string,LexicalSignal>):UsageState{
+  if(currentUsageRecord(pack,state,mode,lexical)?.id!==recordId)throw Error('STALE_USAGE_RECORD');
   if(!['matched','needs-practice','self-assessed'].includes(judgment)||
      !Object.hasOwn(LABELS,code)||(judgment==='matched'&&code!=='exact')||
      ![0,1,2].includes(variant)||
