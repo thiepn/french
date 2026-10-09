@@ -15,6 +15,7 @@ import {
 import {loadUsageState,saveUsageState} from '../core/usage/storage';
 import {rankUsageCandidates,usageAggregate,transferCueVariant,contextCueVariant,usageRecordMastery} from '../core/usage/mastery';
 import {contextScene} from '../core/usage/context';
+import {sentenceBridgeSummary,rankedSentenceBridge,sentenceSourceMap} from '../core/writing/bridge';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
   const e=document.createElement(tag);if(content)e.textContent=content;if(className)e.className=className;return e;
@@ -22,11 +23,12 @@ function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',classNa
 function control(label:string,className='secondary-action compact-action'):HTMLButtonElement{
   const e=element('button',label,className);e.type='button';return e;
 }
-const TITLES:Record<WritingMode,string>={phrase:'Build a phrase',sentence:'Construct a sentence',transfer:'Transfer to a new situation'};
+const TITLES:Record<WritingMode,string>={phrase:'Build a phrase',sentence:'Construct a sentence',transfer:'Transfer to a new situation',bridge:'Connected sentence transfer'};
 const CAPTIONS:Record<WritingMode,string>={
   phrase:'Complete or construct useful French expressions.',
   sentence:'Translate or transform full sentences in context.',
-  transfer:'Apply a familiar construction to a different situation.'
+  transfer:'Apply a familiar construction to a different situation.',
+  bridge:'Apply a P10 construction you have recalled independently to an original P12 contextual sentence.'
 };
 export async function mount({main,signal}:RouteContext):Promise<void>{
   const host=element('section','','page write-workspace');
@@ -221,29 +223,55 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     if(family==='usage'){drawUsage();return;}
     tabs.replaceChildren();
     for(const name of WRITING_MODES){
-      const btn=control(name==='phrase'?'Phrases':name==='sentence'?'Sentences':'Transfer','write-tab'+(mode===name?' is-active':''));
+      const btn=control(name==='phrase'?'Phrases':name==='sentence'?'Sentences':name==='transfer'?'Transfer':'Connected',
+        'write-tab'+(mode===name?' is-active':''));
       btn.setAttribute('aria-pressed',String(mode===name));
       btn.addEventListener('click',()=>{if(busy)return;mode=name;started=performance.now();draw();});
       tabs.append(btn);
     }
-    const rows=writingExercises(pack,mode);
-    const exercise=currentWritingExercise(pack,state,mode);
+    const bridge=sentenceBridgeSummary(pack,usagePack,usageState,state);
+    const bridgeRows=mode==='bridge'?rankedSentenceBridge(pack,usagePack,usageState,state):[];
+    const rows=mode==='bridge'?bridgeRows.map(item=>item.exercise):writingExercises(pack,mode);
+    const exercise=currentWritingExercise(pack,state,mode,usagePack,usageState);
     stage.replaceChildren();
     if(!exercise){
-      stage.append(element('p','No verified prompts available for this track.','write-note'));
-      message.textContent='No exercises available.';return;
+      stage.append(element('p',mode==='bridge'?
+        'Connected sentences become available after two independent exact recalls of a matching P10 source construction. The original P12 tracks remain available.':
+        'No verified prompts available for this track.','write-note'));
+      message.textContent=mode==='bridge'?
+        bridge.sourceLinked+' source-linked sentences · '+bridge.eligible+' eligible · '+bridge.pairedContexts+' two-context pairs demonstrated':
+        'No exercises available.';return;
     }
     const current=state.modes[mode];
     const completed=state.history.filter(row=>row.mode===mode).length;
-    message.textContent=rows.length+' verified prompts in this track · '+completed+' recorded attempts · local-first';
+    message.textContent=mode==='bridge'?
+      bridge.sourceLinked+' P12 sentences linked to P10 · '+bridge.eligible+' eligible · '+
+      bridge.independentlyExact+' exact sentence models · '+bridge.pairedContexts+' of '+
+      bridge.pairedPossible+' paired contexts demonstrated':
+      rows.length+' verified prompts in this track · '+completed+' recorded attempts · local-first';
     const heading=element('div','','write-heading');
-    heading.append(element('p',exercise.context+' · '+exercise.type,'write-context'),element('h2',TITLES[mode]),
+    const link=sentenceSourceMap(pack,usagePack).get(exercise.id);
+    const entry=bridgeRows.find(item=>item.exercise.id===exercise.id);
+    heading.append(element('p',exercise.context+' · '+exercise.type+
+      (link?' · source '+link.id:''),'write-context'),element('h2',TITLES[mode]),
       element('p',CAPTIONS[mode],'write-note'));
+    if(mode==='bridge'&&entry){
+      heading.append(element('p',entry.reason+' · '+entry.usageExact+
+        ' independent source-frame recalls. Exact P12 sentence evidence is separate from P10 phrase and C5 contextual mastery.',
+        'write-note'));
+    }
     const progress=element('div','','write-progress');
-    progress.append(element('strong','Prompt '+((current.index%rows.length)+1)+' / '+rows.length),
+    progress.append(element('strong',mode==='bridge'?'Linked task · '+exercise.id+' / '+rows.length+' eligible':'Prompt '+((current.index%rows.length)+1)+' / '+rows.length),
       element('small',completed+' recorded attempts'));
     const task=element('article','','write-task');
     task.append(element('p','PROMPT','write-label'),element('p',exercise.prompt,'write-prompt'));
+    if(link){
+      const linkLine=element('div','','write-bridge-source');
+      linkLine.append(element('span','Linked P10 construction · '+link.frame+' · '+link.id));
+      const go=control('Practice construction');
+      go.onclick=()=>{if(busy)return;family='usage';usageMode='usage';usageStarted=performance.now();draw();};
+      linkLine.append(go);task.append(linkLine);
+    }
     const form=element('form','','write-form');
     const answer=element('textarea','','write-answer');answer.setAttribute('aria-label','Your written French answer');
     answer.placeholder='Écrivez votre réponse en français…';answer.rows=4;answer.maxLength=1200;answer.spellcheck=true;
@@ -277,7 +305,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       let committed=false;
       try{
         const at=Date.now();
-        const updated=completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code,at);
+        const updated=completeWritingAttempt(pack,state,mode,exercise.id,outcome,diagnosis.code,at,usagePack,usageState);
         // C4: save P12 cursor and practice evidence in one IDB transaction.
         await recordPracticeEvidence({
           noteId:'sentence:'+exercise.id,skill:'production',practice:'written-'+mode,
