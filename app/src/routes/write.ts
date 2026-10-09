@@ -1,8 +1,8 @@
 import './write.css';
 import type {RouteContext} from '../core/types';
-import {loadStableSentenceExercises,loadStableUsageCorpus} from '../core/content/loader';
+import {loadStableSentenceExercises,loadStableUsageCorpus,loadVocabularySearchIndex} from '../core/content/loader';
 import {diagnoseSentence,type SentenceDiagnosis} from '../core/content/sentence-diagnosis';
-import {recordPracticeEvidence} from '../core/learner/repository';
+import {recordPracticeEvidence,readSrsByNoteIds} from '../core/learner/repository';
 import {
   WRITING_MODES,currentWritingExercise,completeWritingAttempt,revealWritingSupport,
   writingExercises,type WritingMode,type WritingState,type WritingAttempt
@@ -15,6 +15,7 @@ import {
 import {loadUsageState,saveUsageState} from '../core/usage/storage';
 import {rankUsageCandidates,usageAggregate,transferCueVariant,contextCueVariant,usageRecordMastery} from '../core/usage/mastery';
 import {contextScene} from '../core/usage/context';
+import {buildLexicalSignals,linkedNoteIds,type LexicalSignal} from '../core/usage/lexical';
 import {sentenceBridgeSummary,rankedSentenceBridge,sentenceSourceMap} from '../core/writing/bridge';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
@@ -49,6 +50,28 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   let family:'writing'|'usage'='writing',usageMode:UsageMode='usage';
   let usageState:UsageState=safeUsageState(usageSaved,usagePack),usageStarted=performance.now();
   const save=async(next:WritingState)=>{await saveWritingState(next);state=next;};
+  let lexical:Map<string,LexicalSignal>|null=null,lexicalLoading=false,lexicalAttempted=false;
+  let lexicalError='';
+  const loadLexical=async()=>{
+    if(lexicalLoading||lexicalAttempted)return;
+    lexicalLoading=true;
+    try{
+      // Load the 12k-word index only when Contexts is opened. Failure to
+      // fetch it must not break offline writing and prior C5 exercises.
+      const index=await loadVocabularySearchIndex(signal);
+      const relevant=usagePack.records.filter(row=>Boolean(contextScene(row.id,0)));
+      const noteIds=linkedNoteIds(relevant,index.rows);
+      const records=await readSrsByNoteIds(noteIds);
+      if(signal.aborted)return;
+      lexical=buildLexicalSignals(relevant,index.rows,records);
+    }catch(error){
+      lexicalError='Vocabulary evidence unavailable; contextual exercises remain accessible.';
+      console.warn('C6 vocabulary crosswalk unavailable',error);
+    }finally{
+      lexicalLoading=false;lexicalAttempted=true;
+      if(!signal.aborted&&family==='usage'&&usageMode==='context')draw();
+    }
+  };
 
   const drawUsage=()=>{
     const titles:Record<UsageMode,string>={
@@ -66,9 +89,15 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
       tabs.append(btn);
     }
-    const ranked=rankUsageCandidates(usagePack,usageState,usageMode);
+    if(usageMode==='context'&&!lexicalAttempted){
+      stage.replaceChildren(element('p','Connecting vocabulary evidence…','write-note'));
+      message.textContent='Preparing context recommendations…';
+      void loadLexical();return;
+    }
+    const signals=usageMode==='context'?lexical??undefined:undefined;
+    const ranked=rankUsageCandidates(usagePack,usageState,usageMode,Date.now(),signals);
     const rows=ranked.map(entry=>entry.record);
-    const record=currentUsageRecord(usagePack,usageState,usageMode);
+    const record=currentUsageRecord(usagePack,usageState,usageMode,signals);
     const overview=usageAggregate(usagePack,usageState);
     stage.replaceChildren();
     if(!record){
@@ -94,11 +123,24 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       item.append(element('strong',String(value)),element('span',label));metrics.append(item);
     }
     stage.append(metrics);
+    if(usageMode==='context'&&lexicalError)
+      stage.append(element('p',lexicalError,'write-note'));
     const mastery=usageRecordMastery(record.id,usageState);
     const heading=element('div','','write-heading');
     heading.append(element('p','P10 / P11 · '+record.kind,'write-context'),
       element('h2',titles[usageMode]),
       element('p','Usage: three independent attempts at 80%, 60-day refresh. Structural and contextual production are separate: contextual evidence requires exact unassisted responses across two distinct authored situations. Other valid French answers require self-review. This is not CEFR certification.','write-note'));
+    if(usageMode==='context'){
+      const mapped=lexical?.get(record.id);
+      heading.append(element('p','VOCABULARY LINK · '+
+        (mapped?mapped.anchor+' · '+mapped.status.replace(/-/g,' '):'unavailable'),'write-context'));
+      heading.append(element('p',mapped?.detail??
+        'Contextual practice is separate from scheduled vocabulary reviews.','write-note'));
+      if(mastery.contextual.status==='refresh')
+        heading.append(element('p','Context revalidation due: 30 days since independent practice.','write-note'));
+      const words=element('a','Open vocabulary');
+      words.href='#words';words.className='write-source';heading.append(words);
+    }
     const progress=element('div','','write-progress');
     progress.append(element('strong','Frame '+((usageState.modes[usageMode].index%rows.length)+1)+' / '+rows.length),
       element('small','Record '+record.id+' · '+mastery.usage.status+' usage · '+
@@ -155,7 +197,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       let committed=false;
       try{
         const at=Date.now();
-        const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code,at,cueVariant);
+        const next=completeUsageAttempt(usagePack,usageState,usageMode,record.id,outcome,diagnosis.code,at,cueVariant,signals);
         // Atomic learner/activity/meta IDB transaction: no double-credited
         // activity when a separate progress write would otherwise fail.
         await recordPracticeEvidence({
