@@ -127,6 +127,18 @@ need(cloudFormat,'const writingEvidence=obj(writing.evidence)','C4 cloud-safety 
 need(repository,'native-writing-v1','C4 atomic writing save');
 need(writingRoute,"key:'native-writing-v1'",'C4 atomic writing progress');
 
+const [lexicalEngine,lexicalTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/lexical.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-lexical.mts',import.meta.url),'utf8')
+]);
+for(const token of ['uniqueLexicalAnchor','linkedNoteIds','buildLexicalSignals','manualKnown','read-only'])
+  need(lexicalEngine,token,'C6 conservative lexical crosswalk '+token);
+for(const token of ['CONTEXT_REVALIDATION_DAYS=30','lexicalPriority'])
+  need(masteryEngine,token,'C6 spaced lexical context priority '+token);
+for(const token of ['loadVocabularySearchIndex','readSrsByNoteIds','buildLexicalSignals','Contexts'])
+  need(writingRoute,token,'C6 UI source and fallback '+token);
+for(const token of ['contextRefreshDays:30','srs:','privacy:'])
+  need(lexicalTests,token,'C6 coverage '+token);
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
