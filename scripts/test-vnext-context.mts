@@ -45,6 +45,12 @@ function add(state:UsageState,mode:UsageMode,variant:0|1=0,
 let state=freshUsageState();
 assert.equal(state.modes.context.index,0);
 assert.equal(rankUsageCandidates(pack,state,'context',now).length,0,'contexts initially locked');
+const hintedPrereq=add(add(freshUsageState(),'usage',0,2,'matched','exact',recordId,now-2*DAY),
+  'usage',0,0,'matched','exact',recordId,now-DAY);
+assert.equal(usageRecordMastery(recordId,hintedPrereq,now).contextual.ready,false,
+  'two attempts are insufficient when one exact response was prompted with a reference');
+assert.equal(rankUsageCandidates(pack,hintedPrereq,'context',now).length,0,
+  'hinted construction practice must not unlock contextual certification');
 state=add(state,'usage',0,0,'matched','exact',recordId,now-2*DAY);
 assert.equal(usageRecordMastery(recordId,state,now).contextual.ready,false);
 state=add(state,'usage',0,0,'matched','exact',recordId,now-DAY);
@@ -77,6 +83,15 @@ assert.equal(usageRecordMastery(recordId,revalidated,now+6).contextual.secure,tr
 assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.secure,false,
   'contextual security must expire after 30 days without independent revalidation');
 assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.status,'refresh');
+const mixedFreshness=add(
+  add(add(add(freshUsageState(),'usage',0,0,'matched','exact',recordId,now-40*DAY),
+    'usage',0,0,'matched','exact',recordId,now-39*DAY),
+    'context',0,0,'matched','exact',recordId,now-35*DAY),
+    'context',1,0,'matched','exact',recordId,now-DAY);
+assert.equal(usageRecordMastery(recordId,mixedFreshness,now).contextual.secure,false,
+  'recent success in one situation does not refresh the other stale situation');
+assert.equal(usageRecordMastery(recordId,mixedFreshness,now).contextual.status,'refresh',
+  'mixed-age scene evidence should request contextual revalidation');
 assert.equal(usageRecordMastery(recordId,state,now+4).transfer.secure,false,'context must not fabricate structural-transfer mastery');
 assert.equal(usageAggregate(pack,state,now+4).contextSecure,1);
 assert.equal(usageRecordMastery(recordId,state,now+4).repairNeeded,false,'context mistakes must not create source-frame repair demand');
