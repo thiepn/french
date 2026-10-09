@@ -1,0 +1,31 @@
+/* P37I-D2: evidence ledger, not SaaS cards or decorative progress badges. */
+.cefr-gates{min-width:0}
+.cefr-gate-list{margin:1rem 0;display:grid;gap:0;border-top:1px solid var(--line)}
+.cefr-gate-entry{border-bottom:1px solid var(--line)}
+.cefr-gate-summary{display:grid;grid-template-columns:3rem minmax(0,1fr) auto;align-items:center;gap:1rem;
+  padding:1rem .35rem;cursor:pointer;list-style:none}
+.cefr-gate-summary::-webkit-details-marker{display:none}
+.cefr-gate-summary::after{content:'+';grid-column:3;grid-row:1;justify-self:end;font-size:1.15rem;color:var(--muted)}
+.cefr-gate-entry[open]>.cefr-gate-summary::after{content:'−'}
+.cefr-gate-summary strong{font-size:1.15rem;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.cefr-gate-summary span{font-size:.91rem;font-weight:600}
+.cefr-gate-summary small{grid-column:2;grid-row:2;color:var(--muted);font-size:.73rem}
+.cefr-gate-summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cefr-gate-checks{border-top:1px solid var(--line);padding:0 0 .4rem 3.9rem}
+.cefr-gate-check{padding:.85rem .35rem;border-bottom:1px solid var(--line);display:grid;gap:.3rem}
+.cefr-gate-check:last-child{border-bottom:0}
+.cefr-gate-check-heading{display:flex;align-items:baseline;justify-content:space-between;gap:.65rem}
+.cefr-gate-check-heading strong{font-size:.85rem;font-weight:650}
+.cefr-gate-check-heading span{font-size:.73rem;color:var(--muted);text-align:right}
+.cefr-gate-metric{margin:0;font-size:.83rem;font-variant-numeric:tabular-nums}
+.cefr-gate-check .intel-note{font-size:.76rem;margin:.1rem 0;color:var(--muted);line-height:1.5}
+.cefr-gate-action{justify-self:start;padding:.4rem 0;min-height:35px;border:0;border-bottom:1px solid currentColor;
+  border-radius:0;background:transparent;color:var(--accent);font-size:.78rem;font-weight:650;cursor:pointer}
+.cefr-gate-action:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){
+ .cefr-gate-summary{grid-template-columns:2.6rem minmax(0,1fr) 1.2rem;column-gap:.5rem}
+ .cefr-gate-summary span{font-size:.8rem}
+ .cefr-gate-summary small{grid-column:1/-1;grid-row:3;margin-top:.1rem}
+ .cefr-gate-checks{padding-left:.4rem}
+ .cefr-gate-check-heading{align-items:start}
+}
