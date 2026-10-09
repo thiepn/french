@@ -561,3 +561,24 @@ test('P37I-D1 Progress exposes cross-skill remediation without awarding a CEFR l
   }));
   expect(after).toEqual(before);
 });
+
+test('P37I-D2 CEFR evidence gates expose prerequisites and never promote learners',async({page})=>{
+  await page.goto('/#progress');
+  const section=page.locator('.cefr-gates');
+  await expect(section.getByRole('heading',{name:'CEFR progression gates'})).toBeVisible();
+  await expect(section.locator('.cefr-gate-entry')).toHaveCount(4);
+  await expect(section).toContainText('promotion blocked');
+  const a1=section.locator('.cefr-gate-entry').first();
+  await expect(a1.locator('summary')).toContainText('A1');
+  await expect(a1.locator('summary')).toContainText('practice checks');
+  await expect(a1).toHaveAttribute('open','');
+  await expect(a1).toContainText('Balanced vocabulary recall');
+  await expect(a1).toContainText('Validated level assessment');
+  await expect(a1).toContainText('Not performed');
+  const b2=section.locator('.cefr-gate-entry').last();
+  await expect(b2.locator('summary')).toContainText('B2');
+  await expect(b2.locator('summary')).toContainText('Content unavailable');
+  await b2.locator('summary').click();
+  await expect(b2).toContainText('Independently verified speaking');
+  await expect(section).toContainText('A level is never automatically awarded');
+});
