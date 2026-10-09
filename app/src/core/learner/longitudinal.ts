@@ -146,7 +146,7 @@ function classify(b:TrendWindow,r:TrendWindow):TrendStatus{
 export function evaluateLongitudinalEvidence(input:LongitudinalInput):LongitudinalReport{
   const now=input.now??Date.now(),boundary=now-D3_WINDOW_DAYS*DAY;
   const words=new Map((input.vocabulary??[]).map(row=>[row.id,row.word]));
-  const sourceLimited=(input.sourceLimit??0)>0&&input.events.length>=input.sourceLimit;
+  const sourceLimited=(input.sourceLimit??0)>0&&input.events.length>=(input.sourceLimit??Infinity);
   const raw:Sample[]=[];
   for(const e of input.events){
     if(!bounded(e.t,now))continue;
