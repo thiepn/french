@@ -186,6 +186,23 @@ for(const token of ['calibrateFrenchEvidence','Cross-skill evidence calibration'
   'Construction → sentence → situation','calibration-row'])
   need(progress,token,'P37I-D2 Progress evidence ledger '+token);
 
+const [longitudinalEngine,longitudinalTests,longitudinalCss]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/longitudinal.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-longitudinal.mts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/progress-longitudinal.css',import.meta.url),'utf8')
+]);
+for(const token of ['evaluateLongitudinalEvidence','D3_WINDOW_DAYS=45','D3_LOOKBACK_DAYS=90',
+  'sourceLimited','repairTouches','D3_MIN_DAYS','independently'])
+  need(longitudinalEngine,token==='independently'?'independent':token,
+    'D3 longitudinal comparison '+token);
+for(const token of ['evaluateLongitudinalEvidence','Longitudinal mastery',
+  'trendPanel','trends.priority','trends.limitation'])
+  need(progress,token,'D3 study Progress '+token);
+for(const token of ['noAutomaticCausation:true','failedFirstListenPreserved:true',
+  'assistedExcluded:true','deduplicated:true','readOnly:true'])
+  need(longitudinalTests,token,'D3 regression '+token);
+need(longitudinalCss,'.longitudinal-row summary:focus-visible','D3 accessible trend-ledger style');
+
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
