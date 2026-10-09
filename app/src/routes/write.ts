@@ -105,7 +105,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const reason=usageMode==='repair'?'No unresolved phrase errors.':
         usageMode==='production'?'Complete a verified usage attempt to unlock full-frame production.':
         usageMode==='transfer'?'Transfer unlocks after two source-frame practice attempts on the same construction.':
-        usageMode==='context'?'Authored situational tasks unlock after two usage attempts on a supported construction.':
+        usageMode==='context'?'Authored situational tasks unlock after two independently exact P10 recalls of the same construction.':
         'No source frames are available.';
       stage.append(element('p',reason,'write-note'));
       return;
@@ -152,7 +152,15 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     task.append(element('p',(scene?'SITUATION · '+scene.situation:'SOURCE-FRAME TASK')+' · '+ranked.find(item=>item.record.id===record.id)?.reason,'write-label'),
       element('p',scene?'Write in French: '+scene.english:usageCue(record,usageMode,cueVariant),'write-prompt'));
     if(usageMode==='transfer')task.append(element('p','Structural cue '+(cueVariant+1)+' of 3 · source-frame recall, not unrestricted conversation.','write-note'));
-    if(scene)task.append(element('p','Situation '+(scene.variant+1)+' of 2 · new subjects, grammar and meaning; exact-model checks only.','write-note'));
+    if(scene){
+      const latestContexts=[0,1].map(variant=>usageState.history.find(
+        item=>item.recordId===record.id&&item.mode==='context'&&item.variant===variant));
+      const valid=latestContexts.filter(item=>item?.outcome==='matched'&&
+        item.diagnosis==='exact'&&item.support===0&&
+        Date.now()-item.at<=30*86_400_000).length;
+      task.append(element('p','Situation '+(scene.variant+1)+' of 2 · '+
+        valid+'/2 independently verified recently · model-exact checks only; valid alternatives need your review.','write-note'));
+    }
     const form=element('form','','write-form');
     const input=element('textarea','','write-answer');
     input.setAttribute('aria-label','Your French usage or phrase answer');
