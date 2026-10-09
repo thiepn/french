@@ -95,8 +95,12 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const variantCurrent=latestContextVariants.every(e=>Boolean(e&&independentExact(e)&&
     e.at<=now&&now-e.at<=CONTEXT_REVALIDATION_DAYS*DAY));
   const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2&&variantCurrent;
+  const variantExpired=latestContextVariants.some(e=>e&&independentExact(e)&&
+    now-e.at>CONTEXT_REVALIDATION_DAYS*DAY);
   const contextual:TransferMastery={...contextualBasis,ready:contextReady,distinctVariants:contextVariants,
-    secure:contextSecure,status:contextSecure?'secure':contextualBasis.status==='refresh'?'refresh':contextualBasis.attempts?'building':'unseen'};
+    secure:contextSecure,status:contextSecure?'secure':
+      variantExpired||contextualBasis.status==='refresh'?'refresh':
+      contextualBasis.attempts?'building':'unseen'};
   // Contextual sentence errors must not reopen a successfully learned source frame.
   const frameOnly=own.filter(e=>e.mode!=='context');
   const sorted=[...frameOnly].sort((a,b)=>b.at-a.at);
