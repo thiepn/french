@@ -1,6 +1,6 @@
 import type {SentenceExercise,SentenceExercisePack,UsagePack} from '../content/loader';
 import type {UsageState} from '../usage/session';
-import {rankedSentenceBridge} from './bridge';
+import {rankedSentenceBridge} from './bridge.ts';
 
 export const WRITING_MODES=['phrase','sentence','transfer','bridge'] as const;
 export type WritingMode=typeof WRITING_MODES[number];
