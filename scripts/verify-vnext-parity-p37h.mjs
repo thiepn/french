@@ -60,6 +60,10 @@ const [contextEngine,contextTests]=await Promise.all([
   readFile(new URL('../app/src/core/usage/context.ts',import.meta.url),'utf8'),
   readFile(new URL('./test-vnext-context.mts',import.meta.url),'utf8')
 ]);
+const [d2Calibration,d2CalibrationTests]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/evidence-calibration.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-evidence-calibration.mts',import.meta.url),'utf8')
+]);
 const usageSource=JSON.parse(usageSourceText);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
@@ -170,6 +174,17 @@ for(const term of ['evaluateCefrEvidence','CEFR progression gates','cefr-gate-en
 for(const term of ['levelSpecific:true','assessmentHold:true','senseSafe:true','readOnly:true'])
   need(cefrGateTests,term,'D2 explainability regression '+term);
 need(cefrGateStyles,'.cefr-gate-summary:focus-visible','D2 accessible evidence-ledger style');
+
+for(const token of ['calibrateFrenchEvidence','D2_WINDOW_DAYS=30',
+  'firstListen===true','manualJudgment','recentIndependent','sourceFrames',
+  "cefr:'not-assessed'",'interaction'])
+  need(d2Calibration,token,'P37I-D2 calibrated evidence '+token);
+for(const token of ['manualSpeechNotCertified:true','strictFirstListen:true',
+  'sourceLinkedTransfer:true',"privacy:'aggregate-only'","cefr:'not-assessed'"])
+  need(d2CalibrationTests,token,'P37I-D2 regression '+token);
+for(const token of ['calibrateFrenchEvidence','Cross-skill evidence calibration',
+  'Construction → sentence → situation','calibration-row'])
+  need(progress,token,'P37I-D2 Progress evidence ledger '+token);
 
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
