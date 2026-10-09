@@ -29,3 +29,21 @@
  .cefr-gate-checks{padding-left:.4rem}
  .cefr-gate-check-heading{align-items:start}
 }
+
+/* D2 — compact evidence ledger, not percentile mastery cards. */
+.evidence-calibration{min-width:0}
+.calibration-ledger{border-top:1px solid var(--line);margin:1rem 0}
+.calibration-row{border-bottom:1px solid var(--line)}
+.calibration-summary{display:grid;grid-template-columns:minmax(10rem,1fr) minmax(7rem,auto);gap:.25rem 1rem;
+  align-items:center;padding:.78rem .3rem;cursor:pointer;list-style:none}
+.calibration-summary::-webkit-details-marker{display:none}
+.calibration-summary strong{font-size:.9rem;font-weight:650}
+.calibration-summary span{font-size:.78rem;text-align:right;font-weight:600}
+.calibration-summary small{grid-column:1/-1;color:var(--muted);font-size:.72rem;font-variant-numeric:tabular-nums}
+.calibration-summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.calibration-row[open]>.calibration-summary{border-bottom:1px solid var(--line)}
+.calibration-detail{padding:.5rem .35rem 1rem;display:grid;gap:.35rem}
+.calibration-detail p{margin:0;font-size:.82rem;line-height:1.5}
+.calibration-detail .cefr-gate-action{justify-self:start;margin-top:.35rem}
+@media(max-width:520px){.calibration-summary{grid-template-columns:minmax(0,1fr) minmax(6rem,auto);column-gap:.5rem}
+.calibration-summary strong{font-size:.82rem}.calibration-summary span{font-size:.72rem}}
