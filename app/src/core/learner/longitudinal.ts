@@ -99,7 +99,7 @@ function activitySample(e:CanonicalReviewEventV1,words:ReadonlyMap<string,string
     if(suffix==='repair'){
       // A repair itself is not a subsequent independent mastery result.
       return{key:'construct:usage:'+noteId,label:'Construction '+noteId,skill:'construction',
-        route:'write',at:e.t,grade:'unverified',context:suffix,id:'',repair:true};
+        route:'write',at:e.t,grade:'unverified',context:suffix,id:safeId(e.eventId),repair:true};
     }
     if(!['usage','production','transfer','context'].includes(suffix))return null;
     skill='construction';route='write';key='construct:'+suffix+':'+noteId;
@@ -171,17 +171,21 @@ export function evaluateLongitudinalEvidence(input:LongitudinalInput):Longitudin
     const ordered=items.sort((a,b)=>a.at-b.at);
     const baseline=windowStats(ordered.filter(x=>x.at<=boundary));
     const recent=windowStats(ordered.filter(x=>x.at>boundary));
-    const status=classify(baseline,recent);
+    // A capped event source may hide historical errors or successes. Without
+    // complete 90-day observation, reject comparative trend classifications.
+    const status=sourceLimited?'insufficient':classify(baseline,recent);
     const repairs=ordered.filter(x=>x.repair&&x.at>boundary);
     const repairTouches=repairs.length;
     const firstRepair=repairs[0]?.at??0;
     const afterRepair=windowStats(ordered.filter(x=>!x.repair&&x.at>firstRepair&&x.at>boundary));
-    const followup=repairTouches>0&&status==='improving'&&credible(afterRepair)&&
+    const followup=!sourceLimited&&repairTouches>0&&status==='improving'&&credible(afterRepair)&&
       afterRepair.positive>=3&&afterRepair.accuracy!==null&&afterRepair.accuracy>=75?
       'observed-after-repair':'not-demonstrated';
-    const changePoints=credible(baseline)&&credible(recent)?
+    const changePoints=!sourceLimited&&credible(baseline)&&credible(recent)?
       (recent.accuracy??0)-(baseline.accuracy??0):null;
-    const explanation=status==='insufficient'?
+    const explanation=sourceLimited?
+      'History is truncated; comparative outcomes and intervention changes remain unclassified.':
+      status==='insufficient'?
       'Too few independently graded attempts across two different days in each window.':
       status==='improving'?'Recent graded performance improved for this same target; not proof of a causal intervention.':
       status==='declining'?'Recent graded performance declined for this same target.':
@@ -205,5 +209,5 @@ export function evaluateLongitudinalEvidence(input:LongitudinalInput):Longitudin
     declining:rows.filter(row=>row.status==='declining').length,
     persistentRisk:rows.filter(row=>row.status==='persistent-risk').length,
     rows,priority,sourceLimited,
-    limitation:'Observational, source-bounded practice data. Scheduled reviews are self-rated; exact-model and scripted interaction checks are not semantic or CEFR assessments. A temporal association after a repair attempt does not prove the repair caused improvement.'};
+    limitation:'Observational, source-bounded practice data. Truncated history suppresses trend claims. Scheduled reviews are self-rated; exact-model and scripted interaction checks are not semantic or CEFR assessments. A temporal association after a repair attempt does not prove the repair caused improvement.'};
 }
