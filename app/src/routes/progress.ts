@@ -15,6 +15,7 @@ import {freshWritingState} from '../core/writing/session';
 import {loadStableUsageCorpus,loadStableSentenceExercises,loadStableReadingPack} from '../core/content/loader';
 import {evaluateCefrEvidence} from '../core/learner/cefr-gates';
 import {planFrenchPractice} from '../core/learner/orchestrator';
+import {calibrateFrenchEvidence} from '../core/learner/evidence-calibration';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -186,6 +187,52 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     readiness.append(missing);
   }else readiness.append(textNode('p','No tracked gaps in this limited dataset; assessment is still required.','intel-note'));
   orchestration.append(readiness);
+
+  const calibration=calibrateFrenchEvidence({
+    events:recent,functionEvents:conversations.functionEvents??[],
+    usage:usageState,writing:writingState,usagePack,sentences:writingPack,now
+  });
+  const calibrationPanel=document.createElement('section');
+  calibrationPanel.className='data-panel evidence-calibration';
+  calibrationPanel.append(textNode('h2','Cross-skill evidence calibration'),
+    textNode('p','Separate observations by task, independence, support, and day. These are evidence levels, not proficiency scores.','intel-note'));
+  const ledger=document.createElement('div');ledger.className='calibration-ledger';
+  const statusName:Record<string,string>={
+    unobserved:'No observations','assisted-or-manual':'Unverified only',
+    'single-context':'Single context',repeated:'Repeated',varied:'Varied tasks'
+  };
+  for(const lane of calibration.lanes){
+    const details=document.createElement('details');details.className='calibration-row';
+    const summary=document.createElement('summary');summary.className='calibration-summary';
+    summary.append(textNode('strong',lane.label),
+      textNode('span',statusName[lane.status]??lane.status),
+      textNode('small',lane.independent+' independent / '+lane.attempts+' attempts · '+
+        lane.distinctTasks+' prompts · '+lane.activeDays+' days'));
+    details.append(summary);
+    const explanation=document.createElement('div');explanation.className='calibration-detail';
+    explanation.append(textNode('p',lane.scope),
+      textNode('p',lane.limitation,'intel-note'),
+      textNode('p',lane.supported+' supported · '+lane.manual+' manually judged · '+
+        lane.recentIndependent+' independent in the last 14 days','intel-note'));
+    const route:Record<string,'review'|'read'|'listen'|'speak'|'write'|'conversation'>={
+      vocabulary:'review',reading:'read',listening:'listen',speaking:'speak',
+      writing:'write',context:'write',interaction:'conversation'
+    };
+    const jump=document.createElement('button');jump.type='button';
+    jump.className='cefr-gate-action';jump.textContent='Practice '+lane.label.toLowerCase();
+    jump.addEventListener('click',()=>navigate(route[lane.id]));
+    explanation.append(jump);
+    details.append(explanation);ledger.append(details);
+  }
+  calibrationPanel.append(ledger);
+  const transfer=calibration.bridges;
+  calibrationPanel.append(textNode('h3','Construction → sentence → situation'),
+    textNode('p',transfer.usageReady+' constructions recalled independently · '+
+      transfer.linkedWriting+' also applied in original P12 writing · '+
+      transfer.contextSecured+' with two current authored situations · '+
+      transfer.multiModal+' demonstrating all three controlled stages.','intel-note'),
+    textNode('p',calibration.caveat,'intel-note'));
+
 
   // A historically completed reading is counted only if the source ID is
   // known and a comprehension check is present. No extra learner writes.
@@ -491,6 +538,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  host.append(orchestration,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
+  host.append(orchestration,calibrationPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
