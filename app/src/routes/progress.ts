@@ -7,6 +7,12 @@ import { loadVocabularySearchIndex,type VocabularySearchRow } from '../core/cont
 import { loadConversationState } from '../core/conversation/storage';
 import { getMission } from '../core/conversation/missions';
 import {functionProfiles,FUNCTION_CATALOG} from '../core/conversation/curriculum';
+import {loadUsageState} from '../core/usage/storage';
+import {loadWritingState} from '../core/writing/storage';
+import {freshUsageState} from '../core/usage/session';
+import {freshWritingState} from '../core/writing/session';
+import {loadStableUsageCorpus,loadStableSentenceExercises} from '../core/content/loader';
+import {planFrenchPractice} from '../core/learner/orchestrator';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -57,12 +63,18 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(!host||!status)return;
 
   const now=Date.now();
-  const [learner,records,recent,index,conversations]=await Promise.all([
+  const [learner,records,recent,index,conversations,usageState,writingState,usagePack,writingPack]=await Promise.all([
     readCanonicalLearnerState(),
     readAllSrsRecords(),
     readRecentReviewEvents(10_000),
     loadVocabularySearchIndex(signal),
-    loadConversationState()
+    loadConversationState(),
+    // The planning workspace is optional: corrupt or temporarily unavailable
+    // metadata must not take down the established Progress page.
+    loadUsageState().catch(()=>freshUsageState()),
+    loadWritingState().catch(()=>freshWritingState()),
+    loadStableUsageCorpus(signal).catch(()=>({records:[]})),
+    loadStableSentenceExercises(signal).catch(()=>({exercises:[]}))
   ]);
   if(signal.aborted)return;
 
@@ -138,6 +150,39 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const xp=Math.round(number(profile.xp,events.reduce((sum,event)=>sum+number(event.xp,0),0)));
 
   host.replaceChildren();
+
+  const plan=planFrenchPractice({events:recent,srs:records,conversations,
+    usage:usageState,writing:writingState,usagePack,sentences:writingPack,
+    readingCompletions:(()=>{
+      const raw=learner?.featureState?.v550Reading;
+      const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw as Record<string,unknown>:{};
+      const history=value.history&&typeof value.history==='object'&&!Array.isArray(value.history)?
+        Object.values(value.history as Record<string,unknown>):[];
+      return history.filter(row=>row&&typeof row==='object'&&Number((row as Record<string,unknown>).completedAt)>0).length;
+    })(),targetLevel:String(learner?.studyPlan?.targetLevel??'A1'),now});
+  const orchestration=document.createElement('section');orchestration.className='data-panel cross-skill-plan';
+  orchestration.append(textNode('h2','Cross-skill study plan'),
+    textNode('p','Evidence-based next steps across vocabulary, writing, comprehension and interaction. These are recommendations, not CEFR certification.','intel-note'));
+  const recommendationList=document.createElement('div');recommendationList.className='next-action-grid';
+  for(const item of plan.actions.slice(0,4)){
+    const button=document.createElement('button');button.type='button';button.className='decision-action';
+    button.append(textNode('strong',item.title),textNode('span',item.detail),
+      textNode('small',item.evidence));
+    button.addEventListener('click',()=>navigate(item.route));recommendationList.append(button);
+  }
+  orchestration.append(recommendationList);
+  const coverage=textNode('p','30-day evidence: '+plan.lanes.map(row=>
+    row.lane+' '+row.independent+'/'+row.attempts).join(' · '),'intel-note');
+  orchestration.append(coverage);
+  const readiness=document.createElement('div');readiness.className='cross-skill-readiness';
+  readiness.append(textNode('h3','CEFR evidence gaps · '+plan.cefr.target),
+    textNode('p',plan.cefr.note,'intel-note'));
+  if(plan.cefr.missing.length){
+    const missing=document.createElement('ul');
+    for(const item of plan.cefr.missing.slice(0,5))missing.append(textNode('li',item));
+    readiness.append(missing);
+  }else readiness.append(textNode('p','No tracked gaps in this limited dataset; assessment is still required.','intel-note'));
+  orchestration.append(readiness);
 
   const actions=document.createElement('section');actions.className='next-actions data-panel';
   actions.append(textNode('h2','What to do next'));
@@ -386,6 +431,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  host.append(actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
+  host.append(orchestration,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
