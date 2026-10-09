@@ -1,4 +1,5 @@
 import './progress-gates.css';
+import './progress-longitudinal.css';
 import type { RouteContext } from '../core/types';
 import { readAllSrsRecords,readCanonicalLearnerState,readRecentReviewEvents } from '../core/learner/repository';
 import type { CanonicalReviewEventV1,CanonicalSrsRecordV1,SkillId } from '../core/learner/model';
