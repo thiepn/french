@@ -56,6 +56,16 @@ The calibration distinguishes scheduled word recall from expression transfer, fi
 
 No learner transcript, response text or modeled confidence is persisted or displayed by the calibration engine. D2 performs **no writes** to local study progress, learner profiles, SRS, cloud state or promotion fields. The existing provisional level-labelled D2 CEFR diagnostic gate stays **blocked**; the new ledger is supporting context, not evidence that P25/P27 promotion parity has been achieved. Original P35 advanced mastery, observational longitudinal reliability and independent oral calibration remain open.
 
+## P37I-D3 — Observational longitudinal evidence and intervention follow-up
+
+D3 introduces a **read-only two-window, 90-day observational comparison** in Progress: earlier 45 days versus recent 45 days, grouped by the *same* original vocabulary note+skill, contextual-listening item, preserved P12 sentence, P10 construction mode or guided communicative function. Each window must contain at least **three independently graded attempts on two different days** before its trend can be classified. Incorrect independent first-listen dictations count as errors; replayed, slowed, translated, supported or manually assessed exercises cannot inflate graded successes.
+
+The report separates **improving, declining, persistent-risk, stable, mixed, and insufficient** targets. It reports concrete numerator/denominator evidence and source-limited uncertainty, not fabricated CEFR confidence or an exam-pass percentage. Identical imported activity IDs are deduplicated, including intervention records. Once a 10,000-event activity read is reached, the 90-day history may be truncated; all trend classifications and post-intervention claims then **abstain**, rather than extrapolate missing older observations.
+
+A **construction repair** is tracked as an intervention *touch*, not a success. Only additional independently graded observations after a repair can produce a conservative “observed after repair” marker, and a late repair never receives retroactive credit. Such correlation **cannot establish a causal treatment effect**; neither the native course nor the original P35 has been validated as an intervention study. Scores remain observational and time-window-specific.
+
+Automated qualification includes TypeScript build, deterministic 90-day fixtures (improvement/decline/persistent weakness, first-listen failures, support/manual exclusions, source cap, duplicate sync, reversed repair chronology), and a real IndexedDB browser flow verifying longitudinal prioritization and no unintended SRS/activity writes. Human longitudinal study, genuine spontaneous speaking evaluation, P24 parity, P25 promotion protocol, Account OAuth and physical devices remain **open**. P35 production and all vNext cutover NO-GO flags remain unchanged.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
