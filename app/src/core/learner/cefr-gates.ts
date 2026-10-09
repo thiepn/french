@@ -99,7 +99,7 @@ function independentlyWritten(row:CanonicalReviewEventV1):boolean{
 function independentlyHeard(row:CanonicalReviewEventV1):boolean{
   return row.practiceOnly===true&&row.practice.startsWith('contextual-listening')&&
     row.correct===true&&row.firstListen===true&&row.supportLevel===0&&
-    row.playCount===1&&row.playbackRate>=1&&
+    row.playCount===1&&(row.playbackRate??0)>=1&&
     !row.transcriptUsed&&!row.translationUsed;
 }
 export function evaluateCefrEvidence(input:CefrGateInput):CefrGateReport{
