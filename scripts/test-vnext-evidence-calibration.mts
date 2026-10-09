@@ -60,7 +60,7 @@ const input=[
 const rated=calibrateFrenchEvidence({...base,events:input});
 const lane=(id:string)=>rated.lanes.find(x=>x.id===id)!;
 assert.equal(lane('speaking').independent,0,'manual speaking and ASR confidence cannot certify speech');
-assert.equal(lane('speaking').manual,1,'self-assessed speech is tracked separately');
+assert.equal(lane('speaking').manual,2,'both manually evaluated and ASR-assisted speech remain unverified, even with high recognition confidence');
 assert.equal(lane('reading').independent,0,'supported reading tasks cannot certify comprehension');
 assert.equal(lane('listening').independent,3,'only exact first normal-speed playback counts');
 assert.equal(lane('listening').status,'varied','three contexts and two days support varied task exposure');
