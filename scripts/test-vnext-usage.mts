@@ -42,7 +42,7 @@ assert.ok(attention);
 assert.equal(diagnoseUsage('faire attention de + infinitif',attention,'production',pack.records).code,'neighbor');
 
 let state=freshUsageState();
-assert.equal(USAGE_MODES.length,4);
+assert.equal(USAGE_MODES.length,5);
 assert.equal(currentUsageRecord(pack,state,'repair'),undefined);
 state=revealUsageSupport(state,'usage',1);
 state=revealUsageSupport(state,'usage',2);
