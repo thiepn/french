@@ -56,6 +56,10 @@ const [masteryEngine,masteryTests]=await Promise.all([
   readFile(new URL('../app/src/core/usage/mastery.ts',import.meta.url),'utf8'),
   readFile(new URL('./test-vnext-usage-mastery.mts',import.meta.url),'utf8')
 ]);
+const [contextEngine,contextTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/context.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-context.mts',import.meta.url),'utf8')
+]);
 const usageSource=JSON.parse(usageSourceText);
 const failures=[];
 if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
@@ -96,6 +100,17 @@ for(const term of ['usageAggregate','rankUsageCandidates','transferCueVariant','
   else need(writingRoute,term,'C3 active workspace '+term);
 for(const term of ['cumulativeLedger:true','TRANSFER_SECURE_ATTEMPTS','rankUsageCandidates','variantMask'])
   need(masteryTests,term,'C3 deterministic regression '+term);
+
+for(const term of ['CONTEXT_SCENES','assessContextAnswer','contextScene','hasContextScenes'])
+  need(contextEngine,term,'C5 authored context engine '+term);
+for(const term of ['contextCueVariant','contextualBasis','contextSecure'])
+  need(masteryEngine,term,'C5 separated contextual mastery '+term);
+for(const term of ['diagnoseContextUsage','contextScene','Contexts secure','Model sentence'])
+  need(writingRoute,term,'C5 contextual production workspace '+term);
+for(const term of ['separateStructuralAndContextualEvidence:true','privacy:','variantMask','scenes:'])
+  need(contextTests,term,'C5 deterministic regression '+term);
+need(repository,'native-writing-v1','C4 atomic writing save');
+need(writingRoute,"key:'native-writing-v1'",'C4 atomic writing progress');
 
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
