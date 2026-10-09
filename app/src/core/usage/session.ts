@@ -1,7 +1,8 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
 import {rankUsageCandidates,transferCueVariant} from './mastery';
+import {assessContextAnswer,contextScene,hasContextScenes,type ContextScene} from './context';
 
-export const USAGE_MODES=['usage','production','transfer','repair'] as const;
+export const USAGE_MODES=['usage','production','transfer','context','repair'] as const;
 export type UsageMode=typeof USAGE_MODES[number];
 export type UsageCode='exact'|'orthography'|'connector'|'collocate'|'neighbor'|'incomplete'|'order'|'anchor'|'structure'|'blank';
 export type UsageOutcome='matched'|'self-assessed'|'needs-practice';
@@ -57,6 +58,7 @@ export function usageCue(record:UsageRecord,mode:UsageMode,variant:0|1|2=0):stri
   if(mode==='usage')return 'Complete the source frame: '+maskUsageFrame(record);
   if(mode==='production')return 'Produce the full verified '+record.kind+' with this anchor: '+record.anchor;
   if(mode==='repair')return 'Rebuild the previously missed '+record.kind+' for: '+record.anchor;
+  if(mode==='context')return 'Use the construction in a new situation.';
   const slots:string[]=[];
   if(/quelqu[’']un/i.test(record.frame))slots.push('a person');
   if(/quelque chose/i.test(record.frame))slots.push('a thing');
@@ -96,9 +98,16 @@ export function diagnoseUsage(answer:string,record:UsageRecord,mode:UsageMode,re
   if(left.length<right.length&&overlap>=.5)return outcome('incomplete');
   return outcome('structure');
 }
+export function diagnoseContextUsage(answer:string,scene:ContextScene):UsageDiagnosis{
+  const result=assessContextAnswer(answer,scene);
+  if(result==='exact')return{code:'exact',label:'Exact model sentence',detail:'Your answer matches this authored context sentence. Other valid French formulations may exist.',correct:true,quality:'exact'};
+  if(result==='orthography')return{code:'orthography',label:'Orthography or accents',detail:'Check spelling, accents and apostrophes against the model.',correct:false,quality:'close'};
+  if(result==='blank')return{code:'blank',label:'No answer',detail:'Write a complete French response.',correct:false,quality:'review'};
+  return{code:'structure',label:'Human review required',detail:'The answer differs from the model. It may be valid French; compare the meaning and grammar before self-assessing. No automatic correctness credit is awarded.',correct:false,quality:'review'};
+}
 export function freshUsageState():UsageState{
   return{schema:'thiepn-french-usage-v1',
-    modes:{usage:{index:0,support:0},production:{index:0,support:0},transfer:{index:0,support:0},repair:{index:0,support:0}},
+    modes:{usage:{index:0,support:0},production:{index:0,support:0},transfer:{index:0,support:0},context:{index:0,support:0},repair:{index:0,support:0}},
     history:[],tallies:{}};
 }
 export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):UsageState{
@@ -117,6 +126,7 @@ export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):Usag
     !!r&&typeof r==='object'&&USAGE_MODES.includes(r.mode)&&
     /^p10-\d{3}$/.test(r.recordId)&&(!ids||ids.has(r.recordId))&&
     Number.isSafeInteger(r.at)&&r.at>=0&&r.at<=Date.now()+86400_000&&
+    (r.mode!=='context'||(hasContextScenes(r.recordId)&&r.variant!==2))&&
     ['matched','self-assessed','needs-practice'].includes(r.outcome)&&
     Object.hasOwn(LABELS,r.diagnosis)&&[0,1,2].includes(r.support)&&
     (r.variant===undefined||r.variant===0||r.variant===1||r.variant===2)&&
@@ -138,6 +148,7 @@ export function safeUsageState(raw:unknown,pack?:Pick<UsagePack,'records'>):Usag
     for(const [id,group] of Object.entries(supplied)){
       if(!/^p10-\d{3}$/.test(id)||(ids&&!ids.has(id))||!group||typeof group!=='object')continue;
       for(const mode of USAGE_MODES){
+        if(mode==='context'&&!hasContextScenes(id))continue;
         const row=group[mode];
         const current=tallies[id]?.[mode];
         if(!row||!Number.isSafeInteger(row.attempts)||row.attempts<0||row.attempts>10_000_000||
@@ -185,10 +196,11 @@ export function completeUsageAttempt(pack:Pick<UsagePack,'records'>,state:UsageS
   if(currentUsageRecord(pack,state,mode)?.id!==recordId)throw Error('STALE_USAGE_RECORD');
   if(!['matched','needs-practice','self-assessed'].includes(judgment)||
      !Object.hasOwn(LABELS,code)||(judgment==='matched'&&code!=='exact')||
-     ![0,1,2].includes(variant))throw Error('INVALID_USAGE_OUTCOME');
+     ![0,1,2].includes(variant)||
+     (mode==='context'&&!contextScene(recordId,variant as 0|1)))throw Error('INVALID_USAGE_OUTCOME');
   const old=state.modes[mode];
   const attempt:UsageAttempt={recordId,mode,at,outcome:judgment,diagnosis:code,support:old.support,
-    ...(mode==='transfer'?{variant}:{})};
+    ...((mode==='transfer'||mode==='context')?{variant}:{})};
   const group={...(state.tallies[recordId]??{})};
   group[mode]=accumulateUsageTally(group[mode],attempt);
   return {...state,modes:{...state.modes,[mode]:{index:mode==='repair'?0:old.index+1,support:0}},
