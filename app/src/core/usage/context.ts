@@ -106,7 +106,7 @@ export const CONTEXT_SCENES:readonly ContextScene[]=[
     english:'I am thinking of booking the tickets.',expected:"Je pense à réserver les billets.",
     hint:'Use penser à + infinitive.'},
   {id:'c5b-007b',recordId:'p10-007',variant:1,situation:'Family check-in',
-    english:'She remembers to call her grandmother.',expected:"Elle pense à appeler sa grand-mère.",
+    english:'She thinks of calling her grandmother.',expected:"Elle pense à appeler sa grand-mère.",
     hint:'Use penser à with elle; recall the person to call.'},
   {id:'c5b-012a',recordId:'p10-012',variant:0,situation:'Health',
     english:'He stops smoking.',expected:"Il arrête de fumer.",
