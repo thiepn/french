@@ -532,7 +532,7 @@ test('P37I-D1 Progress exposes cross-skill remediation without awarding a CEFR l
   await page.goto('/#progress');
   await expect(page.getByRole('heading',{name:'Cross-skill study plan'})).toBeVisible();
   await expect(page.getByRole('heading',{name:/CEFR evidence gaps/})).toBeVisible();
-  await expect(page.getByText(/not a CEFR readiness score/)).toBeVisible();
+  await expect(page.getByText(/not a CEFR readiness score/i)).toBeVisible();
   await expect(page.getByText(/30-day evidence:/)).toBeVisible();
   const before=await page.evaluate(async()=>new Promise(resolve=>{
     const o=indexedDB.open('thiepn-french-vnext');
