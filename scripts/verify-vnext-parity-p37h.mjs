@@ -139,6 +139,17 @@ for(const token of ['loadVocabularySearchIndex','readSrsByNoteIds','buildLexical
   need(writingRoute,token,'C6 UI source and fallback '+token);
 for(const token of ['contextRefreshDays:30','srs:','privacy:'])
   need(lexicalTests,token,'C6 coverage '+token);
+const [orchestrationEngine,orchestrationTests]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/orchestrator.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-orchestrator.mts',import.meta.url),'utf8')
+]);
+for(const term of ['planFrenchPractice','D1_WINDOW_DAYS=30','cefr:',"verdict:'not-assessed'",'sourceMap','productionGaps','contextRefresh'])
+  need(orchestrationEngine,term,'D1 orchestration '+term);
+for(const term of ['planFrenchPractice','Cross-skill study plan','CEFR evidence gaps','loadUsageState','loadWritingState'])
+  need(progress,term,'D1 Progress study plan '+term);
+for(const term of ['scheduledSrsUntouched:true','supportedCannotCertify:true','repairAcrossSkills:true','privacy:'])
+  need(orchestrationTests,term,'D1 safety and regression '+term);
+
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
