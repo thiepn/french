@@ -502,6 +502,9 @@ test('P37I-C4 bridges independent P10 recall to original P12 written application
   await page.getByRole('textbox',{name:'Your written French answer'}).fill("J'apprends à conduire.");
   await page.getByRole('button',{name:'Check answer'}).click();
   await page.getByRole('button',{name:'Save correct & next'}).click();
+  // The save handler commits learner/activity/writing atomically but is async.
+  // Wait until the next screen reflects durable evidence before reloading.
+  await expect(page.locator('.inline-status')).toContainText('1 exact sentence models');
   await page.reload();
   await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
   await page.getByRole('button',{name:'Connected'}).click();
