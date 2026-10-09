@@ -472,3 +472,51 @@ test('P37I-C5 genuinely different contexts earn independent metadata-only eviden
   expect(JSON.stringify(data)).not.toContain("J'apprends à lire en français.");
   expect(JSON.stringify(data)).not.toContain('Elle apprend à cuisiner.');
 });
+
+
+test('P37I-C4 bridges independent P10 recall to original P12 written application',async({page})=>{
+  await page.goto('/#write');
+  await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
+  await page.getByRole('button',{name:'Connected'}).click();
+  await expect(page.getByText(/Connected sentences become available after two independent exact recalls/)).toBeVisible();
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  const solveUsage=async()=>{
+    await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill('à');
+    await page.getByRole('button',{name:'Check phrase'}).click();
+    await page.getByRole('button',{name:'Save exact & next'}).click();
+  };
+  await solveUsage();
+  await solveUsage();
+  await solveUsage();
+  await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
+  await page.getByRole('button',{name:'Connected'}).click();
+  await expect(page.getByRole('heading',{name:'Connected sentence transfer'})).toBeVisible();
+  await expect(page.getByText(/source p10-001/)).toBeVisible();
+  await expect(page.getByText(/36 P12 sentences linked to P10/)).toBeVisible();
+  await page.getByRole('textbox',{name:'Your written French answer'}).fill("J'apprends à conduire.");
+  await page.getByRole('button',{name:'Check answer'}).click();
+  await page.getByRole('button',{name:'Save correct & next'}).click();
+  await page.reload();
+  await page.getByRole('button',{name:'Sentence writing (P12)'}).click();
+  await page.getByRole('button',{name:'Connected'}).click();
+  const result=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['meta','activity'],'readonly');
+      const w=tx.objectStore('meta').get('native-writing-v1');
+      const u=tx.objectStore('meta').get('native-usage-v1');
+      const ev=tx.objectStore('activity').getAll();
+      tx.oncomplete=()=>{db.close();resolve({writing:w.result,usage:u.result,events:ev.result});};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(result.writing.evidence['p12-007'].independentExact).toBe(1);
+  expect(result.usage.tallies['p10-001'].transfer).toBeUndefined();
+  expect(result.usage.tallies['p10-001'].context).toBeUndefined();
+  const events=result.events.filter(e=>e.practice==='written-bridge');
+  expect(events).toHaveLength(1);
+  expect(events[0].correct).toBe(true);
+  expect(events[0].practiceOnly).toBe(true);
+  expect(JSON.stringify(result)).not.toContain("J'apprends à conduire.");
+});
