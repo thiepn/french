@@ -52,8 +52,8 @@ export function safeWritingState(raw:unknown):WritingState{
   }
   const history=Array.isArray(value.history)?value.history.filter((attempt):attempt is WritingAttempt=>{
     if(!attempt||typeof attempt!=='object'||!validMode(attempt.mode))return false;
-    return typeof attempt.exerciseId==='string'&&/^p12-\d{3}$/.test(attempt.exerciseId)
-      &&Number.isFinite(attempt.at)&&attempt.at>=0
+    return typeof attempt.exerciseId==='string'&&/^p12-(?:00[1-9]|0[12]\d|03[0-6])$/.test(attempt.exerciseId)
+      &&Number.isSafeInteger(attempt.at)&&attempt.at>=0&&attempt.at<=Date.now()+86_400_000
       &&['matched','self-assessed','needs-practice'].includes(attempt.outcome)
       &&typeof attempt.diagnosis==='string'&&attempt.diagnosis.length<=40
       &&[0,1,2].includes(attempt.support);
@@ -69,7 +69,9 @@ export function safeWritingState(raw:unknown):WritingState{
          row.independentExact>row.attempts||
          !Number.isSafeInteger(row.lastAt)||row.lastAt<0||row.lastAt>Date.now()+86_400_000||
          typeof row.lastIndependent!=='boolean'||typeof row.lastDiagnosis!=='string'||
-         row.lastDiagnosis.length>40)continue;
+         row.lastDiagnosis.length>40||
+         (row.lastIndependent&&(!['exact','accepted'].includes(row.lastDiagnosis)||
+           row.independentExact===0)))continue;
       evidence[id]={attempts:row.attempts,independentExact:row.independentExact,
         lastAt:row.lastAt,lastIndependent:row.lastIndependent,lastDiagnosis:row.lastDiagnosis};
     }
