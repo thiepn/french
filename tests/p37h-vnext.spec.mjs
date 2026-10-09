@@ -639,3 +639,68 @@ test('P37I-D3 longitudinal trends remain read-only and distinguish insufficient 
   }));
   expect(after).toEqual(before);
 });
+
+
+test('P37I-D3 shows matched-target recurring errors and decline from real IndexedDB history',async({page})=>{
+  await page.goto('/#progress');
+  const seeded=await page.evaluate(async()=>{
+    const db=await new Promise((resolve,reject)=>{
+      const req=indexedDB.open('thiepn-french-vnext');
+      req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+    });
+    const now=Date.now(),DAY=86_400_000;
+    const changes=[
+      ['vnext-d3-improving',[false,false,false],[true,true,true]],
+      ['vnext-d3-declining',[true,true,true],[false,false,false]],
+      ['vnext-d3-persistent',[false,false,false],[false,false,false]]
+    ];
+    const all=[];
+    for(const [id,old,recent] of changes){
+      const ages=[82,70,58,22,12,3];
+      for(const [i,correct] of [...old,...recent].entries()){
+        all.push({
+          schema:'thiepn-french-review-event-v1',eventId:'d3-browser:'+id+':'+i,
+          id:id+'::d31:0:recognition',noteId:id,skill:'recognition',
+          practice:'review',practiceOnly:false,t:now-ages[i]*DAY,
+          rating:correct?'good':'again',correct,typed:true,
+          typedQuality:correct?'exact':'review',responseMs:1200,
+          direction:'fr-en',wasNew:false,xp:0
+        });
+      }
+    }
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('activity','readwrite'),store=tx.objectStore('activity');
+      for(const row of all)store.put(row,row.eventId);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+      tx.onabort=()=>reject(tx.error);
+    });
+    db.close();return all.length;
+  });
+  expect(seeded).toBe(18);
+  await page.reload();
+  const panel=page.locator('.longitudinal-panel');
+  await expect(panel.getByRole('heading',{name:'Longitudinal mastery'})).toBeVisible();
+  await expect(panel.locator('.longitudinal-stats')).toContainText('3 comparable');
+  await expect(panel.locator('.longitudinal-stats')).toContainText('1 improving');
+  await expect(panel.locator('.longitudinal-stats')).toContainText('1 declining');
+  await expect(panel.locator('.longitudinal-stats')).toContainText('1 persistent risks');
+  const targets=panel.locator('.longitudinal-target');
+  await expect(targets).toHaveCount(2);
+  await expect(targets).toContainText(['Persistent errors','Recently declined']);
+  const rows=panel.locator('.longitudinal-row');
+  await expect(rows).toHaveCount(3);
+  const improving=rows.filter({hasText:'vnext-d3-improving'});
+  await improving.locator('summary').click();
+  await expect(improving).toContainText('Recent graded performance improved for this same target');
+  await expect(panel).toContainText('observational');
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['srs','activity'],'readonly');
+      const s=tx.objectStore('srs').count(),e=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([s.result,e.result]);};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };open.onerror=()=>resolve(null);
+  }));
+  expect(after).toEqual([0,18]);
+});
