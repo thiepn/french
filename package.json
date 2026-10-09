@@ -1,18 +1,42 @@
 {
-  "name":"thiepn-french","private":true,"version":"0.0.0","type":"module",
-  "scripts":{
-    "dev:vnext":"vite --config vite.config.ts",
-    "content:vnext":"node scripts/build-vnext-content.mjs",
-    "build:vnext":"npm run content:vnext && vite build --config vite.config.ts",
-    "typecheck:vnext":"tsc -p tsconfig.json --noEmit",
-    "verify:vnext":"node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs && node scripts/verify-vnext-typed-review-p37f.mjs && node scripts/verify-vnext-study-session-p37g.mjs",
-    "test:vnext:scheduler":"node scripts/test-vnext-scheduler.mts",
-    "test:vnext:grader":"node scripts/test-vnext-grader.mts",
-    "test:vnext:queue":"node scripts/test-vnext-queue.mts",
-    "test:vnext:session":"node scripts/test-vnext-session.mts",
-    "test:vnext:adaptive":"node scripts/test-vnext-adaptive.mts",
-    "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
-    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run build:vnext && npm run verify:vnext:dist"
+  "name": "thiepn-french",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:vnext": "vite --config vite.config.ts",
+    "content:vnext": "node scripts/build-vnext-content.mjs",
+    "build:vnext": "npm run content:vnext && vite build --config vite.config.ts && node scripts/build-vnext-service-worker.mjs",
+    "typecheck:vnext": "tsc -p tsconfig.json --noEmit",
+    "verify:vnext": "node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs && node scripts/verify-vnext-typed-review-p37f.mjs && node scripts/verify-vnext-study-session-p37g.mjs && node scripts/verify-vnext-parity-p37h.mjs",
+    "test:vnext:scheduler": "node scripts/test-vnext-scheduler.mts",
+    "test:vnext:grader": "node scripts/test-vnext-grader.mts",
+    "test:vnext:queue": "node scripts/test-vnext-queue.mts",
+    "test:vnext:session": "node scripts/test-vnext-session.mts",
+    "test:vnext:adaptive": "node scripts/test-vnext-adaptive.mts",
+    "verify:vnext:dist": "node scripts/check-vnext-budget.mjs",
+    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:mission && npm run test:vnext:curriculum && npm run test:vnext:variants && npm run test:vnext:writing && npm run test:vnext:sentence-bridge && npm run test:vnext:usage && npm run test:vnext:usage-mastery && npm run test:vnext:context && npm run test:vnext:lexical && npm run test:vnext:orchestrator && npm run test:vnext:evidence-calibration && npm run test:vnext:cefr && npm run test:vnext:longitudinal && npm run test:vnext:open-world && npm run test:vnext:adaptive-block && npm run test:vnext:migration && npm run build:vnext && npm run verify:vnext:dist",
+    "test:vnext:migration": "node scripts/test-vnext-migration.mts",
+    "test:vnext:coach": "node scripts/test-vnext-study-coach.mts",
+    "test:vnext:conversation": "node scripts/test-vnext-conversation.mts",
+    "test:vnext:mission": "node scripts/test-vnext-mission.mts",
+    "test:vnext:curriculum": "node scripts/test-vnext-curriculum.mts",
+    "test:vnext:variants": "node scripts/test-vnext-variants.mts",
+    "test:vnext:writing": "node scripts/test-vnext-writing.mts",
+    "test:vnext:usage": "node scripts/test-vnext-usage.mts",
+    "test:vnext:usage-mastery": "node scripts/test-vnext-usage-mastery.mts",
+    "test:vnext:context": "node scripts/test-vnext-context.mts",
+    "test:vnext:lexical": "node scripts/test-vnext-lexical.mts",
+    "test:vnext:sentence-bridge": "node scripts/test-vnext-sentence-bridge.mts",
+    "test:vnext:orchestrator": "node scripts/test-vnext-orchestrator.mts",
+    "test:vnext:cefr": "node scripts/test-vnext-cefr-gates.mts",
+    "test:vnext:longitudinal": "node scripts/test-vnext-longitudinal.mts",
+    "test:vnext:evidence-calibration": "node scripts/test-vnext-evidence-calibration.mts",
+    "test:vnext:open-world": "node scripts/test-vnext-open-world.mts",
+    "test:vnext:adaptive-block": "node scripts/test-vnext-adaptive-block.mts"
   },
-  "devDependencies":{"typescript":"7.0.2","vite":"8.3.3"}
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.3"
+  }
 }

@@ -761,3 +761,167 @@ export async function readSrsByNoteIds(noteIds:string[]):Promise<Map<string,Cano
     });
   }finally{db.close();}
 }
+
+export async function replaceCanonicalLearnerSettings(settings:Record<string,unknown>):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,settings:{...settings}};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save learner settings.'));
+      tx.onabort=()=>reject(tx.error??new Error('Learner settings save was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
+}
+
+export async function readAllSrsRecords():Promise<CanonicalSrsRecordV1[]>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction('srs','readonly');
+      const request=tx.objectStore('srs').getAll();
+      request.onsuccess=()=>resolve((request.result??[]) as CanonicalSrsRecordV1[]);
+      request.onerror=()=>reject(request.error??new Error('Could not read SRS intelligence snapshot.'));
+      tx.onerror=()=>reject(tx.error??new Error('Could not read SRS intelligence snapshot.'));
+      tx.onabort=()=>reject(tx.error??new Error('SRS intelligence read was aborted.'));
+    });
+  }finally{db.close();}
+}
+
+
+export interface PracticeEvidenceInput{
+  noteId:string;
+  id?:string;
+  skill:SkillId;
+  responseMs?:number;
+  level?:string;
+  pos?:string;
+  theme?:string;
+  direction?:string;
+  practice:string;
+  typed?:boolean;
+  typedQuality?:string;
+  correct:boolean;
+  supportLevel?:number;
+  firstListen?:boolean;
+  playCount?:number;
+  playbackRate?:number;
+  transcriptUsed?:boolean;
+  translationUsed?:boolean;
+  errorCategory?:string;
+  sentenceExerciseId?:string;
+  sentenceDiagnosis?:string;
+  targetText?:string;
+  recognizedText?:string;
+  recognitionConfidence?:number;
+  manualJudgment?:string;
+  recordingDurationMs?:number;
+  modelDurationMs?:number;
+  paceRatio?:number;
+}
+
+export async function recordPracticeEvidence(
+  input:PracticeEvidenceInput,timestamp=Date.now(),
+  metaUpdate?:{key:string;value:unknown}
+):Promise<CanonicalReviewEventV1>{
+  if(metaUpdate&&!['native-usage-v1','native-writing-v1'].includes(metaUpdate.key))throw Error('INVALID_PRACTICE_META_KEY');
+  const learner=await ensureCanonicalLearnerState(timestamp);
+  const id=input.id??(input.noteId+'::d31:0:'+input.skill);
+  const source=await readSrsById(id);
+  const event:CanonicalReviewEventV1={
+    schema:'thiepn-french-review-event-v1',
+    eventId:'vnext-practice:'+timestamp+':'+id+':'+(crypto.randomUUID?.()??Math.random().toString(36).slice(2)),
+    t:timestamp,
+    id,
+    noteId:input.noteId,
+    skill:input.skill,
+    rating:input.correct?'good':'again',
+    responseMs:Math.max(0,Math.round(input.responseMs??0)),
+    wasNew:false,
+    intervalDays:source?.intervalDays??0,
+    direction:input.direction??'',
+    typed:input.typed===true,
+    typedQuality:input.typedQuality??'none',
+    level:input.level??'',
+    pos:input.pos??'',
+    theme:input.theme??'',
+    practice:input.practice,
+    correct:input.correct,
+    xp:0,
+    practiceOnly:true,
+    stability:source?.stability??0,
+    difficulty:source?.difficulty??0,
+    retrievability:source?.retrievability??0,
+    scheduledDays:source?.scheduledDays??0,
+    fsrsState:source?.fsrsState??'',
+    supportLevel:Math.max(0,Math.min(3,Math.round(input.supportLevel??0))),
+    firstListen:input.firstListen===true,
+    playCount:Math.max(0,Math.round(input.playCount??0)),
+    playbackRate:Number.isFinite(input.playbackRate)?Number(input.playbackRate):1,
+    transcriptUsed:input.transcriptUsed===true,
+    translationUsed:input.translationUsed===true,
+    errorCategory:input.errorCategory??'',
+    sentenceExerciseId:input.sentenceExerciseId??'',
+    sentenceDiagnosis:input.sentenceDiagnosis??'',
+    targetText:input.targetText??'',
+    recognizedText:input.recognizedText??'',
+    recognitionConfidence:Number.isFinite(input.recognitionConfidence)?Number(input.recognitionConfidence):0,
+    manualJudgment:input.manualJudgment??'',
+    recordingDurationMs:Math.max(0,Math.round(input.recordingDurationMs??0)),
+    modelDurationMs:Math.max(0,Math.round(input.modelDurationMs??0)),
+    paceRatio:Number.isFinite(input.paceRatio)?Number(input.paceRatio):0
+  };
+  const today=dayKey(timestamp);
+  const studyDays=learner.studyDays.includes(today)?learner.studyDays:[...learner.studyDays,today].sort();
+  const profile={...learner.profile};
+  if(input.skill==='listening')profile.listeningAnswers=Math.max(0,Math.round(number(profile.listeningAnswers,0)))+1;
+  if(input.practice.startsWith('spoken'))profile.spokenAnswers=Math.max(0,Math.round(number(profile.spokenAnswers,0)))+1;
+  const updated={...learner,studyDays,profile};
+
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction(['learner','activity','meta'],'readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.objectStore('activity').put(event,event.eventId);
+      const meta=tx.objectStore('meta');
+      // C3/C4: write usage or writing progress in the same IDB transaction as
+      // activity. A failure aborts both instead of creating phantom evidence.
+      if(metaUpdate)meta.put(metaUpdate.value,metaUpdate.key);
+      const summaryRequest=meta.get('learner-summary');
+      summaryRequest.onsuccess=()=>{
+        const current=object(summaryRequest.result);
+        meta.put({
+          currentLevel:current.currentLevel??highestEarnedLevel(updated.promotions),
+          dueCount:Math.max(0,Math.round(number(current.dueCount,0))),
+          streakDays:studyStreak(studyDays,timestamp)
+        },'learner-summary');
+      };
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Practice evidence write failed.'));
+      tx.onabort=()=>reject(tx.error??new Error('Practice evidence write was aborted.'));
+    });
+  }finally{db.close();}
+  return event;
+}
+
+
+export async function replaceCanonicalFeatureState(key:string,value:unknown):Promise<CanonicalLearnerStateV1>{
+  const learner=await ensureCanonicalLearnerState();
+  const updated:CanonicalLearnerStateV1={...learner,featureState:{...learner.featureState,[key]:value}};
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('learner','readwrite');
+      tx.objectStore('learner').put(updated,'state-v1');
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??new Error('Could not save French feature state.'));
+      tx.onabort=()=>reject(tx.error??new Error('Feature-state save was aborted.'));
+    });
+  }finally{db.close();}
+  return updated;
+}

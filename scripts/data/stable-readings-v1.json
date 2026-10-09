@@ -1,0 +1,1985 @@
+{
+  "schema": "thiepn-french-stable-reading-source-v1",
+  "sourceRuntime": "5.24.0/P35",
+  "sourceBlob": "8a354063b20421ad53b3417b3f677adc926f3cb5",
+  "extractedFrom": "index.html",
+  "count": 25,
+  "morphology": {
+    "suis": "être",
+    "es": "être",
+    "est": "être",
+    "sommes": "être",
+    "êtes": "être",
+    "sont": "être",
+    "été": "être",
+    "ai": "avoir",
+    "as": "avoir",
+    "a": "avoir",
+    "avons": "avoir",
+    "avez": "avoir",
+    "ont": "avoir",
+    "eu": "avoir",
+    "vais": "aller",
+    "vas": "aller",
+    "va": "aller",
+    "allons": "aller",
+    "allez": "aller",
+    "vont": "aller",
+    "fais": "faire",
+    "fait": "faire",
+    "faisons": "faire",
+    "faites": "faire",
+    "font": "faire",
+    "prends": "prendre",
+    "prend": "prendre",
+    "prenons": "prendre",
+    "prenez": "prendre",
+    "prennent": "prendre",
+    "pris": "prendre",
+    "dois": "devoir",
+    "doit": "devoir",
+    "devons": "devoir",
+    "devez": "devoir",
+    "doivent": "devoir",
+    "peux": "pouvoir",
+    "peut": "pouvoir",
+    "pouvons": "pouvoir",
+    "pouvez": "pouvoir",
+    "peuvent": "pouvoir",
+    "veux": "vouloir",
+    "veut": "vouloir",
+    "voulons": "vouloir",
+    "voulez": "vouloir",
+    "veulent": "vouloir",
+    "viens": "venir",
+    "vient": "venir",
+    "venons": "venir",
+    "venez": "venir",
+    "viennent": "venir",
+    "pars": "partir",
+    "part": "partir",
+    "partons": "partir",
+    "partez": "partir",
+    "partent": "partir",
+    "arrive": "arriver",
+    "arrives": "arriver",
+    "arrivons": "arriver",
+    "arrivez": "arriver",
+    "arrivent": "arriver",
+    "décide": "décider",
+    "décides": "décider",
+    "décidons": "décider",
+    "décidez": "décider",
+    "décident": "décider",
+    "décidé": "décider",
+    "préfère": "préférer",
+    "préfères": "préférer",
+    "préférons": "préférer",
+    "préférez": "préférer",
+    "préfèrent": "préférer",
+    "travaille": "travailler",
+    "travailles": "travailler",
+    "travaillons": "travailler",
+    "travaillez": "travailler",
+    "travaillent": "travailler",
+    "mange": "manger",
+    "manges": "manger",
+    "mangeons": "manger",
+    "mangez": "manger",
+    "mangent": "manger",
+    "cherche": "chercher",
+    "cherches": "chercher",
+    "cherchons": "chercher",
+    "cherchez": "chercher",
+    "cherchent": "chercher",
+    "réserve": "réserver",
+    "réserves": "réserver",
+    "réservons": "réserver",
+    "réservez": "réserver",
+    "réservent": "réserver",
+    "réservé": "réserver",
+    "change": "changer",
+    "changes": "changer",
+    "changeons": "changer",
+    "changez": "changer",
+    "changent": "changer",
+    "changé": "changer",
+    "continue": "continuer",
+    "continues": "continuer",
+    "continuons": "continuer",
+    "continuez": "continuer",
+    "continuent": "continuer",
+    "continué": "continuer",
+    "apprend": "apprendre",
+    "apprends": "apprendre",
+    "apprenons": "apprendre",
+    "apprenez": "apprendre",
+    "apprennent": "apprendre",
+    "comprend": "comprendre",
+    "comprends": "comprendre",
+    "comprenons": "comprendre",
+    "comprenez": "comprendre",
+    "comprennent": "comprendre",
+    "compris": "comprendre",
+    "finit": "finir",
+    "finis": "finir",
+    "finissons": "finir",
+    "finissez": "finir",
+    "finissent": "finir",
+    "fini": "finir",
+    "écrit": "écrire",
+    "écris": "écrire",
+    "écrivons": "écrire",
+    "écrivez": "écrire",
+    "écrivent": "écrire",
+    "sort": "sortir",
+    "sors": "sortir",
+    "sortons": "sortir",
+    "sortez": "sortir",
+    "sortent": "sortir",
+    "sorti": "sortir",
+    "reste": "rester",
+    "restes": "rester",
+    "restons": "rester",
+    "restez": "rester",
+    "restent": "rester",
+    "resté": "rester"
+  },
+  "readings": [
+    {
+      "id": "read-a1-matin",
+      "title": "Un matin simple",
+      "level": "A1",
+      "type": "story",
+      "minutes": 2,
+      "topic": "time-routine",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded text",
+      "license": "Bundled original content",
+      "targets": [
+        "se lever",
+        "prendre",
+        "avoir besoin"
+      ],
+      "phrases": [
+        {
+          "text": "prendre le bus",
+          "frame": "prendre + transport"
+        },
+        {
+          "text": "avoir besoin d'un café",
+          "frame": "avoir besoin"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Lina se lève à sept heures et ouvre la fenêtre.",
+          "en": "Lina gets up at seven and opens the window."
+        },
+        {
+          "fr": "Elle prend une douche, prépare son sac et regarde l'heure.",
+          "en": "She takes a shower, prepares her bag and checks the time."
+        },
+        {
+          "fr": "Avant de partir, elle a besoin d'un café et d'un peu de calme.",
+          "en": "Before leaving, she needs a coffee and a little calm.",
+          "grammar": "avoir besoin de + nom expresses need."
+        },
+        {
+          "fr": "À sept heures quarante-cinq, elle prend le bus pour aller au travail.",
+          "en": "At 7:45, she takes the bus to go to work."
+        },
+        {
+          "fr": "Le trajet est court, alors elle arrive avant huit heures et demie.",
+          "en": "The journey is short, so she arrives before 8:30."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi Lina boit-elle un café ?",
+          "options": [
+            "Parce qu'elle en a besoin.",
+            "Parce que le bus est en retard.",
+            "Parce qu'elle rentre chez elle."
+          ],
+          "answer": 0,
+          "target": "avoir besoin"
+        },
+        {
+          "id": "q2",
+          "prompt": "Comment va-t-elle au travail ?",
+          "options": [
+            "À pied.",
+            "En bus.",
+            "En train."
+          ],
+          "answer": 1,
+          "target": "prendre"
+        }
+      ]
+    },
+    {
+      "id": "read-a1-cafe",
+      "title": "Au café",
+      "level": "A1",
+      "type": "dialogue",
+      "minutes": 2,
+      "topic": "food",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded dialogue",
+      "license": "Bundled original content",
+      "targets": [
+        "vouloir",
+        "prendre",
+        "addition"
+      ],
+      "phrases": [
+        {
+          "text": "Je voudrais",
+          "frame": "je voudrais + nom / infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "— Bonjour, vous avez choisi ?",
+          "en": "— Hello, have you chosen?"
+        },
+        {
+          "fr": "— Oui, je voudrais un café et un croissant, s'il vous plaît.",
+          "en": "— Yes, I would like a coffee and a croissant, please.",
+          "grammar": "Je voudrais is a polite way to make a request."
+        },
+        {
+          "fr": "— Très bien. Vous prenez quelque chose d'autre ?",
+          "en": "— Very good. Are you having anything else?"
+        },
+        {
+          "fr": "— Non merci. Je voudrais aussi un verre d'eau.",
+          "en": "— No thank you. I would also like a glass of water."
+        },
+        {
+          "fr": "Après le petit-déjeuner, le client demande l'addition et paie.",
+          "en": "After breakfast, the customer asks for the bill and pays."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que commande le client ?",
+          "options": [
+            "Un café et un croissant.",
+            "Un thé et une salade.",
+            "Deux cafés."
+          ],
+          "answer": 0,
+          "target": "prendre"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle expression sert à demander poliment ?",
+          "options": [
+            "J'ai besoin de",
+            "Je voudrais",
+            "Je refuse de"
+          ],
+          "answer": 1,
+          "target": "vouloir"
+        }
+      ]
+    },
+    {
+      "id": "read-a1-train",
+      "title": "Le train pour Lille",
+      "level": "A1",
+      "type": "practical",
+      "minutes": 2,
+      "topic": "travel",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French practical text",
+      "license": "Bundled original content",
+      "targets": [
+        "partir",
+        "arriver",
+        "retard"
+      ],
+      "phrases": [],
+      "sentences": [
+        {
+          "fr": "Le train pour Lille part à neuf heures vingt de la voie six.",
+          "en": "The train to Lille leaves at 9:20 from platform six."
+        },
+        {
+          "fr": "Il arrive normalement à dix heures trente-cinq.",
+          "en": "It normally arrives at 10:35."
+        },
+        {
+          "fr": "Aujourd'hui, le train a quinze minutes de retard.",
+          "en": "Today, the train is fifteen minutes late."
+        },
+        {
+          "fr": "Les voyageurs attendent près de la voie et regardent le panneau.",
+          "en": "The travelers wait near the platform and look at the board."
+        },
+        {
+          "fr": "Une annonce confirme la nouvelle heure de départ.",
+          "en": "An announcement confirms the new departure time."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "De quelle voie part le train ?",
+          "options": [
+            "Voie 5.",
+            "Voie 6.",
+            "Voie 9."
+          ],
+          "answer": 1,
+          "target": "partir"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quel est le problème aujourd'hui ?",
+          "options": [
+            "Le train est complet.",
+            "Le train a du retard.",
+            "Le train est annulé."
+          ],
+          "answer": 1,
+          "target": "retard"
+        }
+      ]
+    },
+    {
+      "id": "read-a1-weekend",
+      "title": "Des plans pour samedi",
+      "level": "A1",
+      "type": "message",
+      "minutes": 2,
+      "topic": "communication",
+      "register": "informal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French message exchange",
+      "license": "Bundled original content",
+      "targets": [
+        "avoir envie",
+        "préférer",
+        "décider"
+      ],
+      "phrases": [
+        {
+          "text": "J'ai envie de",
+          "frame": "avoir envie"
+        },
+        {
+          "text": "on peut décider",
+          "frame": "prendre une décision"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Maya : Tu fais quoi samedi ?",
+          "en": "Maya: What are you doing Saturday?"
+        },
+        {
+          "fr": "Noah : Rien de spécial. J'ai envie de sortir.",
+          "en": "Noah: Nothing special. I feel like going out."
+        },
+        {
+          "fr": "Maya : On peut aller au cinéma ou au parc. Tu préfères quoi ?",
+          "en": "Maya: We can go to the cinema or the park. What do you prefer?"
+        },
+        {
+          "fr": "Noah : Je préfère le parc s'il fait beau.",
+          "en": "Noah: I prefer the park if the weather is nice."
+        },
+        {
+          "fr": "Maya : D'accord. On peut décider demain matin.",
+          "en": "Maya: Okay. We can decide tomorrow morning."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Qu'est-ce que Noah préfère ?",
+          "options": [
+            "Le cinéma.",
+            "Le parc.",
+            "Le restaurant."
+          ],
+          "answer": 1,
+          "target": "préférer"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quand vont-ils décider ?",
+          "options": [
+            "Ce soir.",
+            "Demain matin.",
+            "Samedi soir."
+          ],
+          "answer": 1,
+          "target": "décider"
+        }
+      ]
+    },
+    {
+      "id": "read-a1-marche",
+      "title": "Au marché",
+      "level": "A1",
+      "type": "dialogue",
+      "minutes": 2,
+      "topic": "shopping",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded dialogue",
+      "license": "Bundled original content",
+      "targets": [
+        "chercher",
+        "prendre",
+        "combien"
+      ],
+      "phrases": [],
+      "sentences": [
+        {
+          "fr": "— Bonjour, je cherche des tomates et des pommes.",
+          "en": "— Hello, I am looking for tomatoes and apples."
+        },
+        {
+          "fr": "— Les tomates sont ici. Vous en voulez combien ?",
+          "en": "— The tomatoes are here. How many do you want?"
+        },
+        {
+          "fr": "— Je prends un kilo de tomates et quatre pommes.",
+          "en": "— I will take one kilo of tomatoes and four apples."
+        },
+        {
+          "fr": "— Très bien. Ça fait six euros cinquante.",
+          "en": "— Very good. That comes to €6.50."
+        },
+        {
+          "fr": "— Merci, bonne journée !",
+          "en": "— Thank you, have a good day!"
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que cherche le client ?",
+          "options": [
+            "Des vêtements.",
+            "Des fruits et des tomates.",
+            "Un billet."
+          ],
+          "answer": 1,
+          "target": "chercher"
+        },
+        {
+          "id": "q2",
+          "prompt": "Combien de pommes prend-il ?",
+          "options": [
+            "Deux.",
+            "Quatre.",
+            "Six."
+          ],
+          "answer": 1,
+          "target": "prendre"
+        }
+      ]
+    },
+    {
+      "id": "read-a1-message",
+      "title": "Un message à un ami",
+      "level": "A1",
+      "type": "message",
+      "minutes": 2,
+      "topic": "communication",
+      "register": "informal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French message",
+      "license": "Bundled original content",
+      "targets": [
+        "avoir besoin",
+        "aider",
+        "rendez-vous"
+      ],
+      "phrases": [
+        {
+          "text": "J'ai besoin de",
+          "frame": "avoir besoin"
+        },
+        {
+          "text": "m'aider à",
+          "frame": "aider quelqu’un à + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Salut Karim ! J'ai besoin de ton aide pour demain.",
+          "en": "Hi Karim! I need your help for tomorrow."
+        },
+        {
+          "fr": "J'ai un rendez-vous important à dix heures.",
+          "en": "I have an important appointment at ten."
+        },
+        {
+          "fr": "Est-ce que tu peux m'aider à préparer mes documents ce soir ?",
+          "en": "Can you help me prepare my documents tonight?",
+          "grammar": "aider quelqu’un à + infinitif links the person helped to the action."
+        },
+        {
+          "fr": "Je suis libre après dix-huit heures.",
+          "en": "I am free after six p.m."
+        },
+        {
+          "fr": "Merci et à bientôt !",
+          "en": "Thanks and see you soon!"
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "De quoi la personne a-t-elle besoin ?",
+          "options": [
+            "D'un billet.",
+            "D'aide.",
+            "D'un café."
+          ],
+          "answer": 1,
+          "target": "avoir besoin"
+        },
+        {
+          "id": "q2",
+          "prompt": "À quelle heure est le rendez-vous ?",
+          "options": [
+            "À 8 h.",
+            "À 10 h.",
+            "À 18 h."
+          ],
+          "answer": 1,
+          "target": "rendez-vous"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-hotel",
+      "title": "Choisir un hôtel",
+      "level": "A2",
+      "type": "practical",
+      "minutes": 3,
+      "topic": "travel",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded text",
+      "license": "Bundled original content",
+      "targets": [
+        "tenir compte",
+        "réserver",
+        "préférer"
+      ],
+      "phrases": [
+        {
+          "text": "tenir compte du prix",
+          "frame": "tenir compte de + nom"
+        },
+        {
+          "text": "tenir compte de l'emplacement",
+          "frame": "tenir compte de + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Sofia prépare un week-end à Strasbourg et compare trois hôtels.",
+          "en": "Sofia is preparing a weekend in Strasbourg and compares three hotels."
+        },
+        {
+          "fr": "Le premier est très central, mais il coûte cher.",
+          "en": "The first is very central, but it is expensive."
+        },
+        {
+          "fr": "Le deuxième est moins cher, mais il se trouve loin de la gare.",
+          "en": "The second is cheaper, but it is far from the station."
+        },
+        {
+          "fr": "Sofia veut tenir compte du prix, mais aussi tenir compte de l'emplacement.",
+          "en": "Sofia wants to take the price into account, but also the location.",
+          "grammar": "tenir compte de contracts with le: de + le → du."
+        },
+        {
+          "fr": "Finalement, elle préfère le troisième hôtel et réserve une chambre pour deux nuits.",
+          "en": "In the end, she prefers the third hotel and books a room for two nights."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quels éléments Sofia veut-elle considérer ?",
+          "options": [
+            "Le prix et l'emplacement.",
+            "Le petit-déjeuner seulement.",
+            "La météo et le train."
+          ],
+          "answer": 0,
+          "target": "tenir compte"
+        },
+        {
+          "id": "q2",
+          "prompt": "Que fait-elle finalement ?",
+          "options": [
+            "Elle annule le voyage.",
+            "Elle réserve le troisième hôtel.",
+            "Elle choisit le premier hôtel."
+          ],
+          "answer": 1,
+          "target": "réserver"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-universite",
+      "title": "Une question après le cours",
+      "level": "A2",
+      "type": "dialogue",
+      "minutes": 3,
+      "topic": "work-study",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded dialogue",
+      "license": "Bundled original content",
+      "targets": [
+        "poser une question",
+        "expliquer",
+        "avoir du mal"
+      ],
+      "phrases": [
+        {
+          "text": "poser une question",
+          "frame": "poser une question à quelqu’un"
+        },
+        {
+          "text": "J'ai du mal à comprendre",
+          "frame": "avoir du mal à + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Après le cours, Émilie reste quelques minutes dans la salle.",
+          "en": "After class, Émilie stays a few minutes in the room."
+        },
+        {
+          "fr": "Elle veut poser une question au professeur.",
+          "en": "She wants to ask the professor a question."
+        },
+        {
+          "fr": "— J'ai du mal à comprendre la dernière partie du chapitre.",
+          "en": "— I have trouble understanding the last part of the chapter."
+        },
+        {
+          "fr": "Le professeur explique l'idée avec un exemple plus simple.",
+          "en": "The professor explains the idea with a simpler example."
+        },
+        {
+          "fr": "Émilie prend des notes et décide de relire le chapitre le soir.",
+          "en": "Émilie takes notes and decides to reread the chapter in the evening."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi Émilie reste-t-elle ?",
+          "options": [
+            "Pour parler à une amie.",
+            "Pour poser une question.",
+            "Pour attendre le bus."
+          ],
+          "answer": 1,
+          "target": "poser une question"
+        },
+        {
+          "id": "q2",
+          "prompt": "Que fait-elle pendant l'explication ?",
+          "options": [
+            "Elle prend des notes.",
+            "Elle téléphone.",
+            "Elle part."
+          ],
+          "answer": 0,
+          "target": "prendre des notes"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-restaurant",
+      "title": "Une réservation à changer",
+      "level": "A2",
+      "type": "dialogue",
+      "minutes": 3,
+      "topic": "food",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded dialogue",
+      "license": "Bundled original content",
+      "targets": [
+        "changer",
+        "réservation",
+        "proposer"
+      ],
+      "phrases": [
+        {
+          "text": "changer ma réservation",
+          "frame": "changer + nom"
+        },
+        {
+          "text": "propose une table",
+          "frame": "proposer + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "— Bonjour, je voudrais changer ma réservation de ce soir.",
+          "en": "— Hello, I would like to change my reservation for tonight."
+        },
+        {
+          "fr": "— Bien sûr. Elle est à quel nom ?",
+          "en": "— Of course. What name is it under?"
+        },
+        {
+          "fr": "— Martin, pour quatre personnes à dix-neuf heures.",
+          "en": "— Martin, for four people at 7 p.m."
+        },
+        {
+          "fr": "— Nous n'avons plus de table à vingt heures, mais je vous propose une table à vingt heures trente.",
+          "en": "— We no longer have a table at 8 p.m., but I can offer you one at 8:30."
+        },
+        {
+          "fr": "— D'accord, vingt heures trente me convient.",
+          "en": "— Okay, 8:30 works for me."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que veut faire le client ?",
+          "options": [
+            "Changer sa réservation.",
+            "Commander immédiatement.",
+            "Annuler son voyage."
+          ],
+          "answer": 0,
+          "target": "changer"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle heure accepte-t-il ?",
+          "options": [
+            "19 h.",
+            "20 h.",
+            "20 h 30."
+          ],
+          "answer": 2,
+          "target": "proposer"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-medecin",
+      "title": "Prendre rendez-vous",
+      "level": "A2",
+      "type": "practical",
+      "minutes": 3,
+      "topic": "health",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French practical text",
+      "license": "Bundled original content",
+      "targets": [
+        "prendre rendez-vous",
+        "avoir besoin",
+        "disponible"
+      ],
+      "phrases": [
+        {
+          "text": "prendre rendez-vous",
+          "frame": "prendre rendez-vous avec quelqu’un"
+        },
+        {
+          "text": "a besoin de",
+          "frame": "avoir besoin"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Nora téléphone au cabinet médical pour prendre rendez-vous.",
+          "en": "Nora calls the medical office to make an appointment."
+        },
+        {
+          "fr": "Elle explique qu'elle a besoin de parler au médecin cette semaine.",
+          "en": "She explains that she needs to speak to the doctor this week."
+        },
+        {
+          "fr": "La secrétaire propose jeudi matin, mais Nora travaille à cette heure-là.",
+          "en": "The receptionist suggests Thursday morning, but Nora works at that time."
+        },
+        {
+          "fr": "Un rendez-vous est aussi disponible vendredi à seize heures.",
+          "en": "An appointment is also available Friday at 4 p.m."
+        },
+        {
+          "fr": "Nora accepte cette heure et note l'adresse du cabinet.",
+          "en": "Nora accepts that time and writes down the office address."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi Nora téléphone-t-elle ?",
+          "options": [
+            "Pour acheter un médicament.",
+            "Pour prendre rendez-vous.",
+            "Pour demander une adresse de restaurant."
+          ],
+          "answer": 1,
+          "target": "prendre rendez-vous"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quel rendez-vous accepte-t-elle ?",
+          "options": [
+            "Jeudi matin.",
+            "Vendredi à 16 h.",
+            "Vendredi matin."
+          ],
+          "answer": 1,
+          "target": "disponible"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-appartement",
+      "title": "Un problème dans l'appartement",
+      "level": "A2",
+      "type": "message",
+      "minutes": 3,
+      "topic": "home",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French message exchange",
+      "license": "Bundled original content",
+      "targets": [
+        "faire face",
+        "aider",
+        "problème"
+      ],
+      "phrases": [
+        {
+          "text": "faire face à un problème",
+          "frame": "faire face à + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Bonjour Madame Leroy, je vous écris parce que nous devons faire face à un problème dans la cuisine.",
+          "en": "Hello Ms Leroy, I am writing because we have to deal with a problem in the kitchen."
+        },
+        {
+          "fr": "Depuis hier, l'eau chaude ne fonctionne plus.",
+          "en": "Since yesterday, the hot water no longer works."
+        },
+        {
+          "fr": "J'ai vérifié le robinet, mais le problème continue.",
+          "en": "I checked the tap, but the problem continues."
+        },
+        {
+          "fr": "Pouvez-vous nous aider ou envoyer quelqu'un demain ?",
+          "en": "Can you help us or send someone tomorrow?"
+        },
+        {
+          "fr": "Nous sommes disponibles toute la matinée.",
+          "en": "We are available all morning."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quel est le problème ?",
+          "options": [
+            "Il n'y a plus d'eau chaude.",
+            "La fenêtre est cassée.",
+            "La porte est fermée."
+          ],
+          "answer": 0,
+          "target": "problème"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quand les habitants sont-ils disponibles ?",
+          "options": [
+            "Toute la matinée.",
+            "Seulement le soir.",
+            "Samedi."
+          ],
+          "answer": 0,
+          "target": "disponible"
+        }
+      ]
+    },
+    {
+      "id": "read-a2-voyage",
+      "title": "Un week-end à Lyon",
+      "level": "A2",
+      "type": "story",
+      "minutes": 4,
+      "topic": "travel",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded story",
+      "license": "Bundled original content",
+      "targets": [
+        "prévoir",
+        "pourtant",
+        "finalement",
+        "décider"
+      ],
+      "phrases": [
+        {
+          "text": "a décidé de partir",
+          "frame": "décider de + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Thomas avait prévu de passer le week-end à Lyon avec deux amis.",
+          "en": "Thomas had planned to spend the weekend in Lyon with two friends."
+        },
+        {
+          "fr": "Vendredi soir, la météo annonçait beaucoup de pluie.",
+          "en": "Friday evening, the weather forecast a lot of rain."
+        },
+        {
+          "fr": "Pourtant, le groupe a décidé de partir comme prévu.",
+          "en": "Nevertheless, the group decided to leave as planned.",
+          "grammar": "pourtant introduces a contrast with the preceding idea."
+        },
+        {
+          "fr": "Samedi matin, ils ont visité le centre-ville puis ils ont déjeuné dans un petit restaurant.",
+          "en": "Saturday morning, they visited the city center and then had lunch in a small restaurant."
+        },
+        {
+          "fr": "Finalement, il n'a presque pas plu et tout le monde était content du voyage.",
+          "en": "In the end, it hardly rained and everyone was happy with the trip."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi le voyage semblait-il difficile vendredi ?",
+          "options": [
+            "À cause de la pluie annoncée.",
+            "Parce que les hôtels étaient complets.",
+            "Parce que Thomas travaillait."
+          ],
+          "answer": 0,
+          "target": "pourtant"
+        },
+        {
+          "id": "q2",
+          "prompt": "Que décide le groupe ?",
+          "options": [
+            "De rester chez lui.",
+            "De partir quand même.",
+            "De changer de ville."
+          ],
+          "answer": 1,
+          "target": "décider"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-travail",
+      "title": "Choisir entre deux offres",
+      "level": "B1",
+      "type": "story",
+      "minutes": 4,
+      "topic": "work-study",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded text",
+      "license": "Bundled original content",
+      "targets": [
+        "prendre une décision",
+        "tenir compte",
+        "pourtant"
+      ],
+      "phrases": [
+        {
+          "text": "prendre une décision",
+          "frame": "prendre une décision"
+        },
+        {
+          "text": "tenir compte du salaire",
+          "frame": "tenir compte de + nom"
+        },
+        {
+          "text": "tenir compte du temps",
+          "frame": "tenir compte de + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Amélie a reçu deux offres de travail et doit prendre une décision avant lundi.",
+          "en": "Amélie has received two job offers and must make a decision before Monday."
+        },
+        {
+          "fr": "Le premier poste offre un meilleur salaire, pourtant le trajet est très long.",
+          "en": "The first position offers a better salary, yet the commute is very long."
+        },
+        {
+          "fr": "Le deuxième poste paie un peu moins, mais l'équipe semble agréable et le bureau est près de chez elle.",
+          "en": "The second position pays a little less, but the team seems pleasant and the office is close to her home."
+        },
+        {
+          "fr": "Amélie veut tenir compte du salaire, mais aussi tenir compte du temps qu'elle passera dans les transports.",
+          "en": "Amélie wants to consider the salary, but also the time she will spend commuting."
+        },
+        {
+          "fr": "Elle écrit les avantages et les inconvénients de chaque offre avant de choisir.",
+          "en": "She writes down the advantages and disadvantages of each offer before choosing."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quel avantage a le premier poste ?",
+          "options": [
+            "Un meilleur salaire.",
+            "Un trajet plus court.",
+            "Une semaine plus courte."
+          ],
+          "answer": 0,
+          "target": "tenir compte"
+        },
+        {
+          "id": "q2",
+          "prompt": "Pourquoi Amélie compare-t-elle plusieurs éléments ?",
+          "options": [
+            "Parce qu'elle doit prendre une décision.",
+            "Parce qu'elle refuse de travailler.",
+            "Parce qu'elle cherche un hôtel."
+          ],
+          "answer": 0,
+          "target": "prendre une décision"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-benevolat",
+      "title": "Une journée de bénévolat",
+      "level": "B1",
+      "type": "story",
+      "minutes": 4,
+      "topic": "people",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded story",
+      "license": "Bundled original content",
+      "targets": [
+        "faire partie",
+        "aider",
+        "faire face"
+      ],
+      "phrases": [
+        {
+          "text": "fait partie d'une association",
+          "frame": "faire partie de + nom"
+        },
+        {
+          "text": "faire face à des difficultés",
+          "frame": "faire face à + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Depuis six mois, Hugo fait partie d'une association qui distribue des repas.",
+          "en": "For six months, Hugo has been part of an association that distributes meals."
+        },
+        {
+          "fr": "Deux samedis par mois, il aide l'équipe à préparer les sacs et à accueillir les visiteurs.",
+          "en": "Two Saturdays a month, he helps the team prepare bags and welcome visitors."
+        },
+        {
+          "fr": "Certaines personnes viennent simplement chercher un repas, tandis que d'autres ont besoin de parler.",
+          "en": "Some people simply come to get a meal, while others need to talk."
+        },
+        {
+          "fr": "L'équipe doit parfois faire face à des difficultés imprévues, mais personne ne travaille seul.",
+          "en": "The team sometimes has to face unexpected difficulties, but nobody works alone."
+        },
+        {
+          "fr": "Pour Hugo, cette activité lui permet de rencontrer des gens très différents et de se rendre utile.",
+          "en": "For Hugo, this activity allows him to meet very different people and be useful."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que fait l'association ?",
+          "options": [
+            "Elle vend des billets.",
+            "Elle distribue des repas.",
+            "Elle organise des voyages."
+          ],
+          "answer": 1,
+          "target": "faire partie"
+        },
+        {
+          "id": "q2",
+          "prompt": "Comment l'équipe gère-t-elle les difficultés ?",
+          "options": [
+            "Chacun travaille seul.",
+            "Elle les ignore.",
+            "Les membres travaillent ensemble."
+          ],
+          "answer": 2,
+          "target": "faire face"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-environnement",
+      "title": "Changer une habitude",
+      "level": "B1",
+      "type": "informational",
+      "minutes": 4,
+      "topic": "nature",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French learner article",
+      "license": "Bundled original content",
+      "targets": [
+        "éviter",
+        "faire attention",
+        "essayer"
+      ],
+      "phrases": [
+        {
+          "text": "essaie d'éviter",
+          "frame": "essayer de + infinitif"
+        },
+        {
+          "text": "fait attention à",
+          "frame": "faire attention à + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Réduire ses déchets ne demande pas de changer toute sa vie en une journée.",
+          "en": "Reducing waste does not require changing your whole life in one day."
+        },
+        {
+          "fr": "Claire commence par observer ce qu'elle jette le plus souvent.",
+          "en": "Claire starts by observing what she throws away most often."
+        },
+        {
+          "fr": "Elle essaie d'éviter les bouteilles jetables et emporte une gourde au travail.",
+          "en": "She tries to avoid disposable bottles and takes a reusable bottle to work."
+        },
+        {
+          "fr": "Au supermarché, elle fait attention à la quantité d'emballage et choisit parfois des produits en vrac.",
+          "en": "At the supermarket, she pays attention to the amount of packaging and sometimes chooses unpackaged products."
+        },
+        {
+          "fr": "Ces changements sont modestes, mais ils deviennent plus faciles quand ils font partie de la routine.",
+          "en": "These changes are modest, but they become easier when they become part of the routine."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quel changement Claire fait-elle au travail ?",
+          "options": [
+            "Elle apporte une gourde.",
+            "Elle achète plus de bouteilles.",
+            "Elle ne boit plus."
+          ],
+          "answer": 0,
+          "target": "éviter"
+        },
+        {
+          "id": "q2",
+          "prompt": "À quoi fait-elle attention au supermarché ?",
+          "options": [
+            "À l'emballage.",
+            "À la musique.",
+            "À la météo."
+          ],
+          "answer": 0,
+          "target": "faire attention"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-langue",
+      "title": "Apprendre sans tout comprendre",
+      "level": "B1",
+      "type": "informational",
+      "minutes": 4,
+      "topic": "communication",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French learner article",
+      "license": "Bundled original content",
+      "targets": [
+        "avoir du mal",
+        "continuer",
+        "se rendre compte"
+      ],
+      "phrases": [
+        {
+          "text": "d'avoir du mal à comprendre",
+          "frame": "avoir du mal à + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Quand on apprend une langue, il est normal d'avoir du mal à comprendre certains textes ou certaines conversations.",
+          "en": "When learning a language, it is normal to have trouble understanding some texts or conversations."
+        },
+        {
+          "fr": "Beaucoup d'apprenants s'arrêtent dès qu'ils rencontrent plusieurs mots inconnus.",
+          "en": "Many learners stop as soon as they encounter several unknown words."
+        },
+        {
+          "fr": "Pourtant, il est souvent possible de continuer en utilisant le contexte.",
+          "en": "However, it is often possible to continue by using context."
+        },
+        {
+          "fr": "Après quelques mois, on se rend compte que des expressions autrefois difficiles deviennent familières.",
+          "en": "After a few months, one realizes that expressions that were once difficult become familiar."
+        },
+        {
+          "fr": "Le but n'est donc pas de tout traduire, mais de comprendre suffisamment pour avancer.",
+          "en": "The goal is therefore not to translate everything, but to understand enough to move forward."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que font certains apprenants devant plusieurs mots inconnus ?",
+          "options": [
+            "Ils continuent toujours.",
+            "Ils s'arrêtent.",
+            "Ils changent de langue."
+          ],
+          "answer": 1,
+          "target": "avoir du mal"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle stratégie le texte recommande-t-il ?",
+          "options": [
+            "Tout traduire immédiatement.",
+            "Utiliser le contexte pour continuer.",
+            "Ignorer tous les mots."
+          ],
+          "answer": 1,
+          "target": "continuer"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-retard",
+      "title": "Un trajet qui change",
+      "level": "B1",
+      "type": "practical",
+      "minutes": 4,
+      "topic": "travel",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French practical scenario",
+      "license": "Bundled original content",
+      "targets": [
+        "retard",
+        "proposer",
+        "tenir compte"
+      ],
+      "phrases": [
+        {
+          "text": "tenir compte du retard",
+          "frame": "tenir compte de + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Le train de Marc doit arriver à Paris à dix-sept heures quinze, mais une annonce signale trente minutes de retard.",
+          "en": "Marc’s train is supposed to arrive in Paris at 5:15 p.m., but an announcement reports a thirty-minute delay."
+        },
+        {
+          "fr": "Marc a ensuite un rendez-vous important à dix-huit heures.",
+          "en": "Marc then has an important appointment at 6 p.m."
+        },
+        {
+          "fr": "Il doit donc tenir compte du retard et chercher une solution.",
+          "en": "He therefore has to take the delay into account and look for a solution."
+        },
+        {
+          "fr": "Une employée lui propose un autre train qui part dans dix minutes et arrive plus tôt.",
+          "en": "An employee offers him another train that leaves in ten minutes and arrives earlier."
+        },
+        {
+          "fr": "Marc accepte le changement et envoie un message pour confirmer sa nouvelle heure d'arrivée.",
+          "en": "Marc accepts the change and sends a message to confirm his new arrival time."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi Marc doit-il changer son plan ?",
+          "options": [
+            "À cause d'un retard.",
+            "Parce qu'il a perdu son billet.",
+            "Parce que son rendez-vous est annulé."
+          ],
+          "answer": 0,
+          "target": "retard"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle solution reçoit-il ?",
+          "options": [
+            "Un hôtel.",
+            "Un autre train.",
+            "Un taxi gratuit."
+          ],
+          "answer": 1,
+          "target": "proposer"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-plan",
+      "title": "Quand le plan change",
+      "level": "B1",
+      "type": "dialogue",
+      "minutes": 4,
+      "topic": "communication",
+      "register": "informal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French graded dialogue",
+      "license": "Bundled original content",
+      "targets": [
+        "pourtant",
+        "refuser",
+        "proposer"
+      ],
+      "phrases": [
+        {
+          "text": "propose de partir",
+          "frame": "proposer de + infinitif"
+        },
+        {
+          "text": "refuse de conduire",
+          "frame": "refuser de + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "— On devait partir à huit heures, mais Paul n'est toujours pas prêt.",
+          "en": "— We were supposed to leave at eight, but Paul still is not ready."
+        },
+        {
+          "fr": "— Pourtant, il a dit hier qu'il serait à l'heure.",
+          "en": "— Yet he said yesterday that he would be on time."
+        },
+        {
+          "fr": "— Je propose de partir sans lui et de le retrouver plus tard.",
+          "en": "— I suggest leaving without him and meeting him later."
+        },
+        {
+          "fr": "— Je préfère attendre encore dix minutes. Léa refuse de conduire seule.",
+          "en": "— I prefer to wait another ten minutes. Léa refuses to drive alone."
+        },
+        {
+          "fr": "— D'accord. S'il n'arrive pas, on change de plan.",
+          "en": "— Okay. If he does not arrive, we will change the plan."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que propose la première personne ?",
+          "options": [
+            "De partir sans Paul.",
+            "D'annuler le voyage.",
+            "De conduire seule."
+          ],
+          "answer": 0,
+          "target": "proposer"
+        },
+        {
+          "id": "q2",
+          "prompt": "Que refuse Léa ?",
+          "options": [
+            "D'attendre.",
+            "De conduire seule.",
+            "De changer de plan."
+          ],
+          "answer": 1,
+          "target": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "read-b1-budget",
+      "title": "Préparer un petit budget",
+      "level": "B1",
+      "type": "informational",
+      "minutes": 4,
+      "topic": "shopping",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French learner article",
+      "license": "Bundled original content",
+      "targets": [
+        "tenir compte",
+        "prévoir",
+        "éviter"
+      ],
+      "phrases": [
+        {
+          "text": "tenir compte des dépenses",
+          "frame": "tenir compte de + nom"
+        },
+        {
+          "text": "éviter d'utiliser",
+          "frame": "éviter de + infinitif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Un budget simple peut aider à comprendre où part son argent chaque mois.",
+          "en": "A simple budget can help you understand where your money goes each month."
+        },
+        {
+          "fr": "Il faut d'abord prévoir les dépenses fixes, comme le loyer, les transports et les abonnements.",
+          "en": "First you need to plan for fixed expenses such as rent, transport and subscriptions."
+        },
+        {
+          "fr": "Ensuite, il est utile de tenir compte des dépenses moins régulières.",
+          "en": "Then it is useful to take less regular expenses into account."
+        },
+        {
+          "fr": "Certaines personnes mettent une petite somme de côté au début du mois pour éviter d'utiliser tout leur argent disponible.",
+          "en": "Some people set a small amount aside at the beginning of the month to avoid using all their available money."
+        },
+        {
+          "fr": "L'objectif n'est pas de contrôler chaque euro, mais de prendre des décisions plus conscientes.",
+          "en": "The goal is not to control every euro, but to make more conscious decisions."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Que faut-il prévoir d'abord ?",
+          "options": [
+            "Les dépenses fixes.",
+            "Les vacances de dix ans.",
+            "Les cadeaux uniquement."
+          ],
+          "answer": 0,
+          "target": "prévoir"
+        },
+        {
+          "id": "q2",
+          "prompt": "Pourquoi certaines personnes mettent-elles de l'argent de côté ?",
+          "options": [
+            "Pour éviter de tout dépenser.",
+            "Pour payer plus cher.",
+            "Pour arrêter de travailler."
+          ],
+          "answer": 0,
+          "target": "éviter"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-teletravail",
+      "title": "Réorganiser le travail hybride",
+      "level": "B2",
+      "type": "informational",
+      "minutes": 6,
+      "topic": "work-study",
+      "register": "formal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate article",
+      "license": "Bundled original content",
+      "targets": [
+        "nuancer",
+        "enjeu",
+        "mettre en place",
+        "tenir compte",
+        "à condition que"
+      ],
+      "phrases": [
+        {
+          "text": "tenir compte des contraintes",
+          "frame": "tenir compte de + nom"
+        },
+        {
+          "text": "à condition que",
+          "frame": "à condition que + subjonctif"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Une entreprise qui généralise le télétravail gagne parfois en souplesse, mais elle ne résout pas automatiquement les problèmes d'organisation.",
+          "en": "A company that generalizes remote work sometimes gains flexibility, but it does not automatically solve organizational problems."
+        },
+        {
+          "fr": "Le principal enjeu consiste à distinguer les tâches qui exigent une présence commune de celles qui peuvent être réalisées à distance sans perte de qualité.",
+          "en": "The main issue is to distinguish tasks that require people to be together from those that can be done remotely without loss of quality."
+        },
+        {
+          "fr": "Certains salariés souhaitent davantage d'autonomie, tandis que d'autres craignent que les échanges informels deviennent plus rares.",
+          "en": "Some employees want more autonomy, while others fear that informal exchanges will become less frequent."
+        },
+        {
+          "fr": "Une politique équilibrée doit donc tenir compte des contraintes familiales, du besoin de coordination et des différences entre métiers.",
+          "en": "A balanced policy must therefore take family constraints, coordination needs, and differences between jobs into account."
+        },
+        {
+          "fr": "Le travail hybride peut être efficace à condition que les règles soient prévisibles et que les équipes puissent les réévaluer régulièrement.",
+          "en": "Hybrid work can be effective provided that the rules are predictable and teams can reassess them regularly.",
+          "grammar": "à condition que normally introduces the subjunctive."
+        },
+        {
+          "fr": "Autrement dit, la question n'est pas de choisir entre bureau et domicile, mais de définir dans quelles conditions chaque option fonctionne le mieux.",
+          "en": "In other words, the issue is not choosing between office and home, but defining under which conditions each option works best."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quelle idée centrale le texte défend-il ?",
+          "options": [
+            "Le télétravail doit remplacer totalement le bureau.",
+            "Il faut adapter l'organisation aux tâches et aux contraintes.",
+            "Les échanges informels ne servent à rien."
+          ],
+          "answer": 1,
+          "target": "tenir compte"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle condition est donnée pour qu'un système hybride fonctionne ?",
+          "options": [
+            "Des règles prévisibles et réévaluables.",
+            "Aucune présence commune.",
+            "Le même nombre de jours pour tous."
+          ],
+          "answer": 0,
+          "target": "à condition que"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-logement",
+      "title": "Densifier sans dégrader le quartier",
+      "level": "B2",
+      "type": "argumentative",
+      "minutes": 6,
+      "topic": "home",
+      "register": "formal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate article",
+      "license": "Bundled original content",
+      "targets": [
+        "compromis",
+        "préserver",
+        "densité",
+        "cependant",
+        "dans la mesure où"
+      ],
+      "phrases": [
+        {
+          "text": "trouver un compromis",
+          "frame": "trouver un compromis entre A et B"
+        },
+        {
+          "text": "dans la mesure où",
+          "frame": "dans la mesure où + proposition"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Dans les villes où les loyers augmentent rapidement, construire davantage de logements paraît indispensable.",
+          "en": "In cities where rents rise rapidly, building more housing seems essential."
+        },
+        {
+          "fr": "Cependant, la densification peut susciter une opposition lorsqu'elle réduit les espaces verts ou modifie brutalement le caractère d'un quartier.",
+          "en": "However, densification can provoke opposition when it reduces green space or abruptly changes a neighborhood’s character."
+        },
+        {
+          "fr": "Les habitants ne défendent pas tous les mêmes priorités : certains insistent sur l'accessibilité des prix, d'autres sur la qualité de vie.",
+          "en": "Residents do not all defend the same priorities: some emphasize affordability, others quality of life."
+        },
+        {
+          "fr": "Un projet crédible doit reconnaître cette tension au lieu de présenter une seule solution comme évidente.",
+          "en": "A credible project must recognize this tension instead of presenting a single solution as obvious."
+        },
+        {
+          "fr": "Des bâtiments plus hauts peuvent être acceptables dans la mesure où ils financent aussi des équipements publics et préservent des zones végétalisées.",
+          "en": "Taller buildings can be acceptable insofar as they also finance public facilities and preserve green areas.",
+          "grammar": "dans la mesure où introduces a condition or limitation."
+        },
+        {
+          "fr": "Le débat porte donc moins sur le principe de construire que sur le compromis entre quantité, prix, mobilité et environnement.",
+          "en": "The debate is therefore less about the principle of building than about the compromise between quantity, price, mobility, and environment."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi certains habitants s'opposent-ils à la densification ?",
+          "options": [
+            "Parce qu'elle peut réduire les espaces verts ou changer le quartier.",
+            "Parce qu'ils veulent tous des loyers plus élevés.",
+            "Parce qu'ils refusent tout équipement public."
+          ],
+          "answer": 0,
+          "target": "préserver"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle approche le texte recommande-t-il ?",
+          "options": [
+            "Ignorer les désaccords.",
+            "Chercher un compromis entre plusieurs objectifs.",
+            "Construire uniquement en périphérie."
+          ],
+          "answer": 1,
+          "target": "compromis"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-algorithmes",
+      "title": "Quand un algorithme recommande à notre place",
+      "level": "B2",
+      "type": "informational",
+      "minutes": 6,
+      "topic": "communication",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate article",
+      "license": "Bundled original content",
+      "targets": [
+        "biais",
+        "fiable",
+        "influencer",
+        "remettre en question",
+        "dans quelle mesure"
+      ],
+      "phrases": [
+        {
+          "text": "remettre en question",
+          "frame": "remettre en question + nom"
+        },
+        {
+          "text": "dans quelle mesure",
+          "frame": "dans quelle mesure + inversion / proposition"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Les systèmes de recommandation sélectionnent une partie des vidéos, articles ou produits que nous voyons en ligne.",
+          "en": "Recommendation systems select some of the videos, articles, or products we see online."
+        },
+        {
+          "fr": "Ils peuvent nous faire gagner du temps, mais leur efficacité ne signifie pas nécessairement qu'ils soient neutres.",
+          "en": "They can save us time, but their effectiveness does not necessarily mean they are neutral."
+        },
+        {
+          "fr": "Un algorithme apprend à partir de données passées ; si ces données contiennent des biais, certaines recommandations peuvent les reproduire.",
+          "en": "An algorithm learns from past data; if that data contains biases, some recommendations may reproduce them."
+        },
+        {
+          "fr": "Il faut donc distinguer une prédiction statistiquement fiable d'une décision souhaitable sur le plan social.",
+          "en": "We must therefore distinguish a statistically reliable prediction from a socially desirable decision."
+        },
+        {
+          "fr": "La question est aussi de savoir dans quelle mesure nos propres choix sont influencés par ce qui nous est présenté en premier.",
+          "en": "The question is also to know to what extent our own choices are influenced by what is shown to us first."
+        },
+        {
+          "fr": "Comprendre ces mécanismes permet de profiter des outils numériques tout en gardant la possibilité de remettre leurs suggestions en question.",
+          "en": "Understanding these mechanisms allows us to benefit from digital tools while retaining the ability to question their suggestions."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi une recommandation efficace n'est-elle pas forcément neutre ?",
+          "options": [
+            "Parce qu'elle peut reproduire des biais présents dans les données.",
+            "Parce qu'un algorithme ne peut jamais calculer.",
+            "Parce que les utilisateurs refusent toute recommandation."
+          ],
+          "answer": 0,
+          "target": "biais"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle distinction le texte juge importante ?",
+          "options": [
+            "Entre vitesse et couleur.",
+            "Entre prédiction fiable et décision souhaitable.",
+            "Entre ordinateur et téléphone."
+          ],
+          "answer": 1,
+          "target": "fiable"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-prevention",
+      "title": "Prévenir plutôt que seulement réparer",
+      "level": "B2",
+      "type": "argumentative",
+      "minutes": 6,
+      "topic": "health",
+      "register": "formal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate article",
+      "license": "Bundled original content",
+      "targets": [
+        "prévention",
+        "coût",
+        "à long terme",
+        "convaincre",
+        "pour autant"
+      ],
+      "phrases": [
+        {
+          "text": "à long terme",
+          "frame": "à long terme"
+        },
+        {
+          "text": "pour autant",
+          "frame": "ne ... pas pour autant"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Les politiques de santé consacrent beaucoup de moyens au traitement des maladies, ce qui reste évidemment indispensable.",
+          "en": "Health policies devote substantial resources to treating illnesses, which obviously remains essential."
+        },
+        {
+          "fr": "Investir dans la prévention peut pourtant réduire certains coûts à long terme, notamment lorsque des risques sont détectés plus tôt.",
+          "en": "Investing in prevention can nevertheless reduce some costs in the long term, particularly when risks are detected earlier."
+        },
+        {
+          "fr": "Cela ne signifie pas pour autant que chaque campagne de prévention soit efficace.",
+          "en": "That does not mean, however, that every prevention campaign is effective."
+        },
+        {
+          "fr": "Pour convaincre, un message doit être compréhensible, crédible et adapté aux personnes auxquelles il s'adresse.",
+          "en": "To persuade, a message must be understandable, credible, and adapted to the people it addresses."
+        },
+        {
+          "fr": "Des mesures trop générales peuvent manquer leur cible, tandis que des interventions mieux ciblées coûtent parfois davantage au départ.",
+          "en": "Measures that are too general can miss their target, while better-targeted interventions sometimes cost more initially."
+        },
+        {
+          "fr": "L'évaluation doit donc comparer les résultats réels, les coûts et les effets inattendus plutôt que se limiter aux intentions.",
+          "en": "Evaluation must therefore compare actual results, costs, and unintended effects rather than limit itself to intentions."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi la prévention peut-elle être intéressante ?",
+          "options": [
+            "Elle peut réduire certains coûts à long terme.",
+            "Elle remplace tous les traitements.",
+            "Elle ne demande aucune évaluation."
+          ],
+          "answer": 0,
+          "target": "à long terme"
+        },
+        {
+          "id": "q2",
+          "prompt": "Que faut-il faire pour évaluer une mesure ?",
+          "options": [
+            "Examiner uniquement les intentions.",
+            "Comparer résultats, coûts et effets inattendus.",
+            "Supposer qu'elle fonctionne."
+          ],
+          "answer": 1,
+          "target": "coût"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-transports",
+      "title": "Rendre la mobilité plus équitable",
+      "level": "B2",
+      "type": "argumentative",
+      "minutes": 6,
+      "topic": "travel",
+      "register": "formal",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate article",
+      "license": "Bundled original content",
+      "targets": [
+        "équitable",
+        "incitation",
+        "contraindre",
+        "alternative",
+        "conséquence"
+      ],
+      "phrases": [
+        {
+          "text": "mettre en place une incitation",
+          "frame": "mettre en place + nom"
+        },
+        {
+          "text": "faute d’alternative",
+          "frame": "faute de + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Réduire la circulation automobile en centre-ville peut améliorer la qualité de l'air et rendre l'espace public plus agréable.",
+          "en": "Reducing car traffic in city centers can improve air quality and make public space more pleasant."
+        },
+        {
+          "fr": "Une restriction uniforme risque néanmoins de pénaliser davantage les personnes qui vivent loin des transports collectifs.",
+          "en": "A uniform restriction may nevertheless penalize people who live far from public transport more heavily."
+        },
+        {
+          "fr": "Certains conducteurs utilisent leur voiture par préférence, tandis que d'autres le font faute d'alternative réaliste.",
+          "en": "Some drivers use their cars by preference, while others do so for lack of a realistic alternative."
+        },
+        {
+          "fr": "Une politique plus équitable pourrait combiner des restrictions progressives, de meilleures liaisons et des incitations financières.",
+          "en": "A fairer policy could combine gradual restrictions, better connections, and financial incentives."
+        },
+        {
+          "fr": "Il faut également anticiper les conséquences sur les commerces, les travailleurs de nuit et les personnes à mobilité réduite.",
+          "en": "The consequences for shops, night workers, and people with reduced mobility must also be anticipated."
+        },
+        {
+          "fr": "L'objectif n'est donc pas seulement de contraindre les comportements, mais de rendre les alternatives suffisamment crédibles pour permettre un vrai choix.",
+          "en": "The goal is therefore not only to constrain behavior, but to make alternatives credible enough to allow a real choice."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Quel risque présente une restriction uniforme ?",
+          "options": [
+            "Elle peut pénaliser ceux qui ont peu d'alternatives.",
+            "Elle augmente toujours le nombre de voitures.",
+            "Elle supprime les transports publics."
+          ],
+          "answer": 0,
+          "target": "alternative"
+        },
+        {
+          "id": "q2",
+          "prompt": "Quelle combinaison est proposée ?",
+          "options": [
+            "Restrictions progressives, meilleures liaisons et incitations.",
+            "Interdiction immédiate sans alternative.",
+            "Uniquement des parkings moins chers."
+          ],
+          "answer": 0,
+          "target": "incitation"
+        }
+      ]
+    },
+    {
+      "id": "read-b2-association",
+      "title": "Décider quand les priorités s'opposent",
+      "level": "B2",
+      "type": "story",
+      "minutes": 6,
+      "topic": "people",
+      "register": "neutral",
+      "authenticity": "graded",
+      "sourceLabel": "Original French upper-intermediate case study",
+      "license": "Bundled original content",
+      "targets": [
+        "arbitrer",
+        "priorité",
+        "consensus",
+        "renoncer",
+        "mettre en balance"
+      ],
+      "phrases": [
+        {
+          "text": "mettre en balance",
+          "frame": "mettre en balance A et B"
+        },
+        {
+          "text": "parvenir à un consensus",
+          "frame": "parvenir à + nom"
+        }
+      ],
+      "sentences": [
+        {
+          "fr": "Une petite association dispose d'un budget suffisant pour lancer un seul de deux projets cette année.",
+          "en": "A small association has enough budget to launch only one of two projects this year."
+        },
+        {
+          "fr": "Le premier toucherait beaucoup de personnes rapidement, tandis que le second aiderait un groupe plus restreint mais confronté à des besoins plus urgents.",
+          "en": "The first would reach many people quickly, while the second would help a smaller group facing more urgent needs."
+        },
+        {
+          "fr": "Au début de la réunion, chaque équipe défend sa priorité comme si les deux projets étaient incompatibles sur tous les points.",
+          "en": "At the start of the meeting, each team defends its priority as if the two projects were incompatible in every respect."
+        },
+        {
+          "fr": "La présidente propose alors de mettre en balance l'impact, l'urgence, le coût et la possibilité de reporter une partie du travail.",
+          "en": "The chair then suggests weighing impact, urgency, cost, and the possibility of postponing part of the work."
+        },
+        {
+          "fr": "Les participants acceptent finalement de renoncer à certaines dépenses secondaires afin de préserver une action minimale dans les deux domaines.",
+          "en": "Participants ultimately agree to give up some secondary expenses in order to preserve a minimum action in both areas."
+        },
+        {
+          "fr": "Ils ne sont pas tous entièrement satisfaits, mais ils parviennent à un consensus qu'ils jugent plus équitable que les deux options initiales.",
+          "en": "They are not all entirely satisfied, but they reach a consensus they consider fairer than the two initial options."
+        }
+      ],
+      "questions": [
+        {
+          "id": "q1",
+          "prompt": "Pourquoi la décision est-elle difficile ?",
+          "options": [
+            "Deux priorités importantes se disputent un budget limité.",
+            "Personne ne veut lancer de projet.",
+            "Le budget est illimité."
+          ],
+          "answer": 0,
+          "target": "priorité"
+        },
+        {
+          "id": "q2",
+          "prompt": "Comment le groupe parvient-il à un accord ?",
+          "options": [
+            "En supprimant les deux projets.",
+            "En mettant plusieurs critères en balance et en faisant un compromis.",
+            "En laissant une seule personne décider sans discussion."
+          ],
+          "answer": 1,
+          "target": "consensus"
+        }
+      ]
+    }
+  ]
+}

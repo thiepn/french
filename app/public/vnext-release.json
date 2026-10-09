@@ -1,1 +1,36 @@
-{"app":"French","runtime":"vnext","phase":"P37","stage":"foundation","productionCutover":false,"stableProduction":"5.24.0/P35"}
+{
+  "app": "French",
+  "runtime": "vnext",
+  "phase": "P37H",
+  "stage": "production-parity-gate",
+  "productionCutover": false,
+  "stableProduction": "5.24.0/P35",
+  "qualifiedFoundation": "P37A-P37G",
+  "currentTranche": [
+    "functional-progress",
+    "functional-settings",
+    "functional-listen",
+    "functional-speak",
+    "backup-recovery",
+    "offline-pwa",
+    "p5-progress-intelligence",
+    "p15-support-aware-listening",
+    "p16-spoken-production-foundation",
+    "p14-native-reading",
+    "p15-read-listen-pairing",
+    "p12-sentence-diagnosis",
+    "p16-p12-spoken-transfer",
+    "read-listen-speak-context",
+    "first-party-account-sync-engine",
+    "p35-compatible-cloud-snapshot",
+    "oauth-aware-sync-rls",
+    "p35-vnext-migration-parity-qualified"
+  ],
+  "fullP35FeatureParity": false,
+  "accountOAuthClient": "registered-and-pinned",
+  "remainingCutoverBlockers": [
+    "p35-feature-parity-signoff",
+    "live-account-sync-acceptance",
+    "real-device-qualification"
+  ]
+}

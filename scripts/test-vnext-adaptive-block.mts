@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import {rankNativeActivities} from '../app/src/core/learner/study-coach.ts';
+import {composeAdaptiveBlock,launchAdaptiveStep,observeNativeCompletion,normalizeAdaptiveBlock} from '../app/src/core/learner/adaptive-block.ts';
+const fresh={due:12,newLimit:20,remainingSession:0,recent:{reviews:0,reading:0,listening:0,speaking:0}};
+const actions=rankNativeActivities(fresh);
+assert.equal(composeAdaptiveBlock(actions,100,true),null,'cannot replace a native resumable session');
+const plan=composeAdaptiveBlock(actions,100)!;
+assert.ok(plan.steps.length<=3&&plan.steps.reduce((sum,step)=>sum+step.minutes,0)<=26);
+assert.equal(plan.steps[0].id,'review');
+const counts={review:0,read:0,listen:0,speak:0,write:0,conversation:0,'open-world':0};
+let step=launchAdaptiveStep(plan,counts,200);
+assert.equal(observeNativeCompletion(step,counts,250).cursor,0,'launch is not evidence');
+counts.review++;
+step=observeNativeCompletion(step,counts,260);
+assert.equal(step.cursor,1);
+assert.equal(step.steps[0].completedAt,260);
+const recovered=normalizeAdaptiveBlock({...step,rawPersonalText:'a secret'});assert.ok(recovered);
+assert.equal(JSON.stringify(recovered).includes('a secret'),false,'metadata whitelist');
+assert.equal(normalizeAdaptiveBlock({schema:plan.schema,steps:[{id:'bad'}]}),null);
+assert.equal(normalizeAdaptiveBlock({schema:plan.schema,steps:[...plan.steps,...plan.steps]}),null);
+assert.ok(rankNativeActivities({...fresh,recent:{reviews:10,reading:3,listening:0,speaking:0}})
+  .some(a=>a.id==='open-world'));
+assert.ok(!rankNativeActivities(fresh).some(a=>a.id==='open-world'));
+console.log(JSON.stringify({schema:'french-p37i-d5-p22-p23',ok:true,budget:26,maxSteps:3,nativeCompletion:true,privacy:'metadata-only'}));

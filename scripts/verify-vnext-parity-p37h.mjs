@@ -1,0 +1,310 @@
+import { readFile } from 'node:fs/promises';
+
+const [progress,settings,listen,speak,read,repository,styles,backup,main,index,swBuilder,manifest,contentBuilder,readingSource,sentenceSource,sentenceDiagnosis,router,shell,accountSessionVendor,accountConfig,accountSync,accountRuntime,accountUi,accountMigration]=await Promise.all([
+  readFile(new URL('../app/src/routes/progress.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/settings.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/listen.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/speak.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/read.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/learner/repository.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/styles/base.css',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/backup/archive.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/main.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/index.html',import.meta.url),'utf8'),
+  readFile(new URL('./build-vnext-service-worker.mjs',import.meta.url),'utf8'),
+  readFile(new URL('../app/public/manifest.webmanifest',import.meta.url),'utf8'),
+  readFile(new URL('./build-vnext-content.mjs',import.meta.url),'utf8'),
+  readFile(new URL('./data/stable-readings-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('./data/stable-sentence-exercises-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/content/sentence-diagnosis.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/router.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/shell.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/account-session-vendor.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/config.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/sync.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/runtime.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/settings-ui.ts',import.meta.url),'utf8'),
+  readFile(new URL('../supabase/migrations/20261007221500_french_first_party_sso_access.sql',import.meta.url),'utf8')
+]);
+
+// A passing compatibility suite must not accidentally authorize a production cutover.
+const release=JSON.parse(await readFile(new URL('../app/public/vnext-release.json',import.meta.url),'utf8'));
+const [curriculum,coaching]=await Promise.all([
+  readFile(new URL('../app/src/core/conversation/curriculum.ts',import.meta.url),'utf8'),
+  readFile(new URL('../scripts/test-vnext-curriculum.mts',import.meta.url),'utf8')
+]);
+const [conversationRoute,conversationEngine,conversationScenes,missionDefinitions,missionTests]=await Promise.all([
+  readFile(new URL('../app/src/routes/conversation.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/engine.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/scenarios.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/conversation/missions.ts',import.meta.url),'utf8'),
+  readFile(new URL('../scripts/test-vnext-mission.mts',import.meta.url),'utf8')
+]);
+const conversationVariants=await readFile(new URL('../app/src/core/conversation/variants.ts',import.meta.url),'utf8');
+const [writingRoute,writingEngine]=await Promise.all([
+  readFile(new URL('../app/src/routes/write.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/writing/session.ts',import.meta.url),'utf8')
+]);
+const [usageSourceText,usageRouteEngine,usageStore,cloudFormat,usageTests]=await Promise.all([
+  readFile(new URL('./data/stable-usage-corpus-v1.json',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/usage/session.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/usage/storage.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/account/cloud-format.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-usage.mts',import.meta.url),'utf8')
+]);
+const [masteryEngine,masteryTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/mastery.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-usage-mastery.mts',import.meta.url),'utf8')
+]);
+const [contextEngine,contextTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/context.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-context.mts',import.meta.url),'utf8')
+]);
+const [d2Calibration,d2CalibrationTests]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/evidence-calibration.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-evidence-calibration.mts',import.meta.url),'utf8')
+]);
+const usageSource=JSON.parse(usageSourceText);
+const failures=[];
+if(release.productionCutover!==false)failures.push('vNext production cutover was enabled before acceptance');
+if(release.fullP35FeatureParity!==false)failures.push('P35 feature parity was marked complete without the P37I sign-off');
+if(!release.remainingCutoverBlockers?.includes('p35-feature-parity-signoff'))
+  failures.push('P37I feature parity release gate is missing');
+const need=(source,token,label=token)=>{if(!source.includes(token))failures.push('missing '+label);};
+const reject=(source,token,label=token)=>{if(source.includes(token))failures.push('placeholder remains '+label);};
+
+if(usageSource.schema!=='thiepn-french-stable-usage-source-v1'||
+   usageSource.sourceBlob!=='8a354063b20421ad53b3417b3f677adc926f3cb5'||
+   usageSource.records?.length!==67||usageSource.count!==67) failures.push('incomplete P10 original verified source frames');
+for(const item of usageSource.records??[]){
+  if(!usageSource.sources?.[item.sourceKey]||!item.frame.includes(item.blank)||!/^p10-\d{3}$/.test(item.id))
+    failures.push('invalid P10 provenance or frame '+item.id);
+}
+for(const token of ['loadStableUsageCorpus','Usage & phrase transfer (P10/P11)','Check phrase','recordPracticeEvidence','practiceOnly'])
+  if(token==='practiceOnly')need(repository,token,'C2 practice-only evidence contract');
+  else need(writingRoute,token,'P37I-C2 writing workspace '+token);
+for(const token of ['diagnoseUsage','safeUsageState','repairCandidates','completeUsageAttempt','mode===\'repair\'?0:old.index+1'])
+  need(usageRouteEngine,token,'P37I-C2 usage engine '+token);
+need(usageStore,'native-usage-v1','C2 metadata store');
+need(cloudFormat,"at(payload,'meta','native-usage-v1')",'C2 local-first first-sync protection');
+for(const token of ['noTypedTranscripts:true','p10-067','repairCandidates','sourceFrames:67'])
+  need(usageTests,token,'C2 source and privacy test '+token);
+
+
+for(const term of ['USAGE_SECURE_ATTEMPTS=3','USAGE_SECURE_ACCURACY=.8','USAGE_REFRESH_DAYS=60',
+  'TRANSFER_SECURE_ATTEMPTS=2','TRANSFER_SECURE_ACCURACY=.8',
+  'rankUsageCandidates','usageRecordMastery','transferCueVariant','REPAIR_ERROR_DAYS=120'])
+  need(masteryEngine,term,'C3 mastery '+term);
+for(const term of ['accumulateUsageTally','tallies','variantMask','rankUsageCandidates','usageCue'])
+  need(usageRouteEngine,term,'C3 cumulative usage/phrase '+term);
+for(const term of ['usageAggregate','rankUsageCandidates','transferCueVariant','write-mastery-stat',
+  "metaUpdate"])
+  if(term==='metaUpdate')need(repository,term,'C3 atomic evidence');
+  else if(term==='write-mastery-stat')need(writingRoute,'write-mastery-stat','C3 mastery workspace');
+  else need(writingRoute,term,'C3 active workspace '+term);
+for(const term of ['cumulativeLedger:true','TRANSFER_SECURE_ATTEMPTS','rankUsageCandidates','variantMask'])
+  need(masteryTests,term,'C3 deterministic regression '+term);
+
+for(const term of ['assert.equal(CONTEXT_SCENES.length,72)',
+  "new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,36",
+  'later failure in one contextual variant','mixed-age scene evidence'])
+  need(contextTests,term,'C5 expanded situational qualification '+term);
+for(const term of ['usage.independentExact>=2','latestContextVariants','variantCurrent','variantExpired'])
+  need(masteryEngine,term,'C5 per-variant independent mastery '+term);
+
+for(const term of ['CONTEXT_SCENES','assessContextAnswer','contextScene','hasContextScenes'])
+  need(contextEngine,term,'C5 authored context engine '+term);
+for(const term of ['contextCueVariant','contextualBasis','contextSecure'])
+  need(masteryEngine,term,'C5 separated contextual mastery '+term);
+for(const term of ['diagnoseContextUsage','contextScene','Contexts secure','Model sentence'])
+  need(writingRoute,term,'C5 contextual production workspace '+term);
+for(const term of ['separateStructuralAndContextualEvidence:true','privacy:','variantMask','scenes:'])
+  need(contextTests,term,'C5 deterministic regression '+term);
+const [sentenceBridgeEngine,sentenceBridgeTests]=await Promise.all([
+  readFile(new URL('../app/src/core/writing/bridge.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-sentence-bridge.mts',import.meta.url),'utf8')
+]);
+for(const term of ['sentenceSourceMap','rankedSentenceBridge','sentenceBridgeSummary','independentExact<2'])
+  need(sentenceBridgeEngine,term,'C4 P10 to P12 bridge '+term);
+for(const term of ['sourceLinked','independentlyExact','Open usage practice','Connected'])
+  need(writingRoute,term==='sourceLinked'?'bridge.sourceLinked':term,
+    'C4 writing bridge '+term);
+for(const term of ['evidence','nextWritingTally','bridge','safeWritingState'])
+  need(writingEngine,term,'C4 durable writing '+term);
+for(const term of ['originalSentences:links.size','multiContext:true','independentGate:2','metadataOnly:true'])
+  need(sentenceBridgeTests,term,'C4 bridge test '+term);
+need(cloudFormat,'const writingEvidence=obj(writing.evidence)','C4 cloud-safety protection');
+
+need(repository,'native-writing-v1','C4 atomic writing save');
+need(writingRoute,"key:'native-writing-v1'",'C4 atomic writing progress');
+
+const [lexicalEngine,lexicalTests]=await Promise.all([
+  readFile(new URL('../app/src/core/usage/lexical.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-lexical.mts',import.meta.url),'utf8')
+]);
+for(const token of ['uniqueLexicalAnchor','linkedNoteIds','buildLexicalSignals','manualKnown','statusFromSrs'])
+  need(lexicalEngine,token,'C6 conservative lexical crosswalk '+token);
+for(const token of ['CONTEXT_REVALIDATION_DAYS=30','lexicalPriority'])
+  need(masteryEngine,token,'C6 spaced lexical context priority '+token);
+for(const token of ['loadVocabularySearchIndex','readSrsByNoteIds','buildLexicalSignals','Contexts'])
+  need(writingRoute,token,'C6 UI source and fallback '+token);
+for(const token of ['contextRefreshDays:30','srs:','privacy:'])
+  need(lexicalTests,token,'C6 coverage '+token);
+const [orchestrationEngine,orchestrationTests]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/orchestrator.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-orchestrator.mts',import.meta.url),'utf8')
+]);
+for(const term of ['planFrenchPractice','D1_WINDOW_DAYS=30','cefr:',"verdict:'not-assessed'",'sourceMap','productionGaps','contextRefresh'])
+  need(orchestrationEngine,term,'D1 orchestration '+term);
+for(const term of ['planFrenchPractice','Cross-skill study plan','CEFR evidence gaps','loadUsageState','loadWritingState'])
+  need(progress,term,'D1 Progress study plan '+term);
+for(const term of ['scheduledSrsUntouched:true','supportedCannotCertify:true','repairAcrossSkills:true','privacy:'])
+  need(orchestrationTests,term,'D1 safety and regression '+term);
+
+const [cefrGateEngine,cefrGateTests,cefrGateStyles]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/cefr-gates.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-cefr-gates.mts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/progress-gates.css',import.meta.url),'utf8')
+]);
+for(const term of ['D2_WINDOW_DAYS=90','evaluateCefrEvidence',"promotion:'blocked'",
+  'D2_RULES','readingHistory','independentlyHeard','independentlyWritten'])
+  need(cefrGateEngine,term,'D2 level evidence gate '+term);
+for(const term of ['evaluateCefrEvidence','CEFR progression gates','cefr-gate-entry','Open '])
+  need(progress,term,'D2 learner progression display '+term);
+for(const term of ['levelSpecific:true','assessmentHold:true','senseSafe:true','readOnly:true'])
+  need(cefrGateTests,term,'D2 explainability regression '+term);
+need(cefrGateStyles,'.cefr-gate-summary:focus-visible','D2 accessible evidence-ledger style');
+
+// D4: node scripts/test-vnext-evidence-calibration.mts runs TS natively.
+// Extensionless runtime imports compile under Vite's Bundler resolution but
+// fail under Node 24. Prevent a repeat of CI run 37937258507.
+for(const dependency of ["from '../usage/mastery.ts'","from '../writing/bridge.ts'"])
+  need(d2Calibration,dependency,'D4 Node-native evidence calibration dependency '+dependency);
+for(const forbidden of ["from '../usage/mastery'","from '../writing/bridge'"])
+  reject(d2Calibration,forbidden,'D4 Node-native extensionless import '+forbidden);
+
+for(const token of ['calibrateFrenchEvidence','D2_WINDOW_DAYS=30',
+  'firstListen===true','manualJudgment','recentIndependent','sourceFrames',
+  "cefr:'not-assessed'",'interaction'])
+  need(d2Calibration,token,'P37I-D2 calibrated evidence '+token);
+for(const token of ['manualSpeechNotCertified:true','strictFirstListen:true',
+  'sourceLinkedTransfer:true',"privacy:'aggregate-only'","cefr:'not-assessed'"])
+  need(d2CalibrationTests,token,'P37I-D2 regression '+token);
+for(const token of ['calibrateFrenchEvidence','Cross-skill evidence calibration',
+  'Construction → sentence → situation','calibration-row'])
+  need(progress,token,'P37I-D2 Progress evidence ledger '+token);
+
+const [longitudinalEngine,longitudinalTests,longitudinalCss]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/longitudinal.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-longitudinal.mts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/progress-longitudinal.css',import.meta.url),'utf8')
+]);
+for(const token of ['evaluateLongitudinalEvidence','D3_WINDOW_DAYS=45','D3_LOOKBACK_DAYS=90',
+  'sourceLimited','sourceLimited?\'insufficient\'','repairTouches','D3_MIN_DAYS','independently'])
+  need(longitudinalEngine,token==='independently'?'independent':token,
+    'D3 longitudinal comparison '+token);
+for(const token of ['evaluateLongitudinalEvidence','Longitudinal mastery',
+  'trendPanel','trends.priority','trends.limitation'])
+  need(progress,token,'D3 study Progress '+token);
+for(const token of ['noAutomaticCausation:true','failedFirstListenPreserved:true',
+  'assistedExcluded:true','deduplicated:true','cappedSourceAbstains:true','readOnly:true'])
+  need(longitudinalTests,token,'D3 regression '+token);
+need(longitudinalCss,'.longitudinal-row summary:focus-visible','D3 accessible trend-ledger style');
+
+for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
+for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
+for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
+for(const token of ['webkitSpeechRecognition','Pronunciation','Shadowing','Spoken recall','Spoken transfer','Start recording','MediaRecorder','getUserMedia','Check recognition','Manual judgment','never an accent','recordPracticeEvidence','spoken-','loadStableSentenceExercises','diagnoseSentence','Slow model','paceRatio','french-vnext-speak-reading'])need(speak,token,'Speak evidence '+token);
+for(const token of ['loadStableReadingPack','Extensive','Intensive','Targeted','Save discovery','Finish reading','reading-context','replaceCanonicalFeatureState','french-vnext-listen-reading','french-vnext-read-open'])need(read,token,'Reading workspace '+token);
+for(const token of ['READING_SOURCE_FILE','reading-stable-p35','thiepn-french-reading-pack-v1','stable-readings.json'])need(contentBuilder,token,'reading content '+token);
+for(const token of ['"count": 25','"read-a1-matin"','"read-b2-association"'])need(readingSource,token,'stable reading source '+token);
+for(const token of ['"count": 36','"p12-001"','"p12-036"','"type": "transfer"'])need(sentenceSource,token,'stable sentence source '+token);
+for(const token of ['diagnoseSentence','wrongContraction','wrongConnector','Needs your judgment','Target construction missing'])need(sentenceDiagnosis,token,'P12 diagnosis '+token);
+for(const token of ['SENTENCE_SOURCE_FILE','sentence-stable-p12','thiepn-french-sentence-pack-v1','stable-sentence-exercises.json'])need(contentBuilder,token,'sentence content '+token);
+need(router,"read:()=>import('../routes/read')",'lazy Read route');
+need(router,"conversation:()=>import('../routes/conversation')",'lazy conversation route');
+need(router,"write:()=>import('../routes/write')",'lazy written practice route');
+for(const term of ['loadStableSentenceExercises','diagnoseSentence','recordPracticeEvidence','Needs practice & next'])
+  need(writingRoute,term,'Native writing UI '+term);
+for(const term of ['safeWritingState','completeWritingAttempt','currentWritingExercise'])
+  need(writingEngine,term,'Native writing engine '+term);
+need(conversationVariants,'validateConversationVariants','authored variant completeness check');
+need(conversationEngine,'requestConversationRepeat','repeat evidence without automatic advancement');
+for(const term of ['Pause & home','My response fits','Show hint','Send response'])need(conversationRoute,term,'Conversation UI '+term);
+for(const term of ['submitConversationResponse','independent:!manual','safeConversationState'])need(conversationEngine,term,'Conversation evidence '+term);
+for(const term of ["id:'bakery'","id:'cafe'","id:'directions'","id:'rail'","id:'repair'"])need(conversationScenes,term,'Conversation starter '+term);
+for(const missionId of ['morning-town','arrival-day','meet-plan-decide','solve-problems','independent-living']){
+  need(missionDefinitions,"id:'"+missionId+"'","Mission definition "+missionId);
+}
+for(const term of ['beginMission','completeMission','independencePass','fullyUnsupported','missionHistory'])
+  need(conversationEngine,term,'Mission completion contract '+term);
+for(const term of ['selectMission','Mission complete','Mission history','Mission  '])
+  if(term!=='Mission  ')need(conversationRoute,term,'Mission UI '+term);
+for(const term of ['FUNCTION_CATALOG','functionProfiles','rankedNativeScenarios','chooseAdaptiveQueue','evidenceCredit'])
+  need(curriculum,term,'Curriculum '+term);
+for(const term of ['Communicative function evidence','Practise weak functions','functionProfiles'])
+  need(progress,term,'B4 Progress evidence '+term);
+for(const term of ['turn.functionId','row.level!==scenario.level','Math.abs(credit-row.credit)'])
+  need(conversationEngine,term,'B4 import evidence validation '+term);
+for(const term of ['beginAdaptiveSet','functionEvents','adaptiveHistory','changeConversationCeiling'])
+  need(conversationEngine,term,'Adaptive state '+term);
+for(const term of ['Adaptive set · 3 tasks','Function map','Start recommendation','Adaptive task'])
+  need(conversationRoute,term,'Adaptive UI '+term);
+for(const term of ['scenarioId','transcriptsPersisted','adaptiveTasks'])
+  need(coaching,term,'Adaptive tests '+term);
+for(const term of ['safeConversationState','manual continuations','independencePass'])
+  if(term!=='manual continuations')need(missionTests,term,'Mission tests '+term);
+
+for(const token of ["params.has('state')","params.has('code')","params.has('error')","!location.hash&&!oauthReturn"])need(router,token,'preserved OAuth callback '+token);
+need(shell,"read:'Read'",'Read navigation');
+for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
+for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','bf2e7fca-98dd-4833-9fee-306ecd6fc7d7'])need(accountConfig,token,'Account config '+token);
+reject(accountConfig,'__PENDING_FRENCH_OAUTH_CLIENT_ID__','stale OAuth registration blocker');
+for(const token of ['isFrenchAccountConnectionActive','sync_thiepn_french_state','Sync this device','chooseThisDevice','chooseCloud'])need(accountSync+accountUi,token,'Account sync '+token);
+for(const token of ['probeFrenchAccountSession','isFrenchOAuthCallback','reconcileFrenchSync','if(identityKey===lastIdentityKey)return','if(!running)schedule(250)'])need(accountRuntime,token,'Account runtime '+token);
+reject(accountSync,"connect_thiepn_app","native-only connection RPC must not run from French OAuth token");
+for(const token of ["is_thiepn_first_party_oauth_client_for_app('french')","app_data.read","app_data.write","FRENCH_APP_NOT_CONNECTED"])need(accountMigration,token,'Account RLS '+token);
+for(const source of [accountSessionVendor,accountSync,accountRuntime,accountUi]){reject(source,"signInWithOAuth","direct Google/Supabase provider flow");reject(source,"provider:'google'","direct Google provider");}
+for(const token of ['recordPracticeEvidence','practiceOnly:true','supportLevel','firstListen','errorCategory'])need(repository,token,'practice evidence '+token);
+need(repository,'export async function replaceCanonicalLearnerSettings','settings persistence');
+for(const token of ['.progress-grid','.practice-card','.activity-bars','.data-recovery','.account-panel'])need(styles,token,'styles '+token);
+
+for(const token of ['thiepn-french-vnext-backup-v1','SHA-256','createBackupArchive','inspectBackupArchive','restoreBackupArchive',"db.transaction([...STORE_NAMES],'readwrite')"])need(backup,token,'backup '+token);
+need(main,"navigator.serviceWorker.register('/service-worker.js')",'service worker registration');
+need(index,'rel="manifest"','PWA manifest link');
+for(const token of ["french-vnext-shell-v1","!path.startsWith('content/')","service-worker.js"])need(swBuilder,token,'offline builder '+token);
+for(const token of ['"display": "standalone"','"start_url": "/"','"scope": "/"'])need(manifest,token,'manifest '+token);
+
+reject(progress,'Longitudinal mastery and CEFR analytics are queried when opened');
+reject(settings,'Backup, diagnostics, account management, and migration tools stay outside');
+reject(listen,'Audio and transcripts load only for the lesson being used');
+reject(speak,'Microphone and speech code initialize only after entering speaking practice');
+
+
+const [d5Open,d5Block,d5Tests,d5Browser]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/open-world.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/learner/adaptive-block.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-adaptive-block.mts',import.meta.url),'utf8'),
+  readFile(new URL('../tests/p37h-vnext.spec.mjs',import.meta.url),'utf8')
+]);
+for(const value of ['OPEN_WORLD_MAX_CHARS=20_000','OPEN_WORLD_MAX_FILE_BYTES=262_144',
+  'OPEN_WORLD_MAX_SESSIONS=120','normalizeOpenWorldHistory'])
+  need(d5Open,value,'D5 bounded privacy-first personal French '+value);
+for(const value of ['composeAdaptiveBlock','observeNativeCompletion','normalizeAdaptiveBlock'])
+  need(d5Block,value,'D5 bounded native study block '+value);
+for(const value of ['nativeCompletion:true','metadata-only'])
+  need(d5Tests,value,'D5 native completion and privacy regression '+value);
+for(const value of ['P37I-D5 P21','P37I-D5 P23','PWA offline reload'])
+  need(d5Browser,value,'D5 real browser acceptance '+value);
+
+console.log(JSON.stringify({
+  schema:'thiepn-french-p37h-production-parity',
+  ok:failures.length===0,
+  failures,
+  functionalRoutes:['read','progress','settings','listen','speak'],
+  recovery:'transactional-vnext-backup-with-safety-export',
+  offline:'lazy-corpus-pwa-shell',
+  productionCutover:false,
+  remainingCutoverBlockers:['p35-feature-parity-signoff','live-account-sync-acceptance','real-device-qualification']
+},null,2));
+if(failures.length)process.exitCode=1;
