@@ -606,3 +606,36 @@ test('P37I-D2 calibration separates independent modality evidence without a prof
   await expect(writing.getByRole('button',{name:'Practice sentence writing'})).toBeVisible();
   await expect(page.locator('.cefr-gates')).toContainText('promotion blocked');
 });
+
+test('P37I-D3 longitudinal trends remain read-only and distinguish insufficient data',async({page})=>{
+  await page.goto('/#progress');
+  const panel=page.locator('.longitudinal-panel');
+  await expect(panel.getByRole('heading',{name:'Longitudinal mastery'})).toBeVisible();
+  await expect(panel).toContainText('Two 45-day windows');
+  await expect(panel).toContainText('comparable');
+  await expect(panel).toContainText('Not enough repeated, independently graded evidence yet');
+  await expect(panel).toContainText('Observational');
+  const before=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['srs','activity'],'readonly');
+      const a=tx.objectStore('srs').count(),b=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([a.result,b.result]);};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  await page.reload();
+  await expect(page.locator('.longitudinal-panel').getByRole('heading',{name:'Longitudinal mastery'})).toBeVisible();
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['srs','activity'],'readonly');
+      const a=tx.objectStore('srs').count(),b=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([a.result,b.result]);};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(after).toEqual(before);
+});
