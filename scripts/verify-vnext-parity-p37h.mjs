@@ -157,6 +157,20 @@ for(const term of ['planFrenchPractice','Cross-skill study plan','CEFR evidence 
 for(const term of ['scheduledSrsUntouched:true','supportedCannotCertify:true','repairAcrossSkills:true','privacy:'])
   need(orchestrationTests,term,'D1 safety and regression '+term);
 
+const [cefrGateEngine,cefrGateTests,cefrGateStyles]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/cefr-gates.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-cefr-gates.mts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/routes/progress-gates.css',import.meta.url),'utf8')
+]);
+for(const term of ['D2_WINDOW_DAYS=90','evaluateCefrEvidence',"promotion:'blocked'",
+  'D2_RULES','readingHistory','independentlyHeard','independentlyWritten'])
+  need(cefrGateEngine,term,'D2 level evidence gate '+term);
+for(const term of ['evaluateCefrEvidence','CEFR progression gates','cefr-gate-entry','Open '])
+  need(progress,term,'D2 learner progression display '+term);
+for(const term of ['levelSpecific:true','assessmentHold:true','senseSafe:true','readOnly:true'])
+  need(cefrGateTests,term,'D2 explainability regression '+term);
+need(cefrGateStyles,'.cefr-gate-summary:focus-visible','D2 accessible evidence-ledger style');
+
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
 for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
