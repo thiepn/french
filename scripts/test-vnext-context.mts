@@ -9,9 +9,9 @@ import {rankUsageCandidates,usageRecordMastery,contextCueVariant,usageAggregate}
 const source=JSON.parse(await readFile(new URL('./data/stable-usage-corpus-v1.json',import.meta.url),'utf8'));
 const pack={records:source.records} as Pick<UsagePack,'records'>;
 const now=Date.now(),recordId='p10-001',DAY=86_400_000;
-assert.equal(CONTEXT_SCENES.length,16);
-assert.equal(new Set(CONTEXT_SCENES.map(row=>row.id)).size,16);
-assert.equal(new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,8);
+assert.equal(CONTEXT_SCENES.length,24);
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.id)).size,24);
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,12);
 for(const scene of CONTEXT_SCENES){
   assert.ok(source.records.some((row:{id:string})=>row.id===scene.recordId),'every new scenario has a real P10 construction');
   assert.ok(scene.situation&&scene.english&&scene.expected&&scene.hint);
@@ -70,6 +70,6 @@ assert.equal(safeUsageState(JSON.parse(JSON.stringify(state)),pack).tallies[reco
   'contextual tally survives reload and migration');
 assert.equal(JSON.stringify(state).includes('Elle apprend à cuisiner.'),false,'never store typed sentences or reference text');
 console.log(JSON.stringify({schema:'french-p37i-c5-contextual-production',ok:true,
-  scenes:CONTEXT_SCENES.length,sourceFrames:8,
+  scenes:CONTEXT_SCENES.length,sourceFrames:12,
   measures:'exact model matches in two independent situations',cefrCertification:false,
   separateStructuralAndContextualEvidence:true,privacy:'metadata-only'}));
