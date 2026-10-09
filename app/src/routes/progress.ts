@@ -1,3 +1,4 @@
+import './progress-gates.css';
 import type { RouteContext } from '../core/types';
 import { readAllSrsRecords,readCanonicalLearnerState,readRecentReviewEvents } from '../core/learner/repository';
 import type { CanonicalReviewEventV1,CanonicalSrsRecordV1,SkillId } from '../core/learner/model';
@@ -11,7 +12,8 @@ import {loadUsageState} from '../core/usage/storage';
 import {loadWritingState} from '../core/writing/storage';
 import {freshUsageState} from '../core/usage/session';
 import {freshWritingState} from '../core/writing/session';
-import {loadStableUsageCorpus,loadStableSentenceExercises} from '../core/content/loader';
+import {loadStableUsageCorpus,loadStableSentenceExercises,loadStableReadingPack} from '../core/content/loader';
+import {evaluateCefrEvidence} from '../core/learner/cefr-gates';
 import {planFrenchPractice} from '../core/learner/orchestrator';
 
 const DAY=86_400_000;
@@ -63,7 +65,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(!host||!status)return;
 
   const now=Date.now();
-  const [learner,records,recent,index,conversations,usageState,writingState,usagePack,writingPack]=await Promise.all([
+  const [learner,records,recent,index,conversations,usageState,writingState,usagePack,writingPack,readingPack]=await Promise.all([
     readCanonicalLearnerState(),
     readAllSrsRecords(),
     readRecentReviewEvents(10_000),
@@ -74,7 +76,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     loadUsageState().catch(()=>freshUsageState()),
     loadWritingState().catch(()=>freshWritingState()),
     loadStableUsageCorpus(signal).catch(()=>({records:[]})),
-    loadStableSentenceExercises(signal).catch(()=>({exercises:[]}))
+    loadStableSentenceExercises(signal).catch(()=>({exercises:[]})),
+    loadStableReadingPack(signal).catch(()=>({readings:[]}))
   ]);
   if(signal.aborted)return;
 
@@ -183,6 +186,63 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     readiness.append(missing);
   }else readiness.append(textNode('p','No tracked gaps in this limited dataset; assessment is still required.','intel-note'));
   orchestration.append(readiness);
+
+  // A historically completed reading is counted only if the source ID is
+  // known and a comprehension check is present. No extra learner writes.
+  const priorReading=learner?.featureState?.v550Reading;
+  const savedReading=priorReading&&typeof priorReading==='object'&&!Array.isArray(priorReading)?
+    priorReading as Record<string,unknown>:{};
+  const savedHistory=savedReading.history&&typeof savedReading.history==='object'&&!Array.isArray(savedReading.history)?
+    savedReading.history as Record<string,unknown>:{};
+  const readingHistory:Record<string,{completedAt:number;questionAttempts:number;questionCorrect:number}>={};
+  for(const [id,raw] of Object.entries(savedHistory)){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))continue;
+    const item=raw as Record<string,unknown>;
+    readingHistory[id]={completedAt:number(item.completedAt),questionAttempts:number(item.questionAttempts),
+      questionCorrect:number(item.questionCorrect)};
+  }
+  const gates=evaluateCefrEvidence({targetLevel:String(learner?.studyPlan?.targetLevel??'A1'),
+    now,vocabulary:index.rows,srs:records,reviews:recent,readings:readingPack.readings,
+    readingHistory,conversations});
+  const gatesPanel=document.createElement('section');
+  gatesPanel.className='data-panel cefr-gates';
+  gatesPanel.append(textNode('h2','CEFR progression gates'),
+    textNode('p','A1–B2 · diagnostic practice prerequisites, not official proficiency or a promotion decision. A level is never automatically awarded.','intel-note'));
+  const gateList=document.createElement('div');gateList.className='cefr-gate-list';
+  const statusLabel={
+    'content-unavailable':'Content unavailable',
+    'evidence-incomplete':'Practice evidence incomplete',
+    'practice-checks-met-assessment-pending':'Practice criteria observed · assessment pending'
+  } as const;
+  for(const level of gates.levels){
+    const details=document.createElement('details');details.className='cefr-gate-entry';
+    if(level.level===gates.target)details.open=true;
+    const summary=document.createElement('summary');summary.className='cefr-gate-summary';
+    summary.append(textNode('strong',level.level),
+      textNode('span',statusLabel[level.state]),
+      textNode('small',level.metPracticeChecks+' / '+level.totalPracticeChecks+
+        ' provisional practice checks · promotion blocked'));
+    details.append(summary);
+    const checks=document.createElement('div');checks.className='cefr-gate-checks';
+    for(const requirement of level.checks){
+      const row=document.createElement('div');row.className='cefr-gate-check';
+      const heading=document.createElement('div');heading.className='cefr-gate-check-heading';
+      heading.append(textNode('strong',requirement.title),
+        textNode('span',requirement.status==='met'?'Observed':
+          requirement.status==='unavailable'?'Unavailable':'Not yet observed'));
+      row.append(heading,textNode('p',requirement.observed+' · '+requirement.required,'cefr-gate-metric'),
+        textNode('p',requirement.detail,'intel-note'));
+      if(requirement.status!=='met'&&requirement.route!=='progress'){
+        const action=document.createElement('button');action.type='button';
+        action.className='cefr-gate-action';action.textContent='Open '+requirement.route;
+        action.addEventListener('click',()=>navigate(requirement.route));
+        row.append(action);
+      }
+      checks.append(row);
+    }
+    details.append(checks);gateList.append(details);
+  }
+  gatesPanel.append(gateList,textNode('p',gates.policyNote,'intel-note'));
 
   const actions=document.createElement('section');actions.className='next-actions data-panel';
   actions.append(textNode('h2','What to do next'));
@@ -431,6 +491,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  host.append(orchestration,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
+  host.append(orchestration,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
