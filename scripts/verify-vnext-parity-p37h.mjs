@@ -297,6 +297,10 @@ for(const value of ['nativeCompletion:true','metadata-only'])
 for(const value of ['P37I-D5 P21','P37I-D5 P23','PWA offline reload'])
   need(d5Browser,value,'D5 real browser acceptance '+value);
 
+const d6P26=await readFile(new URL('../app/src/core/learner/p26-diagnosis.ts',import.meta.url),'utf8');
+for(const value of ['P26_CAUSES','diagnoseP26','p26RepairPreview','practiceOnly:true'])
+  need(d6P26,value,'D6 P26 source-contract conservative diagnostic '+value);
+need(progress,'Targeted remediation (P26)','D6 native Progress remediation triage');
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-production-parity',
   ok:failures.length===0,

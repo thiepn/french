@@ -115,3 +115,10 @@ test('P37I-D5 P21 exposure and P23 block work in the cross-engine/browser matrix
   await expect(page.locator('.home-focus')).toContainText('Step 1 of');
   await page.getByRole('button',{name:'End block; keep study progress'}).click();
 });
+
+test('P37I-D6 P26 diagnostic route is available without CEFR promotion controls',async({page})=>{
+ await page.goto('/#progress');
+ const panel=page.locator('.p26-diagnostics');
+ await expect(panel.getByRole('heading',{name:'Targeted remediation (P26)'})).toBeVisible();
+ await expect(panel).toContainText('does not award a repair pass or change SRS');
+});

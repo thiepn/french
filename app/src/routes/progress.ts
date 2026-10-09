@@ -18,6 +18,7 @@ import {evaluateCefrEvidence} from '../core/learner/cefr-gates';
 import {planFrenchPractice} from '../core/learner/orchestrator';
 import {calibrateFrenchEvidence} from '../core/learner/evidence-calibration';
 import {evaluateLongitudinalEvidence} from '../core/learner/longitudinal';
+import {diagnoseP26,p26RepairPreview} from '../core/learner/p26-diagnosis';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -615,6 +616,33 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  host.append(orchestration,calibrationPanel,trendPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
+  // D6 P26: real diagnostic evidence, never a synthetic remediation grade.
+  const p26=diagnoseP26({events:recent,functionEvents:conversations.functionEvents,now});
+  const remediation=document.createElement('section');
+  remediation.className='data-panel p26-diagnostics';
+  remediation.append(textNode('h2','Targeted remediation (P26)'),
+    textNode('p','Patterns from structured French attempts. Opening a practice route does not award a repair pass or change SRS.','intel-note'));
+  const overview=document.createElement('p');overview.className='intel-note';
+  overview.textContent=p26.open.length+' unresolved patterns · '+p26.repaired.length+' observed repairs'+
+   (p26.sourceLimited?' · older evidence excluded by source cap':'');
+  remediation.append(overview);
+  const causes=document.createElement('div');causes.className='next-action-grid';
+  for(const item of p26.open.slice(0,5)){
+    const section=document.createElement('article');section.className='decision-action';
+    section.append(textNode('strong',item.cause.replace(/-/g,' ')+' · '+item.noteId),
+      textNode('span',item.explanation),
+      textNode('small',item.failures+' failures · '+item.activeDays+' days · confidence '+
+        item.confidence+'% · severity '+item.severity+'/100'));
+    const preview=p26RepairPreview(item);
+    section.append(textNode('small',preview.map(task=>task.stage).join(' → ')+' · practice-only proposed stages'));
+    const route=document.createElement('button');route.type='button';
+    route.className='secondary-action compact-action';
+    route.textContent='Open '+item.route+' (normal native practice)';
+    route.addEventListener('click',()=>navigate(item.route));
+    section.append(route);causes.append(section);
+  }
+  if(!p26.open.length)causes.append(textNode('p','No diagnosed open patterns in the available 90-day evidence.','muted-copy'));
+  remediation.append(causes,textNode('p',p26.note,'intel-note'));
+  host.append(remediation,orchestration,calibrationPanel,trendPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
