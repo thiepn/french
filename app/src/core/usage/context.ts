@@ -54,7 +54,7 @@ export const CONTEXT_SCENES:readonly ContextScene[]=[
   {id:'c5-065a',recordId:'p10-065',variant:0,situation:'Healthcare',
     english:'I made an appointment with the doctor.',expected:"J'ai pris rendez-vous avec le médecin.",
     hint:'Use prendre rendez-vous avec in the passé composé.'},
-  {id:'c5-065b',recordId:'p10-065',variant:1,situation:'Healthcare',
+  {id:'c5-065b',recordId:'p10-065',variant:1,situation:'Dental clinic',
     english:'She is making an appointment with the dentist.',expected:'Elle prend rendez-vous avec le dentiste.',
     hint:'Use prendre rendez-vous avec in the present.'}
 ];
