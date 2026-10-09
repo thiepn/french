@@ -16,6 +16,7 @@ import {loadStableUsageCorpus,loadStableSentenceExercises,loadStableReadingPack}
 import {evaluateCefrEvidence} from '../core/learner/cefr-gates';
 import {planFrenchPractice} from '../core/learner/orchestrator';
 import {calibrateFrenchEvidence} from '../core/learner/evidence-calibration';
+import {evaluateLongitudinalEvidence} from '../core/learner/longitudinal';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -233,6 +234,79 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       transfer.multiModal+' demonstrating all three controlled stages.','intel-note'),
     textNode('p',calibration.caveat,'intel-note'));
 
+
+  // D3 compares like-for-like event identities across two 45-day windows.
+  // Reading completion and manual oral evidence are not converted into
+  // objective independent correctness in this longitudinal assessment.
+  const trends=evaluateLongitudinalEvidence({
+    events:recent,functionEvents:conversations.functionEvents??[],
+    vocabulary:index.rows,now,sourceLimit:10_000
+  });
+  const trendPanel=document.createElement('section');
+  trendPanel.className='data-panel longitudinal-panel';
+  trendPanel.append(textNode('h2','Longitudinal mastery'),
+    textNode('p','Two 45-day windows · compare the same vocabulary skill, exact sentence, construction or communicative function. Requires three graded attempts on two days in each window.','intel-note'));
+  const trendStats=document.createElement('p');
+  trendStats.className='longitudinal-stats';
+  trendStats.textContent=trends.comparable+' comparable · '+trends.improving+
+    ' improving · '+trends.declining+' declining · '+trends.persistentRisk+' persistent risks';
+  trendPanel.append(trendStats);
+  if(trends.sourceLimited)
+    trendPanel.append(textNode('p','Limited sample: only the newest 10,000 activity events were available. Missing older events may change these trends.','intel-note'));
+  const concernList=document.createElement('div');concernList.className='longitudinal-priority';
+  if(!trends.priority.length){
+    concernList.append(textNode('p',trends.comparable===0?
+      'Not enough repeated, independently graded evidence yet. Keep studying across several days.':
+      'No recurring or declining target currently meets the evidence threshold.','intel-note'));
+  }else{
+    concernList.append(textNode('h3','Targets to revisit'));
+    for(const entry of trends.priority){
+      const button=document.createElement('button');button.type='button';
+      button.className='longitudinal-target';
+      button.append(textNode('strong',entry.label),
+        textNode('span',entry.status==='persistent-risk'?'Persistent errors':
+          entry.status==='declining'?'Recently declined':'Mixed results'),
+        textNode('small',entry.baseline.positive+'/'+entry.baseline.graded+
+          ' earlier → '+entry.recent.positive+'/'+entry.recent.graded+' recent graded'));
+      button.addEventListener('click',()=>navigate(entry.route));
+      concernList.append(button);
+    }
+  }
+  trendPanel.append(concernList);
+  const trendLedger=document.createElement('div');trendLedger.className='longitudinal-ledger';
+  const trendNames:Record<string,string>={
+    insufficient:'Insufficient comparable evidence',improving:'Observed improvement',
+    declining:'Observed decline','persistent-risk':'Persistent errors',
+    stable:'Stable graded performance',mixed:'Mixed outcomes'
+  };
+  for(const entry of trends.rows.slice(0,15)){
+    const details=document.createElement('details');details.className='longitudinal-row';
+    const summary=document.createElement('summary');
+    summary.append(textNode('strong',entry.label),
+      textNode('span',trendNames[entry.status]??entry.status));
+    details.append(summary);
+    const explanation=document.createElement('div');explanation.className='longitudinal-row-detail';
+    explanation.append(textNode('p','Earlier: '+entry.baseline.positive+'/'+entry.baseline.graded+
+      ' graded successes · '+entry.baseline.activeDays+' days; recent: '+
+      entry.recent.positive+'/'+entry.recent.graded+' · '+entry.recent.activeDays+' days.'),
+      textNode('p',entry.explanation,'intel-note'));
+    if(entry.baseline.unverified||entry.recent.unverified)
+      explanation.append(textNode('p',entry.baseline.unverified+' earlier and '+
+        entry.recent.unverified+' recent assisted or unverified outcomes excluded.','intel-note'));
+    if(entry.repairTouches)
+      explanation.append(textNode('p',entry.repairTouches+' logged repair attempts · '+
+        (entry.followup==='observed-after-repair'?'Later independently graded improvement observed.':
+          'No sustained improvement after repair demonstrated.')+
+        ' This is observational, not a causal attribution.','intel-note'));
+    const jump=document.createElement('button');jump.type='button';
+    jump.className='cefr-gate-action';jump.textContent='Open '+entry.route;
+    jump.addEventListener('click',()=>navigate(entry.route));
+    explanation.append(jump);
+    details.append(explanation);trendLedger.append(details);
+  }
+  trendPanel.append(trendLedger,
+    textNode('p','Showing '+Math.min(trends.rows.length,15)+' of '+trends.totalSubjects+
+      ' tracked targets. '+trends.limitation,'intel-note'));
 
   // A historically completed reading is counted only if the source ID is
   // known and a comprehension check is present. No extra learner writes.
@@ -538,6 +612,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  host.append(orchestration,calibrationPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
+  host.append(orchestration,calibrationPanel,trendPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
