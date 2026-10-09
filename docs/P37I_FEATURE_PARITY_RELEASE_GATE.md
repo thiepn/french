@@ -32,6 +32,14 @@ C3 maintains compact per-record cumulative counts and variant coverage even when
 
 **Unclosed parity gaps:** P35 permits phrase-transfer entry from verified production SRS for a linked vocabulary note; C3 does not assume a free-text P10 anchor identifies a unique canonical note. C3's three cues are a structured recall variation, **not open-ended semantic usage or validated real-world transfer**. The original P35 task-eligibility, cross-skill ranking and assessment model still need a source-accurate comparison and physical user testing. No release flags were changed.
 
+## P37I-C4 — Original P10 to P12 source-linked sentence transfer
+
+The optional **Connected** writing track joins all 36 original P12 exercises to their exact P10 source-frame strings (after apostrophe/whitespace normalization), not a generated semantic or model guess. It unlocks only after two unassisted exact P10 recalls on the construction. C4 then prioritizes unpractised P12 contexts and recently unsuccessful sentence models without removing the existing three P12 entry modes. Each linked sentence displays its P10 source record, and independent exact/explicitly accepted P12 model matches are tracked separately from the structural P11 and authored C5 contextual scores.
+
+Writing evidence is a bounded history plus compact durable per-P12 cumulative aggregates so a 300-event cap cannot erase attempts. It stores only IDs, counts, timestamps, outcome codes and support, **never learner answer text**. Activity and writing metadata commit in one transaction. A ledger-only local device blocks silent unrelated cloud adoption.
+
+**Parity remains partial.** Matching a preserved sentence does not demonstrate broad situational fluency or CEFR mastery, and source-preserved P12 scenes have only limited two-context pairs. The P35 assessment and canonical note/sense-ID prerequisites still require signed comparison. All production release flags remain false.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
