@@ -582,3 +582,27 @@ test('P37I-D2 CEFR evidence gates expose prerequisites and never promote learner
   await expect(b2).toContainText('Independently verified speaking');
   await expect(section).toContainText('A level is never automatically awarded');
 });
+
+
+test('P37I-D2 calibration separates independent modality evidence without a proficiency score',async({page})=>{
+  await page.goto('/#progress');
+  const section=page.locator('.evidence-calibration');
+  await expect(section.getByRole('heading',{name:'Cross-skill evidence calibration'})).toBeVisible();
+  await expect(section.locator('.calibration-row')).toHaveCount(7);
+  await expect(section).toContainText('First-listen dictation');
+  await expect(section).toContainText('Spoken production');
+  await expect(section).toContainText('Guided interaction');
+  await expect(section).toContainText('Construction → sentence → situation');
+  await expect(section).toContainText('not a proficiency percentage');
+  const speaking=section.locator('.calibration-row').filter({hasText:'Spoken production'});
+  await speaking.locator('summary').click();
+  await expect(speaking).toContainText('Speech recognition and personal judgments');
+  await expect(speaking).toContainText('manually judged');
+  const listening=section.locator('.calibration-row').filter({hasText:'First-listen dictation'});
+  await listening.locator('summary').click();
+  await expect(listening).toContainText('Repeated playback and transcripts');
+  const writing=section.locator('.calibration-row').filter({hasText:'Sentence writing'});
+  await writing.locator('summary').click();
+  await expect(writing.getByRole('button',{name:'Practice sentence writing'})).toBeVisible();
+  await expect(page.locator('.cefr-gates')).toContainText('promotion blocked');
+});
