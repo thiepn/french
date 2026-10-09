@@ -40,6 +40,14 @@ Writing evidence is a bounded history plus compact durable per-P12 cumulative ag
 
 **Parity remains partial.** Matching a preserved sentence does not demonstrate broad situational fluency or CEFR mastery, and source-preserved P12 scenes have only limited two-context pairs. The P35 assessment and canonical note/sense-ID prerequisites still require signed comparison. All production release flags remain false.
 
+## P37I-C5 expansion — Authored contextual sentence verification
+
+The vNext contextual track now contains **72 complete French sentence situations across 36 P10 constructions** (two distinct prompts per construction). These are newly authored examples, *not* the original P35 contextual exercise bank or a validated language-evaluation model. The remaining **31 P10 constructions** do not have two-situation C5 coverage. Explicit source IDs keep the inherited P35 reference labels separate from the new authored teaching content.
+
+Context admission requires **two independently exact P10 source-frame recalls**. A construction earns formative contextual security only with at least two attempts, at least 80% independently exact responses, both situations currently correct without hints, and no last-success older than 30 days; a later failure or assisted submission in either situation revokes current proof. The task picker retries a deficient situation instead of repeatedly awarding another already-correct situation. Passing an authored model sentence never certifies open-ended semantic ability or CEFR level; acceptable unrecognized French alternatives require self-judgment.
+
+The contextual state remains metadata-only and distinct from structural transfer, P12 sentence writing, and scheduled FSRS. This extension **does not approve production cutover**.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
