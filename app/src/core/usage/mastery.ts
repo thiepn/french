@@ -95,7 +95,9 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const lastIndependent=latest?independentExact(latest):snapshot?.lastIndependent??false;
   const lastOutcome=latest?.outcome??snapshot?.lastOutcome??'matched';
   const priorError=sorted.slice(1).some(e=>!independentExact(e));
-  const repairNeeded=!lastIndependent&&(lastOutcome!=='self-assessed'||priorError);
+  // An unseen construction has no error to repair. Only observed misses
+  // may enter the repair queue; contextual misses are tracked separately.
+  const repairNeeded=Boolean(latest||snapshot)&&!lastIndependent&&(lastOutcome!=='self-assessed'||priorError);
   const lastError=repairNeeded?latest?.diagnosis??snapshot?.lastDiagnosis??null:null;
   const errors120d=frameOnly.filter(e=>e.at>=now-REPAIR_ERROR_DAYS*DAY&&!independentExact(e)).length;
   return {usage,transfer,contextual,lastError,repairNeeded,errors120d};
