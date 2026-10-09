@@ -820,3 +820,38 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
   await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
   await expect(page.locator('.open-world-input')).toHaveValue('');
 });
+
+test('P37I-D6 P26 diagnoses native wrong construction evidence without changing scheduling',async({page})=>{
+  await page.goto('/#progress');
+  await expect(page.getByRole('heading',{name:'Targeted remediation (P26)'})).toBeVisible();
+  const seeded=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const o=indexedDB.open('thiepn-french-vnext');o.onerror=()=>reject(o.error);
+    o.onsuccess=()=>{
+      const db=o.result,tx=db.transaction(['activity','srs'],'readwrite');
+      const record={schema:'thiepn-french-review-event-v1',
+        eventId:'d6:p26:connector',noteId:'d6-connector-target',
+        id:'d6-connector-target::d31:0:production',skill:'production',
+        practice:'written-bridge',practiceOnly:true,t:Date.now()-86_400_000,
+        rating:'again',correct:false,typed:true,typedQuality:'review',
+        errorCategory:'connector',supportLevel:0,xp:0};
+      const before=tx.objectStore('srs').count();
+      tx.objectStore('activity').put(record,record.eventId);
+      tx.oncomplete=()=>{const count=before.result;db.close();resolve(count);};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  await page.reload();
+  const panel=page.locator('.p26-diagnostics');
+  await expect(panel).toContainText('d6-connector-target');
+  await expect(panel).toContainText('grammar');
+  await expect(panel).toContainText('practice-only proposed stages');
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');o.onsuccess=()=>{
+      const db=o.result,tx=db.transaction('srs','readonly');
+      const q=tx.objectStore('srs').count();
+      q.onsuccess=()=>{const n=q.result;db.close();resolve(n);};
+    };
+  }));
+  expect(after).toBe(seeded);
+  expect(await panel.getByRole('button',{name:/Open write/}).count()).toBeGreaterThan(0);
+});
