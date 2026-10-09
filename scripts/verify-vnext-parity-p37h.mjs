@@ -131,7 +131,7 @@ const [lexicalEngine,lexicalTests]=await Promise.all([
   readFile(new URL('../app/src/core/usage/lexical.ts',import.meta.url),'utf8'),
   readFile(new URL('./test-vnext-lexical.mts',import.meta.url),'utf8')
 ]);
-for(const token of ['uniqueLexicalAnchor','linkedNoteIds','buildLexicalSignals','manualKnown','read-only'])
+for(const token of ['uniqueLexicalAnchor','linkedNoteIds','buildLexicalSignals','manualKnown','statusFromSrs'])
   need(lexicalEngine,token,'C6 conservative lexical crosswalk '+token);
 for(const token of ['CONTEXT_REVALIDATION_DAYS=30','lexicalPriority'])
   need(masteryEngine,token,'C6 spaced lexical context priority '+token);
