@@ -47,6 +47,7 @@ variants=put(variants,'transfer','matched','exact',0,0,now);
 variants=put(variants,'transfer','matched','exact',0,0,now+1);
 assert.equal(usageRecordMastery(id,variants,now+1).transfer.secure,false,'one repeated cue cannot claim C3 transfer security');
 assert.equal(transferCueVariant(variants,id),2);
+assert.equal(variants.tallies[id].transfer?.variantMask,1,'variantMask remains the single independently proven cue');
 variants=put(variants,'transfer','matched','exact',0,2,now+2);
 assert.equal(usageRecordMastery(id,variants,now+2).transfer.secure,true,'distinct independently exact structural cues');
 variants=put(variants,'transfer','matched','exact',2,1,now+3);
