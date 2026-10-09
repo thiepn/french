@@ -144,6 +144,17 @@ usageHintOnly.stores.meta.push({
 });
 assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(usageHintOnly)),true,
   'P10/P11 hint-only local usage progress must not be overwritten');
+const writingLedgerOnly=structuredClone(emptyFresh);
+writingLedgerOnly.stores.meta.push({
+  key:'native-writing-v1',value:{schema:'thiepn-french-writing-v1',history:[],
+    modes:{phrase:{index:0,support:0},sentence:{index:0,support:0},
+      transfer:{index:0,support:0},bridge:{index:0,support:0}},
+    evidence:{'p12-001':{attempts:340,independentExact:320,lastAt:Date.now(),
+      lastIndependent:true,lastDiagnosis:'exact'}}}
+});
+assert.equal(snapshotHasMeaningfulState(backupPayloadToFrenchCloudSnapshot(writingLedgerOnly)),true,
+  'C4 cumulative-only sentence evidence must require cloud conflict review');
+
 const usageLedgerOnly=structuredClone(emptyFresh);
 usageLedgerOnly.stores.meta.push({
   key:'native-usage-v1',
