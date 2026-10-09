@@ -103,7 +103,7 @@ function addUsage(mode:'usage'|'context',variant:0|1,at:number,correct=true){
 addUsage('usage',0,now-6*DAY);
 addUsage('usage',0,now-5*DAY);
 addUsage('context',0,now-4*DAY);
-addUsage('context',1,now-3*DAY);
+addUsage('context',1,now-4*DAY+60_000); // Same calendar day, different authored situation.
 const writing=freshWritingState();
 writing.evidence['p12-007']={attempts:1,independentExact:1,
   lastAt:now-2*DAY,lastIndependent:true,lastDiagnosis:'exact'};
