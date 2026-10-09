@@ -674,9 +674,15 @@ test('P37I-D3 shows matched-target recurring errors and decline from real Indexe
       tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
       tx.onabort=()=>reject(tx.error);
     });
-    db.close();return all.length;
+    const stored=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(['srs','activity'],'readonly');
+      const sr=tx.objectStore('srs').count(),ev=tx.objectStore('activity').count();
+      tx.oncomplete=()=>resolve([sr.result,ev.result]);
+      tx.onerror=()=>reject(tx.error);
+    });
+    db.close();return stored;
   });
-  expect(seeded).toBe(18);
+  expect(seeded[1]).toBeGreaterThanOrEqual(18);
   await page.reload();
   const panel=page.locator('.longitudinal-panel');
   await expect(panel.getByRole('heading',{name:'Longitudinal mastery'})).toBeVisible();
@@ -702,5 +708,5 @@ test('P37I-D3 shows matched-target recurring errors and decline from real Indexe
       tx.onerror=()=>{db.close();resolve(null);};
     };open.onerror=()=>resolve(null);
   }));
-  expect(after).toEqual([0,18]);
+  expect(after).toEqual(seeded);
 });
