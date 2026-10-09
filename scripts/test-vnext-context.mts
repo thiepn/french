@@ -77,9 +77,12 @@ assert.equal(usageRecordMastery(recordId,recentMiss,now+5).contextual.secure,fal
   'a later failure in one contextual variant must revoke current contextual security');
 assert.equal(contextCueVariant(recentMiss,recordId),0,
   'adaptive queue should repeat the failed situation rather than a verified one');
-const revalidated=add(recentMiss,'context',0,0,'matched','exact',recordId,now+6);
-assert.equal(usageRecordMastery(recordId,revalidated,now+6).contextual.secure,true,
-  'repairing the same failed situation restores the distinct-context evidence');
+const firstRepair=add(recentMiss,'context',0,0,'matched','exact',recordId,now+6);
+assert.equal(usageRecordMastery(recordId,firstRepair,now+6).contextual.secure,false,
+  'three independent exact results in four attempts remain below the 80% threshold');
+const revalidated=add(firstRepair,'context',0,0,'matched','exact',recordId,now+7);
+assert.equal(usageRecordMastery(recordId,revalidated,now+7).contextual.secure,true,
+  'four independently exact results in five attempts restore the 80% contextual threshold');
 assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.secure,false,
   'contextual security must expire after 30 days without independent revalidation');
 assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.status,'refresh');
