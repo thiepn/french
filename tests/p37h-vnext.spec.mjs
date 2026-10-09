@@ -428,3 +428,47 @@ test('C3 gates and rotates transfer using independently exact usage evidence',as
   expect(usageEvents.every(e=>e.practiceOnly===true)).toBe(true);
   expect(JSON.stringify(result)).not.toContain('apprendre à + infinitif');
 });
+
+
+test('P37I-C5 genuinely different contexts earn independent metadata-only evidence',async({page})=>{
+  await page.goto('/#write');
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  await expect(page.getByRole('button',{name:'Contexts (0)'})).toBeVisible();
+  const solve=async(answer)=>{
+    await page.getByRole('textbox',{name:'Your French usage or phrase answer'}).fill(answer);
+    await page.getByRole('button',{name:'Check phrase'}).click();
+    await page.getByRole('button',{name:'Save exact & next'}).click();
+  };
+  await solve('à');
+  await solve('à');
+  await solve('à');
+  await expect(page.getByRole('button',{name:'Contexts (1)'})).toBeVisible();
+  await page.getByRole('button',{name:'Contexts (1)'}).click();
+  await expect(page.getByText('Write in French: I am learning to read in French.')).toBeVisible();
+  await solve("J'apprends à lire en français.");
+  await expect(page.getByText('Write in French: She is learning to cook.')).toBeVisible();
+  await solve('Elle apprend à cuisiner.');
+  await expect(page.locator('.write-mastery-stat').filter({hasText:'Contexts secure'})).toContainText('1');
+  await expect(page.locator('.write-mastery-stat').filter({hasText:'Transfer secure'})).toContainText('0');
+  await page.reload();
+  await page.getByRole('button',{name:'Usage & phrase transfer (P10/P11)'}).click();
+  const data=await page.evaluate(async()=>new Promise(resolve=>{
+    const open=indexedDB.open('thiepn-french-vnext');
+    open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction(['meta','activity'],'readonly');
+      const s=tx.objectStore('meta').get('native-usage-v1');
+      const a=tx.objectStore('activity').getAll();
+      tx.oncomplete=()=>{db.close();resolve({state:s.result,events:a.result});};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    open.onerror=()=>resolve(null);
+  }));
+  expect(data.state.tallies['p10-001'].context.attempts).toBe(2);
+  expect(data.state.tallies['p10-001'].context.variantMask).toBe(3);
+  expect(data.state.tallies['p10-001'].transfer).toBeUndefined();
+  const events=data.events.filter(e=>e.practice==='verified-usage-context');
+  expect(events).toHaveLength(2);
+  expect(events.every(e=>e.correct===true&&e.practiceOnly===true)).toBe(true);
+  expect(JSON.stringify(data)).not.toContain("J'apprends à lire en français.");
+  expect(JSON.stringify(data)).not.toContain('Elle apprend à cuisiner.');
+});
