@@ -179,8 +179,13 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       submitted=input.value.trim();
       if(!submitted){feedback.textContent='Write an answer before checking.';return;}
       diagnosis=scene?diagnoseContextUsage(submitted,scene):diagnoseUsage(submitted,record,usageMode,usagePack.records);
-      feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail),
-        element('p',(scene?'Model sentence':'Verified reference')+' · '+(scene?scene.expected:usageMode==='usage'?record.blank:record.frame),'write-reference'));
+      feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail));
+      // Do not leak the correct text after a failed check: displaying it would
+      // allow a copied retry to be falsely counted as an independent success.
+      if(diagnosis.correct)feedback.append(element('p',(scene?'Model sentence':'Verified reference')+
+        ' · '+(scene?scene.expected:usageMode==='usage'?record.blank:record.frame),'write-reference'));
+      else feedback.append(element('p','Use Show '+(scene?'model answer':'verified frame')+
+        ' to compare with the reference. Revealing it marks this attempt supported.','write-note'));
       decision.replaceChildren();
       if(diagnosis.correct){
         const matched=control(usageState.modes[usageMode].support?'Save supported & next':'Save exact & next',
@@ -300,8 +305,9 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const entered=answer.value.trim();
       if(!entered){feedback.textContent='Write your sentence before checking it.';return;}
       diagnosis=diagnoseSentence(entered,exercise);submitted=entered;
-      feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail),
-        element('p','Reference · '+exercise.expected,'write-reference'));
+      feedback.replaceChildren(element('strong',diagnosis.label),element('p',diagnosis.detail));
+      if(diagnosis.quality==='exact')feedback.append(element('p','Reference · '+exercise.expected,'write-reference'));
+      else feedback.append(element('p','Use Show reference to compare with the model. Revealing it marks this attempt supported.','write-note'));
       next.replaceChildren();
       if(diagnosis.correct===true){
         const label=state.modes[mode].support?'Save supported & next':
