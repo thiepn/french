@@ -3,6 +3,7 @@ import { loadStableReadingPack,loadVocabularySearchIndex,type ReadingItem,type V
 import { readAllSrsRecords,readCanonicalLearnerState,recordPracticeEvidence,replaceCanonicalFeatureState } from '../core/learner/repository';
 import type { CanonicalSrsRecordV1 } from '../core/learner/model';
 import { retrievability } from '../core/learner/scheduler';
+import {analyzeOpenWorld,appendOpenWorldExposure,normalizeOpenWorldHistory,sanitizeOpenWorldText,openWorldTokens,OPEN_WORLD_MAX_FILE_BYTES,OPEN_WORLD_MIN_WORDS} from '../core/learner/open-world';
 
 type Mode='extensive'|'intensive'|'targeted';
 type Feel=''|'easy'|'comfortable'|'challenging'|'hard';
@@ -122,6 +123,108 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let observer:IntersectionObserver|null=null;
   const cleanupObserver=()=>{observer?.disconnect();observer=null;};
   signal.addEventListener('abort',cleanupObserver,{once:true});
+
+
+  // P21 raw personal French is deliberately page-memory-only. Never put it in
+  // canonical learner state, sessionStorage, SRS, cloud snapshots or telemetry.
+  let openWorldText='',openWorldSource:'paste'|'file'='paste',openWorldLookups=0;
+  let openWorldHistory=normalizeOpenWorldHistory(learner?.featureState?.v5120OpenWorld);
+  const openWorldResolve=(word:string):'known'|'learning'|'new'|undefined=>{
+    const row=resolve(word);if(!row)return undefined;
+    const info=noteState.get(row.id);
+    return info?.known?'known':info?.introduced?'learning':'new';
+  };
+  function renderOpenWorldReader(){
+    const raw=sanitizeOpenWorldText(openWorldText);
+    const analysis=analyzeOpenWorld(raw,openWorldResolve);
+    if(analysis.words<OPEN_WORLD_MIN_WORDS){renderLibrary();return;}
+    cleanupObserver();
+    openWorldLookups=0;
+    const host=create('section','','page read-page open-world-reader');
+    const top=create('div','','reader-bar');
+    const back=create('button','← Read','text-action');back.type='button';
+    back.addEventListener('click',renderLibrary);
+    top.append(back,create('span','Personal French · exposure only','muted-copy'));host.append(top);
+    host.append(create('h1','Read your French'),create('p',
+      'This text stays in this page session. Only counts are saved after you finish; vocabulary review is never credited.','lede'));
+    const stats=create('p',analysis.words+' words · '+analysis.mappedPct+'% mapped · '+analysis.knownPct+'% known','coverage-strip');
+    host.append(stats);
+    const layout=create('div','','reader-layout open-world-layout');
+    const article=create('article','','reading-text open-world-paragraphs');
+    const lookup=create('aside','','reading-lookup');
+    lookup.append(create('h2','Word lookup'),create('p','Tap a word to inspect the current dictionary entry.','muted-copy'));
+    for(const para of raw.replace(/\r\n?/g,'\n').split(/\n{2,}/).filter(v=>v.trim())){
+      const p=create('p','','reading-fr');
+      for(const part of parts(para.replace(/\s*\n\s*/g,' '))){
+        if(!part.word){p.append(document.createTextNode(part.text));continue;}
+        const row=resolve(part.text),kind=openWorldResolve(part.text);
+        const button=create('button',part.text,'reading-token');button.type='button';
+        if(row)button.classList.add(kind==='known'?'is-known':kind==='learning'?'is-learning':'is-new');
+        button.addEventListener('click',()=>{
+          openWorldLookups++;
+          lookup.replaceChildren(create('h2',part.text),create('p',row?.meaning??'Not in the mapped core dictionary.','lookup-meaning'));
+          if(row)lookup.append(create('p',row.level+' · '+(kind==='known'?'known':kind==='learning'?'learning':'not introduced'),'muted-copy'));
+        });p.append(button);
+      }
+      article.append(p);
+    }
+    layout.append(article,lookup);host.append(layout);
+    const finish=create('button','Finish exposure','primary-action');finish.type='button';
+    const error=create('p','','muted-copy');error.setAttribute('role','status');
+    finish.addEventListener('click',async()=>{
+      finish.disabled=true;
+      try{
+        const next=appendOpenWorldExposure(openWorldHistory,analysis,openWorldSource,openWorldLookups,Date.now(),crypto.randomUUID());
+        await replaceCanonicalFeatureState('v5120OpenWorld',next);
+        openWorldHistory=next;openWorldText='';openWorldLookups=0;openWorldSource='paste';
+        renderLibrary();
+      }catch(reason){
+        error.textContent='Could not save exposure. Your reading remains on this page; try again.';
+        console.warn('Open-world aggregate save failed',reason);finish.disabled=false;
+      }
+    });
+    host.append(finish,error);main.replaceChildren(host);
+  }
+  function renderOpenWorldEntry(){
+    const panel=create('section','','data-panel open-world-entry');
+    panel.append(create('h2','Bring your own French'),create('p',
+      'Paste French or open a .txt/.md file. Raw content stays in this page only; backups keep aggregate counts, never your text or source title.','muted-copy'));
+    const label=create('label','Personal French text','open-world-label');
+    const area=create('textarea','','open-world-input');area.rows=5;area.maxLength=20_000;
+    area.placeholder='Paste at least 20 French words…';area.value=openWorldText;
+    area.addEventListener('input',()=>{openWorldText=sanitizeOpenWorldText(area.value);openWorldSource='paste';update();});
+    label.append(area);panel.append(label);
+    const actions=create('div','','open-world-controls');
+    const begin=create('button','Analyze & read','primary-action');begin.type='button';
+    const uploadLabel=create('label','Open .txt / .md','secondary-action');
+    const upload=create('input','','open-world-file');upload.type='file';
+    upload.accept='.txt,.md,text/plain,text/markdown';
+    uploadLabel.append(upload);upload.addEventListener('change',async()=>{
+      const file=upload.files?.[0];if(!file)return;
+      if(file.size>OPEN_WORLD_MAX_FILE_BYTES||!(/\.(txt|md)$/i.test(file.name))){
+        status.textContent='Only .txt or .md files of 256 KiB or less are accepted.';upload.value='';return;
+      }
+      try{openWorldText=sanitizeOpenWorldText(await file.text());openWorldSource='file';area.value=openWorldText;update();}
+      catch{status.textContent='Could not read this text file.';}
+      upload.value='';
+    });
+    const clear=create('button','Clear text','secondary-action');clear.type='button';
+    clear.addEventListener('click',()=>{openWorldText='';openWorldSource='paste';area.value='';update();});
+    const status=create('p','','muted-copy');status.setAttribute('role','status');
+    const update=()=>{
+      const n=openWorldTokens(openWorldText).length;
+      status.textContent=n+' words in page memory · minimum '+OPEN_WORLD_MIN_WORDS+' to read';
+      begin.disabled=n<OPEN_WORLD_MIN_WORDS;
+    };
+    begin.addEventListener('click',renderOpenWorldReader);
+    actions.append(begin,uploadLabel,clear);panel.append(actions,status);update();
+    const aggregate=create('p','','muted-copy');
+    const count=openWorldHistory.sessions.length;
+    aggregate.textContent=count+' completed personal reading'+(count===1?'':'s')+
+      ' · '+openWorldHistory.sessions.reduce((n,row)=>n+row.words,0)+' words exposed; never SRS recall';
+    panel.append(aggregate);
+    return panel;
+  }
 
   let level='ALL',type='ALL',selected='',mode:Mode='extensive',targetNoteId=sessionStorage.getItem('french-vnext-read-note')??'',openReadingId=sessionStorage.getItem('french-vnext-read-open')??'';
   sessionStorage.removeItem('french-vnext-read-note');
@@ -284,6 +387,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const levels=['ALL',...new Set(pack.readings.map(reading=>reading.level))];
     const types=['ALL',...new Set(pack.readings.map(reading=>reading.type))];
     main.innerHTML='<section class="page read-page"><p class="eyebrow">Comprehensible input</p><h1>Read</h1><p class="lede">25 original graded texts from A1 through B2. Reading exposure never moves SRS; only explicit retrieval creates practice evidence.</p><div class="reading-filters"><label>Level<select data-level></select></label><label>Type<select data-type></select></label></div><section class="reading-recommendations"><h2>Recommended now</h2><div class="reading-grid" data-recommended></div></section><section class="reading-library"><div class="section-heading"><h2>Library</h2><span data-count></span></div><div class="reading-grid" data-library></div></section><section class="data-panel saved-reading"><h2>Saved discoveries</h2><div data-saved></div></section></section>';
+    const header=main.querySelector<HTMLElement>('.reading-recommendations');
+    header?.parentElement?.insertBefore(renderOpenWorldEntry(),header);
     const levelSelect=main.querySelector<HTMLSelectElement>('[data-level]'),typeSelect=main.querySelector<HTMLSelectElement>('[data-type]');
     for(const value of levels){const option=document.createElement('option');option.value=value;option.textContent=value;levelSelect?.append(option);}
     for(const value of types){const option=document.createElement('option');option.value=value;option.textContent=value==='ALL'?'All types':value;typeSelect?.append(option);}

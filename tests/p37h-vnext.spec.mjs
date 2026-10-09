@@ -710,3 +710,37 @@ test('P37I-D3 shows matched-target recurring errors and decline from real Indexe
   }));
   expect(after).toEqual(seeded);
 });
+
+test('P37I-D5 P21 personal reading persists aggregate exposure only, not pasted French or SRS credit',async({page})=>{
+  await page.goto('/#read');
+  const panel=page.locator('.open-world-entry');
+  await expect(panel.getByRole('heading',{name:'Bring your own French'})).toBeVisible();
+  const original='Bonjour mon ami, ceci est un texte de lecture personnel pour apprendre sans enregistrer le contenu. ';
+  const secret='CONFIDENTIAL_STUDY_WORDS_NEVER_SYNC';
+  await panel.locator('textarea').fill((original+secret+' ').repeat(3));
+  await panel.getByRole('button',{name:'Analyze & read'}).click();
+  await expect(page.locator('.open-world-reader')).toBeVisible();
+  const before=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{const d=o.result,t=d.transaction(['srs','activity'],'readonly');
+      const x=t.objectStore('srs').count(),y=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve([x.result,y.result]);};};
+  }));
+  await page.getByRole('button',{name:'Finish exposure'}).click();
+  await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
+  const saved=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{const d=o.result,t=d.transaction(['learner','srs','activity'],'readonly');
+      const learner=t.objectStore('learner').get('state-v1');
+      const x=t.objectStore('srs').count(),y=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve({learner:learner.result,counts:[x.result,y.result]});};};
+  }));
+  expect(saved.counts).toEqual(before);
+  const persisted=JSON.stringify(saved.learner);
+  expect(persisted).not.toContain(secret);
+  expect(persisted).not.toContain(original);
+  expect(saved.learner.featureState.v5120OpenWorld.sessions).toHaveLength(1);
+  await page.reload();
+  await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
+  await expect(page.locator('.open-world-input')).toHaveValue('');
+});
