@@ -175,6 +175,14 @@ for(const term of ['levelSpecific:true','assessmentHold:true','senseSafe:true','
   need(cefrGateTests,term,'D2 explainability regression '+term);
 need(cefrGateStyles,'.cefr-gate-summary:focus-visible','D2 accessible evidence-ledger style');
 
+// D4: node scripts/test-vnext-evidence-calibration.mts runs TS natively.
+// Extensionless runtime imports compile under Vite's Bundler resolution but
+// fail under Node 24. Prevent a repeat of CI run 37937258507.
+for(const dependency of ["from '../usage/mastery.ts'","from '../writing/bridge.ts'"])
+  need(d2Calibration,dependency,'D4 Node-native evidence calibration dependency '+dependency);
+for(const forbidden of ["from '../usage/mastery'","from '../writing/bridge'"])
+  reject(d2Calibration,forbidden,'D4 Node-native extensionless import '+forbidden);
+
 for(const token of ['calibrateFrenchEvidence','D2_WINDOW_DAYS=30',
   'firstListen===true','manualJudgment','recentIndependent','sourceFrames',
   "cefr:'not-assessed'",'interaction'])
