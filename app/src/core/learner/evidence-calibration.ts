@@ -126,9 +126,7 @@ export function calibrateFrenchEvidence(input:CalibrationInputs):EvidenceCalibra
     append('context',{at:e.at,task:e.recordId+':'+(e.variant??0),independent,
       manual:e.outcome==='self-assessed',support:e.support>0});
   }
-  const lanes:TYPES[number][]=[]; // stable iteration order, not a computed rating.
-  lanes.push(...TYPES);
-  const calibrated=lanes.map(id=>{
+  const calibrated=TYPES.map(id=>{
     const rows=buckets.get(id)??[];
     const accurate=rows.filter(e=>e.independent);
     const [label,scope,limitation]=INFO[id];
