@@ -256,7 +256,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     trendPanel.append(textNode('p','Limited sample: only the newest 10,000 activity events were available. Missing older events may change these trends.','intel-note'));
   const concernList=document.createElement('div');concernList.className='longitudinal-priority';
   if(!trends.priority.length){
-    concernList.append(textNode('p',trends.comparable===0?
+    concernList.append(textNode('p',trends.sourceLimited?
+      'Trend qualification is suspended because the available activity history is capped. Export or inspect complete records before judging change.':
+      trends.comparable===0?
       'Not enough repeated, independently graded evidence yet. Keep studying across several days.':
       'No recurring or declining target currently meets the evidence threshold.','intel-note'));
   }else{
