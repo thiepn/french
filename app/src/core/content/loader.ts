@@ -48,9 +48,18 @@ let searchMap:Map<string,VocabularySearchRow>|null=null;
 async function fetchVerifiedJson<T>(path:string,sha256?:string,signal?:AbortSignal):Promise<T>{
   const response=await fetch(path,{cache:'force-cache',signal});
   if(!response.ok)throw new Error('Content HTTP '+response.status);
+  const cachedCopy=response.clone();
   const bytes=await response.arrayBuffer();
   await verifySha256(bytes,sha256);
-  return JSON.parse(new TextDecoder().decode(bytes)) as T;
+  const decoded=JSON.parse(new TextDecoder().decode(bytes)) as T;
+  // The content index/packs are public bundled files. Prewarm only requested,
+  // SHA-256-verified content even before the first SW takes control. No
+  // personal French text, SRS, or study-state data is put in Cache Storage.
+  if('caches' in globalThis)try{
+    const storage=await caches.open('french-vnext-shell-v1');
+    await storage.put(path,cachedCopy);
+  }catch(error){console.warn('Verified French content could not be cached for offline use',error);}
+  return decoded;
 }
 
 export async function listContentPacks(signal?:AbortSignal):Promise<ContentPackDescriptor[]>{

@@ -196,7 +196,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     label.append(area);panel.append(label);
     const actions=create('div','','open-world-controls');
     const begin=create('button','Analyze & read','primary-action');begin.type='button';
-    const uploadLabel=create('label','Open .txt / .md','secondary-action');
+    const uploadLabel=create('label','Import .txt / .md','secondary-action');
     const upload=create('input','','open-world-file');upload.type='file';
     upload.accept='.txt,.md,text/plain,text/markdown';
     uploadLabel.append(upload);upload.addEventListener('change',async()=>{

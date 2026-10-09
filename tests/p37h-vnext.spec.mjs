@@ -782,6 +782,16 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
     await page.reload();
     await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBeTruthy();
   }
+  // The first online Read visit must persist only public, visited content in
+  // Cache Storage, even if it happened before the SW acquired control.
+  const offlineContent=await page.evaluate(async()=>{
+    const cache=await caches.open('french-vnext-shell-v1');
+    const keys=(await cache.keys()).map(request=>new URL(request.url).pathname);
+    return{manifest:keys.includes('/content/manifest.json'),
+      reading:keys.some(path=>path.startsWith('/content/packs/')&&/reading/i.test(path)),
+      vocabulary:keys.some(path=>path.includes('/content/search/'))};
+  });
+  expect(offlineContent).toEqual({manifest:true,reading:true,vocabulary:true});
   await context.setOffline(true);
   try{
     await page.reload();
