@@ -1,5 +1,6 @@
 import type {UsagePack,UsageRecord} from '../content/loader';
 import type {UsageAttempt,UsageMode,UsageState,UsageTally} from './session';
+import {hasContextScenes} from './context';
 
 const DAY=86_400_000;
 export const USAGE_SECURE_ATTEMPTS=3; // P35 P9
@@ -18,7 +19,7 @@ export interface TransferMastery extends UsageMastery{
   ready:boolean;distinctVariants:number;
 }
 export interface UsageRecordMastery{
-  usage:UsageMastery;transfer:TransferMastery;
+  usage:UsageMastery;transfer:TransferMastery;contextual:TransferMastery;
   lastError:string|null;repairNeeded:boolean;errors120d:number;
 }
 export interface RankedUsageCandidate{
@@ -74,6 +75,17 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const transferSecure=ready&&basis.secure&&distinctVariants>=2;
   const transfer:TransferMastery={...basis,ready,distinctVariants,
     secure:transferSecure,status:transferSecure?'secure':basis.attempts?'building':'unseen'};
+  // Authored situational responses are measured separately from structural
+  // cue recall. Exact model matches are not general semantic certification.
+  const contextualBasis=combinedPerformance(state,recordId,['context'],2,3650,now);
+  const contextEvents=own.filter(e=>e.mode==='context');
+  const contextMask=talliedUsage(state,recordId,'context')?.variantMask??
+    contextEvents.filter(independentExact).reduce((n,e)=>n|(1<<(e.variant??0)),0);
+  const contextVariants=[0,1].filter(bit=>(contextMask&(1<<bit))!==0).length;
+  const contextReady=ready&&hasContextScenes(recordId);
+  const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2;
+  const contextual:TransferMastery={...contextualBasis,ready:contextReady,distinctVariants:contextVariants,
+    secure:contextSecure,status:contextSecure?'secure':contextualBasis.attempts?'building':'unseen'};
   const sorted=[...own].sort((a,b)=>b.at-a.at);
   const snapshot=Object.values(state.tallies?.[recordId]??{}).filter((row):row is UsageTally=>Boolean(row)).sort((a,b)=>b.lastAt-a.lastAt)[0];
   const latest=sorted[0];
@@ -83,11 +95,16 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const repairNeeded=!lastIndependent&&(lastOutcome!=='self-assessed'||priorError);
   const lastError=repairNeeded?latest?.diagnosis??snapshot?.lastDiagnosis??null:null;
   const errors120d=own.filter(e=>e.at>=now-REPAIR_ERROR_DAYS*DAY&&!independentExact(e)).length;
-  return {usage,transfer,lastError,repairNeeded,errors120d};
+  return {usage,transfer,contextual,lastError,repairNeeded,errors120d};
 }
 export function transferCueVariant(state:UsageState,recordId:string):0|1|2{
   const count=talliedUsage(state,recordId,'transfer')?.attempts??state.history.filter(e=>e.recordId===recordId&&e.mode==='transfer').length;
   return (count%3) as 0|1|2;
+}
+export function contextCueVariant(state:UsageState,recordId:string):0|1{
+  const count=talliedUsage(state,recordId,'context')?.attempts??
+    state.history.filter(e=>e.recordId===recordId&&e.mode==='context').length;
+  return (count%2) as 0|1;
 }
 export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,now=Date.now()):RankedUsageCandidate[]{
   const result:RankedUsageCandidate[]=[];
@@ -97,12 +114,18 @@ export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageSt
     // P35 P11 transfer depended on prior usage / known vocabulary. Without a
     // trustworthy exact vocabulary ID map, gate on this frame's native evidence.
     if(mode==='transfer'&&!mastery.transfer.ready)continue;
+    if(mode==='context'&&!mastery.contextual.ready)continue;
     if(mode==='production'&&mastery.usage.attempts<1)continue;
     let score=0,reason='';
     if(mode==='repair'){
       score=260+Math.min(100,mastery.errors120d*18)+
         (mastery.lastError==='connector'?10:0);
       reason='Resolve '+(mastery.lastError??'an unverified construction');
+    }else if(mode==='context'){
+      score=(mastery.contextual.secure?0:190)+
+        (mastery.contextual.attempts===0?40:Math.max(0,24-mastery.contextual.attempts*4))+
+        (mastery.usage.secure?12:0);
+      reason=mastery.contextual.secure?'Maintain authored real-world contexts':'Produce across distinct situations';
     }else if(mode==='transfer'){
       score=(mastery.transfer.secure?0:160)+
         (mastery.transfer.attempts===0?40:Math.max(0,24-mastery.transfer.attempts*4))+
@@ -123,7 +146,7 @@ export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageSt
   return result.sort((a,b)=>b.score-a.score||a.record.id.localeCompare(b.record.id));
 }
 export function usageAggregate(pack:Pick<UsagePack,'records'>,state:UsageState,now=Date.now()){
-  let usageSecure=0,transferReady=0,transferSecure=0,refresh=0,repair=0,practised=0;
+  let usageSecure=0,transferReady=0,transferSecure=0,contextReady=0,contextSecure=0,refresh=0,repair=0,practised=0;
   const errorCounts:Record<string,number>={};
   for(const r of pack.records){
     const m=usageRecordMastery(r.id,state,now);
@@ -132,8 +155,10 @@ export function usageAggregate(pack:Pick<UsagePack,'records'>,state:UsageState,n
     if(m.usage.status==='refresh')refresh++;
     if(m.transfer.ready)transferReady++;
     if(m.transfer.secure)transferSecure++;
+    if(m.contextual.ready)contextReady++;
+    if(m.contextual.secure)contextSecure++;
     if(m.repairNeeded){repair++;if(m.lastError)errorCounts[m.lastError]=(errorCounts[m.lastError]??0)+1;}
   }
-  return {sourceFrames:pack.records.length,practised,usageSecure,transferReady,transferSecure,refresh,repair,
+  return {sourceFrames:pack.records.length,practised,usageSecure,transferReady,transferSecure,contextReady,contextSecure,refresh,repair,
     topErrors:Object.entries(errorCounts).sort((a,b)=>b[1]-a[1]).slice(0,3)};
 }
