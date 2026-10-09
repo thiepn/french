@@ -8,7 +8,7 @@ const IDS=Object.keys(ROUTES) as StepId[];
 export type CompletionCounts=Record<StepId,number>;
 export interface AdaptiveStep{id:StepId;title:string;route:CoachRoute;minutes:number;launchedAt:number;baseline:number;completedAt:number}
 export interface AdaptiveBlock{schema:'thiepn-french-d5-adaptive-block';createdAt:number;cursor:number;steps:AdaptiveStep[];status:'active'|'completed'}
-const num=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>=0?Number(v):0;
+const num=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:0;
 export function normalizeAdaptiveBlock(raw:unknown):AdaptiveBlock|null{
   if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
   const x=raw as Record<string,unknown>;
