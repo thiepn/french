@@ -88,6 +88,11 @@ assert.equal(by('write:p12-001').status,'improving');
 assert.equal(by('write:p12-001').recent.unverified,1,'manual judgment is never independent exact');
 assert.equal(by('construct:usage:usage:p10-001').status,'improving');
 assert.equal(by('construct:usage:usage:p10-001').repairTouches,1);
+const repairEvent=events.find(e=>e.practice==='verified-usage-repair')!;
+const duplicateRepair=evaluateLongitudinalEvidence({...input,
+  events:[...events,repairEvent,repairEvent]});
+assert.equal(duplicateRepair.rows.find(x=>x.key==='construct:usage:usage:p10-001')?.repairTouches,1,
+  'reimporting one repair ID must not inflate intervention touch counts');
 assert.equal(by('construct:usage:usage:p10-001').followup,'observed-after-repair');
 assert.equal(by('construct:context:usage:p10-002').status,'improving');
 assert.equal(by('function:request').status,'improving');
@@ -97,6 +102,12 @@ assert.equal(JSON.stringify({events,functionEvents}),before,'pure and read-only'
 assert.equal(report.sourceLimited,false);
 const truncated=evaluateLongitudinalEvidence({...input,sourceLimit:events.length});
 assert.equal(truncated.sourceLimited,true);
+assert.equal(truncated.comparable,0,'capped history cannot claim reliable longitudinal comparison');
+assert.equal(truncated.improving,0);
+assert.equal(truncated.declining,0);
+assert.deepEqual(truncated.priority,[]);
+assert.equal(truncated.rows.find(x=>x.key==='vocab:v-decline:v-decline::d31:0:recognition')?.status,
+  'insufficient','known decline is still unclassifiable with incomplete source history');
 const copies=evaluateLongitudinalEvidence({...input,events:[...events,events[0],events[0]]});
 assert.equal(copies.rows.find(x=>x.key===by('vocab:v-improve:v-improve::d31:0:recognition').key)?.baseline.graded,3,'sync duplicates');
 const sparse=evaluateLongitudinalEvidence({events:[],functionEvents:[],now});
@@ -114,4 +125,5 @@ assert.equal(JSON.stringify(report).includes('targetText'),false);
 console.log(JSON.stringify({schema:'french-p37i-d3-longitudinal',ok:true,
   windows:[45,45],minimumGraded:3,minimumDays:2,similarTargetsOnly:true,
   noAutomaticCausation:true,failedFirstListenPreserved:true,
-  assistedExcluded:true,deduplicated:true,readOnly:true,privacy:'aggregate-metadata-only'}));
+  assistedExcluded:true,deduplicated:true,cappedSourceAbstains:true,
+  readOnly:true,privacy:'aggregate-metadata-only'}));
