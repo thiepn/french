@@ -523,3 +523,35 @@ test('P37I-C4 bridges independent P10 recall to original P12 written application
   expect(events[0].practiceOnly).toBe(true);
   expect(JSON.stringify(result)).not.toContain("J'apprends à conduire.");
 });
+
+
+test('P37I-D1 Progress exposes cross-skill remediation without awarding a CEFR level',async({page})=>{
+  await page.goto('/#progress');
+  await expect(page.getByRole('heading',{name:'Cross-skill study plan'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/CEFR evidence gaps/})).toBeVisible();
+  await expect(page.getByText(/not a CEFR readiness score/)).toBeVisible();
+  await expect(page.getByText(/30-day evidence:/)).toBeVisible();
+  const before=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{
+      const db=o.result,tx=db.transaction(['srs','activity'],'readonly');
+      const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    o.onerror=()=>resolve(null);
+  }));
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Cross-skill study plan'})).toBeVisible();
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const o=indexedDB.open('thiepn-french-vnext');
+    o.onsuccess=()=>{
+      const db=o.result,tx=db.transaction(['srs','activity'],'readonly');
+      const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};
+      tx.onerror=()=>{db.close();resolve(null);};
+    };
+    o.onerror=()=>resolve(null);
+  }));
+  expect(after).toEqual(before);
+});
