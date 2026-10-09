@@ -268,7 +268,13 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     if(link){
       const linkLine=element('div','','write-bridge-source');
       linkLine.append(element('span','Linked P10 construction · '+link.frame+' · '+link.id));
-      const go=control('Practice construction');
+      const provenance=usagePack.sources[link.sourceKey];
+      if(provenance?.url){
+        const ref=element('a','P35 source');
+        ref.href=provenance.url;ref.target='_blank';ref.rel='noopener noreferrer';
+        ref.title='Original P35 source attribution, not independently reverified';linkLine.append(ref);
+      }
+      const go=control('Open usage practice');
       go.onclick=()=>{if(busy)return;family='usage';usageMode='usage';usageStarted=performance.now();draw();};
       linkLine.append(go);task.append(linkLine);
     }
