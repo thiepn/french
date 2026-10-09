@@ -86,15 +86,18 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2;
   const contextual:TransferMastery={...contextualBasis,ready:contextReady,distinctVariants:contextVariants,
     secure:contextSecure,status:contextSecure?'secure':contextualBasis.attempts?'building':'unseen'};
-  const sorted=[...own].sort((a,b)=>b.at-a.at);
-  const snapshot=Object.values(state.tallies?.[recordId]??{}).filter((row):row is UsageTally=>Boolean(row)).sort((a,b)=>b.lastAt-a.lastAt)[0];
+  // Contextual sentence errors must not reopen a successfully learned source frame.
+  const frameOnly=own.filter(e=>e.mode!=='context');
+  const sorted=[...frameOnly].sort((a,b)=>b.at-a.at);
+  const snapshot=Object.entries(state.tallies?.[recordId]??{}).filter(([mode,row])=>mode!=='context'&&Boolean(row))
+    .map(([,row])=>row as UsageTally).sort((a,b)=>b.lastAt-a.lastAt)[0];
   const latest=sorted[0];
   const lastIndependent=latest?independentExact(latest):snapshot?.lastIndependent??false;
   const lastOutcome=latest?.outcome??snapshot?.lastOutcome??'matched';
   const priorError=sorted.slice(1).some(e=>!independentExact(e));
   const repairNeeded=!lastIndependent&&(lastOutcome!=='self-assessed'||priorError);
   const lastError=repairNeeded?latest?.diagnosis??snapshot?.lastDiagnosis??null:null;
-  const errors120d=own.filter(e=>e.at>=now-REPAIR_ERROR_DAYS*DAY&&!independentExact(e)).length;
+  const errors120d=frameOnly.filter(e=>e.at>=now-REPAIR_ERROR_DAYS*DAY&&!independentExact(e)).length;
   return {usage,transfer,contextual,lastError,repairNeeded,errors120d};
 }
 export function transferCueVariant(state:UsageState,recordId:string):0|1|2{
