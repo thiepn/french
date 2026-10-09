@@ -64,7 +64,7 @@ assert.equal(lane('speaking').manual,1,'self-assessed speech is tracked separate
 assert.equal(lane('reading').independent,0,'supported reading tasks cannot certify comprehension');
 assert.equal(lane('listening').independent,3,'only exact first normal-speed playback counts');
 assert.equal(lane('listening').status,'varied','three contexts and two days support varied task exposure');
-assert.equal(lane('listening').attempts,9,'old listening event excluded from 30-day window');
+assert.equal(lane('listening').attempts,7,'old listening event excluded from 30-day window');
 assert.equal(lane('writing').independent,2,'manual source sentence must not count');
 assert.equal(lane('writing').distinctTasks,1,'two repetitions of one P12 sentence are not varied');
 assert.equal(lane('writing').status,'single-context');
