@@ -112,7 +112,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         try{await replaceCanonicalFeatureState('v5130AdaptiveBlock',null);
           focus.replaceChildren(node('p','Block ended. Native study history remains unchanged.','home-note'));
           const back=node('button','Return to recommendations','home-start');back.type='button';
-          back.addEventListener('click',()=>void mount({main,signal,navigate}));focus.append(back);
+          back.addEventListener('click',()=>void mount({main,route:'home',signal,navigate}));focus.append(back);
         }catch(error){console.warn('Could not end adaptive block',error);}
       });focus.append(end);
     };
