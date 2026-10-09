@@ -9,9 +9,13 @@ import {rankUsageCandidates,usageRecordMastery,contextCueVariant,usageAggregate}
 const source=JSON.parse(await readFile(new URL('./data/stable-usage-corpus-v1.json',import.meta.url),'utf8'));
 const pack={records:source.records} as Pick<UsagePack,'records'>;
 const now=Date.now(),recordId='p10-001',DAY=86_400_000;
-assert.equal(CONTEXT_SCENES.length,24);
-assert.equal(new Set(CONTEXT_SCENES.map(row=>row.id)).size,24);
-assert.equal(new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,12);
+assert.equal(CONTEXT_SCENES.length,72);
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.id)).size,72);
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.recordId)).size,36);
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.english.toLowerCase())).size,72,
+  'all contextual tasks must give a distinct English prompt');
+assert.equal(new Set(CONTEXT_SCENES.map(row=>row.expected.toLowerCase())).size,72,
+  'do not disguise a repeated model sentence as a new context');
 for(const scene of CONTEXT_SCENES){
   assert.ok(source.records.some((row:{id:string})=>row.id===scene.recordId),'every new scenario has a real P10 construction');
   assert.ok(scene.situation&&scene.english&&scene.expected&&scene.hint);
@@ -25,7 +29,7 @@ for(const id of new Set(CONTEXT_SCENES.map(row=>row.recordId))){
   assert.notEqual(contextScene(id,0)?.situation,contextScene(id,1)?.situation,
     'contexts must be situationally different, not a restyled prompt');
 }
-assert.equal(hasContextScenes('p10-003'),false,'unsupported source frames stay out of contextual queue');
+assert.equal(hasContextScenes('p10-009'),false,'unsupported source frames stay out of contextual queue');
 assert.equal(assessContextAnswer('Elle apprend a cuisiner.',contextScene(recordId,1)!),'orthography');
 assert.equal(diagnoseContextUsage('Elle apprend à cuisiner.',contextScene(recordId,1)!).correct,true);
 assert.equal(diagnoseContextUsage('Elle cuisine.',contextScene(recordId,1)!).correct,false);
@@ -62,6 +66,17 @@ const manual=add(state,'context',1,0,'self-assessed','structure',recordId,now+3)
 assert.equal(usageRecordMastery(recordId,manual,now+3).contextual.secure,false,'manual judgments cannot certify correctness');
 state=add(state,'context',1,0,'matched','exact',recordId,now+4);
 assert.equal(usageRecordMastery(recordId,state,now+4).contextual.secure,true,'both distinct situations must be exact and unassisted');
+const recentMiss=add(state,'context',0,0,'needs-practice','structure',recordId,now+5);
+assert.equal(usageRecordMastery(recordId,recentMiss,now+5).contextual.secure,false,
+  'a later failure in one contextual variant must revoke current contextual security');
+assert.equal(contextCueVariant(recentMiss,recordId),0,
+  'adaptive queue should repeat the failed situation rather than a verified one');
+const revalidated=add(recentMiss,'context',0,0,'matched','exact',recordId,now+6);
+assert.equal(usageRecordMastery(recordId,revalidated,now+6).contextual.secure,true,
+  'repairing the same failed situation restores the distinct-context evidence');
+assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.secure,false,
+  'contextual security must expire after 30 days without independent revalidation');
+assert.equal(usageRecordMastery(recordId,state,now+31*DAY).contextual.status,'refresh');
 assert.equal(usageRecordMastery(recordId,state,now+4).transfer.secure,false,'context must not fabricate structural-transfer mastery');
 assert.equal(usageAggregate(pack,state,now+4).contextSecure,1);
 assert.equal(usageRecordMastery(recordId,state,now+4).repairNeeded,false,'context mistakes must not create source-frame repair demand');
@@ -70,6 +85,6 @@ assert.equal(safeUsageState(JSON.parse(JSON.stringify(state)),pack).tallies[reco
   'contextual tally survives reload and migration');
 assert.equal(JSON.stringify(state).includes('Elle apprend à cuisiner.'),false,'never store typed sentences or reference text');
 console.log(JSON.stringify({schema:'french-p37i-c5-contextual-production',ok:true,
-  scenes:CONTEXT_SCENES.length,sourceFrames:12,
+  scenes:CONTEXT_SCENES.length,sourceFrames:36,
   measures:'exact model matches in two independent situations',cefrCertification:false,
   separateStructuralAndContextualEvidence:true,privacy:'metadata-only'}));
