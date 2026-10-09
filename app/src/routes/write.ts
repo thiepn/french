@@ -58,7 +58,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const count=name==='repair'?repairCandidates(usagePack,usageState).length:
         rankUsageCandidates(usagePack,usageState,name).length;
       const label=name==='usage'?'Usage':name==='production'?'Produce ('+count+')':
-        name==='transfer'?'Structure ('+count+')':name==='context'?'Contexts ('+count+')':'Repair ('+count+')';
+        name==='transfer'?'Transfer ('+count+')':name==='context'?'Contexts ('+count+')':'Repair ('+count+')';
       const btn=control(label,'write-tab'+(usageMode===name?' is-active':''));
       btn.setAttribute('aria-pressed',String(usageMode===name));
       btn.onclick=()=>{if(busy)return;usageMode=name;usageStarted=performance.now();draw();};
@@ -85,7 +85,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const metrics=element('div','','write-mastery-overview');
     for(const [label,value] of [
       ['Usage secure',overview.usageSecure],['Transfer ready',overview.transferReady],
-      ['Structure secure',overview.transferSecure],['Contexts ready',overview.contextReady],
+      ['Transfer secure',overview.transferSecure],['Contexts ready',overview.contextReady],
       ['Contexts secure',overview.contextSecure],['Need refresh',overview.refresh],['Repair queue',overview.repair]
     ] as const){
       const item=element('div','','write-mastery-stat');
