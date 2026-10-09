@@ -622,10 +622,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   remediation.className='data-panel p26-diagnostics';
   remediation.append(textNode('h2','Targeted remediation (P26)'),
     textNode('p','Patterns from structured French attempts. Opening a practice route does not award a repair pass or change SRS.','intel-note'));
-  const overview=document.createElement('p');overview.className='intel-note';
-  overview.textContent=p26.open.length+' unresolved patterns · '+p26.repaired.length+' observed repairs'+
+  const p26Overview=document.createElement('p');p26Overview.className='intel-note';
+  p26Overview.textContent=p26.open.length+' unresolved patterns · '+p26.repaired.length+' observed repairs'+
    (p26.sourceLimited?' · older evidence excluded by source cap':'');
-  remediation.append(overview);
+  remediation.append(p26Overview);
   const causes=document.createElement('div');causes.className='next-action-grid';
   for(const item of p26.open.slice(0,5)){
     const section=document.createElement('article');section.className='decision-action';
