@@ -3,7 +3,7 @@
  * SRS schedule mutation, or learner transcript persistence.
  */
 import type {CanonicalReviewEventV1} from './model';
-import type {FunctionEvidence} from '../conversation/curriculum.ts';
+import {FUNCTION_CATALOG,type FunctionEvidence} from '../conversation/curriculum.ts';
 import type {VocabularySearchRow} from '../content/loader';
 
 const DAY=86_400_000;
@@ -55,8 +55,11 @@ function gradeActivity(e:CanonicalReviewEventV1,kind:TrendSkill):Grade{
   if(!supportFree(e)||manual(e))return 'unverified';
   if(kind==='listening'){
     if(e.typed!==true||!e.typedQuality||e.playCount!==1||
-      (e.playbackRate??0)<1||e.firstListen!==true)return 'unverified';
-    return e.correct===true&&e.typedQuality==='exact'?'positive':
+      (e.playbackRate??0)<1)return 'unverified';
+    // firstListen is only true for a correct first listen in the source app.
+    // It MUST NOT be required for failed unassisted dictation, or all errors
+    // silently disappear from longitudinal analysis.
+    return e.correct===true&&e.firstListen===true&&e.typedQuality==='exact'?'positive':
       e.correct===false?'negative':'unverified';
   }
   if(kind==='writing'){
@@ -114,7 +117,8 @@ function conversationSample(e:FunctionEvidence):Sample|null{
     e.required>0&&e.matched>=e.required&&e.credit>=.99;
   const negative=independent&&e.accepted===false&&e.required>0;
   const grade:Grade=positive?'positive':negative?'negative':'unverified';
-  return{key:'function:'+functionId,label:'Function · '+functionId,skill:'conversation',
+  const label=FUNCTION_CATALOG.find(row=>row.id===functionId)?.label??functionId;
+  return{key:'function:'+functionId,label:'Function · '+label,skill:'conversation',
     route:'conversation',at:e.at,grade,context:scenarioId,
     id:'fn:'+functionId+':'+scenarioId+':'+e.turnIndex+':'+e.at,repair:false};
 }
@@ -168,9 +172,13 @@ export function evaluateLongitudinalEvidence(input:LongitudinalInput):Longitudin
     const baseline=windowStats(ordered.filter(x=>x.at<=boundary));
     const recent=windowStats(ordered.filter(x=>x.at>boundary));
     const status=classify(baseline,recent);
-    const repairTouches=ordered.filter(x=>x.repair&&x.at>boundary).length;
-    const followup=repairTouches>0&&status==='improving'&&
-      recent.activeDays>=D3_MIN_DAYS?'observed-after-repair':'not-demonstrated';
+    const repairs=ordered.filter(x=>x.repair&&x.at>boundary);
+    const repairTouches=repairs.length;
+    const firstRepair=repairs[0]?.at??0;
+    const afterRepair=windowStats(ordered.filter(x=>!x.repair&&x.at>firstRepair&&x.at>boundary));
+    const followup=repairTouches>0&&status==='improving'&&credible(afterRepair)&&
+      afterRepair.positive>=3&&afterRepair.accuracy!==null&&afterRepair.accuracy>=75?
+      'observed-after-repair':'not-demonstrated';
     const changePoints=credible(baseline)&&credible(recent)?
       (recent.accuracy??0)-(baseline.accuracy??0):null;
     const explanation=status==='insufficient'?
