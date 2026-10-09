@@ -27,6 +27,12 @@ const payload={
   sessionHistory:[{endedAt:1_699_200_000_000,correct:8,total:10}],
   userCards:{custom1:{word:'salut'}},cardEdits:{bonjour:{meaning:'hello'}},smartDecks:{weak:{name:'Weak'}},customDecks:{travel:{name:'Travel'}},
   v550Reading:{history:{'read-a1-matin':{completedAt:123}}},
+  v5120OpenWorld:{schema:1,sessions:[{
+    id:'p35-exposure',t:1_699_500_000_000,words:48,known:21,learning:11,
+    newMapped:8,unmapped:8,knownPct:44,mappedPct:83,effectivePct:60,
+    lookups:4,sourceKind:'paste'
+  }]},
+
   v560Listening:{attempts:3},
   v570Speaking:{attempts:2},
   v5160Progression:{promotions:{A1:{earnedAt:111},A2:{earnedAt:222}}}
@@ -46,6 +52,9 @@ assert.deepEqual(canonical.learner.featureState.mistakeLog,payload.mistakeLog);
 assert.deepEqual(canonical.learner.featureState.resumeSnapshot,payload.resumeSnapshot);
 assert.deepEqual(canonical.learner.featureState.sessionHistory,payload.sessionHistory);
 assert.deepEqual(canonical.learner.featureState.v550Reading,payload.v550Reading);
+assert.deepEqual(canonical.learner.featureState.v5120OpenWorld,payload.v5120OpenWorld,
+  'original P35 exposure history must survive canonical migration');
+
 assert.deepEqual(canonical.learner.featureState.v560Listening,payload.v560Listening);
 assert.deepEqual(canonical.learner.featureState.v570Speaking,payload.v570Speaking);
 assert.equal(canonical.srs.length,1);
@@ -89,6 +98,23 @@ assert.deepEqual(cloud.mistakeLog,payload.mistakeLog);
 assert.deepEqual(cloud.resumeSnapshot,payload.resumeSnapshot);
 assert.deepEqual(cloud.sessionHistory,payload.sessionHistory);
 assert.deepEqual(cloud.v550Reading,payload.v550Reading);
+assert.deepEqual(cloud.v5120OpenWorld,payload.v5120OpenWorld,
+  'P35-readable aggregate exposure history must remain in the cloud snapshot');
+const evolved=structuredClone(backup);
+const previousLearner=evolved.stores.learner[0].value as typeof canonical.learner;
+evolved.stores.learner[0].value={...previousLearner,featureState:{
+  ...previousLearner.featureState,v5130AdaptiveBlock:{
+    schema:'thiepn-french-d5-adaptive-block',createdAt:1_700_000_000_000,cursor:0,
+    status:'active',steps:[{id:'read',route:'read',title:'Read in context',
+      minutes:6,launchedAt:0,baseline:0,completedAt:0}]
+  }
+}};
+const evolvedCloud=backupPayloadToFrenchCloudSnapshot(evolved,1_700_000_000_000);
+assert.deepEqual(evolvedCloud._vnext?.payload,evolved,
+  'active native P23 block must round-trip losslessly through backup/sync');
+assert.equal(JSON.stringify(evolvedCloud).includes('private pasted learner text'),false);
+assert.equal(snapshotHasMeaningfulState(evolvedCloud),true,'native block blocks silent cloud replacement');
+
 assert.deepEqual(cloud._vnext?.payload,backup);
 assert.equal(snapshotHasMeaningfulState(cloud),true);
 

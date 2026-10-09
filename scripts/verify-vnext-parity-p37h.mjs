@@ -280,6 +280,23 @@ reject(settings,'Backup, diagnostics, account management, and migration tools st
 reject(listen,'Audio and transcripts load only for the lesson being used');
 reject(speak,'Microphone and speech code initialize only after entering speaking practice');
 
+
+const [d5Open,d5Block,d5Tests,d5Browser]=await Promise.all([
+  readFile(new URL('../app/src/core/learner/open-world.ts',import.meta.url),'utf8'),
+  readFile(new URL('../app/src/core/learner/adaptive-block.ts',import.meta.url),'utf8'),
+  readFile(new URL('./test-vnext-adaptive-block.mts',import.meta.url),'utf8'),
+  readFile(new URL('../tests/p37h-vnext.spec.mjs',import.meta.url),'utf8')
+]);
+for(const value of ['OPEN_WORLD_MAX_CHARS=20_000','OPEN_WORLD_MAX_FILE_BYTES=262_144',
+  'OPEN_WORLD_MAX_SESSIONS=120','normalizeOpenWorldHistory'])
+  need(d5Open,value,'D5 bounded privacy-first personal French '+value);
+for(const value of ['composeAdaptiveBlock','observeNativeCompletion','normalizeAdaptiveBlock'])
+  need(d5Block,value,'D5 bounded native study block '+value);
+for(const value of ['nativeCompletion:true','metadata-only'])
+  need(d5Tests,value,'D5 native completion and privacy regression '+value);
+for(const value of ['P37I-D5 P21','P37I-D5 P23','PWA offline reload'])
+  need(d5Browser,value,'D5 real browser acceptance '+value);
+
 console.log(JSON.stringify({
   schema:'thiepn-french-p37h-production-parity',
   ok:failures.length===0,

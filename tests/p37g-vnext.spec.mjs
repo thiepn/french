@@ -96,3 +96,22 @@ test('Today session composes persisted session state on a fresh profile',async({
   expect(session.queueIds.length).toBeGreaterThan(0);
   expect(session.expiresAt-session.updatedAt).toBeGreaterThan(13*86_400_000);
 });
+
+test('P37I-D5 P21 exposure and P23 block work in the cross-engine/browser matrix',async({page})=>{
+  await page.goto('/#read');
+  const panel=page.locator('.open-world-entry');
+  await expect(panel).toBeVisible();
+  await panel.locator('textarea').fill(
+    'Bonjour nous apprenons le français avec un texte personnel contenant suffisamment de phrases et de mots. '.repeat(3));
+  await panel.getByRole('button',{name:'Analyze & read'}).click();
+  await expect(page.locator('.open-world-reader')).toBeVisible();
+  await page.getByRole('button',{name:'Finish exposure'}).click();
+  await expect(panel).toContainText('1 completed personal reading');
+  await page.goto('/#home');
+  await expect(page.getByRole('button',{name:'Build a short adaptive block'})).toBeVisible();
+  await page.getByRole('button',{name:'Build a short adaptive block'}).click();
+  await expect(page.locator('.home-focus')).toContainText('Step 1 of');
+  await page.reload();
+  await expect(page.locator('.home-focus')).toContainText('Step 1 of');
+  await page.getByRole('button',{name:'End block; keep study progress'}).click();
+});

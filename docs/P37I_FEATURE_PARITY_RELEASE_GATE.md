@@ -68,6 +68,17 @@ A **construction repair** is tracked as an intervention *touch*, not a success. 
 
 Automated qualification includes TypeScript build, deterministic 90-day fixtures (improvement/decline/persistent weakness, first-listen failures, support/manual exclusions, source cap, duplicate sync, reversed repair chronology), and a real IndexedDB browser flow verifying longitudinal prioritization and no unintended SRS/activity writes. Human longitudinal study, genuine spontaneous speaking evaluation, P24 parity, P25 promotion protocol, Account OAuth and physical devices remain **open**. P35 production and all vNext cutover NO-GO flags remain unchanged.
 
+
+## P37I-D5 — Personal French input and bounded native study blocks (NO-GO)
+
+Following fully green P37H/P37G/runtime prerequisite workflows at `cb97d67fbe8456b06477542248a0eb3bad069c2a`, D5 adds:
+
+- **P21 personal input:** A locally rendered paste/.txt/.md reader within Read. Raw text is limited to 20,000 characters; file input is limited to 256 KiB; the minimum meaningful exposure is 20 French words. Analysis uses the existing native vocabulary index and morphological resolver. Only source-kind and numerical counters for the most recent 120 sessions are saved under `v5120OpenWorld`. Source names, article links, copied prose and lookup strings do not enter backup/cloud state. Passive exposure never changes SRS, progress promotion or CEFR evidence.
+- **P22 cautious recommendations:** Native coach launches a source-prerequisite open-world reading option after prior scheduled vocabulary retrieval and graded reading activity, without claiming proficiency calibration.
+- **P23 adaptive block:** Three activities maximum, 26-minute composition budget, dependency ordering, retained native work ownership, resume across reload and cancel without deleting native study sessions. Block state contains only route IDs, counts and timestamps. Launching a task **cannot** mark it complete; completion is observed through activity-owned counts. Native activity counters are proxies for P23 workflow completion, not proof of mastery or source-equivalent advanced evaluation.
+
+Regression gates include engine unit tests, cross-browser P37G flows, full P37H browser/Android flows, offline read/reload, P35 exposure import and P23 block backup/restore/privacy checks. **Do not mark D5 qualified until these exact-new-head automated gates pass.** P35 P21 lexical depth, P22 multi-skill confidence model, P23 Speak 10/full mission handoff and original feedback calibration remain partial and require further parity. Live Account, real devices, P25 promotion and production cutover remain NO-GO.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |

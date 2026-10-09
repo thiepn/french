@@ -773,3 +773,37 @@ test('P37I-D5 P23 retains an adaptive study block without awarding SRS or invent
   await page.reload();
   await expect(page.getByRole('button',{name:'Build a short adaptive block'})).toBeVisible();
 });
+
+test('P37I-D5 imported personal French remains local and readable after a PWA offline reload',async({page,context})=>{
+  await page.goto('/#read');
+  await expect(page.locator('.open-world-entry')).toBeVisible();
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBeTruthy();
+  }
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    const panel=page.locator('.open-world-entry');
+    await expect(panel.getByRole('heading',{name:'Bring your own French'})).toBeVisible({timeout:30_000});
+    const secret='PRIVATE_OFFLINE_FRENCH_ONLY_IN_PAGE';
+    await panel.locator('textarea').fill(
+      ('Bonjour mon ami nous lisons ce texte français et discutons des mots '+secret+' ').repeat(3));
+    await panel.getByRole('button',{name:'Analyze & read'}).click();
+    await expect(page.locator('.open-world-reader')).toBeVisible();
+    await page.getByRole('button',{name:'Finish exposure'}).click();
+    await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
+    const stored=await page.evaluate(async()=>new Promise(resolve=>{
+      const o=indexedDB.open('thiepn-french-vnext');o.onsuccess=()=>{
+        const d=o.result,t=d.transaction('learner','readonly'),request=t.objectStore('learner').get('state-v1');
+        request.onsuccess=()=>{d.close();resolve(request.result.featureState.v5120OpenWorld);};
+      };
+    }));
+    expect(stored.sessions.length).toBe(1);
+    expect(JSON.stringify(stored)).not.toContain(secret);
+  }finally{await context.setOffline(false);}
+  await page.reload();
+  await expect(page.locator('.open-world-entry')).toContainText('1 completed personal reading');
+  await expect(page.locator('.open-world-input')).toHaveValue('');
+});
