@@ -9,7 +9,8 @@ const srs:CanonicalSrsRecordV1[]=vocabulary.flatMap(row=>(['recognition','produc
   id:row.id+':1:'+skill,noteId:row.id,sense:1,skill,status:'learned',seen:7,successes:6,lastRating:'good',
   lastReviewedAt:now-2*DAY,dueAt:now+10*DAY,suspended:false,manualKnown:false
 } as CanonicalSrsRecordV1)));
-const readings=[...Array(3)].map((_,i)=>({id:'r'+i,level:'A1'} as ReadingItem));
+const readings=(['A1','A2','B1'] as const).flatMap(level=>
+  [...Array(3)].map((_,i)=>({id:level==='A1'?'r'+i:level+'-r'+i,level} as ReadingItem)));
 const readingHistory={r0:{completedAt:now-3*DAY,questionAttempts:2,questionCorrect:1},
   r1:{completedAt:now-2*DAY,questionAttempts:2,questionCorrect:1},
   r2:{completedAt:now-1*DAY,questionAttempts:0,questionCorrect:0}};
