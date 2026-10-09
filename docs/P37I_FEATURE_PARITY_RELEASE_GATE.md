@@ -48,6 +48,14 @@ Context admission requires **two independently exact P10 source-frame recalls**.
 
 The contextual state remains metadata-only and distinct from structural transfer, P12 sentence writing, and scheduled FSRS. This extension **does not approve production cutover**.
 
+## P37I-D2 — Cross-skill evidence calibration (supplementary)
+
+D2 adds a **read-only 30-day evidence ledger** in Progress across vocabulary, reading, first-listen dictation, speaking, sentence writing, contextual production and guided interaction. Each skill shows observed attempts, strictly independently verified outcomes, supported/manual work, distinct prompts, active days and the last 14 days. Categories (unobserved → supported/manual only → single context → repeated → varied tasks) describe **evidence breadth**, not percentages of mastery, CEFR levels or standardized proficiency.
+
+The calibration distinguishes scheduled word recall from expression transfer, first normal-speed playback from replay/transcript, finite P12 model matches from unrestricted writing, and manually self-judged/ASR-reported speech from independent pronunciation validation. It also checks whether a *single original P10 construction* has valid P10 usage recall, source-linked P12 exact sentence evidence and both independently current authored C5 situations; unrelated skills or different words never combine into cross-skill transfer evidence.
+
+No learner transcript, response text or modeled confidence is persisted or displayed by the calibration engine. D2 performs **no writes** to local study progress, learner profiles, SRS, cloud state or promotion fields. The existing provisional level-labelled D2 CEFR diagnostic gate stays **blocked**; the new ledger is supporting context, not evidence that P25/P27 promotion parity has been achieved. Original P35 advanced mastery, observational longitudinal reliability and independent oral calibration remain open.
+
 ## Required evidence before a cutover PR
 
 | Gate | Evidence needed | Current state |
