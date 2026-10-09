@@ -84,8 +84,17 @@ export function usageRecordMastery(recordId:string,state:UsageState,now=Date.now
   const contextMask=talliedUsage(state,recordId,'context')?.variantMask??
     contextEvents.filter(independentExact).reduce((n,e)=>n|(1<<(e.variant??0)),0);
   const contextVariants=[0,1].filter(bit=>(contextMask&(1<<bit))!==0).length;
-  const contextReady=ready&&hasContextScenes(recordId);
-  const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2;
+  // The P10 construction must first be recalled independently, not simply
+  // attempted with a hint. In C5 a failed or supported repeat in either
+  // situational variant revokes current secure status for that variant.
+  const contextReady=usage.independentExact>=2&&hasContextScenes(recordId);
+  const latestContextVariants=[0,1].map(variant=>contextEvents
+    .filter(e=>e.variant===variant).sort((a,b)=>b.at-a.at)[0]);
+  // Older history may be truncated to 300 events. In that case we require
+  // fresh evidence rather than using a historical ever-exact variant bit.
+  const variantCurrent=latestContextVariants.every(e=>Boolean(e&&independentExact(e)&&
+    e.at<=now&&now-e.at<=CONTEXT_REVALIDATION_DAYS*DAY));
+  const contextSecure=contextReady&&contextualBasis.secure&&contextVariants===2&&variantCurrent;
   const contextual:TransferMastery={...contextualBasis,ready:contextReady,distinctVariants:contextVariants,
     secure:contextSecure,status:contextSecure?'secure':contextualBasis.status==='refresh'?'refresh':contextualBasis.attempts?'building':'unseen'};
   // Contextual sentence errors must not reopen a successfully learned source frame.
@@ -109,8 +118,15 @@ export function transferCueVariant(state:UsageState,recordId:string):0|1|2{
   return (count%3) as 0|1|2;
 }
 export function contextCueVariant(state:UsageState,recordId:string):0|1{
-  const count=talliedUsage(state,recordId,'context')?.attempts??
-    state.history.filter(e=>e.recordId===recordId&&e.mode==='context').length;
+  const own=state.history.filter(e=>e.recordId===recordId&&e.mode==='context');
+  const latest=[0,1].map(variant=>own.filter(e=>e.variant===variant).sort((a,b)=>b.at-a.at)[0]);
+  // Prefer a situation that was missed, supported or has never been seen.
+  // This also avoids repeating an already-secure scene after a failed one.
+  if(latest[0]&&!independentExact(latest[0])&&(!latest[1]||independentExact(latest[1])))return 0;
+  if(latest[1]&&!independentExact(latest[1])&&(!latest[0]||independentExact(latest[0])))return 1;
+  if(!latest[0]&&latest[1])return 0;
+  if(!latest[1]&&latest[0])return 1;
+  const count=talliedUsage(state,recordId,'context')?.attempts??own.length;
   return (count%2) as 0|1;
 }
 export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageState,mode:UsageMode,now=Date.now(),lexical?:ReadonlyMap<string,LexicalSignal>):RankedUsageCandidate[]{
@@ -130,6 +146,7 @@ export function rankUsageCandidates(pack:Pick<UsagePack,'records'>,state:UsageSt
       reason='Resolve '+(mastery.lastError??'an unverified construction');
     }else if(mode==='context'){
       score=(mastery.contextual.status==='refresh'?290:mastery.contextual.secure?0:190)+
+        (mastery.contextual.attempts>0&&!mastery.contextual.secure?25:0)+
         (mastery.contextual.attempts===0?40:Math.max(0,24-mastery.contextual.attempts*4))+
         (mastery.usage.secure?12:0)+lexicalPriority(lexical?.get(record.id));
       reason=mastery.contextual.status==='refresh'?'Revalidate a context after 30 days':
