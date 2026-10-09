@@ -6,10 +6,10 @@
 import type {CanonicalReviewEventV1} from './model';
 import type {FunctionEvidence} from '../conversation/curriculum';
 import type {UsageState} from '../usage/session';
-import {usageRecordMastery} from '../usage/mastery';
+import {usageRecordMastery} from '../usage/mastery.ts';
 import type {WritingState} from '../writing/session';
 import type {UsagePack,SentenceExercisePack} from '../content/loader';
-import {sentenceSourceMap} from '../writing/bridge';
+import {sentenceSourceMap} from '../writing/bridge.ts';
 
 const DAY=86_400_000;
 export const D2_WINDOW_DAYS=30;
