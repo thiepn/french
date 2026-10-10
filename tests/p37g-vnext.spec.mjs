@@ -194,3 +194,24 @@ test('B6 source-linked missions and original functions remain readable by keyboa
   const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
   expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
 });
+
+
+test('B7 original source mission keyboard launch and reload resume on actual browser DOM',async({page})=>{
+  await page.goto('/#conversation');
+  await expect(page.getByRole('heading',{name:'Original P35 dialogue graphs'})).toBeVisible();
+  const btn=page.getByRole('button',{name:/Morning in town · 3 original source graphs/});
+  await expect(btn).toBeVisible();
+  await btn.focus();
+  await expect(btn).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/Source mission Morning in town · task 1\/3/)).toBeVisible();
+  const prompt=await page.locator('.conversation-prompt').textContent();
+  await page.getByRole('button',{name:'Pause original graph & home'}).click();
+  await expect(page.getByRole('button',{name:'Resume original dialogue'})).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.conversation-prompt')).toHaveText(prompt??'');
+  await page.getByRole('button',{name:'Ask for clarification'}).click();
+  await expect(page.getByText(/clarification attempts/)).toBeVisible();
+  const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
+  expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
+});
