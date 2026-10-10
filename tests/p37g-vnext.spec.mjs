@@ -122,3 +122,49 @@ test('P37I-D6 P26 diagnostic route is available without CEFR promotion controls'
  await expect(panel.getByRole('heading',{name:'Targeted remediation (P26)'})).toBeVisible();
  await expect(panel).toContainText('does not award a repair pass or change SRS');
 });
+
+
+test('P37I-D6-B practice-only runner is keyboard reachable and mobile-safe',async({page})=>{
+  await page.goto('/#progress');
+  const panel=page.locator('.p26-diagnostics');
+  await expect(panel.getByRole('heading',{name:'Targeted remediation (P26)'})).toBeVisible();
+  const seeded=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const req=indexedDB.open('thiepn-french-vnext');req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{
+      const db=req.result,tx=db.transaction('activity','readwrite');
+      const row={schema:'thiepn-french-review-event-v1',eventId:'d6b:g:1',
+       noteId:'d6b-mobile',id:'d6b-mobile::d31:0:production',
+       practice:'written-bridge',skill:'production',practiceOnly:true,
+       correct:false,typedQuality:'near',errorCategory:'connector',
+       t:Date.now()-10000,rating:'again',supportLevel:0};
+      tx.objectStore('activity').put(row,row.eventId);
+      tx.oncomplete=()=>{db.close();resolve(true);};tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  expect(seeded).toBe(true);
+  await page.reload();
+  const start=panel.getByRole('button',{name:'Start targeted repair (up to 3 cases)'});
+  await expect(start).toBeVisible();
+  await start.focus();
+  await expect(start).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(panel.locator('.p26-run-card')).toBeVisible();
+  const counts=await page.evaluate(async()=>new Promise(resolve=>{
+    const req=indexedDB.open('thiepn-french-vnext');
+    req.onsuccess=()=>{const db=req.result,tx=db.transaction(['srs','activity'],'readonly');
+      const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};};
+  }));
+  await panel.getByRole('button',{name:'I completed guided practice — no grade'}).click();
+  await page.reload();
+  await expect(panel.locator('.p26-run-card')).toContainText('rebuild');
+  const after=await page.evaluate(async()=>new Promise(resolve=>{
+    const req=indexedDB.open('thiepn-french-vnext');
+    req.onsuccess=()=>{const db=req.result,tx=db.transaction(['srs','activity'],'readonly');
+      const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};};
+  }));
+  expect(after).toEqual(counts);
+  const viewport=await page.evaluate(()=>({content:document.documentElement.scrollWidth,viewport:innerWidth}));
+  expect(viewport.content).toBeLessThanOrEqual(viewport.viewport+2);
+});
