@@ -2,8 +2,8 @@
  * No speech/meaning equivalence or CEFR credit is claimed. Source rules and
  * graph nodes are originals; grading abstains when no exact rule matches.
  */
-import {P35_SOURCE_SCENARIOS,getP35SourceScenario,type P35Graph,type P35Rule} from './p35-graphs';
-import {P35_P18_MISSIONS,P35_P20_FUNCTIONS} from './source-parity';
+import {P35_SOURCE_SCENARIOS,getP35SourceScenario,type P35Graph,type P35Rule} from './p35-graphs.ts';
+import {P35_P18_MISSIONS,P35_P20_FUNCTIONS} from './source-parity.ts';
 export const SOURCE_GRAPH_KEY='p35-source-graph-v1';
 export const SOURCE_GRAPH_SCHEMA='thiepn-french-p35-source-graph-v1';
 export interface SourceEvidence{
