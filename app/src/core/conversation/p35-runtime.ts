@@ -228,7 +228,7 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
    !(x.repair===true&&x.functionId==='clarify'||(node.rules??[]).some(r=>r.func===x.functionId))||
    typeof x.id!=='string'||!Number.isFinite(x.at)||x.practiceOnly!==true||
    typeof x.repair!=='boolean'||typeof x.manual!=='boolean'||typeof x.accepted!=='boolean'||
-   x.accepted===x.manual||!Number.isInteger(x.support)||Number(x.support)<0||Number(x.support)>2||
+   (!x.repair&&x.accepted===x.manual)||!Number.isInteger(x.support)||Number(x.support)<0||Number(x.support)>2||
    !Number.isInteger(x.retries)||Number(x.retries)<0||Number(x.retries)>100||
    (x.independent!==(x.accepted&&x.support===0&&x.retries===0)))continue;
   const confidence=Number(x.confidence);
