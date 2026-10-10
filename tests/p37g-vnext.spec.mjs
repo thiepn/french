@@ -171,3 +171,26 @@ test('P37I-D6-B practice-only runner is keyboard reachable and mobile-safe',asyn
   const viewport=await page.evaluate(()=>({content:document.documentElement.scrollWidth,viewport:innerWidth}));
   expect(viewport.content).toBeLessThanOrEqual(viewport.viewport+2);
 });
+
+
+test('B6 source-linked missions and original functions remain readable by keyboard on small viewports',async({page})=>{
+  await page.goto('/#conversation');
+  const source=page.locator('.conversation-source-parity');
+  await expect(source.locator('summary')).toContainText('25 source definitions');
+  await source.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(source).toContainText('Source request · not independently assessed');
+  await expect(source).toContainText('Source sequence · not independently assessed');
+  await expect(page.getByText(/Five native chains match their P35 P18 source scenario identities/)).toBeVisible();
+  await page.getByRole('button',{name:/A1 Morning in town/}).click();
+  await expect(page.locator('.conversation-source-note')).toContainText('bakery-buy');
+  const before=await page.locator('.conversation-prompt').textContent();
+  await page.getByRole('button',{name:'Pause & home'}).click();
+  await expect(page.getByRole('button',{name:'Resume active'})).toBeVisible();
+  await page.reload();
+  // The native route automatically renders saved active dialogue on reload;
+  // a Resume button exists only on the paused home view.
+  await expect(page.locator('.conversation-prompt')).toHaveText(before??'');
+  const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
+  expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
+});

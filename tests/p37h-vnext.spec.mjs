@@ -91,6 +91,7 @@ test('Function map and adaptive set survive a reload without claiming proficienc
   await page.goto('/#conversation');
   await expect(page.getByRole('heading',{name:'Communicative practice'})).toBeVisible();
   await expect(page.getByText(/23 functions with functional evidence/)).toBeVisible();
+   await expect(page.getByText(/Original P35 P20 functions · 25 source definitions/)).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Conversation practice level'})).toHaveValue('A1');
   await page.getByRole('button',{name:'Start adaptive set'}).click();
   await expect(page.getByText('Adaptive task 1 of 3',{exact:false})).toBeVisible();
@@ -925,4 +926,42 @@ test('P37I-D6-B repairs resume, demand later independent note-specific evidence,
   for(const secret of ['rawAnswer','recognizedText','transcript','sourceText'])expect(serialized).not.toContain(secret);
   await page.reload();
   await expect(panel).toContainText('1/1 independently observed successful retests');
+});
+
+
+test('B6 original P17/P20 source identities remain explanatory, never turn into native grade',async({page})=>{
+  await page.goto('/#conversation');
+  const inventory=page.locator('.conversation-source-parity');
+  await expect(inventory.getByText(/Original P35 P20 functions · 25 source definitions/)).toBeVisible();
+  await inventory.locator('summary').click();
+  await expect(inventory.getByText('Source sequence · not independently assessed')).toBeVisible();
+  await expect(inventory.getByText(/14 \/ 19 original P17 scene identities mapped/)).toBeVisible();
+  const before=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const db=q.result,tx=db.transaction(['srs','activity'],'readonly');
+      const a=tx.objectStore('srs').count(),e=tx.objectStore('activity').count();
+      tx.oncomplete=()=>{db.close();resolve([a.result,e.result]);};tx.onerror=()=>reject(tx.error);};
+  }));
+  await page.getByRole('button',{name:/A1 At the bakery/}).click();
+  await expect(page.locator('.conversation-source-note')).toContainText('bakery-buy');
+  const goal=page.locator('.conversation-original-goal');
+  await goal.locator('summary').click();
+  await expect(goal).toContainText('Ask for an item, give a quantity, and close the purchase.');
+  await page.getByRole('button',{name:'Ask to repeat'}).click();
+  await expect(page.getByText(/Partner repeats/)).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.conversation-source-note')).toContainText('bakery-buy');
+  await expect(page.getByText(/Partner repeats/)).toBeVisible();
+  const after=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const db=q.result,tx=db.transaction(['srs','activity','meta'],'readonly');
+      const a=tx.objectStore('srs').count(),e=tx.objectStore('activity').count(),
+        c=tx.objectStore('meta').get('native-conversation-v1');
+      tx.oncomplete=()=>{db.close();resolve({counts:[a.result,e.result],conversation:c.result});};
+      tx.onerror=()=>reject(tx.error);};
+  }));
+  expect(after.counts).toEqual(before);
+  expect(after.conversation.active.scenarioId).toBe('bakery');
+  expect(after.conversation.functionEvents.at(-1).credit).toBe(0);
+  expect(JSON.stringify(after.conversation)).not.toContain('Bonjour madame');
 });

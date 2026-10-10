@@ -65,3 +65,15 @@
 /* P37I-B5: readable alternative partner wording without expanding the initial CSS. */
 .conversation-assistance:not(:empty){display:grid;gap:.5rem;padding:.75rem .9rem;border-left:2px solid var(--accent);background:var(--surface)}
 .conversation-assistance span{display:block;line-height:1.5}
+
+/* B6 source evidence: plainly distinguish inherited scenario identity from
+   native-scored practice; keyboard and 200% mobile zoom remain usable. */
+.conversation-source-parity,.conversation-original-goal{margin:.75rem 0;border-top:1px solid var(--line);padding:.75rem 0}
+.conversation-source-parity summary,.conversation-original-goal summary{cursor:pointer;font-weight:700;line-height:1.5}
+.conversation-source-function{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.25rem .9rem;margin:.25rem 0;padding:.35rem 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.conversation-source-function strong,.conversation-source-function span{font-size:.78rem}
+.conversation-source-function span{color:var(--muted)}
+.conversation-source-note{font-size:.77rem;color:var(--muted);overflow-wrap:anywhere}
+.conversation-evidence{font-size:.86rem;font-weight:600}
+.conversation-original-goal p{line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:550px){.conversation-source-function{display:grid}.conversation-original-goal{padding:.65rem .35rem}}
