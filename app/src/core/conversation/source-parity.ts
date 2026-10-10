@@ -48,6 +48,26 @@ export const P35_P20_FUNCTIONS=[
  {id:'narrate',label:'Narrate past events',group:'Narrative'},
  {id:'sequence',label:'Sequence events',group:'Narrative'}
 ] as const;
+export const P35_P17_GOALS:Readonly<Record<string,{level:'A1'|'A2'|'B1';goal:string}>>={
+ 'cafe-order':{level:'A1',goal:'Order a drink, specify a preference, and close politely.'},
+ 'bakery-buy':{level:'A1',goal:'Ask for an item, give a quantity, and close the purchase.'},
+ 'ask-directions':{level:'A1',goal:'Ask where a place is, request one clarification, and confirm understanding.'},
+ 'meet-classmate':{level:'A1',goal:'Introduce yourself with fictional details, exchange one fact, and close naturally.'},
+ 'opening-hours':{level:'A1',goal:'Ask when a place opens, confirm the information, and close politely.'},
+ 'train-ticket':{level:'A2',goal:'Request a ticket, specify trip details, ask the price, and confirm.'},
+ 'hotel-problem':{level:'A2',goal:'Explain a room problem, clarify it, request a solution, and accept or reject an option.'},
+ 'restaurant-fix':{level:'A2',goal:'Point out a mistake, clarify the intended order, request a correction, and close politely.'},
+ 'weekend-plan':{level:'A2',goal:'Suggest an activity, negotiate time, disagree or offer an alternative, and confirm the plan.'},
+ 'return-item':{level:'A2',goal:'Explain a return, give a reason, request refund or exchange, and confirm the solution.'},
+ 'travel-delay':{level:'B1',goal:'Explain the delay problem, ask about options, compare alternatives, choose one, and justify your choice.'},
+ 'apartment-repair':{level:'B1',goal:'Describe a household problem, explain urgency, negotiate an appointment, clarify access, and confirm.'},
+ 'recommend-disagree':{level:'B1',goal:'Make a recommendation, respond to disagreement, propose an alternative, justify it, and reach agreement.'},
+ 'past-event':{level:'B1',goal:'Narrate a past problem in sequence, give relevant detail, explain the consequence, request action, and confirm.'}
+};
+export function originalScenarioGoal(nativeId:string):{id:string;level:'A1'|'A2'|'B1';goal:string}|null{
+ const id=legacySceneId(nativeId);
+ return id&&P35_P17_GOALS[id]?{id,...P35_P17_GOALS[id]}:null;
+}
 export const P35_LATER_B2_FUNCTIONS=[
  'evaluate','qualify','hypothesize','persuade','mediate','synthesize'
 ] as const;
