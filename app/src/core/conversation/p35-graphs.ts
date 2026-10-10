@@ -20,7 +20,7 @@ export interface P35Graph{
  setting:string;goal:string;functions:string[];targets:string[];
  requiredGoals:string[];start:string;variantCount:number;
  slots?:Record<string,Record<string,string[]>|undefined>;
- nodes:Record<string,P35Node>;
+ nodes:Record<string,P35Node|undefined>;
 }
 function v580Rule(need:string[][],next:string,gain:string|string[],func:string,sample:string,extra:Record<string,unknown>={}):P35Rule{
  return {need,next,gain:Array.isArray(gain)?gain:gain?[gain]:[],func,sample,...extra};
