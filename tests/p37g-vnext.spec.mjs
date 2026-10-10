@@ -156,6 +156,9 @@ test('P37I-D6-B practice-only runner is keyboard reachable and mobile-safe',asyn
       tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};};
   }));
   await panel.getByRole('button',{name:'I completed guided practice — no grade'}).click();
+  // Wait for the async learner-state IDB transaction to commit before reload.
+  // A plain click is not a durability barrier on Android emulation.
+  await expect(panel.locator('.p26-run-card')).toContainText('rebuild');
   await page.reload();
   await expect(panel.locator('.p26-run-card')).toContainText('rebuild');
   const after=await page.evaluate(async()=>new Promise(resolve=>{
