@@ -61,7 +61,7 @@ function sourceCredit(support:number,retries:number,manual:boolean,repair:boolea
 export function sourcePrompt(s:SourceActive):string{
  const graph=getP35SourceScenario(s.scenarioId),node=graph?.nodes[s.nodeId];
  if(!node)return '';
- const text=node.npcVariants?.[s.variant%node.npcVariants.length]??node.npc;
+ const text=node.npcVariants?.[s.variant%node.npcVariants.length]??node.npc??'';
  return text.replace(/\{([a-zA-Z0-9_-]+)\}/g,(_,key:string)=>s.slots[key]??key);
 }
 export type SourceMatch={status:'accepted'|'repair'|'uncertain';rule?:P35Rule;slots:Record<string,string>;confidence:number;next?:string};
