@@ -46,7 +46,7 @@ for(let step=0;step<3;step++){
   assert.equal(state.mission?.step,1);
  }
  for(let n=0;n<scene!.turns.length;n++){
-  if(step===2&&n===0){
+  if((step===1||step===2)&&n===0){
    const before=state.functionEvents.length;
    state=requestConversationRepeat(state,now++);
    assert.equal(state.active?.cursor,0);
@@ -62,10 +62,12 @@ for(let step=0;step<3;step++){
 }
 assert.equal(state.mission,null);
 assert.equal(state.missionHistory[0].tasks[2].scenarioId,'past-problem');
+assert.equal(state.missionHistory[0].independentTurns,7,'two repaired turns out of nine are not independent');
 assert.equal(state.missionHistory[0].independencePass,false,
- 'source P19 calibrated support prevents independence label after repeat');
+ 'two independently repaired turns lower independence below original P19 80 percent threshold');
 assert.equal(state.missionHistory[0].fullyUnsupported,false);
 assert.equal(state.missionHistory[0].manualTurns,0);
+assert.equal(state.missionHistory[0].tasks.filter(t=>t.repairAttempts>0).length,2);
 assert.equal(JSON.stringify(state).includes('Bonjour madame'),false,'no free-text history');
 assert.equal(JSON.stringify(state).includes('recognizedText'),false,'no speech transcripts');
 console.log(JSON.stringify({schema:'thiepn-french-b6-source-parity',ok:true,
