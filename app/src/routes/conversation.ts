@@ -9,7 +9,7 @@ import {
 } from '../core/conversation/engine';
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
 import {partnerWording} from '../core/conversation/variants';
-import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
+import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
   allowedConversationLevel,type ConversationLevel
@@ -279,6 +279,15 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     exchange.append(item('p',scene.partner,'conversation-speaker'),item('blockquote',partnerWording(scene.id,active.cursor,active.variant??0),'conversation-prompt'));
     exchange.append(item('p',originalScenario?'P35 source '+originalScenario+' · newly authored vNext wording, not original score parity':'Native-only scenario; no source-equivalent P35 grading','conversation-source-note'));
     const goal=item('p',turn.goal,'conversation-goal');
+    const sourceGoal=originalScenarioGoal(scene.id);
+    const sourceDetail=item('details','','conversation-original-goal');
+    if(sourceGoal){
+      sourceDetail.append(item('summary','Original P35 P17 scenario objective · '+sourceGoal.level),
+        item('p',sourceGoal.goal),
+        item('p',sourceGoal.level!==scene.level?
+          'P35 source level is '+sourceGoal.level+'; the current native scenario is labelled '+scene.level+'. The original assessment is not reproduced.':
+          'This original goal can contain steps not measured by the vNext three-turn checker. No equivalence credit is awarded.','muted-copy'));
+    }
     const form=item('form','','conversation-compose');
     const field=item('textarea','','conversation-input');
     field.rows=3;field.placeholder='Répondez en français…';field.setAttribute('aria-label','Your French response');
@@ -315,7 +324,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       finally{busy=false;}
     };
     commands.append(pause,quit);
-    stage.append(context,track,exchange,goal,form,assistance,feedback,commands);
+    stage.append(context,track,exchange,goal);
+    if(sourceGoal)stage.append(sourceDetail);
+    stage.append(form,assistance,feedback,commands);
     status.textContent='Text practice · '+(active.support?'support used':'try without hints')+' · '+(active.attempts?'retries: '+active.attempts:'first attempt');
     const showSupport=async(level:1|2)=>{
       if(busy)return;
