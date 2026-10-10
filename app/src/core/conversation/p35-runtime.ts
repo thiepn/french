@@ -47,7 +47,7 @@ function hasPattern(text:string,word:string):boolean{
 function slotsFor(graph:P35Graph,raw:string,base:Record<string,string>):Record<string,string>{
  const text=foldSource(raw),next={...base};
  for(const [name,values] of Object.entries(graph.slots??{})){
-  for(const [id,forms] of Object.entries(values)){
+  for(const [id,forms] of Object.entries(values??{})){
    if(forms.some(form=>hasPattern(text,form))){next[name]=id;break;}
   }
  }
@@ -223,7 +223,7 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
  }
  const evidence:SourceEvidence[]=[];
  for(const value of Array.isArray(input.evidence)?input.evidence.slice(-1000):[]){
-  const x=obj(value),graph=typeof x.scenarioId==='string'&&getP35SourceScenario(x.scenarioId);
+  const x=obj(value),graph=typeof x.scenarioId==='string'?getP35SourceScenario(x.scenarioId):undefined;
   const node=graph?.nodes[String(x.nodeId)];
   if(!graph||!node||!originalFns.has(String(x.functionId))||
    !(x.repair===true&&x.functionId==='clarify'||(node.rules??[]).some(r=>r.func===x.functionId))||
