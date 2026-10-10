@@ -91,6 +91,7 @@ test('Function map and adaptive set survive a reload without claiming proficienc
   await page.goto('/#conversation');
   await expect(page.getByRole('heading',{name:'Communicative practice'})).toBeVisible();
   await expect(page.getByText(/23 functions with functional evidence/)).toBeVisible();
+   await expect(page.getByText(/Original P35 P20 functions · 25 source definitions/)).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Conversation practice level'})).toHaveValue('A1');
   await page.getByRole('button',{name:'Start adaptive set'}).click();
   await expect(page.getByText('Adaptive task 1 of 3',{exact:false})).toBeVisible();
