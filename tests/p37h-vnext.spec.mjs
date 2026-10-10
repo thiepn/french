@@ -1017,7 +1017,7 @@ test('B7 source graph clarifications never mint original function mastery or CEF
   await page.goto('/#conversation');
   await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
   await page.getByRole('button',{name:'Ask for clarification'}).click();
-  await expect(page.getByText(/reformule/)).toBeVisible();
+  await expect(page.getByText(/Dites-moi simplement ce que vous voulez boire/)).toBeVisible();
   await page.reload();
   await expect(page.getByText(/original P35 deterministic source/i)).toBeVisible();
   const events=await page.evaluate(async()=>new Promise((resolve,reject)=>{
