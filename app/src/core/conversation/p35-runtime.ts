@@ -122,7 +122,10 @@ export function startSourceMission(state:SourceGraphState,id:string,now:number):
  const mission=missionById(id);
  if(!mission)throw Error('UNKNOWN_SOURCE_MISSION');
  if(state.active||state.mission)throw Error('SOURCE_ALREADY_ACTIVE');
- const graph=getP35SourceScenario(mission.scenarios[0]);
+ const graphs=mission.scenarios.map(id=>getP35SourceScenario(id));
+ if(graphs.some(g=>!g||g.level==='B2'||['A1','A2','B1'].indexOf(g.level)>
+ ['A1','A2','B1'].indexOf(state.maxLevel)))throw Error('SOURCE_MISSION_LEVEL_LOCKED');
+ const graph=graphs[0];
  if(!graph)throw Error('UNKNOWN_SOURCE_GRAPH');
  return{...state,mission:{id,index:0,startedAt:now,completed:[]},
   active:newActive(state,graph,now)};
@@ -141,7 +144,11 @@ export function respondSourceGraph(state:SourceGraphState,response:string,now:nu
  if(matched.status==='repair'){
   const updated={...active,support:Math.max(1,active.support) as 1|2,
    attempts:Math.min(100,active.attempts+1),repairs:active.repairs+1,updatedAt:now};
-  return{state:{...state,active:updated},outcome:'repair',
+  const repairEvidence:SourceEvidence={id:active.runId+':repair:'+active.visits+':'+updated.repairs,
+   scenarioId:graph.id,nodeId:active.nodeId,functionId:'clarify',variant:active.variant,at:now,
+   accepted:false,repair:true,manual:false,support:updated.support,retries:updated.attempts,
+   independent:false,confidence:0,credit:0,practiceOnly:true};
+  return{state:{...state,active:updated,evidence:[...state.evidence,repairEvidence].slice(-1000)},outcome:'repair',
    message:graph.nodes[active.nodeId].clarify??'Bien sûr, je reformule la question.'};
  }
  if(matched.status==='uncertain'&&!manual){
@@ -171,7 +178,8 @@ export function respondSourceGraph(state:SourceGraphState,response:string,now:nu
   independent:active.independent+(independent?1:0),
   assisted:active.assisted+(!independent?1:0),
   manual:active.manual+(manual?1:0),creditSum:active.creditSum+credit,
-  goals:[...new Set([...active.goals,...rule.gain])].slice(0,30),
+  goals:[...new Set([...active.goals,...rule.gain,
+   ...(rule.skipIfSlot&&matched.slots[rule.skipIfSlot]&&rule.skipNext?[rule.skipIfSlot]:[])])].slice(0,30),
   slots:matched.slots,support:0,attempts:0,updatedAt:now};
  const newEvidence=evidence.slice(-1000);
  if(!done)return{state:{...state,active:updated,evidence:newEvidence},outcome:'accepted',
@@ -217,19 +225,20 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
   const x=obj(value),graph=typeof x.scenarioId==='string'&&getP35SourceScenario(x.scenarioId);
   const node=graph?.nodes[String(x.nodeId)];
   if(!graph||!node||!originalFns.has(String(x.functionId))||
-   !(node.rules??[]).some(r=>r.func===x.functionId)||
+   !(x.repair===true&&x.functionId==='clarify'||(node.rules??[]).some(r=>r.func===x.functionId))||
    typeof x.id!=='string'||!Number.isFinite(x.at)||x.practiceOnly!==true||
-   x.repair!==false||typeof x.manual!=='boolean'||typeof x.accepted!=='boolean'||
+   typeof x.repair!=='boolean'||typeof x.manual!=='boolean'||typeof x.accepted!=='boolean'||
    x.accepted===x.manual||!Number.isInteger(x.support)||Number(x.support)<0||Number(x.support)>2||
    !Number.isInteger(x.retries)||Number(x.retries)<0||Number(x.retries)>100||
    (x.independent!==(x.accepted&&x.support===0&&x.retries===0)))continue;
   const confidence=Number(x.confidence);
   if(!Number.isFinite(confidence)||confidence<0||confidence>1)continue;
-  const credit=sourceCredit(Number(x.support),Number(x.retries),x.manual,false,confidence);
+  if(x.repair&&(x.accepted||x.manual||x.independent||confidence!==0||x.credit!==0))continue;
+  const credit=sourceCredit(Number(x.support),Number(x.retries),x.manual,x.repair,confidence);
   if(!Number.isFinite(x.credit)||Math.abs(credit-Number(x.credit))>1e-7)continue;
   evidence.push({id:x.id.slice(0,140),scenarioId:graph.id,nodeId:String(x.nodeId),
    functionId:String(x.functionId),variant:safeInt(x.variant,2),at:Number(x.at),accepted:x.accepted,
-   manual:x.manual,repair:false,support:Number(x.support),retries:Number(x.retries),
+   manual:x.manual,repair:x.repair,support:Number(x.support),retries:Number(x.retries),
    independent:x.independent,confidence,credit,practiceOnly:true});
  }
  let active:SourceActive|null=null;
@@ -255,7 +264,8 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
    Array.isArray(m.completed)&&m.completed.length===safeInt(m.index,2)&&
    m.completed.every((r:unknown,i:number)=>obj(r).scenarioId===definition.scenarios[i])){
   mission={id:definition.id,index:safeInt(m.index,2),startedAt:Number(m.startedAt)||active.startedAt,
-   completed:history.filter(r=>m.completed.some((v:unknown)=>obj(v).id===r.id)).slice(-2)};
+   completed:m.completed.map((v:unknown)=>history.find(r=>r.id===obj(v).id))
+     .filter((v:SourceRun|undefined):v is SourceRun=>Boolean(v)).slice(0,2)};
  }
  return{schema:SOURCE_GRAPH_SCHEMA,active,mission,history,evidence,
   maxLevel:validLevel(input.maxLevel)?input.maxLevel:'A1'};
