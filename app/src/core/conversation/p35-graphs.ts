@@ -19,7 +19,7 @@ export interface P35Graph{
  id:string;title:string;level:'A1'|'A2'|'B1'|'B2';duration:string;
  setting:string;goal:string;functions:string[];targets:string[];
  requiredGoals:string[];start:string;variantCount:number;
- slots?:Record<string,Record<string,string[]>>;
+ slots?:Record<string,Record<string,string[]>|undefined>;
  nodes:Record<string,P35Node>;
 }
 function v580Rule(need:string[][],next:string,gain:string|string[],func:string,sample:string,extra:Record<string,unknown>={}):P35Rule{
