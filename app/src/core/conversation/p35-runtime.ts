@@ -179,7 +179,8 @@ export function respondSourceGraph(state:SourceGraphState,response:string,now:nu
   assisted:active.assisted+(!independent?1:0),
   manual:active.manual+(manual?1:0),creditSum:active.creditSum+credit,
   goals:[...new Set([...active.goals,...rule.gain,
-   ...(rule.skipIfSlot&&matched.slots[rule.skipIfSlot]&&rule.skipNext?[rule.skipIfSlot]:[])])].slice(0,30),
+   ...(rule.skipIfSlot&&matched.slots[rule.skipIfSlot]&&rule.skipNext?
+     (graph.nodes[rule.next]?.rules?.[0]?.gain??[]):[])])].slice(0,30),
   slots:matched.slots,support:0,attempts:0,updatedAt:now};
  const newEvidence=evidence.slice(-1000);
  if(!done)return{state:{...state,active:updated,evidence:newEvidence},outcome:'accepted',
