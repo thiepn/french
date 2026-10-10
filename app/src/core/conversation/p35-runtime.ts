@@ -93,6 +93,7 @@ export function validateSourceGraphs():string[]{
   if(ids.has(graph.id))problems.push('duplicate '+graph.id);ids.add(graph.id);
   if(!graph.nodes[graph.start])problems.push('start missing '+graph.id);
   for(const [id,node] of Object.entries(graph.nodes)){
+   if(!node){problems.push('empty node '+graph.id+'/'+id);continue;}
    if(!node.end&&!(node.rules??[]).length)problems.push('no rules '+graph.id+'/'+id);
    for(const rule of node.rules??[]){
     if(!graph.nodes[rule.next])problems.push('missing edge '+graph.id+'/'+id+'/'+rule.next);
@@ -149,14 +150,14 @@ export function respondSourceGraph(state:SourceGraphState,response:string,now:nu
    accepted:false,repair:true,manual:false,support:updated.support,retries:updated.attempts,
    independent:false,confidence:0,credit:0,practiceOnly:true};
   return{state:{...state,active:updated,evidence:[...state.evidence,repairEvidence].slice(-1000)},outcome:'repair',
-   message:graph.nodes[active.nodeId].clarify??'Bien sûr, je reformule la question.'};
+   message:graph.nodes[active.nodeId]?.clarify??'Bien sûr, je reformule la question.'};
  }
  if(matched.status==='uncertain'&&!manual){
   const updated={...active,attempts:Math.min(100,active.attempts+1),updatedAt:now};
   return{state:{...state,active:updated},outcome:'uncertain',
    message:'The original source rules did not confidently match. Try again, ask for help, or continue without credit.'};
  }
- const rule=matched.rule??graph.nodes[active.nodeId].rules?.[0];
+ const rule=matched.rule??graph.nodes[active.nodeId]?.rules?.[0];
  if(!rule)throw Error('SOURCE_NO_FALLBACK_RULE');
  const next=matched.next??(rule.skipIfSlot&&matched.slots[rule.skipIfSlot]&&rule.skipNext?rule.skipNext:rule.next);
  if(!graph.nodes[next])throw Error('INVALID_SOURCE_EDGE');
@@ -245,7 +246,7 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
  let active:SourceActive|null=null;
  const a=obj(input.active),g=typeof a.scenarioId==='string'&&getP35SourceScenario(a.scenarioId);
  if(g&&g.level!=='B2'&&typeof a.runId==='string'&&typeof a.nodeId==='string'&&
-   g.nodes[a.nodeId]&&!g.nodes[a.nodeId].end&&Number.isFinite(a.startedAt)){
+   g.nodes[a.nodeId]&&!g.nodes[a.nodeId]?.end&&Number.isFinite(a.startedAt)){
   const slots:Record<string,string>={};
   for(const [k,v] of Object.entries(obj(a.slots)).slice(0,20))
    if(typeof v==='string'&&g.slots?.[k]?.[v])slots[k]=v;
