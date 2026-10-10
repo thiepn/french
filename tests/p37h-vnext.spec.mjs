@@ -855,3 +855,74 @@ test('P37I-D6 P26 diagnoses native wrong construction evidence without changing 
   expect(after).toBe(seeded);
   expect(await panel.getByRole('button',{name:/Open write/}).count()).toBeGreaterThan(0);
 });
+
+
+test('P37I-D6-B repairs resume, demand later independent note-specific evidence, and never mutate FSRS',async({page})=>{
+  await page.goto('/#progress');
+  await expect(page.locator('.p26-diagnostics')).toBeVisible();
+  const before=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const req=indexedDB.open('thiepn-french-vnext');req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{
+      const db=req.result,tx=db.transaction(['activity','srs'],'readwrite');
+      const s=tx.objectStore('srs').count();
+      const row={schema:'thiepn-french-review-event-v1',eventId:'d6b:wrong',
+        noteId:'d6b-grammar',id:'d6b-grammar::d31:0:production',skill:'production',
+        practice:'written-bridge',practiceOnly:true,t:Date.now()-60_000,
+        correct:false,typed:true,typedQuality:'near',rating:'again',
+        errorCategory:'connector',supportLevel:0,xp:0};
+      tx.objectStore('activity').put(row,row.eventId);
+      tx.oncomplete=()=>{db.close();resolve(s.result);};tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  await page.reload();
+  const panel=page.locator('.p26-diagnostics');
+  await expect(panel).toContainText('d6b-grammar');
+  await panel.getByRole('button',{name:'Start targeted repair (up to 3 cases)'}).click();
+  await expect(panel.locator('.p26-run-card')).toContainText('scaffold');
+  await panel.getByRole('button',{name:'I completed guided practice — no grade'}).click();
+  await expect(panel.locator('.p26-run-card')).toContainText('rebuild');
+  await page.reload();
+  await expect(panel.locator('.p26-run-card')).toContainText('rebuild');
+  await panel.getByRole('button',{name:'I completed guided practice — no grade'}).click();
+  await expect(panel.locator('.p26-run-card')).toContainText('independent retest');
+  await panel.getByRole('button',{name:'Begin independent retest'}).click();
+  await panel.getByRole('button',{name:'Check new native evidence'}).click();
+  await expect(panel.locator('[role=status]')).toContainText('No new independently verified');
+  // Synthetic native-event fixture: this is not authenticated human acceptance.
+  const seeded=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const req=indexedDB.open('thiepn-french-vnext');req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{
+      const db=req.result,tx=db.transaction('activity','readwrite');
+      const row={schema:'thiepn-french-review-event-v1',eventId:'d6b:clean',
+        noteId:'d6b-grammar',id:'d6b-grammar::d31:0:production',skill:'production',
+        practice:'written-bridge',practiceOnly:true,t:Date.now()-1,
+        correct:true,typed:true,typedQuality:'exact',sentenceDiagnosis:'exact',
+        rating:'good',supportLevel:0,xp:0};
+      tx.objectStore('activity').put(row,row.eventId);
+      tx.oncomplete=()=>{db.close();resolve(true);};tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  expect(seeded).toBe(true);
+  await panel.getByRole('button',{name:'Check new native evidence'}).click();
+  await expect(panel).toContainText('1/1 independently observed successful retests');
+  const proof=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const req=indexedDB.open('thiepn-french-vnext');req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{
+      const db=req.result,tx=db.transaction(['learner','activity','srs'],'readonly');
+      const learner=tx.objectStore('learner').get('state-v1');
+      const activity=tx.objectStore('activity').count();
+      const srs=tx.objectStore('srs').count();
+      tx.oncomplete=()=>{db.close();resolve({run:learner.result.featureState.v5170Remediation,
+        activity:activity.result,srs:srs.result});};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  expect(proof.run.active).toBeNull();
+  expect(proof.run.history.at(-1)).toMatchObject({retests:1,passed:1,status:'completed'});
+  expect(proof.srs).toBe(before);
+  expect(proof.activity).toBeGreaterThanOrEqual(2);
+  const serialized=JSON.stringify(proof.run);
+  for(const secret of ['rawAnswer','recognizedText','transcript','sourceText'])expect(serialized).not.toContain(secret);
+  await page.reload();
+  await expect(panel).toContainText('1/1 independently observed successful retests');
+});
