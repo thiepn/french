@@ -4,7 +4,7 @@ import {getConversationScenario} from '../app/src/core/conversation/scenarios.ts
 import {beginMission,endConversation,initialConversationState,safeConversationState,startConversation,submitConversationResponse} from '../app/src/core/conversation/engine.ts';
 assert.equal(MISSION_CHAINS.length,5,'five complete real-world chains');
 assert.deepEqual(validateMissions(),[],'every scene must exist without mission cycles');
-assert.equal(new Set(MISSION_CHAINS.flatMap(m=>m.scenarioIds)).size,15,'distinct mission task coverage');
+assert.equal(new Set(MISSION_CHAINS.flatMap(m=>m.scenarioIds)).size,14,'P35 source deliberately reuses past-event in two chains');
 let now=1_000;
 for(const mission of MISSION_CHAINS){
   let state=beginMission(initialConversationState(),mission.id,now++);
