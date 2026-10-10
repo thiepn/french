@@ -644,7 +644,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       textNode('small',item.failures+' failures · '+item.activeDays+' days · confidence '+
         item.confidence+'% · severity '+item.severity+'/100'));
     const preview=p26RepairPreview(item);
-    section.append(textNode('small',preview.map(task=>task.stage).join(' → ')+' · practice-only stages'));
+    section.append(textNode('small',preview.map(task=>task.stage).join(' → ')+' · practice-only proposed stages'));
     const route=document.createElement('button');route.type='button';
     route.className='secondary-action compact-action';
     route.textContent='Open '+item.route+' (normal native practice)';
