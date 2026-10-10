@@ -188,7 +188,8 @@ test('B6 source-linked missions and original functions remain readable by keyboa
   await page.getByRole('button',{name:'Pause & home'}).click();
   await expect(page.getByRole('button',{name:'Resume active'})).toBeVisible();
   await page.reload();
-  await page.getByRole('button',{name:'Resume active'}).click();
+  // The native route automatically renders saved active dialogue on reload;
+  // a Resume button exists only on the paused home view.
   await expect(page.locator('.conversation-prompt')).toHaveText(before??'');
   const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
   expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
