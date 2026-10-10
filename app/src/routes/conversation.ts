@@ -58,6 +58,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       await saveOriginal(next);
       sourceNotice=message;
       sourcePaused=false;
+      busy=false;
       render();
     }catch(error){status.textContent='Source practice was not saved. No new step has been credited. '+String(error);}
     finally{busy=false;}
@@ -529,7 +530,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const outcome=respondSourceGraph(originalSource,reply,Date.now(),manual);
         await saveOriginal(outcome.state);
         sourceNotice=outcome.message;
-        sourcePaused=false;render();
+        sourcePaused=false;busy=false;render();
       }catch(error){localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);}
       finally{busy=false;}
     };
