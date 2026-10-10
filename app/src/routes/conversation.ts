@@ -9,6 +9,7 @@ import {
 } from '../core/conversation/engine';
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
 import {partnerWording} from '../core/conversation/variants';
+import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
   allowedConversationLevel,type ConversationLevel
@@ -124,6 +125,28 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       map.append(section);
     }
     lesson.append(map);
+    const coverage=inspectP35ConversationCoverage();
+    const original=item('details','','conversation-source-parity');
+    original.append(item('summary','Original P35 P20 functions · '+coverage.originalP20Functions+' source definitions'));
+    original.append(item('p','Source identity is not a native mastery result: the existing 23 native function scores are separate. P35 also added six B2 functions later.','muted-copy'));
+    for(const group of ['Foundation','Interaction','Problem solving','Planning & opinion','Narrative']){
+      const section=item('section','','conversation-function-group');
+      section.append(item('h3',group));
+      for(const fn of P35_P20_FUNCTIONS.filter(fn=>fn.group===group)){
+        const row=item('p','','conversation-source-function');
+        row.append(item('strong',fn.label),item('span','Source '+fn.id+' · not independently assessed'));
+        section.append(row);
+      }
+      original.append(section);
+    }
+    original.append(item('p',coverage.mappedSourceScenes+' / '+coverage.sourceScenarioCount+
+      ' original P17 scene identities mapped. Original graph and scoring parity remain OPEN.','muted-copy'));
+    lesson.append(original);
+    const divergences=auditSourceLinkedMissions();
+    lesson.append(item('p',divergences.length?
+      'P35 mission source divergence: '+divergences.join('; '):
+      'Five native chains match their P35 P18 source scenario identities. This does not establish dialogue or grading equivalence.',
+      'muted-copy'));
     lesson.append(item('p','Pattern matching is limited. Function evidence is confidence-damped and cannot certify independent proficiency.','muted-copy'));
     stage.append(lesson);
     if(lastAdaptiveResult){
@@ -143,6 +166,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
           (lastMissionResult.independencePass?'Independence pass':'Completed with support')),
         item('p',lastMissionResult.independentTurns+' / '+lastMissionResult.totalTurns+' independent turns · '+
           lastMissionResult.manualTurns+' manually continued.'),
+        item('p','Scripted-turn credit: '+Math.round(lastMissionResult.averageEvidence*100)+
+          '% · maximum support '+lastMissionResult.maxSupport+' · '+
+          (lastMissionResult.fullyUnsupported?'Fully unsupported on these tasks':'Some support or retries recorded')+'.','conversation-evidence'),
+        item('p','P18 independence threshold: 3 completed tasks, ≥80% independent turns, no manual continuation, maximum support level 1, and average scripted credit ≥55%. This is not a CEFR level.','muted-copy'),
         item('p','These results describe three practised tasks, not a CEFR certificate.','muted-copy')
       );
       stage.append(finishedMission);
@@ -175,7 +202,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const choice=button('','conversation-choice conversation-mission-choice');
       const words=item('span','','conversation-choice-copy');
       words.append(item('strong',mission.title),
-        item('small','3 connected scenarios · '+mission.scenarioIds.map(id=>getConversationScenario(id)?.title??id).join(' → ')));
+        item('small','3 connected scenarios · '+mission.scenarioIds.map(id=>getConversationScenario(id)?.title??id).join(' → ')),
+        item('small','P35 source chain: '+(legacyMissionId(mission.id)??'unmapped')+' · vNext-authored dialogue'));
       choice.append(item('span',mission.level,'conversation-level'),words,item('span','→','conversation-arrow'));
       choice.disabled=Boolean(state.active||state.mission||state.adaptive)
         ||!allowedConversationLevel(mission.level,state.levelCeiling);
@@ -201,7 +229,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     for(const scene of [...ordered,...CONVERSATION_STARTERS.filter(row=>!ordered.some(s=>s.id===row.id))]){
       const control=button('','conversation-choice');
       const words=item('span','','conversation-choice-copy');
-      words.append(item('strong',scene.title),item('small',scene.setting+' · '+scene.turns.length+' turns'));
+      words.append(item('strong',scene.title),item('small',scene.setting+' · '+scene.turns.length+' turns'),
+        item('small',legacySceneId(scene.id)?'P35 source: '+legacySceneId(scene.id)+' · vNext dialogue':'Native-only practice; no original P17 graph match'));
       control.append(item('span',scene.level,'conversation-level'),words,item('span','→','conversation-arrow'));
       control.disabled=Boolean(state.active||state.mission||state.adaptive)
         ||!allowedConversationLevel(scene.level,state.levelCeiling);
@@ -225,6 +254,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const renderActive=(scene:ConversationScenario,preservedText='')=>{
     const active=state.active;if(!active||active.scenarioId!==scene.id){renderHome();return;}
     const turn=scene.turns[active.cursor];if(!turn){renderHome();return;}
+    const originalScenario=legacySceneId(scene.id);
     stage.replaceChildren();
     const context=item('div','','conversation-context');
     context.append(item('span',scene.level+' · '+scene.setting,'conversation-scene'),item('span','Turn '+(active.cursor+1)+' / '+scene.turns.length));
@@ -247,6 +277,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const bar=item('div','','conversation-track-fill');bar.style.width=(active.cursor/scene.turns.length*100)+'%';track.append(bar);
     const exchange=item('div','','conversation-exchange');
     exchange.append(item('p',scene.partner,'conversation-speaker'),item('blockquote',partnerWording(scene.id,active.cursor,active.variant??0),'conversation-prompt'));
+    exchange.append(item('p',originalScenario?'P35 source '+originalScenario+' · newly authored vNext wording, not original score parity':'Native-only scenario; no source-equivalent P35 grading','conversation-source-note'));
     const goal=item('p',turn.goal,'conversation-goal');
     const form=item('form','','conversation-compose');
     const field=item('textarea','','conversation-input');
