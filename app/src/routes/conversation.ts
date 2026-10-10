@@ -9,6 +9,11 @@ import {
 } from '../core/conversation/engine';
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
 import {partnerWording} from '../core/conversation/variants';
+import {getP35SourceScenario,P35_SOURCE_SCENARIOS} from '../core/conversation/p35-graphs';
+import {P35_P18_MISSIONS} from '../core/conversation/source-parity';
+import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,cancelSourceGraph,
+ sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
+import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
@@ -34,23 +39,43 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const stage=item('div','','conversation-stage');
   host.append(top,status,stage);main.replaceChildren(host);
   let state=await loadConversationState();
+  let originalSource=await loadSourceGraphState();
+  let sourcePaused=false,sourceNotice='';
   if(signal.aborted)return;
   let busy=false,lastSubmission:{key:string;at:number}|null=null;
   let lastResult:ConversationResult|null=null,lastMissionResult:MissionResult|null=null;
   let lastAdaptiveResult:AdaptiveResult|null=null;
+  const saveOriginal=async(next:SourceGraphState)=>{
+    await persistSourceGraphState(next);
+    originalSource=next;
+  };
+  const canStartOriginal=()=>!busy&&!state.active&&!state.mission&&!state.adaptive&&!originalSource.active;
+  const commitOriginal=async(work:()=>SourceGraphState,message:string)=>{
+    if(busy||signal.aborted)return;
+    busy=true;
+    try{
+      const next=work();
+      await saveOriginal(next);
+      sourceNotice=message;
+      sourcePaused=false;
+      busy=false;
+      render();
+    }catch(error){status.textContent='Source practice was not saved. No new step has been credited. '+String(error);}
+    finally{busy=false;}
+  };
   const save=async(next:ConversationState)=>{
     await persistConversationState(next);
     state=next;
   };
   const select=async(id:string)=>{
-    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
+    if(busy||state.active||state.mission||state.adaptive||originalSource.active||signal.aborted)return;
     busy=true;
     try{await save(startConversation(state,id));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();}
     catch(error){status.textContent='Could not start this conversation. Your saved data was not changed.';console.error(error);}
     finally{busy=false;}
   };
   const selectMission=async(id:string)=>{
-    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
+    if(busy||state.active||state.mission||state.adaptive||originalSource.active||signal.aborted)return;
     busy=true;
     try{
       await save(beginMission(state,id));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();
@@ -59,7 +84,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }finally{busy=false;}
   };
   const selectAdaptive=async()=>{
-    if(busy||state.active||state.mission||state.adaptive||signal.aborted)return;
+    if(busy||state.active||state.mission||state.adaptive||originalSource.active||signal.aborted)return;
     busy=true;
     try{
       await save(beginAdaptiveSet(state));lastResult=null;lastMissionResult=null;lastAdaptiveResult=null;render();
@@ -68,7 +93,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }finally{busy=false;}
   };
   const updateCeiling=async(level:ConversationLevel)=>{
-    if(busy||state.active||state.mission||state.adaptive)return;
+    if(busy||state.active||state.mission||state.adaptive||originalSource.active)return;
     busy=true;
     try{await save(changeConversationCeiling(state,level));renderHome();}
     catch(error){status.textContent='Could not save the practice level.';console.error(error);}
@@ -78,6 +103,59 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     stage.replaceChildren();
     const intro=item('p','Practise a short, structured exchange. The checker looks for required language patterns, not full conversational meaning. Your typed responses are not saved.','conversation-intro');
     stage.append(intro);
+    const originalDeck=item('section','','source-graph-deck');
+    originalDeck.append(item('h2','Original P35 dialogue graphs'),
+      item('p','Real preserved P35 partner nodes and deterministic branch rules. The independent source bridge records practice-only metadata, never typed replies or SRS/CEFR scores. Similarity and open-ended meaning are not certified.','muted-copy'));
+    const sourceSelection=item('label','','conversation-level-picker');
+    sourceSelection.append(item('span','Original graph practice ceiling'));
+    const sourceCeiling=item('select');sourceCeiling.setAttribute('aria-label','Original graph practice level');
+    for(const level of ['A1','A2','B1'] as const){
+      const option=item('option',level);option.value=level;sourceCeiling.append(option);
+    }
+    sourceCeiling.value=originalSource.maxLevel;
+    sourceCeiling.disabled=!canStartOriginal();
+    sourceCeiling.onchange=()=>void commitOriginal(()=>({...originalSource,maxLevel:sourceCeiling.value as 'A1'|'A2'|'B1'}),'Original practice level saved.');
+    sourceSelection.append(sourceCeiling);originalDeck.append(sourceSelection);
+    if(originalSource.active){
+      const current=getP35SourceScenario(originalSource.active.scenarioId);
+      originalDeck.append(item('p','Saved original source task · '+(current?.title??originalSource.active.scenarioId)+
+        (originalSource.mission?' · mission task '+(originalSource.mission.index+1)+'/3':'')+
+        ' · position '+originalSource.active.nodeId,'source-running'));
+      const resume=button('Resume original dialogue','primary-action compact-action');
+      resume.onclick=()=>{sourcePaused=false;render();};originalDeck.append(resume);
+    }
+    if(originalSource.history.length){
+      const recent=originalSource.history[0];
+      const graph=getP35SourceScenario(recent.scenarioId);
+      originalDeck.append(item('p','Recent original graph: '+(graph?.title??recent.scenarioId)+
+        ' · '+recent.independent+'/'+recent.turns+' unsupported matches · '+
+        (recent.complete?'source objectives covered':'source goals incomplete')+'. This is rehearsed practice only.','muted-copy'));
+    }
+    originalDeck.append(item('h3','Source P18 missions'));
+    const missionList=item('div','','source-graph-list');
+    for(const mission of P35_P18_MISSIONS){
+      const source=mission.scenarios.map(id=>getP35SourceScenario(id));
+      const locked=source.some(g=>!g||['A1','A2','B1'].indexOf(g.level)>['A1','A2','B1'].indexOf(originalSource.maxLevel));
+      const control=button(mission.title+' · 3 original source graphs','secondary-action compact-action');
+      control.disabled=!canStartOriginal()||locked;
+      control.onclick=()=>void commitOriginal(()=>startSourceMission(originalSource,mission.id,Date.now()),
+        'Source mission started; response text is not retained.');
+      missionList.append(control);
+    }
+    originalDeck.append(missionList,item('h3','Pinned original source scenarios'));
+    const sourceList=item('div','','source-graph-list');
+    for(const graph of P35_SOURCE_SCENARIOS){
+      const control=button(graph.level+' · '+graph.title+
+        (graph.level==='B2'?' · B2 source reference only':' · original graph'),'secondary-action compact-action');
+      control.disabled=!canStartOriginal()||graph.level==='B2'||
+        ['A1','A2','B1'].indexOf(graph.level)>['A1','A2','B1'].indexOf(originalSource.maxLevel);
+      control.onclick=()=>void commitOriginal(()=>startSourceGraph(originalSource,graph.id,Date.now()),
+        'Pinned original '+graph.id+' graph started.');
+      sourceList.append(control);
+    }
+    originalDeck.append(sourceList);
+    if(sourceNotice)originalDeck.append(item('p',sourceNotice,'conversation-evidence'));
+    stage.append(originalDeck);
     const functionSummary=functionProfiles(state.functionEvents);
     const known=functionSummary.filter(row=>row.state==='functional'||row.state==='secure').length;
     const lesson=item('section','','conversation-curriculum');
@@ -91,7 +169,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const option=item('option',level);option.value=level;picker.append(option);
     }
     picker.value=state.levelCeiling;
-    picker.disabled=Boolean(state.active||state.mission||state.adaptive);
+    picker.disabled=Boolean(state.active||state.mission||state.adaptive||originalSource.active);
     picker.addEventListener('change',()=>void updateCeiling(picker.value as ConversationLevel));
     levelRow.append(picker);lesson.append(levelRow);
     const picks=rankedNativeScenarios(state.functionEvents,state.history,state.levelCeiling);
@@ -100,7 +178,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       summary.append(item('strong','Recommended · '+top.title),
         item('small',top.reason+' · '+top.level));
       const go=button('Start recommendation','primary-action compact-action');
-      go.disabled=Boolean(state.active||state.mission||state.adaptive);
+      go.disabled=Boolean(state.active||state.mission||state.adaptive||originalSource.active);
       go.onclick=()=>void select(top.scenarioId);
       summary.append(go);lesson.append(summary);
     }
@@ -108,7 +186,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     adaptive.append(item('strong','Adaptive set · 3 tasks'),
       item('small','Three distinct practice situations chosen from recent function evidence. This is practice, not a proficiency test.'));
     const startAdaptive=button('Start adaptive set','secondary-action compact-action');
-    startAdaptive.disabled=Boolean(state.active||state.mission||state.adaptive);
+    startAdaptive.disabled=Boolean(state.active||state.mission||state.adaptive||originalSource.active);
     startAdaptive.onclick=()=>void selectAdaptive();
     adaptive.append(startAdaptive);lesson.append(adaptive);
     const map=item('details','','conversation-function-map');
@@ -205,7 +283,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         item('small','3 connected scenarios · '+mission.scenarioIds.map(id=>getConversationScenario(id)?.title??id).join(' → ')),
         item('small','P35 source chain: '+(legacyMissionId(mission.id)??'unmapped')+' · vNext-authored dialogue'));
       choice.append(item('span',mission.level,'conversation-level'),words,item('span','→','conversation-arrow'));
-      choice.disabled=Boolean(state.active||state.mission||state.adaptive)
+      choice.disabled=Boolean(state.active||state.mission||state.adaptive||originalSource.active)
         ||!allowedConversationLevel(mission.level,state.levelCeiling);
       choice.onclick=()=>void selectMission(mission.id);
       missions.append(choice);
@@ -232,7 +310,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       words.append(item('strong',scene.title),item('small',scene.setting+' · '+scene.turns.length+' turns'),
         item('small',legacySceneId(scene.id)?'P35 source: '+legacySceneId(scene.id)+' · vNext dialogue':'Native-only practice; no original P17 graph match'));
       control.append(item('span',scene.level,'conversation-level'),words,item('span','→','conversation-arrow'));
-      control.disabled=Boolean(state.active||state.mission||state.adaptive)
+      control.disabled=Boolean(state.active||state.mission||state.adaptive||originalSource.active)
         ||!allowedConversationLevel(scene.level,state.levelCeiling);
       control.onclick=()=>void select(scene.id);
       list.append(control);
@@ -384,7 +462,90 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     field.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();form.requestSubmit();}});
     field.focus({preventScroll:true});
   };
-  const render=()=>{const active=state.active,scene=active?getConversationScenario(active.scenarioId):null;
-    if(scene)renderActive(scene);else renderHome();};
+
+  const renderOriginalSource=()=>{
+    const active=originalSource.active;
+    if(!active){renderHome();return;}
+    const graph=getP35SourceScenario(active.scenarioId),node=graph?.nodes[active.nodeId];
+    if(!graph||!node||node.end){renderHome();return;}
+    stage.replaceChildren();
+    const banner=item('section','','source-graph-deck');
+    banner.append(item('p','Original P35 deterministic source · '+graph.id+' · '+graph.level,'eyebrow'),
+      item('h2',graph.title),
+      item('p',graph.goal,'conversation-goal'),
+      item('p','Pinned source graph node '+active.nodeId+' · wording variant '+(active.variant+1)+'/'+graph.variantCount+
+        ' · '+active.turns+' accepted steps · '+active.repairs+' clarification attempts. No automatic SRS, CEFR or true oral fluency award.','muted-copy'));
+    if(originalSource.mission){
+      const mission=P35_P18_MISSIONS.find(m=>m.id===originalSource.mission?.id);
+      banner.append(item('p','Source mission '+(mission?.title??originalSource.mission.id)+
+        ' · task '+(originalSource.mission.index+1)+'/3 · earlier tasks '+
+        originalSource.mission.completed.length,'conversation-mission-banner'));
+    }
+    const meter=item('div','','conversation-track');meter.setAttribute('role','progressbar');
+    meter.setAttribute('aria-label','Original source graph traversed steps');
+    meter.setAttribute('aria-valuemin','0');meter.setAttribute('aria-valuemax','45');
+    meter.setAttribute('aria-valuenow',String(active.visits));
+    const fill=item('div','','conversation-track-fill');fill.style.width=(active.visits/45*100)+'%';meter.append(fill);
+    const partner=item('div','','conversation-exchange');
+    partner.append(item('p','Original P35 dialogue partner','conversation-speaker'),
+      item('blockquote',sourcePrompt(active),'conversation-prompt'));
+    const goal=item('p',node.hint??'Reply using appropriate French.','conversation-goal');
+    const form=item('form','','conversation-compose');
+    const field=item('textarea','','conversation-input');field.rows=3;field.maxLength=650;
+    field.autocomplete='off';field.setAttribute('aria-label','Reply to original source graph in French');
+    field.placeholder='Répondez en français…';
+    const assistance=item('p','','conversation-assistance');
+    if(active.support>=1)assistance.append(item('span','Source hint · '+(node.hint??'Respond in French.')));
+    if(active.support>=2)assistance.append(item('span','Source model · '+(node.phrases?.[0]??'No source example available')));
+    const localStatus=item('p',sourceNotice,'conversation-feedback');
+    localStatus.setAttribute('role','status');localStatus.setAttribute('aria-live','polite');
+    const tools=item('div','','conversation-controls');
+    const send=button('Check source rule','primary-action compact-action');send.type='submit';
+    const hint=button('Show original hint');hint.onclick=()=>void commitOriginal(()=>
+      sourceSupport(originalSource,1,Date.now()),'Original hint requested. Independent turn credit is reduced.');
+    const example=button('Show source example');example.onclick=()=>void commitOriginal(()=>
+      sourceSupport(originalSource,2,Date.now()),'Source phrase revealed; independent credit withheld.');
+    const repeat=button('Ask for clarification');repeat.onclick=()=>void commitOriginal(()=>
+      respondSourceGraph(originalSource,'Pardon, pouvez-vous répéter ?',Date.now()).state,
+      node.clarify??'Bien sûr, je reformule la question.');
+    const manual=button('Continue without evidence');manual.onclick=()=>{
+      if(!confirm('Advance along the first pinned graph rule without scorer evidence? This turn will not count as independently matched.'))return;
+      void submit(true);
+    };
+    tools.append(send,repeat,hint,example,manual);
+    form.append(field,tools);
+    const actions=item('div','','conversation-bottom');
+    const pause=button('Pause original graph & home','conversation-link');
+    pause.onclick=()=>{sourcePaused=true;renderHome();};
+    const quit=button('End original graph (ungraded)','conversation-link conversation-danger');
+    quit.onclick=()=>{if(confirm('End this unfinished source graph? No completion will be credited.'))
+      void commitOriginal(()=>cancelSourceGraph(originalSource),'Unfinished original graph ended without mastery credit.');};
+    actions.append(pause,quit);
+    const submit=async(manual=false)=>{
+      if(busy||signal.aborted)return;
+      const reply=field.value.trim();
+      if(!reply){localStatus.textContent='Write a response before submitting.';return;}
+      busy=true;
+      try{
+        const outcome=respondSourceGraph(originalSource,reply,Date.now(),manual);
+        await saveOriginal(outcome.state);
+        sourceNotice=outcome.message;
+        sourcePaused=false;busy=false;render();
+      }catch(error){localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);}
+      finally{busy=false;}
+    };
+    form.onsubmit=event=>{event.preventDefault();void submit(false);};
+    field.addEventListener('keydown',event=>{
+      if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();form.requestSubmit();}
+    });
+    stage.append(banner,meter,partner,goal,form,assistance,localStatus,actions);
+    field.focus({preventScroll:true});
+  };
+
+  const render=()=>{
+    if(originalSource.active&&!sourcePaused){renderOriginalSource();return;}
+    const active=state.active,scene=active?getConversationScenario(active.scenarioId):null;
+    if(scene)renderActive(scene);else renderHome();
+  };
   render();
 }

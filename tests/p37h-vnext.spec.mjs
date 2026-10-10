@@ -965,3 +965,79 @@ test('B6 original P17/P20 source identities remain explanatory, never turn into 
   expect(after.conversation.functionEvents.at(-1).credit).toBe(0);
   expect(JSON.stringify(after.conversation)).not.toContain('Bonjour madame');
 });
+
+
+test('B7 real P35 source graph branches, resumes and keeps source evidence separate from SRS',async({page})=>{
+  await page.goto('/#conversation');
+  const before=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const d=q.result,t=d.transaction(['srs','activity'],'readonly');
+      const s=t.objectStore('srs').count(),a=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve([s.result,a.result]);};t.onerror=()=>reject(t.error);};
+  }));
+  await expect(page.getByRole('heading',{name:'Original P35 dialogue graphs'})).toBeVisible();
+  await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+  await expect(page.locator('.conversation-prompt')).toContainText('Bonjour');
+  await expect(page.getByText(/original P35 deterministic source/i)).toBeVisible();
+  const first=await page.locator('.conversation-prompt').textContent();
+  await page.getByRole('textbox',{name:'Reply to original source graph in French'})
+    .fill('Bonjour, je voudrais un grand café, s’il vous plaît.');
+  await page.getByRole('button',{name:'Check source rule'}).click();
+  await expect(page.getByText(/source graph node confirm/i)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/source graph node confirm/i)).toBeVisible();
+  await page.getByRole('button',{name:'Show original hint'}).click();
+  await expect(page.getByText(/Source hint/)).toBeVisible();
+  await page.getByRole('textbox',{name:'Reply to original source graph in French'})
+    .fill('Oui, c’est tout, merci.');
+  await page.getByRole('button',{name:'Check source rule'}).click();
+  await expect(page.getByText(/Recent original graph: Order at a café/)).toBeVisible();
+  const saved=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const d=q.result,t=d.transaction(['meta','srs','activity'],'readonly');
+      const m=t.objectStore('meta').get('p35-source-graph-v1'),
+        s=t.objectStore('srs').count(),a=t.objectStore('activity').count();
+      t.oncomplete=()=>{d.close();resolve({source:m.result,counts:[s.result,a.result]});};
+      t.onerror=()=>reject(t.error);};
+  }));
+  expect(saved.counts).toEqual(before);
+  expect(saved.source.active).toBeNull();
+  expect(saved.source.history[0].turns).toBe(2);
+  expect(saved.source.history[0].complete).toBe(true);
+  expect(saved.source.evidence.every(row=>row.practiceOnly)).toBe(true);
+  expect(saved.source.evidence.at(-1).independent).toBe(false);
+  const compact=JSON.stringify(saved.source);
+  for(const forbidden of ['un grand café','c’est tout, merci','recognizedText','rawAnswer','transcript'])
+    expect(compact).not.toContain(forbidden);
+  await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+  await expect(page.locator('.conversation-prompt')).not.toHaveText(first??'');
+});
+
+test('B7 source graph clarifications never mint original function mastery or CEFR promotion',async({page})=>{
+  await page.goto('/#conversation');
+  await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+  await page.getByRole('button',{name:'Ask for clarification'}).click();
+  await expect(page.getByText(/Dites-moi simplement ce que vous voulez boire/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/original P35 deterministic source/i)).toBeVisible();
+  const events=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const d=q.result,t=d.transaction('meta','readonly');
+      const m=t.objectStore('meta').get('p35-source-graph-v1');
+      m.onsuccess=()=>{d.close();resolve(m.result);};m.onerror=()=>reject(m.error);};}));
+  expect(events.active.repairs).toBe(1);
+  expect(events.evidence).toMatchObject([{functionId:'clarify',repair:true,credit:0,practiceOnly:true}]);
+  expect(events.active.nodeId).toBe('order');
+  await page.getByRole('button',{name:'Show source example'}).click();
+  await expect(page.getByText(/Source model/)).toBeVisible();
+  await page.getByRole('textbox',{name:'Reply to original source graph in French'})
+    .fill('Bonjour, je voudrais un café, s’il vous plaît.');
+  await page.getByRole('button',{name:'Check source rule'}).click();
+  const after=await page.evaluate(async()=>new Promise((resolve,reject)=>{
+    const q=indexedDB.open('thiepn-french-vnext');q.onerror=()=>reject(q.error);
+    q.onsuccess=()=>{const d=q.result,t=d.transaction('meta','readonly');
+      const m=t.objectStore('meta').get('p35-source-graph-v1');
+      m.onsuccess=()=>{d.close();resolve(m.result);};m.onerror=()=>reject(m.error);};}));
+  expect(after.evidence.at(-1).credit).toBe(0);
+  expect(after.evidence.at(-1).independent).toBe(false);
+});
