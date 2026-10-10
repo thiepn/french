@@ -12,7 +12,7 @@ export interface P35Rule{
  [key:string]:unknown;
 }
 export interface P35Node{
- npc:string;end?:boolean;npcVariants?:string[];hint?:string;
+ npc?:string;end?:boolean;npcVariants?:string[];hint?:string;
  phrases?:string[];clarify?:string;rules?:P35Rule[];
 }
 export interface P35Graph{
