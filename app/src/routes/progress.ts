@@ -19,6 +19,9 @@ import {planFrenchPractice} from '../core/learner/orchestrator';
 import {calibrateFrenchEvidence} from '../core/learner/evidence-calibration';
 import {evaluateLongitudinalEvidence} from '../core/learner/longitudinal';
 import {diagnoseP26,p26RepairPreview} from '../core/learner/p26-diagnosis';
+import {normalizeRepairState,startRepairRun,currentRepairTask,completeGuidedStep,armRepairRetest,checkRepairRetest,resolveRepairRetest,cancelRepairRun,repairSummary,P26_STATE_KEY,type RepairState} from '../core/learner/p26-runner';
+import {replaceCanonicalFeatureState} from '../core/learner/repository';
+import './progress-remediation.css';
 
 const DAY=86_400_000;
 type Skill='recognition'|'production'|'listening'|'spelling'|'article';
@@ -616,16 +619,23 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   openConversation.addEventListener('click',()=>navigate('conversation'));
   functionsPanel.append(openConversation,
     textNode('p','These are confidence-damped results from deterministic text patterns, not verified CEFR performance.','intel-note'));
-  // D6 P26: real diagnostic evidence, never a synthetic remediation grade.
-  const p26=diagnoseP26({events:recent,functionEvents:conversations.functionEvents,now});
+  // D6-B: the native repair runner lives in the learner's backup/sync-safe
+  // featureState. Guided stages never change FSRS or emit a proficiency event.
+  const observed=diagnoseP26({events:recent,functionEvents:conversations.functionEvents,now});
+  const p26={...observed,sourceLimited:observed.sourceLimited||recent.length>=10_000};
+  let repair:RepairState=normalizeRepairState(learner?.featureState?.[P26_STATE_KEY]);
+  let busy=false;
   const remediation=document.createElement('section');
   remediation.className='data-panel p26-diagnostics';
   remediation.append(textNode('h2','Targeted remediation (P26)'),
-    textNode('p','Patterns from structured French attempts. Opening a practice route does not award a repair pass or change SRS.','intel-note'));
+    textNode('p','Patterns from structured French attempts. Opening a practice route does not award a repair pass or change SRS. Guided practice remains ungraded.','intel-note'));
   const p26Overview=document.createElement('p');p26Overview.className='intel-note';
   p26Overview.textContent=p26.open.length+' unresolved patterns · '+p26.repaired.length+' observed repairs'+
    (p26.sourceLimited?' · older evidence excluded by source cap':'');
   remediation.append(p26Overview);
+  const runner=document.createElement('div');runner.className='p26-runner';
+  const runnerMessage=document.createElement('p');runnerMessage.className='p26-feedback';
+  runnerMessage.setAttribute('role','status');runnerMessage.setAttribute('aria-live','polite');
   const causes=document.createElement('div');causes.className='next-action-grid';
   for(const item of p26.open.slice(0,5)){
     const section=document.createElement('article');section.className='decision-action';
@@ -634,7 +644,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       textNode('small',item.failures+' failures · '+item.activeDays+' days · confidence '+
         item.confidence+'% · severity '+item.severity+'/100'));
     const preview=p26RepairPreview(item);
-    section.append(textNode('small',preview.map(task=>task.stage).join(' → ')+' · practice-only proposed stages'));
+    section.append(textNode('small',preview.map(task=>task.stage).join(' → ')+' · practice-only stages'));
     const route=document.createElement('button');route.type='button';
     route.className='secondary-action compact-action';
     route.textContent='Open '+item.route+' (normal native practice)';
@@ -642,7 +652,106 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     section.append(route);causes.append(section);
   }
   if(!p26.open.length)causes.append(textNode('p','No diagnosed open patterns in the available 90-day evidence.','muted-copy'));
-  remediation.append(causes,textNode('p',p26.note,'intel-note'));
+  const runAction=async (update:(current:RepairState)=>RepairState,message:string)=>{
+    if(busy||signal.aborted)return;
+    busy=true;runnerMessage.textContent='Saving guided repair state…';
+    try{
+      // Re-read the feature-state envelope before each mutation so that a
+      // finished native practice on another route is not silently overwritten.
+      const current=await readCanonicalLearnerState();
+      const actual=normalizeRepairState(current?.featureState?.[P26_STATE_KEY]);
+      const next=update(actual);
+      if(JSON.stringify(next)!==JSON.stringify(actual))
+        await replaceCanonicalFeatureState(P26_STATE_KEY,next);
+      repair=next;runnerMessage.textContent=message;renderRunner();
+    }catch(error){
+      runnerMessage.textContent='Repair state was not saved. No completion was recorded. '+String(error);
+    }finally{busy=false;}
+  };
+  const button=(label:string,callback:()=>void,className='secondary-action compact-action')=>{
+    const control=document.createElement('button');control.type='button';
+    control.className=className;control.textContent=label;
+    control.addEventListener('click',callback);return control;
+  };
+  const renderRunner=()=>{
+    runner.replaceChildren();
+    const total=repairSummary(repair);
+    runner.append(textNode('p','Repair history: '+total.runs+' completed runs · '+
+      total.passed+'/'+total.retests+' independently observed successful retests. Practice-only: no SRS, durability, benchmark or CEFR credit.','intel-note'));
+    const task=currentRepairTask(repair),run=repair.active;
+    if(!task||!run){
+      if(p26.open.length&&!p26.sourceLimited)
+        runner.append(button('Start targeted repair (up to 3 cases)',()=>
+          {void runAction(state=>startRepairRun(state,p26,Date.now()),'Repair sequence started.');},'primary-action'));
+      else if(p26.sourceLimited)
+        runner.append(textNode('p','Repair launch is paused because the diagnostic evidence window may be truncated.','intel-note'));
+      return;
+    }
+    const card=document.createElement('div');card.className='p26-run-card';
+    card.append(textNode('p','Repair '+(run.cursor+1)+' / '+run.tasks.length+' · '+task.stage.replace(/-/g,' '),'p26-step'),
+      textNode('h3',task.cause.replace(/-/g,' ')+' · '+task.noteId),
+      textNode('p',task.stage==='scaffold'?
+        'Scaffold: inspect the original target and reduce the load before independent production.':
+        task.stage==='rebuild'?
+        'Rebuild: retrieve the French form or construction in native practice. Any exercise here is guided and ungraded.':
+        'Independent retest: complete a NEW unsupported native attempt for this exact note and cause after starting the retest. A click alone can never pass it.','intel-note'));
+    const vocab=rowById.get(task.noteId);
+    if(vocab&&task.stage==='scaffold'){
+      card.append(textNode('p','Model: '+(vocab.article?vocab.article+' ':'')+vocab.word+' — '+vocab.meaning,'p26-model'));
+    }else if(vocab&&task.stage==='rebuild'){
+      const prompt=textNode('label','Recall the French expression for: '+vocab.meaning);
+      const input=document.createElement('input');input.type='text';input.autocomplete='off';
+      input.setAttribute('aria-label','Ungraded guided recall');
+      const reveal=textNode('p','', 'p26-model');
+      card.append(prompt,input,button('Reveal original model (ungraded)',()=>{
+        reveal.textContent='Original model: '+(vocab.article?vocab.article+' ':'')+vocab.word+
+          '. Compare privately; your input is not saved or scored.';
+      }),reveal);
+    }else{
+      card.append(textNode('p','No verified source prompt is available for this note. Use the native '+
+       task.route+' activity for the actual French exercise; this repair desk never invents an answer.','intel-note'));
+    }
+    const actions=document.createElement('div');actions.className='p26-actions';
+    actions.append(button('Open native '+task.route,()=>navigate(task.route)));
+    if(task.stage==='independent-retest'){
+      if(!task.armedAt){
+        actions.append(button('Begin independent retest',()=>{
+          void runAction(state=>armRepairRetest(state,task.key,Date.now()),
+           'Retest armed. Complete a new unsupported native attempt, then return here.');
+        },'primary-action'));
+      }else{
+        actions.append(textNode('span','Retest armed; native evidence required.','p26-armed'));
+        actions.append(button('Check new native evidence',()=>{
+          void (async()=>{
+            const [newEvents,newConversation]=await Promise.all([readRecentReviewEvents(10_000),loadConversationState()]);
+            const base=diagnoseP26({events:newEvents,functionEvents:newConversation.functionEvents,now:Date.now()});
+            const report={...base,sourceLimited:base.sourceLimited||newEvents.length>=10_000};
+            const verdict=checkRepairRetest(repair,report);
+            if(verdict==='passed'||verdict==='failed')
+              await runAction(state=>resolveRepairRetest(state,task.key,report,Date.now()),
+                verdict==='passed'?'A later native independent pass was observed.':'A later native failure was observed. Keep practising.');
+            else runnerMessage.textContent=verdict==='source-limited'?
+              'Evidence is truncated; retest credit withheld.':'No new independently verified native attempt for this exact target. No pass recorded.';
+          })().catch(error=>{runnerMessage.textContent='Could not check native evidence: '+String(error);});
+        }));
+      }
+      actions.append(button('Skip retest — unverified',()=>{
+        void runAction(state=>resolveRepairRetest(state,task.key,p26,Date.now(),true),
+          'Retest skipped without proficiency credit.');
+      }));
+    }else{
+      actions.append(button('I completed guided practice — no grade',()=>{
+        void runAction(state=>completeGuidedStep(state,task.key,Date.now()),
+          'Guided stage recorded without graded credit.');
+      },'primary-action'));
+    }
+    card.append(actions);
+    runner.append(card,button('End repair run (keep history)',()=>{
+      void runAction(state=>cancelRepairRun(state,Date.now()),'Repair stopped; completed progress was not upgraded.');
+    }));
+  };
+  renderRunner();
+  remediation.append(runner,runnerMessage,causes,textNode('p',p26.note,'intel-note'));
   host.append(remediation,orchestration,calibrationPanel,trendPanel,gatesPanel,actions,funnel,pressurePanel,skills,cefr,weak,readingPanel,listeningPanel,spokenPanel,missionPanel,functionsPanel,activityPanel,evidencePanel);
   status.textContent=(learner?.studyDays.length??0)+' active study days · '+records.length.toLocaleString()+' skill records · live recall threshold '+Math.round(retention*100)+'%.';
 }
