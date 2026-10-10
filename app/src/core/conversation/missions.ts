@@ -9,7 +9,7 @@ export const MISSION_CHAINS:readonly MissionDefinition[]=[
   {id:'arrival-day',title:'Arrival day',level:'A2',scenarioIds:['rail','directions','hotel']},
   {id:'meet-plan-decide',title:'Meet, plan, decide',level:'B1',scenarioIds:['classmate','weekend','disagreement']},
   {id:'solve-problems',title:'Solve everyday problems',level:'B1',scenarioIds:['restaurant','return','past-problem']},
-  {id:'independent-living',title:'Independent living',level:'B1',scenarioIds:['delay','repair','neighbour']}
+  {id:'independent-living',title:'Independent living',level:'B1',scenarioIds:['delay','repair','past-problem']}
 ];
 export function getMission(id:string):MissionDefinition|undefined{
   return MISSION_CHAINS.find(mission=>mission.id===id);
