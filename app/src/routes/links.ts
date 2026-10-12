@@ -2,7 +2,8 @@ import type {RouteContext} from '../core/types';
 import {loadVocabularySearchIndex,type VocabularySearchRow} from '../core/content/loader';
 import {normalizeFrenchSurface} from '../core/unified/crosswalk';
 import {ORIGINAL_SENSES,makeReviewReport,buildReviewExport,type CandidateDecision} from '../core/unified/u2-review';
-import {sourceId} from '../core/unified/source';
+import {nativeQualifiedLexemeId} from '../core/unified/u3-native-id';
+import {inspectReviewExport,type ReviewPreview} from '../core/unified/u3-review-import';
 import './unified.css';
 import './unified-u2.css';
 
@@ -19,6 +20,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   <button data-reset class="secondary-action compact-action">Clear draft decisions</button></div>
   <p class="unified-result" data-status role="status" aria-live="polite">Loading verified native vocabulary index on demand…</p>
   <div class="u2-review-summary" data-counts></div>
+  <section class="u3-review-import" aria-labelledby="u3-import-title">
+    <h2 id="u3-import-title">Reopen an exported review draft</h2>
+    <p>Inspect one local JSON file. Invalid, stale or forged proposals are blocked atomically. No progress or account import is available.</p>
+    <label>Choose review JSON <input data-import-file type="file" accept=".json,application/json"></label>
+    <p data-import-status role="status">No review file selected.</p>
+    <div data-import-queue></div>
+    <div class="u3-import-actions">
+      <button type="button" data-keep-pending class="secondary-action compact-action" disabled>Keep selected as local draft</button>
+      <button type="button" data-dismiss-pending class="secondary-action compact-action" disabled>Discard selected proposal</button>
+    </div>
+  </section>
   <div class="u2-review-layout">
     <section class="u2-review-card"><h2>Original U2 senses</h2>
       <label>Filter terms<input data-search type="search" placeholder="Search French or English" autocomplete="off"></label>
@@ -65,7 +77,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const none=node('option','No candidate selected');none.value='';select.append(none);
   for(const candidate of candidates){
    const option=node('option',candidate.word+' · '+candidate.meaning+' · '+(candidate.pos||'POS unknown'));
-   option.value=sourceId('native','lexeme',candidate.id);select.append(option);
+   try{option.value=nativeQualifiedLexemeId(candidate.id);select.append(option);}
+   catch{continue;} // Unsupported oversized native IDs cannot receive link authority.
   }
   select.value=current?.targetId??'';
   selection.append(select);detail.append(selection);
