@@ -100,24 +100,6 @@ function unpackGlosses(value:string):readonly {fr:string;en:string}[]{
     return Object.freeze({fr,en});
   }));
 }
-export const U2_ORIGINAL_LESSONS:readonly U2Lesson[]=Object.freeze(SPECS.map((row,index)=>{
-  const [id,level,title,goal,situation,grammar,first,second,third,glosses,fill,choice]=row;
-  return Object.freeze({
-    id,source:provenance('original','session','u2-'+id),level,title,goal,situation,
-    dialogue:Object.freeze([first,second,third].map((fr,i)=>{
-      // The translations are authored separately below; see ORIGINAL_DIALOGUE_TRANSLATIONS.
-      return Object.freeze({fr,en:ORIGINAL_DIALOGUE_TRANSLATIONS[index][i]});
-    })),
-    vocabulary:unpackGlosses(glosses),grammarIds:Object.freeze([grammar]),
-    exercises:Object.freeze([
-      Object.freeze({id:id+'-fill',type:'fill' as const,prompt:fill[1],answer:fill[2],
-        options:Object.freeze([] as string[]),explanation:fill[3]}),
-      Object.freeze({id:id+'-choice',type:'choice' as const,prompt:choice[1],answer:choice[2],
-        options:Object.freeze(choice[3].split('|')),explanation:'Choose the expression supported by this lesson.'})
-    ]),
-    productionPrompt:PRODUCTION_PROMPTS[index],estimatedMinutes:8
-  });
-}));
 const ORIGINAL_DIALOGUE_TRANSLATIONS:readonly (readonly [string,string,string])[]=[
  ['Hello, my name is Léa.','Hi, I’m Samir.','Nice to meet you; are you a student?'],
  ['Hello, I would like a tea.','A tea with lemon?','Yes, thank you very much.'],
@@ -146,6 +128,25 @@ const PRODUCTION_PROMPTS:readonly string[]=[
  'Say which day you cannot come and suggest another.',
  'Describe a past weekend activity and a future plan.'
 ];
+
+export const U2_ORIGINAL_LESSONS:readonly U2Lesson[]=Object.freeze(SPECS.map((row,index)=>{
+  const [id,level,title,goal,situation,grammar,first,second,third,glosses,fill,choice]=row;
+  return Object.freeze({
+    id,source:provenance('original','session','u2-'+id),level,title,goal,situation,
+    dialogue:Object.freeze([first,second,third].map((fr,i)=>{
+      // The translations are authored separately below; see ORIGINAL_DIALOGUE_TRANSLATIONS.
+      return Object.freeze({fr,en:ORIGINAL_DIALOGUE_TRANSLATIONS[index][i]});
+    })),
+    vocabulary:unpackGlosses(glosses),grammarIds:Object.freeze([grammar]),
+    exercises:Object.freeze([
+      Object.freeze({id:id+'-fill',type:'fill' as const,prompt:fill[1],answer:fill[2],
+        options:Object.freeze([] as string[]),explanation:fill[3]}),
+      Object.freeze({id:id+'-choice',type:'choice' as const,prompt:choice[1],answer:choice[2],
+        options:Object.freeze(choice[3].split('|')),explanation:'Choose the expression supported by this lesson.'})
+    ]),
+    productionPrompt:PRODUCTION_PROMPTS[index],estimatedMinutes:8
+  });
+}));
 export async function loadU2Curriculum():Promise<readonly U2Lesson[]> {
   // This intentionally lazy module only serves independently authored records.
   if(!distributionAllowed('original')||U2_ORIGINAL_LESSONS.some(lesson=>
