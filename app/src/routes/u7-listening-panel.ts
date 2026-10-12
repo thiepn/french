@@ -1,6 +1,6 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
 import {listeningDialogueText} from '../core/unified/u7-listening';
-import {listeningQuestionsForFrenchUnit} from '../core/unified/u8-listening';
+import {listeningQuestionsForFullFrenchCourse} from '../core/unified/u9-listening';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import './unified-u7.css';
 
@@ -81,7 +81,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  });
  toggle.setAttribute('aria-expanded','false');
  host.append(toggle,transcript,el('p','Try each question after listening. If TTS is unavailable, use the text. Comprehension checking is temporary, not a formal listening assessment.','u6-small'));
- listeningQuestionsForFrenchUnit(unit).forEach((question,i)=>{
+ listeningQuestionsForFullFrenchCourse(unit).forEach((question,i)=>{
   const form=el('form',undefined,'u7-listening-question');
   const label=el('label',(i+1)+'. '+question.prompt);
   const select=el('select');select.setAttribute('aria-label','Listening answer '+(i+1));
