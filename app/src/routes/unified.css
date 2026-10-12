@@ -1,0 +1,26 @@
+/* Isolated U1 course and grammar workspaces. */
+.unified-page h1{letter-spacing:-.045em}
+.unified-alert,.unified-result{margin:1.1rem 0;padding:.85rem 1rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:.7rem;line-height:1.55}
+.unified-tools{display:flex;flex-wrap:wrap;align-items:end;gap:.8rem;margin:1.2rem 0}
+.unified-tools label{display:grid;gap:.35rem;font-size:.83rem;color:var(--muted)}
+.unified-tools select,.unified-tools input,.unified-exercise input{padding:.65rem .8rem;border:1px solid var(--line);border-radius:.5rem;min-height:42px;background:var(--surface);color:var(--text);max-width:100%}
+.unified-tools button{min-height:42px}
+.unified-session-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:.45rem;margin:1.2rem 0}
+.unified-session,.unified-topic{min-height:48px;border:1px solid var(--line);border-radius:.55rem;background:var(--surface);color:var(--text);font:inherit;cursor:pointer}
+.unified-session.selected,.unified-topic.selected{border:2px solid var(--accent);font-weight:800}
+.unified-session:focus-visible,.unified-topic:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.unified-detail,.unified-import{margin-top:1.2rem;padding:clamp(1rem,3vw,1.5rem);border:1px solid var(--line);border-radius:.85rem;background:var(--surface)}
+.unified-detail h2,.unified-import h2{font-size:1.3rem;margin:0 0 .7rem}
+.unified-detail p,.unified-import p{line-height:1.6}
+.unified-detail code{display:block;overflow-wrap:anywhere;word-break:break-word;font-size:.75rem;color:var(--muted)}
+.unified-grammar-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}
+.unified-topic{text-align:left;padding:.8rem;min-height:66px}
+.unified-example{margin:1rem 0;padding:1rem;border-left:3px solid var(--accent)}
+.unified-example p{margin:.3rem 0 0;color:var(--muted)}
+.unified-exercise{display:grid;gap:.7rem;max-width:520px}
+.unified-exercise label{font-weight:650}
+.unified-exercise button{justify-self:start;min-height:42px}
+.unified-provenance{margin-top:1.3rem;font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
+@media(max-width:900px){.unified-session-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.unified-grammar-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.unified-session-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.unified-grammar-list{grid-template-columns:1fr}.unified-tools>*{width:100%}.unified-tools button{width:100%}}
+@media(prefers-reduced-motion:reduce){.unified-page *{scroll-behavior:auto!important;transition:none!important}}
