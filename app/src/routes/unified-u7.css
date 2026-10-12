@@ -16,3 +16,9 @@
 .u7-listening-question select:focus-visible,.u7-audio-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:540px){.u6-stage-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.u7-audio-actions{display:grid}.u7-audio-actions button{width:100%}}
 @media(prefers-reduced-motion:reduce){.u7-listening-question *{transition:none!important;animation:none!important}}
+
+.u7-line-controls{display:flex;flex-wrap:wrap;align-items:end;gap:.6rem;margin:.7rem 0}
+.u7-line-controls label{display:grid;gap:.35rem;font-size:.83rem;color:var(--muted);min-width:150px}
+.u7-line-controls select{min-height:44px;max-width:100%;padding:.55rem;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.25rem;font:inherit}
+.u7-line-controls button{min-height:44px!important}
+@media(max-width:540px){.u7-line-controls{display:grid}.u7-line-controls>*{width:100%}}
