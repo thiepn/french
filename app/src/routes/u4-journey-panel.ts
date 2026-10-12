@@ -1,4 +1,4 @@
-import {ORIGINAL_JOURNEYS,journeyStatus,validateJourneys,upcomingInJourney} from '../core/unified/u4-journeys';
+import {ORIGINAL_JOURNEYS,journeyStatus,validateJourneys} from '../core/unified/u4-journeys';
 import {ORIGINAL_PATH_LESSONS} from '../core/unified/u3-pathways';
 import {exportPracticeCheckpoint,inspectPracticeCheckpoint,type PracticeEvent} from '../core/unified/u4-checkpoints';
 import './unified-u4.css';
@@ -54,7 +54,7 @@ export function mountJourneyWorkspace(host:HTMLElement,actions:JourneyActions):{
   status.textContent='Local course practice reset. Native progress was never changed.';
   refresh();
  });
- const status=el('p','No file inspected.',''); // assigned styling below
+ const status=el('p','No file inspected.'); // assigned styling below
  status.className='u4-checkpoint-status';status.setAttribute('role','status');
  file.addEventListener('change',async()=>{
   const picked=file.files?.[0];if(!picked)return;
