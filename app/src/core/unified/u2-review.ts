@@ -1,5 +1,6 @@
 import {sourceId} from './source.ts';
-import {U2_ORIGINAL_LESSONS} from './u2-curriculum.ts';
+import {ORIGINAL_PATH_LESSONS} from './u3-pathways.ts';
+import {safeNativeLocalId} from './u3-native-id.ts';
 import {crosswalkWithLosses,normalizeFrenchSurface,type LexicalRow,type CrosswalkReport} from './crosswalk.ts';
 
 export interface OriginalSense {
@@ -21,15 +22,15 @@ export interface DraftReview {
 }
 export const ORIGINAL_SENSES:readonly OriginalSense[]=Object.freeze((()=>{
  const grouped=new Map<string,{form:string;gloss:string;lessons:Set<string>}>();
- for(const lesson of U2_ORIGINAL_LESSONS)for(const word of lesson.vocabulary){
+ for(const lesson of ORIGINAL_PATH_LESSONS)for(const word of lesson.vocabulary){
   const key=normalizeFrenchSurface(word.fr)+'|'+word.en.toLowerCase();
   const existing=grouped.get(key);
   if(existing)existing.lessons.add(lesson.id);
   else grouped.set(key,{form:word.fr,gloss:word.en,lessons:new Set([lesson.id])});
  }
  return [...grouped.entries()].map(([key,row],i)=>Object.freeze({
-  id:'u2-sense-'+String(i+1).padStart(3,'0'),form:row.form,gloss:row.gloss,
-  lessonIds:Object.freeze([...row.lessons]),sourceId:sourceId('original','sense','u2-sense-'+String(i+1).padStart(3,'0'))
+  id:(i<36?'u2-sense-':'u3-sense-')+String(i<36?i+1:i-35).padStart(3,'0'),form:row.form,gloss:row.gloss,
+  lessonIds:Object.freeze([...row.lessons]),sourceId:sourceId('original','sense',(i<36?'u2-sense-':'u3-sense-')+String(i<36?i+1:i-35).padStart(3,'0'))
  }));
 })());
 export function makeReviewReport(
@@ -39,10 +40,11 @@ export function makeReviewReport(
  const originals:LexicalRow[]=ORIGINAL_SENSES.map(row=>({
   source:'original',localId:row.id,form:row.form,senseId:row.gloss
  }));
- const native:LexicalRow[]=target.map(row=>({
-  source:'native',localId:row.id,form:row.word,
-  senseId:undefined,partOfSpeech:row.pos||undefined
- }));
+ const native:LexicalRow[]=target.flatMap(row=>{
+  try{return [{source:'native' as const,localId:safeNativeLocalId(row.id),form:row.word,
+   senseId:undefined,partOfSpeech:row.pos||undefined}];}
+  catch{return []; } // Unrepresentable native IDs abstain; never crash the entire workspace.
+ });
  return crosswalkWithLosses(originals,native);
 }
 export function buildReviewExport(
