@@ -1,5 +1,5 @@
 import type {RouteId} from '../core/types';
-import {loadU2Curriculum,type U2Lesson} from '../core/unified/u2-curriculum';
+import {loadU2Curriculum,U2_ORIGINAL_LESSONS} from '../core/unified/u2-curriculum';
 import {enrichGrammar,checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {distributionAllowed} from '../core/unified/source';
 import './unified-u2.css';
