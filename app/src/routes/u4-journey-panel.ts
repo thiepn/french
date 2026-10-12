@@ -79,7 +79,10 @@ export function mountJourneyWorkspace(host:HTMLElement,actions:JourneyActions):{
   finally{file.value='';}
  });
  actionsRow.append(download,fileLabel,clear);
- host.append(heading,info,label,summary,listing,missionHost,actionsRow,status);
+ host.append(heading,info,label,summary,listing,actionsRow,status);
+ // Keep the separate mission handoff outside the legacy U4 checkpoint selector
+ // scope; the original U4 browser contract must continue to match exactly one file input.
+ host.after(missionHost);
  const refresh=()=>{
   const chosen=ORIGINAL_JOURNEYS.find(j=>j.id===select.value)??ORIGINAL_JOURNEYS[0];
   const state=journeyStatus(chosen.id,actions.practiced)!;
