@@ -4,6 +4,7 @@ import {writingScaffold,inspectDraftStructure} from '../core/unified/u3-writing'
 import {enrichGrammar,checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {distributionAllowed} from '../core/unified/source';
 import './unified-u2.css';
+import './unified-u3.css';
 
 function make<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string,css?:string):HTMLElementTagNameMap[K]{
  const element=document.createElement(tag);
