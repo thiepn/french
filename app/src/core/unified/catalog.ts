@@ -1,4 +1,4 @@
-import {provenance,type QualifiedProvenance} from './source';
+import {provenance,type QualifiedProvenance} from './source.ts';
 
 export interface CourseSession {
   readonly position:number;
