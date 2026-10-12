@@ -1,0 +1,11 @@
+/* Connected B1 reading extends the original Read stage without a second lesson player. */
+.u10-reading{margin:1.5rem 0;padding:1.15rem;border:1px solid var(--line);border-radius:.35rem}
+.u10-reading h4{margin:0 0 .5rem}
+.u10-reading-text{font-size:1.02rem;line-height:1.85;letter-spacing:.003em;max-width:75ch;padding:.8rem 0 1.1rem;white-space:pre-wrap;overflow-wrap:break-word}
+.u10-inference{display:grid;gap:.6rem;padding:1rem 0;border-top:1px solid var(--line)}
+.u10-inference label{font-size:.92rem;line-height:1.5;display:grid;gap:.5rem}
+.u10-inference select{font:inherit;min-height:44px;padding:.55rem .7rem;width:100%;max-width:100%;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:.25rem}
+.u10-inference button{justify-self:start;min-height:44px!important}
+.u10-reading-feedback{min-height:1em;color:var(--muted);font-size:.9rem;line-height:1.6}
+.u10-inference select:focus-visible,.u10-inference button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:570px){.u10-reading{padding:.8rem}.u10-reading-text{font-size:1rem;line-height:1.75}.u10-inference button{width:100%}}
