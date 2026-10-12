@@ -5,7 +5,7 @@ import './unified.css';
 function normalizeAnswer(value:string):string{
   return value.normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
 }
-export function mount({main,navigate}:RouteContext):void {
+export function mount({main,navigate,signal}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page">
     <p class="eyebrow">Original teaching content · U1</p><h1>Grammar</h1>
     <p class="lede">Short self-authored guides with immediate, ungraded recall. The source coursebook's ${CARNET_GRAMMAR_COUNT} grammar concepts remain separate until licensing and exact-source mapping are verified.</p>
@@ -48,7 +48,11 @@ export function mount({main,navigate}:RouteContext):void {
     exercise.append(label,input,button,feedback);
     const provenance=document.createElement('p');provenance.className='unified-provenance';
     provenance.textContent='Original U1 guide · '+guide.level+' · '+guide.source.qualifiedId;
-    detail.append(heading,description,example,exercise,provenance);
+    const deepDive=document.createElement('div');deepDive.dataset.u2Grammar='';
+    detail.append(heading,description,example,exercise,deepDive,provenance);
+    void import('./u2-studio').then(module=>{
+      if(!signal.aborted&&selected===guide.id&&deepDive.isConnected)module.addGrammarDeepDive(deepDive,guide.id,navigate);
+    }).catch(error=>{if(!signal.aborted)console.error('U2 grammar expansion unavailable',error);});
   }
   function update(){
     list.replaceChildren();
@@ -63,5 +67,8 @@ export function mount({main,navigate}:RouteContext):void {
   }
   level.addEventListener('change',update);
   main.querySelector('[data-course]')?.addEventListener('click',()=>navigate('course'));
+  let requested:string|null=null;
+  try{requested=sessionStorage.getItem('french-u2-grammar-target');sessionStorage.removeItem('french-u2-grammar-target');}catch{}
+  if(requested&&ORIGINAL_GRAMMAR.some(guide=>guide.id===requested)){selected=requested;level.value='all';}
   update();
 }
