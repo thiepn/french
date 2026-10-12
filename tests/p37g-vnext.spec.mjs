@@ -215,3 +215,40 @@ test('B7 original source mission keyboard launch and reload resume on actual bro
   const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
   expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
 });
+
+
+test('U1 60-session course exposes rights-gated source references and local preflight',async({page})=>{
+  await page.goto('/#course');
+  await expect(page.getByRole('heading',{name:'Course',exact:true})).toBeVisible();
+  await expect(page.locator('.unified-session')).toHaveCount(60);
+  await page.getByLabel('Select course session').selectOption('60');
+  await expect(page.locator('[data-detail]')).toContainText('Session 60');
+  await expect(page.locator('[data-detail]')).toContainText('reference only');
+  await expect(page.locator('[data-detail] code')).toContainText('carnet@211208195e37');
+  await page.locator('[data-file]').setInputFiles({
+    name:'carnet-export.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify({storageKey:'fr-a1a2-practice-v6',progress:{},history:[{}]}))
+  });
+  await expect(page.locator('[data-result]')).toContainText('inspectable');
+  await expect(page.locator('[data-result]')).toContainText('No data imported');
+  await page.locator('[data-file]').setInputFiles({
+    name:'bad.json',mimeType:'application/json',buffer:Buffer.from('not JSON')
+  });
+  await expect(page.locator('[data-result]')).toContainText('blocked');
+});
+
+test('U1 lazy Grammar guides check recall without entering native progress',async({page})=>{
+  await page.goto('/#course');
+  await page.getByRole('button',{name:'Open Grammar'}).click();
+  await expect(page).toHaveURL(/#grammar$/);
+  await expect(page.getByRole('heading',{name:'Grammar',exact:true})).toBeVisible();
+  await expect(page.locator('[data-guide]')).toHaveCount(9);
+  await page.getByLabel('Complete: ___ livre est ici.').fill('le');
+  await page.getByRole('button',{name:'Check answer'}).click();
+  await expect(page.locator('.unified-exercise [role=status]')).toContainText('Correct · practice only');
+  await page.locator('[data-level]').selectOption('A2');
+  await expect(page.locator('[data-guide]')).toHaveCount(2);
+  await expect(page.locator('[data-lesson]')).toContainText('Original U1 guide');
+  await page.getByRole('button',{name:'Browse 60-session course'}).click();
+  await expect(page).toHaveURL(/#course$/);
+});
