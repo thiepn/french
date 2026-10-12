@@ -1,5 +1,5 @@
 import {ORIGINAL_GRAMMAR,type GrammarGuide} from './catalog.ts';
-import {getU2Lesson,U2_ORIGINAL_LESSONS} from './u2-curriculum.ts';
+import {ORIGINAL_PATH_LESSONS} from './u3-pathways.ts';
 export interface EnrichedGrammar {
   readonly guide:GrammarGuide;
   readonly detail:string;
@@ -78,11 +78,11 @@ export function enrichGrammar(id:string):EnrichedGrammar|null{
   contrast:extra.contrast.map(([wrong,corrected,why])=>({wrong,corrected,why})),
   examples:extra.examples.map(([fr,en])=>({fr,en})),
   challenge:extra.challenge.map(([prompt,answer,hint])=>({prompt,answer,hint})),
-  linkedLessonIds:U2_ORIGINAL_LESSONS.filter(l=>l.grammarIds.includes(id)).map(l=>l.id)
+  linkedLessonIds:ORIGINAL_PATH_LESSONS.filter(l=>l.grammarIds.includes(id)).map(l=>l.id)
  };
 }
 export function grammarForLesson(id:string):EnrichedGrammar[]{
- const lesson=getU2Lesson(id);
+ const lesson=ORIGINAL_PATH_LESSONS.find(l=>l.id===id);
  return lesson?lesson.grammarIds.flatMap(g=>{const guide=enrichGrammar(g);return guide?[guide]:[];}):[];
 }
 export function checkPracticeAnswer(input:string,expected:string):boolean{

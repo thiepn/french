@@ -258,7 +258,7 @@ test('U2 original course makes contextual dialogues, recalls and next lessons ac
   await page.goto('/#course');
   const studio=page.locator('[data-u2-studio]');
   await expect(studio.getByRole('heading',{name:'Original guided lessons'})).toBeVisible();
-  await expect(studio.locator('[data-u2-id]')).toHaveCount(12);
+  await expect(studio.locator('[data-u2-id]')).toHaveCount(20); // U2's 12 preserved + 8 original U3 lessons
   await expect(studio.locator('.u2-dialogue-line')).toHaveCount(3);
   await expect(studio).toContainText('not the 60 Carnet source sessions');
   await studio.getByRole('button',{name:'Show translation'}).first().click();
@@ -302,5 +302,63 @@ test('U2 lexical mapping requires explicit evidence and exports non-authoritativ
   expect(payload.decisions).toHaveLength(1);
   await page.getByRole('button',{name:'Clear draft decisions'}).click();
   await expect(page.locator('[data-counts]')).toContainText('0 reviewed drafts');
+  await expect(page.getByRole('button',{name:'Export review draft'})).toBeDisabled();
+});
+
+
+test('U3 guided prerequisites, themed path, writing prompts and original grammar navigation',async({page})=>{
+  await page.goto('/#course');
+  const studio=page.locator('[data-u2-studio]');
+  await expect(studio.getByRole('heading',{name:'Original guided lessons'})).toBeVisible();
+  await expect(studio.locator('[data-u2-id]')).toHaveCount(20);
+  await expect(studio.locator('.u3-path-summary')).toContainText('0/20');
+  await studio.getByRole('combobox',{name:'Learning pathway'}).selectOption('travel');
+  await expect(studio.locator('[data-u2-id="market"]')).toBeVisible();
+  await expect(studio.locator('[data-u2-id="memory"]')).toBeHidden();
+  await studio.getByRole('combobox',{name:'Learning pathway'}).selectOption('all');
+  await studio.getByRole('combobox',{name:'Original lesson'}).selectOption('late-train');
+  await expect(studio.locator('.u2-lesson-heading')).toContainText('A delayed train');
+  await expect(studio.locator('.u3-prerequisite')).toContainText('Recommended first');
+  await studio.locator('.u3-prerequisite').getByRole('button',{name:'Review Buying a ticket'}).click();
+  await expect(studio.locator('.u2-lesson-heading')).toContainText('Buying a ticket');
+  await studio.getByRole('combobox',{name:'Original lesson'}).selectOption('market');
+  await expect(studio.locator('.u2-dialogue-line')).toHaveCount(3);
+  await studio.getByRole('button',{name:'Show optional writing guidance'}).click();
+  await expect(studio.locator('.u3-writing-hints')).toBeVisible();
+  await expect(studio.locator('.u3-writing-hints')).toContainText('pommes');
+  const writing=studio.getByRole('textbox',{name:'Free writing response'});
+  await writing.fill('Je voudrais trois pommes, s’il vous plaît. Combien ça coûte ?');
+  await studio.getByRole('button',{name:'Check structure (not grading)'}).click();
+  await expect(studio.locator('.u2-production .u2-feedback')).toContainText('No CEFR or mastery score is assigned');
+  await studio.getByRole('button',{name:'Clear response'}).click();
+  await expect(writing).toHaveValue('');
+  await studio.getByRole('button',{name:'Study Articles indéfinis'}).click();
+  await expect(page).toHaveURL(/#grammar$/);
+  await expect(page.locator('[data-u2-grammar]')).toContainText('At the market');
+});
+
+test('U3 exported lexical review reload is strictly inspected then only kept as draft',async({page})=>{
+  await page.goto('/#links');
+  await expect(page.locator('[data-status]')).toContainText('Loaded',{timeout:30_000});
+  await page.getByRole('button',{name:'Save draft decision'}).click();
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export review draft'}).click();
+  const download=await downloadPromise;
+  const {readFile}=await import('node:fs/promises');
+  const exported=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(exported.approved).toBe(false);
+  await page.getByRole('button',{name:'Clear draft decisions'}).click();
+  await expect(page.locator('[data-counts]')).toContainText('0 reviewed drafts');
+  await page.locator('[data-import-file]').setInputFiles({name:'review.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify(exported))});
+  await expect(page.locator('[data-import-status]')).toContainText('Validated 1 unapproved');
+  await expect(page.getByRole('button',{name:'Keep selected as local draft'})).toBeEnabled();
+  await page.getByRole('button',{name:'Keep selected as local draft'}).click();
+  await expect(page.locator('[data-counts]')).toContainText('1 reviewed drafts');
+  await page.locator('[data-import-file]').setInputFiles({name:'forged.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify({...exported,approved:true}))});
+  await expect(page.locator('[data-import-status]')).toContainText('Blocked:');
+  await expect(page.locator('[data-counts]')).toContainText('1 reviewed drafts');
+  await page.getByRole('button',{name:'Clear draft decisions'}).click();
   await expect(page.getByRole('button',{name:'Export review draft'})).toBeDisabled();
 });

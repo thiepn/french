@@ -2,9 +2,11 @@ import type {RouteContext} from '../core/types';
 import {loadVocabularySearchIndex,type VocabularySearchRow} from '../core/content/loader';
 import {normalizeFrenchSurface} from '../core/unified/crosswalk';
 import {ORIGINAL_SENSES,makeReviewReport,buildReviewExport,type CandidateDecision} from '../core/unified/u2-review';
-import {sourceId} from '../core/unified/source';
+import {nativeQualifiedLexemeId} from '../core/unified/u3-native-id';
+import {inspectReviewExport,type ReviewPreview} from '../core/unified/u3-review-import';
 import './unified.css';
 import './unified-u2.css';
+import './unified-u3.css';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string):HTMLElementTagNameMap[K]{
  const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;
@@ -19,6 +21,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   <button data-reset class="secondary-action compact-action">Clear draft decisions</button></div>
   <p class="unified-result" data-status role="status" aria-live="polite">Loading verified native vocabulary index on demand…</p>
   <div class="u2-review-summary" data-counts></div>
+  <section class="u3-review-import" aria-labelledby="u3-import-title">
+    <h2 id="u3-import-title">Reopen an exported review draft</h2>
+    <p>Inspect one local JSON file. Invalid, stale or forged proposals are blocked atomically. No progress or account import is available.</p>
+    <label>Choose review JSON <input data-import-file type="file" accept=".json,application/json"></label>
+    <p data-import-status role="status">No review file selected.</p>
+    <div data-import-queue></div>
+    <div class="u3-import-actions">
+      <button type="button" data-keep-pending class="secondary-action compact-action" disabled>Keep selected as local draft</button>
+      <button type="button" data-dismiss-pending class="secondary-action compact-action" disabled>Discard selected proposal</button>
+    </div>
+  </section>
   <div class="u2-review-layout">
     <section class="u2-review-card"><h2>Original U2 senses</h2>
       <label>Filter terms<input data-search type="search" placeholder="Search French or English" autocomplete="off"></label>
@@ -34,6 +47,65 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  const search=main.querySelector<HTMLInputElement>('[data-search]')!;
  const exportButton=main.querySelector<HTMLButtonElement>('[data-export]')!;
  const decisions=new Map<string,CandidateDecision>();
+ const importFile=main.querySelector<HTMLInputElement>('[data-import-file]')!;
+ const importStatus=main.querySelector<HTMLElement>('[data-import-status]')!;
+ const importQueue=main.querySelector<HTMLElement>('[data-import-queue]')!;
+ const keepPending=main.querySelector<HTMLButtonElement>('[data-keep-pending]')!;
+ const dismissPending=main.querySelector<HTMLButtonElement>('[data-dismiss-pending]')!;
+ let pending:CandidateDecision[]=[];
+ let pendingIndex=0;
+ function paintPending(){
+  importQueue.replaceChildren();
+  const has=pending.length>0;
+  keepPending.disabled=!has;dismissPending.disabled=!has;
+  if(!has){importQueue.append(node('p','No proposals awaiting review.'));return;}
+  const list=node('div');list.className='u3-import-list';
+  pending.forEach((item,i)=>{
+   const source=ORIGINAL_SENSES.find(s=>s.sourceId===item.sourceId);
+   const b=node('button',(i+1)+'. '+(source?.form??'Unknown')+' — '+item.status);
+   b.type='button';b.className='u2-review-option';
+   if(i===pendingIndex){b.classList.add('selected');b.setAttribute('aria-current','true');}
+   b.addEventListener('click',()=>{pendingIndex=i;paintPending();});
+   list.append(b);
+  });
+  importQueue.append(list);
+  const item=pending[pendingIndex]??pending[0];
+  const source=ORIGINAL_SENSES.find(s=>s.sourceId===item.sourceId);
+  const summary=node('p','Inspect: '+(source?.form??'Unknown')+' · '+item.status+
+   ' · target: '+(item.targetId??'none')+' · rationale: '+(item.note||'not provided'));
+  summary.className='u3-import-note';importQueue.append(summary);
+ }
+ function consumePending(keep:boolean){
+  const entry=pending[pendingIndex];if(!entry)return;
+  if(keep)decisions.set(entry.sourceId,entry);
+  pending.splice(pendingIndex,1);pendingIndex=Math.min(pendingIndex,Math.max(0,pending.length-1));
+  importStatus.textContent=keep?'Kept as an unapproved local draft. No proficiency authority changed.':
+    'Discarded the proposal; nothing was imported into progress.';
+  if(keep)chosen=entry.sourceId;
+  paintCounts();paintList();paintDetail();paintPending();
+ }
+ keepPending.addEventListener('click',()=>consumePending(true));
+ dismissPending.addEventListener('click',()=>consumePending(false));
+ importFile.addEventListener('change',async()=>{
+  const file=importFile.files?.[0];if(!file)return;
+  pending=[];pendingIndex=0;paintPending();
+  try{
+   if(file.size>256*1024){importStatus.textContent='Blocked: file exceeds 256 KiB.';return;}
+   const raw=await file.text();if(signal.aborted)return;
+   const preview:ReviewPreview=inspectReviewExport(raw,report,revision);
+   if(preview.state==='blocked'){
+    importStatus.textContent='Blocked: '+preview.issues.join(' ')+' Existing local decisions unchanged.';
+    return;
+   }
+   pending=[...preview.pending];
+   importStatus.textContent='Validated '+pending.length+' unapproved review proposals. Inspect each before keeping it as a local draft.';
+   paintPending();
+  }catch{
+   if(!signal.aborted)importStatus.textContent='File inspection failed. No progress changed.';
+  }finally{importFile.value='';}
+ });
+ paintPending();
+
  let chosen=ORIGINAL_SENSES[0]?.sourceId??'';
  let nativeRows:VocabularySearchRow[]=[];
  let revision:string|null=null;
@@ -65,7 +137,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const none=node('option','No candidate selected');none.value='';select.append(none);
   for(const candidate of candidates){
    const option=node('option',candidate.word+' · '+candidate.meaning+' · '+(candidate.pos||'POS unknown'));
-   option.value=sourceId('native','lexeme',candidate.id);select.append(option);
+   try{option.value=nativeQualifiedLexemeId(candidate.id);select.append(option);}
+   catch{continue;} // Unsupported oversized native IDs cannot receive link authority.
   }
   select.value=current?.targetId??'';
   selection.append(select);detail.append(selection);
