@@ -6,6 +6,7 @@ import {nativeQualifiedLexemeId} from '../core/unified/u3-native-id';
 import {inspectReviewExport,type ReviewPreview} from '../core/unified/u3-review-import';
 import './unified.css';
 import './unified-u2.css';
+import './unified-u3.css';
 
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string):HTMLElementTagNameMap[K]{
  const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;
