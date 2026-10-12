@@ -83,7 +83,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   area.setAttribute('aria-label','Evidence and rationale');
   area.placeholder='Compare the meaning in a full sentence; record uncertainty.';
   area.value=current?.note??'';notes.append(area);detail.append(notes);
-  const feedback=node('p','No decision recorded.','u2-feedback');feedback.setAttribute('role','status');
+  const feedback=node('p','No decision recorded.');feedback.className='u2-feedback';feedback.setAttribute('role','status');
   const save=node('button','Save draft decision');save.type='button';save.className='primary-action compact-action';
   save.addEventListener('click',()=>{
    const proposed=statusPicker.value==='proposed-match';
