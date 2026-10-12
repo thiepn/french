@@ -5,7 +5,7 @@ type Spec=readonly [
  string,'A1'|'A2',string,string,string,
  readonly [string,string][],readonly [string,string][],readonly string[],
  readonly [string,string,string],
- readonly [string,string,string,string],readonly [string,string,string,string],
+ readonly [string,string,string,string],
  string
 ];
 // New, independently authored French examples. NOT imported Carnet/French 2.2 content.
