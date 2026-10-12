@@ -1,6 +1,9 @@
 import type {RouteId} from '../core/types';
 import {loadUnifiedOriginalPath,ORIGINAL_PATH_LESSONS,getLessonPath,missingPrerequisites,suggestedLesson} from '../core/unified/u3-pathways';
-import {writingScaffold,inspectDraftStructure} from '../core/unified/u3-writing';
+import {writingScaffold} from '../core/unified/u3-writing';
+import {analyzeAttempt,repairForGrammar,reviewProduction} from '../core/unified/u4-feedback';
+import {practiceEvent,type PracticeEvent} from '../core/unified/u4-checkpoints';
+import {mountJourneyWorkspace} from './u4-journey-panel';
 import {enrichGrammar,checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {distributionAllowed} from '../core/unified/source';
 import './unified-u2.css';
@@ -21,6 +24,8 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
   const lessons=await loadUnifiedOriginalPath();
   const attempts=new Map<string,Set<string>>(); // route-scoped, never canonical or account-owned
   const practiced=new Set<string>();
+  const localEvents:PracticeEvent[]=[];
+  let journeyWorkspace:{refresh:()=>void}|null=null;
   if(signal.aborted||!host.isConnected)return;
   if(lessons.some(l=>!distributionAllowed(l.source.source)||l.source.source!=='original'))throw Error('Unqualified lesson source');
   host.replaceChildren();
@@ -42,6 +47,7 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
     (suggested?'Suggested next: '+suggested.title:'No additional suggested lesson in this pathway.');
    nextSuggested.disabled=!suggested;
    nextSuggested.textContent=suggested?'Open suggested: '+suggested.title:'No suggested lesson';
+   journeyWorkspace?.refresh();
    for(const button of grid.querySelectorAll<HTMLButtonElement>('[data-u2-id]')){
     const node=getLessonPath(button.dataset.u2Id??'');
     button.hidden=theme!=='all'&&node?.theme!==theme;
@@ -50,6 +56,8 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
    }
   };
   themeSelect.addEventListener('change',updatePath);head.append(pathwayNav,pathSummary);
+  const journeyHost=make('section',undefined,'u4-journey-host');
+  head.append(journeyHost);
   const grid=make('div',undefined,'u2-lessons-grid'),stage=make('article',undefined,'u2-lesson-stage');
   grid.dataset.u2Lessons='';
   stage.dataset.u2Stage='';
@@ -137,16 +145,42 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
      textInput.setAttribute('aria-label','Answer task '+(index+1));input=textInput;
     }
     const feedback=make('p','','u2-feedback');feedback.setAttribute('role','status');
+    const repairPanel=make('aside',undefined,'u4-repair');repairPanel.hidden=true;
+    input.maxLength=160;
     const submit=make('button','Check answer','primary-action compact-action');submit.type='submit';
     form.addEventListener('submit',event=>{
      event.preventDefault();
      if(!input.value.trim()){feedback.textContent='Enter an answer first.';return;}
      const pass=checkPracticeAnswer(input.value,task.answer);
+     const event=practiceEvent(localEvents.length+1,lesson.id,task.id,input.value);
+     if(event)localEvents.push(event);
      if(pass)correct.add(task.id);
-     feedback.textContent=pass?'Correct · '+task.explanation:'Not yet. Hint: '+task.explanation+' Try again.';
+     const diagnosis=analyzeAttempt(input.value,task.answer,lesson.grammarIds[0]??null);
+     feedback.textContent=pass?'Correct · '+task.explanation:'Not yet. '+diagnosis.cue+' '+task.explanation;
+     repairPanel.replaceChildren();
+     repairPanel.hidden=pass;
+     if(!pass){
+      const related=repairForGrammar(lesson.grammarIds[0]??null);
+      if(related){
+       repairPanel.append(make('strong','Focused transfer practice (ungraded)'));
+       const form2=make('form',undefined,'u4-remediation');
+       const lab=make('label',related.prompt);
+       const answer=make('input');answer.type='text';answer.lang='fr';answer.autocomplete='off';
+       answer.setAttribute('aria-label','Focused answer');answer.maxLength=160;
+       const msg=make('p','','u2-feedback');msg.setAttribute('role','status');
+       const check2=make('button','Check focused answer','secondary-action compact-action');check2.type='submit';
+       form2.addEventListener('submit',event=>{
+        event.preventDefault();
+        msg.textContent=checkPracticeAnswer(answer.value,related.answer)?
+         'Correct local transfer response. '+related.explanation:
+         analyzeAttempt(answer.value,related.answer,related.grammarId).cue;
+       });
+       lab.append(answer);form2.append(lab,check2,msg);repairPanel.append(form2);
+      }else repairPanel.append(make('p','Review the source dialogue and try again.'));
+     }
      renderTally();
     });
-    form.append(input,submit,feedback);practice.append(form);
+    form.append(input,submit,feedback,repairPanel);practice.append(form);
    });
    practice.append(tally);stage.append(practice);
    const production=make('section',undefined,'u2-production');
@@ -171,10 +205,12 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
     }));
     production.append(hint);
    }
-   const response=make('textarea');response.rows=3;response.setAttribute('aria-label','Free writing response');
+   const response=make('textarea');response.rows=3;response.maxLength=4000;response.setAttribute('aria-label','Free writing response');
    const state=make('p','No answer stored. You can compare your sentence with the dialogue above.','u2-feedback');
    const check=control('Check structure (not grading)',()=>{
-    state.textContent=inspectDraftStructure(response.value).join(' ')+' No CEFR or mastery score is assigned.';
+    const review=reviewProduction(lesson.id,response.value);
+    state.textContent=[...review.notes,...review.promptChecks].join(' ')+
+     ' Automated hints are not an assessment. No CEFR or mastery score is assigned.';
    });
    production.append(response,check,control('Clear response',()=>{response.value='';state.textContent='Cleared. Nothing was saved.';}),state);
    stage.append(production);
@@ -195,6 +231,31 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
    button.dataset.u2Id=lesson.id;grid.append(button);
   }
   select.addEventListener('change',()=>open(select.value));
+  grid.addEventListener('keydown',event=>{
+   if(!['ArrowDown','ArrowUp','ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
+   const options=[...grid.querySelectorAll<HTMLButtonElement>('[data-u2-id]')].filter(b=>!b.hidden);
+   const index=options.indexOf(document.activeElement as HTMLButtonElement);
+   if(index<0||!options.length)return;
+   event.preventDefault();
+   const next=event.key==='Home'?0:event.key==='End'?options.length-1:
+    (index+(event.key==='ArrowDown'||event.key==='ArrowRight'?1:-1)+options.length)%options.length;
+   options[next].focus();options[next].click();
+  });
+  journeyWorkspace=mountJourneyWorkspace(journeyHost,{
+   open:(id)=>open(id),practiced,events:()=>localEvents,signal,
+   restore:(entries,ids)=>{
+    attempts.clear();practiced.clear();localEvents.splice(0,localEvents.length,...entries);
+    for(const entry of entries){
+     const found=lessons.find(l=>l.id===entry.lessonId)?.exercises.find(e=>e.id===entry.exerciseId);
+     if(found&&checkPracticeAnswer(entry.submitted,found.answer)){
+      if(!attempts.has(entry.lessonId))attempts.set(entry.lessonId,new Set());
+      attempts.get(entry.lessonId)!.add(entry.exerciseId);
+     }
+    }
+    for(const id of ids)practiced.add(id);
+    open(select.value);updatePath();
+   }
+  });
   let preferred:string|null=null;
   try{preferred=sessionStorage.getItem('french-u2-lesson-target');sessionStorage.removeItem('french-u2-lesson-target');}catch{}
   open(lessons.some(x=>x.id===preferred)?preferred!:lessons[0].id);
