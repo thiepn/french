@@ -362,3 +362,66 @@ test('U3 exported lexical review reload is strictly inspected then only kept as 
   await page.getByRole('button',{name:'Clear draft decisions'}).click();
   await expect(page.getByRole('button',{name:'Export review draft'})).toBeDisabled();
 });
+
+
+test('U4 guided journey navigation, targeted error repair and keyboard passage',async({page})=>{
+ await page.goto('/#course');
+ const studio=page.locator('[data-u2-studio]');
+ const journey=studio.locator('.u4-journeys');
+ await expect(journey.getByRole('heading',{name:'Guided journeys'})).toBeVisible();
+ await expect(journey.locator('[data-journey-lesson]')).toHaveCount(4);
+ await journey.getByRole('combobox',{name:'Guided journey'}).selectOption('travel-day');
+ await expect(journey.locator('[data-journey-lesson]')).toHaveCount(7);
+ await expect(journey.locator('[data-journey-summary]')).toContainText('0/7');
+ await journey.getByRole('combobox',{name:'Guided journey'}).selectOption('first-conversations');
+ await journey.locator('[data-journey-lesson="greetings"]').click();
+ const first=studio.locator('.u2-exercise').first();
+ await first.getByRole('textbox',{name:'Answer task 1'}).fill('sont');
+ await first.getByRole('button',{name:'Check answer'}).click();
+ await expect(first.locator('.u4-repair')).toBeVisible();
+ await expect(first.locator('.u4-repair')).toContainText('Focused transfer practice');
+ await first.getByRole('textbox',{name:'Focused answer'}).fill('êtes');
+ await first.getByRole('button',{name:'Check focused answer'}).click();
+ await expect(first.locator('.u4-remediation [role=status]')).toContainText('Correct local transfer response');
+ await first.getByRole('textbox',{name:'Answer task 1'}).fill('suis');
+ await first.getByRole('button',{name:'Check answer'}).click();
+ const second=studio.locator('.u2-exercise').nth(1);
+ await second.getByRole('combobox',{name:'Answer task 2'}).selectOption('Bonjour');
+ await second.getByRole('button',{name:'Check answer'}).click();
+ await expect(journey.locator('[data-journey-summary]')).toContainText('1/4');
+ const firstButton=studio.locator('[data-u2-id="greetings"]');
+ await firstButton.focus();await firstButton.press('ArrowDown');
+ await expect(studio.locator('.u2-lesson-heading')).toContainText('At the café');
+ await expect(studio.locator('[data-u2-id="cafe"]')).toBeFocused();
+});
+test('U4 optional checkpoint explicit export and replay are local, bounded and deny forged claims',async({page})=>{
+ await page.goto('/#course');
+ const studio=page.locator('[data-u2-studio]');
+ const journey=studio.locator('.u4-journeys');
+ await expect(journey).toBeVisible();
+ const first=studio.locator('.u2-exercise').first();
+ await first.getByRole('textbox',{name:'Answer task 1'}).fill('suis');
+ await first.getByRole('button',{name:'Check answer'}).click();
+ const downloadPromise=page.waitForEvent('download');
+ await journey.getByRole('button',{name:'Export local practice checkpoint'}).click();
+ const file=await downloadPromise;
+ const {readFile}=await import('node:fs/promises');
+ const raw=await readFile(await file.path(),'utf8');
+ const data=JSON.parse(raw);
+ expect(data.authoritative).toBe(false);
+ expect(data.approved).toBe(false);
+ expect(data.custody).toBe('self-reported-local-only');
+ expect(data.events).toHaveLength(1);
+ await journey.getByRole('button',{name:'Clear temporary practice'}).click();
+ await expect(studio.locator('.u2-practice-tally')).toContainText('0 / 2');
+ await journey.getByRole('textbox',{name:'Practice checkpoint file'}).setInputFiles({
+  name:'self-reported.json',mimeType:'application/json',buffer:Buffer.from(raw)
+ });
+ await expect(journey.locator('.u4-checkpoint-status')).toContainText('Replayed 1 self-reported events');
+ await expect(studio.locator('.u2-practice-tally')).toContainText('1 / 2');
+ await journey.getByRole('textbox',{name:'Practice checkpoint file'}).setInputFiles({
+  name:'forged.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...data,authoritative:true}))
+ });
+ await expect(journey.locator('.u4-checkpoint-status')).toContainText('Blocked:');
+ await expect(studio.locator('.u2-practice-tally')).toContainText('1 / 2');
+});
