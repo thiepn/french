@@ -1,0 +1,24 @@
+/* U3 adds route-local guidance; all content remains on-demand and ungraded. */
+.u3-path-controls{display:flex;gap:.75rem;align-items:end;flex-wrap:wrap;margin:.8rem 0}
+.u3-path-controls label,.u3-review-import label{display:grid;gap:.35rem;font-size:.83rem;color:var(--muted)}
+.u3-path-controls select,.u3-review-import input{min-height:42px;max-width:100%;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:.5rem;padding:.6rem}
+.u3-path-controls button{min-height:42px!important}
+.u3-path-summary{margin:.4rem 0 1rem;line-height:1.5;font-size:.87rem}
+.u2-lesson-option[hidden]{display:none}
+.u3-prerequisite{margin:.9rem 0;padding:.8rem;border:1px solid var(--line);border-radius:.55rem}
+.u3-prerequisite strong{display:block;margin-bottom:.45rem}
+.u3-prerequisite button{min-height:40px!important;margin:.25rem .4rem .25rem 0}
+.u3-prerequisite small{display:block;margin-top:.4rem;color:var(--muted);line-height:1.55}
+.u3-writing-hints{padding:.8rem;border:1px solid var(--line);border-radius:.6rem;margin:.65rem 0;background:var(--surface)}
+.u3-writing-hints[hidden]{display:none}
+.u3-writing-hints p{margin:.45rem 0;line-height:1.6}
+.u3-writing-hints button{min-height:40px!important}
+.u3-review-import{border:1px solid var(--line);padding:1rem;border-radius:.7rem;margin:1rem 0;background:var(--surface)}
+.u3-review-import h2{font-size:1.1rem;margin:.2rem 0 .65rem}
+.u3-review-import p{color:var(--muted);line-height:1.6}
+.u3-review-import input{display:block;margin:.5rem 0}
+.u3-import-actions{display:flex;gap:.55rem;flex-wrap:wrap;margin:.75rem 0}
+.u3-import-actions button{min-height:42px!important}
+.u3-import-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;max-height:260px;overflow:auto}
+.u3-import-note{padding:.7rem;border:1px solid var(--line);border-radius:.45rem;overflow-wrap:anywhere;font-size:.8rem}
+@media(max-width:560px){.u3-path-controls>*{width:100%}.u3-import-list{grid-template-columns:1fr}.u3-import-actions button{width:100%}}
