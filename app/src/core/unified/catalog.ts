@@ -1,5 +1,5 @@
 /** Rights-held, source-pinned curriculum INDEX ONLY; no original lesson text or PDF. */
-import {immutableRef,SOURCES,sourceId} from './source';
+import {immutableRef,SOURCES,sourceId} from './source.ts';
 export type CourseLevel='A1.1'|'A1.2'|'A2.1'|'A2.2';
 export interface CourseSession{n:number;id:string;object:string;unit:number;level:CourseLevel;kind:'lesson'|'review';pdfPage:number;printedPage:number;checkpoint:string|null;}
 export interface GrammarRef{id:string;level:string;lessonIds:readonly string[];}
