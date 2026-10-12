@@ -33,8 +33,8 @@ for(const [i,unit] of A1_FULL_UNITS.entries()){
   }
   if(task.type==='order'){
    assert.notEqual(task.options.join(' '),task.answer);
-   assert.equal(task.options.slice().sort().join(' / '),
-    task.answer.split(' ').sort().join(' / '),'same word tiles as model '+task.id);
+   assert.equal(task.options.flatMap(piece=>piece.split(' ')).sort().join(' / '),
+    task.answer.split(' ').sort().join(' / '),'same words as model '+task.id);
   }
  }
  assert.ok(unit.tasks.some(t=>t.type==='fill'));
