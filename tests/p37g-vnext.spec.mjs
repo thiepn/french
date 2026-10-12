@@ -414,12 +414,12 @@ test('U4 optional checkpoint explicit export and replay are local, bounded and d
  expect(data.events).toHaveLength(1);
  await journey.getByRole('button',{name:'Clear temporary practice'}).click();
  await expect(studio.locator('.u2-practice-tally')).toContainText('0 / 2');
- await journey.getByRole('textbox',{name:'Practice checkpoint file'}).setInputFiles({
+ await journey.locator('input[type="file"]').setInputFiles({
   name:'self-reported.json',mimeType:'application/json',buffer:Buffer.from(raw)
  });
  await expect(journey.locator('.u4-checkpoint-status')).toContainText('Replayed 1 self-reported events');
  await expect(studio.locator('.u2-practice-tally')).toContainText('1 / 2');
- await journey.getByRole('textbox',{name:'Practice checkpoint file'}).setInputFiles({
+ await journey.locator('input[type="file"]').setInputFiles({
   name:'forged.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...data,authoritative:true}))
  });
  await expect(journey.locator('.u4-checkpoint-status')).toContainText('Blocked:');
