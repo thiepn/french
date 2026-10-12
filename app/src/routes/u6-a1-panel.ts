@@ -56,6 +56,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     ' lesson exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
    sidebar.replaceChildren(el('h3','A1–A2 lesson sequence'));
+   const jump=el('div',undefined,'u8-jump-level');
+   jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
+    button('Start A2',()=>open('a2-01','understand'),'u8-level-button'));
+   sidebar.append(jump);
    for(const unit of lessons){
     if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and stories','u8-course-divider'));
     const practice=originalFrenchPracticeStatus(unit.id,answerMap(unit.id))!;
