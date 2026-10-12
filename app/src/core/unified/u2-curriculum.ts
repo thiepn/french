@@ -24,8 +24,7 @@ export interface U2Lesson {
 }
 type Spec=readonly [
   string,'A1'|'A2',string,string,string,string,
-  readonly [string,string,string],readonly [string,string,string],
-  readonly [string,string,string],
+  string,string,string,
   string,
   readonly [string,string,string,string],
   readonly [string,string,string,string]
