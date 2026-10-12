@@ -1,4 +1,4 @@
-import {sourceId,type SourceKey} from './source';
+import {sourceId,type SourceKey} from './source.ts';
 /** Surface-form matches are unverified hypotheses, never equal senses or transferable mastery. */
 export interface LexicalRow {
   readonly source:SourceKey;
