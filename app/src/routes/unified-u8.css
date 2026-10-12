@@ -1,7 +1,7 @@
 /* U8 extends the existing six-stage Course; no duplicate progress UI. */
-.u8-jump-level{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem;margin-bottom:.7rem}
+.u8-jump-level{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;margin-bottom:.7rem}
 .u8-level-button{font:inherit;text-align:center;font-size:.84rem;font-weight:600;min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.3rem;cursor:pointer}
 .u8-course-divider{font-size:.9rem;margin:1rem 0 .4rem;padding-top:.75rem;border-top:1px solid var(--line);grid-column:1/-1}
 .u8-level-button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:840px){.u8-jump-level{grid-column:1/-1}}
-@media(max-width:420px){.u8-jump-level{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.u8-jump-level{grid-template-columns:repeat(3,minmax(0,1fr))}}
