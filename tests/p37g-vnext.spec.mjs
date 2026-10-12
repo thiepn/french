@@ -215,3 +215,24 @@ test('B7 original source mission keyboard launch and reload resume on actual bro
   const widths=await page.evaluate(()=>({viewport:innerWidth,document:document.documentElement.scrollWidth}));
   expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
 });
+
+
+test('U1 Course and Grammar lazy views preserve the learner boundary',async({page})=>{
+ await page.goto('/#course');
+ await expect(page.getByRole('heading',{name:'Course',exact:true})).toBeVisible();
+ await expect(page.locator('.u1-session')).toHaveCount(60);
+ await expect(page.getByText('48 lessons · 12 unit reviews · 6 checkpoints')).toBeVisible();
+ await page.locator('.u1-session[data-session="S10"]').click();
+ await expect(page).toHaveURL(/#course\?session=S10$/);
+ await expect(page.getByRole('heading',{name:'Session S10'})).toBeVisible();
+ await expect(page.getByText('Cumulative checkpoint MOD-01')).toBeVisible();
+ await page.getByRole('button',{name:'Grammar',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Grammar',exact:true})).toBeVisible();
+ await expect(page.locator('.u1-grammar-ref')).toHaveCount(72);
+ await expect(page.getByText(/Original explanations and examples require rights approval/)).toBeVisible();
+ const resources=await page.evaluate(()=>performance.getEntriesByType('resource').map(x=>x.name));
+ expect(resources.some(x=>/French Coursebook\.pdf|french2\.2/.test(x))).toBe(false);
+ expect(await page.evaluate(()=>Object.keys(localStorage).some(k=>k==='fr-a1a2-practice-v6'||k==='french_flashcards_L15_28_v1'))).toBe(false);
+ const widths=await page.evaluate(()=>({document:document.documentElement.scrollWidth,viewport:innerWidth}));
+ expect(widths.document).toBeLessThanOrEqual(widths.viewport+2);
+});
