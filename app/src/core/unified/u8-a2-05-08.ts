@@ -35,7 +35,7 @@ const authored:A1AuthoredSpec[]=[
  ['fill','Il ___ quand le bus est arrivé. (pleuvoir)','pleuvait','The rain is the ongoing background situation.',[],'background aspect'],
  ['choice','Choose the complete event: le téléphone ...','a sonné','A single ringing event is presented as complete with passé composé.',['sonnait','a sonné','sonner'],'bounded event'],
  ['reading','What happened while people were waiting?','une annonce a signalé un retard','An announcement reported a delay during the wait.',['le train est arrivé','une annonce a signalé un retard','il a cessé de pleuvoir'],'comprehension'],
- ['fill','Je lisais quand la porte a ___. (s’ouvrir)','ouvert','This clause uses a completed opening event in passé composé with avoir: a ouvert.',[],'completed event'],
+ ['fill','Je lisais quand quelqu’un a ___ la porte. (ouvrir)','ouvert','The completed action is a ouvert la porte; the door is the direct object.',[],'completed event'],
  ['choice','Which sentence uses background and event correctly?','Je dormais quand il a appelé.','Dormais is background; a appelé is a completed interruption.',['Je dormais quand il a appelé.','J’ai dormi quand il appelait toujours.','Je dormir quand il a appelé.'],'tense contrast'],
  ['order','Arrange: est arrivé / le train / quand / Nous attendions','Nous attendions quand le train est arrivé','Imparfait provides ongoing waiting; passé composé marks arrival.',['quand','est arrivé','Nous attendions','le train'],'word order'],
  ['fill','Pendant que nous ___, elle écrivait. (manger)','mangions','Two simultaneous ongoing activities can use imparfait.',[],'simultaneous aspect'],
