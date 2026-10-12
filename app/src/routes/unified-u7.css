@@ -1,0 +1,18 @@
+/* U7 optional original listening stage — progressively enhanced, no required audio playback. */
+.u7-listening-notice{padding:.65rem .85rem;margin:.8rem 0;border-left:3px solid var(--line);font-size:.88rem;line-height:1.6;color:var(--muted)}
+.u7-audio-actions{display:flex;flex-wrap:wrap;gap:.6rem;margin:.85rem 0}
+.u7-audio-actions button{min-height:44px!important}
+.u7-speech-status{font-size:.86rem;line-height:1.55;color:var(--muted);min-height:1.4rem}
+.u7-listening-transcript{display:grid;gap:.5rem;border-left:2px solid var(--accent);padding:.7rem .85rem;margin:1rem 0}
+.u7-listening-transcript[hidden]{display:none}
+.u7-listening-transcript p{line-height:1.5;margin:0;overflow-wrap:anywhere}
+.u7-listening-question{display:grid;gap:.55rem;padding:.75rem;border:1px solid var(--line);border-radius:.35rem;margin:1rem 0}
+.u7-listening-question label{display:grid;gap:.5rem;font-size:.89rem;line-height:1.55}
+.u7-listening-question select{display:block;min-height:44px;max-width:100%;width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:.65rem;font:inherit;border-radius:.25rem}
+.u7-listening-question button{justify-self:start;min-height:44px!important}
+.u7-listening-result{font-size:.86rem;color:var(--muted);line-height:1.5;min-height:1em;margin:.1rem 0}
+.u6-stage-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}
+.u6-stage-button{min-width:0;text-align:left}
+.u7-listening-question select:focus-visible,.u7-audio-actions button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){.u6-stage-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.u7-audio-actions{display:grid}.u7-audio-actions button{width:100%}}
+@media(prefers-reduced-motion:reduce){.u7-listening-question *{transition:none!important;animation:none!important}}
