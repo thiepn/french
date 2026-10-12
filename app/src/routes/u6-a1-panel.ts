@@ -59,7 +59,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    sidebar.replaceChildren(el('h3','A1–A2 lesson sequence'));
    const jump=el('div',undefined,'u8-jump-level');
    jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
-    button('Start A2',()=>open('a2-01','understand'),'u8-level-button'));
+    button('A2 stories',()=>open('a2-01','understand'),'u8-level-button'),
+    button('A2 practical',()=>open('a2-15','understand'),'u8-level-button'));
    sidebar.append(jump);
    for(const unit of lessons){
     if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and practical communication','u8-course-divider'));
