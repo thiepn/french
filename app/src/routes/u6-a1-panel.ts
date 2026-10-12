@@ -1,10 +1,11 @@
 import type {RouteId} from '../core/types';
-import {loadA1CompleteCourse,getA1CompleteUnit,suggestedCompleteA1Unit,completeA1PracticeStatus} from '../core/unified/u7-a1-course';
+import {loadOriginalFrenchCourse,getOriginalFrenchUnit,suggestedOriginalFrenchUnit,originalFrenchPracticeStatus} from '../core/unified/u8-course';
 import {mountA1Listening} from './u7-listening-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {inspectDraftStructure} from '../core/unified/u3-writing';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
+import './unified-u8.css';
 type Stage='understand'|'words'|'dialogue'|'listen'|'practice'|'write';
 const STAGES:readonly [Stage,string][]=[
  ['understand','1. Understand'],['words','2. Vocabulary'],['dialogue','3. Read'],
@@ -22,7 +23,7 @@ function button(label:string,action:()=>void,classes='secondary-action compact-a
 export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId)=>void,signal:AbortSignal):Promise<void>{
  host.replaceChildren(el('p','Loading the original A1 course…'));
  try{
-  const lessons=await loadA1CompleteCourse();
+  const lessons=await loadOriginalFrenchCourse();
   if(signal.aborted||!host.isConnected)return;
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
@@ -32,9 +33,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   let stopAudio:(()=>void)|null=null;
   host.replaceChildren();host.className='u6-full-course';
   const header=el('header',undefined,'u6-head');
-  header.append(el('p','FOUNDATIONS · A1 · ORIGINAL COURSE','eyebrow'),
+  header.append(el('p','ORIGINAL COURSE · A1 + A2','eyebrow'),
     el('h2','Learn French from the beginning'),
-    el('p','Twenty-four full original lessons with explanations, vocabulary, dialogues, listening, recall and writing. Complete each stage at your own pace.'));
+    el('p','Twenty-four full A1 lessons lead into fourteen original A2 narrative lessons. Continue through grammar, vocabulary, reading, French-device listening, recall and writing.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','A1 full course lessons');
@@ -47,17 +48,22 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   };
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const unit of lessons)if(completeA1PracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
+   for(const unit of lessons)if(originalFrenchPracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
    return passed;
   };
   function renderIndex(){
-   const done=practiced(),next=suggestedCompleteA1Unit(done);
+   const done=practiced(),next=suggestedOriginalFrenchUnit(done);
    status.textContent=done.size+'/'+lessons.length+
     ' lesson exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
-   sidebar.replaceChildren(el('h3','A1 lesson sequence'));
+   sidebar.replaceChildren(el('h3','A1–A2 lesson sequence'));
+   const jump=el('div',undefined,'u8-jump-level');
+   jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
+    button('Start A2',()=>open('a2-01','understand'),'u8-level-button'));
+   sidebar.append(jump);
    for(const unit of lessons){
-    const practice=completeA1PracticeStatus(unit.id,answerMap(unit.id))!;
+    if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and stories','u8-course-divider'));
+    const practice=originalFrenchPracticeStatus(unit.id,answerMap(unit.id))!;
     const label=String(unit.order).padStart(2,'0')+' · '+unit.title+
      (practice.correct?' ('+practice.correct+'/'+practice.total+')':'');
     const item=button(label,()=>open(unit.id,'understand'),'u6-unit-button');
@@ -145,7 +151,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
-   const practicedCount=completeA1PracticeStatus(unit.id,record)!;
+   const practicedCount=originalFrenchPracticeStatus(unit.id,record)!;
    const errors=mistakes.get(unit.id)??new Set<string>();
    container.append(el('p',practicedCount.correct+'/'+practicedCount.total+
     ' correct tasks during this temporary page visit. No FSRS or CEFR score is recorded.','u6-practice-status'));
@@ -212,7 +218,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const label=nav.querySelector<HTMLButtonElement>('button:nth-child('+(taskIndex+1)+')');
     if(label&&passed)label.textContent=String(taskIndex+1)+' ✓';
     container.querySelector<HTMLElement>('.u6-practice-status')!.textContent=
-     completeA1PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
+     originalFrenchPracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
      ' correct tasks this visit · ungraded and not saved.';
    });
    const reveal=button('Show worked answer (assisted)',()=>{
@@ -255,10 +261,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(signal.aborted)return;
    article.replaceChildren();
    const head=el('header',undefined,'u6-unit-header');
-   head.append(el('p','A1 · LESSON '+String(current.order).padStart(2,'0')+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
+   head.append(el('p',(current.id.startsWith('a2-')?'A2':'A1')+' · LESSON '+current.id.slice(3)+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
     el('h3',current.title),el('p',current.goal));
    const pre=el('p',current.prerequisites.length?
-    'Suggested foundation: '+(getA1CompleteUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
+    'Suggested foundation: '+(getOriginalFrenchUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
     'Start here: no prior lesson is required.','u6-small');
    head.append(pre);article.append(head);
    const stageNav=el('div',undefined,'u6-stage-nav');stageNav.setAttribute('role','group');stageNav.setAttribute('aria-label','Lesson learning stages');
@@ -282,7 +288,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.append(trace);
   }
   function open(id:string,next:Stage){
-   const lesson=getA1CompleteUnit(id);if(!lesson)return;
+   const lesson=getOriginalFrenchUnit(id);if(!lesson)return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    current=lesson;stage=next;
