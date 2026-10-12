@@ -252,3 +252,55 @@ test('U1 lazy Grammar guides check recall without entering native progress',asyn
   await page.getByRole('button',{name:'Browse 60-session course'}).click();
   await expect(page).toHaveURL(/#course$/);
 });
+
+
+test('U2 original course makes contextual dialogues, recalls and next lessons accessible',async({page})=>{
+  await page.goto('/#course');
+  const studio=page.locator('[data-u2-studio]');
+  await expect(studio.getByRole('heading',{name:'Original guided lessons'})).toBeVisible();
+  await expect(studio.locator('[data-u2-id]')).toHaveCount(12);
+  await expect(studio.locator('.u2-dialogue-line')).toHaveCount(3);
+  await expect(studio).toContainText('not the 60 Carnet source sessions');
+  await studio.getByRole('button',{name:'Show translation'}).first().click();
+  await expect(studio.locator('.u2-translation').first()).toBeVisible();
+  const first=studio.locator('.u2-exercise').first();
+  await first.getByRole('textbox',{name:'Answer task 1'}).fill('suis');
+  await first.getByRole('button',{name:'Check answer'}).click();
+  await expect(first.getByRole('status')).toContainText('Correct');
+  await expect(studio.locator('.u2-practice-tally')).toContainText('1 / 2');
+  await studio.getByRole('combobox',{name:'Original lesson'}).selectOption('yesterday');
+  await expect(studio.locator('.u2-lesson-heading')).toContainText('What happened yesterday');
+  await studio.getByRole('button',{name:'Study Le passé composé'}).click();
+  await expect(page).toHaveURL(/#grammar$/);
+  await expect(page.locator('[data-u2-grammar]')).toContainText('Common corrections');
+  await expect(page.locator('[data-u2-grammar]')).toContainText('Use this in a lesson');
+  const challenge=page.locator('[data-u2-grammar] .u2-exercise').first();
+  await challenge.getByRole('textbox').fill('as');
+  await challenge.getByRole('button',{name:'Check'}).click();
+  await expect(challenge.getByRole('status')).toContainText('Correct');
+  await page.locator('[data-u2-grammar]').getByRole('button',{name:'What happened yesterday'}).click();
+  await expect(page).toHaveURL(/#course$/);
+  await expect(page.locator('.u2-lesson-heading')).toContainText('What happened yesterday');
+});
+
+test('U2 lexical mapping requires explicit evidence and exports non-authoritative drafts',async({page})=>{
+  await page.goto('/#links');
+  await expect(page.getByRole('heading',{name:'Sense links'})).toBeVisible();
+  await expect(page.locator('[data-status]')).toContainText(/Loaded .*native vocabulary rows|Native index unavailable/,{timeout:30_000});
+  await expect(page.locator('.u2-review-option').first()).toBeVisible();
+  await page.getByRole('button',{name:'Save draft decision'}).click();
+  await expect(page.locator('[data-detail] [role=status]')).toContainText('Saved as local, unapproved');
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export review draft'}).click();
+  const download=await downloadPromise;
+  const {readFile}=await import('node:fs/promises');
+  const payload=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(payload.schema).toBe('thiepn-french-u2-lexical-review-draft-v1');
+  expect(payload.authority).toBe('review-only');
+  expect(payload.approved).toBe(false);
+  expect(payload.progressImported).toBe(false);
+  expect(payload.decisions).toHaveLength(1);
+  await page.getByRole('button',{name:'Clear draft decisions'}).click();
+  await expect(page.locator('[data-counts]')).toContainText('0 reviewed drafts');
+  await expect(page.getByRole('button',{name:'Export review draft'})).toBeDisabled();
+});

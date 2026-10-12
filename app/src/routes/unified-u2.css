@@ -1,0 +1,52 @@
+/* U2 original curriculum + grammar studio. Avoid global learner route styling. */
+.u2-studio-head{margin-top:2rem;display:grid;gap:.2rem;border-top:1px solid var(--line);padding-top:1.25rem}
+.u2-studio-head h2,.u2-grammar-depth h3{margin:.25rem 0;font-size:1.25rem}
+.u2-studio-head p,.u2-lesson-heading p,.u2-dialogue>p{color:var(--muted);line-height:1.5}
+.u2-picker{display:grid;gap:.4rem;margin:1rem 0;max-width:340px;font-size:.8rem;color:var(--muted)}
+.u2-picker select,.u2-exercise select,.u2-exercise input,.u2-production textarea{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.5rem;padding:.75rem;width:100%}
+.u2-learning-layout{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:1rem;align-items:start}
+.u2-lessons-grid{display:grid;gap:.35rem;max-height:560px;overflow:auto;position:sticky;top:88px}
+.u2-lesson-option{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--text);text-align:left;border-radius:.45rem;padding:.65rem;cursor:pointer}
+.u2-lesson-option.selected{border:2px solid var(--accent);font-weight:700}
+.u2-lesson-stage{min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:.7rem;padding:clamp(.8rem,2.5vw,1.5rem)}
+.u2-lesson-stage h3{margin:.2rem 0;font-size:1.8rem;line-height:1.2}
+.u2-lesson-stage h4{margin:0 0 .65rem;font-size:1.05rem}
+.u2-lesson-stage section{border-top:1px solid var(--line);margin-top:1.3rem;padding-top:1.1rem}
+.u2-dialogue-line{border-left:2px solid var(--line);padding:.3rem .7rem;margin:.55rem 0}
+.u2-dialogue-line>p:first-child{margin:0 0 .35rem;line-height:1.5}
+.u2-dialogue-line button{padding:.38rem .65rem!important}
+.u2-translation{margin:.35rem 0;color:var(--muted);font-style:italic}
+.u2-translation[hidden]{display:none}
+.u2-words dl{display:grid;grid-template-columns:1fr 1.4fr;gap:.45rem .85rem;margin:0}
+.u2-words dt{font-weight:700}
+.u2-words dd{margin:0;color:var(--muted)}
+.u2-linked-grammar>button,.u2-actions button,.u2-grammar-links button{min-height:auto}
+.u2-practice>p{color:var(--muted);font-size:.85rem}
+.u2-exercise{display:grid;gap:.55rem;border:1px solid var(--line);border-radius:.6rem;padding:.85rem;margin:.75rem 0}
+.u2-exercise strong,.u2-exercise label{font-size:.9rem}
+.u2-exercise button{min-height:40px!important;justify-self:start}
+.u2-feedback{font-size:.83rem;line-height:1.5;color:var(--muted);margin:.3rem 0}
+.u2-practice-tally{font-weight:700;color:var(--text)!important}
+.u2-production textarea{display:block;resize:vertical;margin:.75rem 0;min-height:86px}
+.u2-actions,.u2-grammar-links{display:flex;gap:.65rem;align-items:center;flex-wrap:wrap;margin-top:1.2rem}
+.u2-provenance{font-size:.72rem;color:var(--muted);overflow-wrap:anywhere;border-top:1px solid var(--line);padding-top:.75rem}
+.u2-grammar-depth{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}
+.u2-grammar-depth>p{line-height:1.65}
+.u2-worked{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin:1rem 0}
+.u2-worked-example,.u2-correction{border:1px solid var(--line);border-radius:.55rem;padding:.8rem;margin:.5rem 0}
+.u2-worked-example p,.u2-correction p{margin:.4rem 0 0;font-size:.84rem;color:var(--muted)}
+.u2-correction{display:grid;gap:.3rem}
+.u2-correction s{color:var(--muted)}
+.u2-review-layout{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:1rem}
+.u2-review-card{padding:1rem;border:1px solid var(--line);border-radius:.7rem;background:var(--surface);min-width:0}
+.u2-review-card h2{margin:.2rem 0;font-size:1.15rem}
+.u2-review-list{display:grid;gap:.5rem;max-height:480px;overflow:auto}
+.u2-review-option{padding:.7rem;background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:.45rem;text-align:left;cursor:pointer}
+.u2-review-option.selected{border:2px solid var(--accent)}
+.u2-review-card label{display:grid;gap:.4rem;font-size:.8rem;color:var(--muted);margin:.6rem 0}
+.u2-review-card textarea,.u2-review-card select{width:100%;padding:.65rem;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.45rem}
+.u2-review-card textarea{resize:vertical}
+.u2-review-summary{display:flex;gap:.65rem;flex-wrap:wrap}
+.u2-review-card button{min-height:auto}
+@media(max-width:760px){.u2-learning-layout,.u2-review-layout{grid-template-columns:1fr}.u2-lessons-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none;position:static}.u2-worked{grid-template-columns:1fr}}
+@media(max-width:420px){.u2-lessons-grid{grid-template-columns:1fr}}

@@ -16,6 +16,8 @@ export function mount({main,signal,navigate}:RouteContext):void {
     </div>
     <div class="unified-session-grid" data-grid aria-label="60 source session positions"></div>
     <article class="unified-detail" data-detail aria-live="polite"></article>
+    <section data-u2-studio aria-label="Original U2 lessons"></section>
+    <div class="unified-tools"><button type="button" class="secondary-action compact-action" data-links>Open lexical review workbench</button></div>
     <section class="unified-import" aria-labelledby="u1-preflight-heading">
       <h2 id="u1-preflight-heading">Legacy export preflight</h2>
       <p>Select a JSON export already saved on this device to inspect its shape locally. This cannot import, merge, sync or change any learning history. Cross-site storage is never read.</p>
@@ -78,6 +80,13 @@ export function mount({main,signal,navigate}:RouteContext):void {
     }catch{
       if(!signal.aborted)result.textContent='File could not be inspected. No data changed.';
     }finally{fileInput.value='';}
+  });
+  main.querySelector('[data-links]')?.addEventListener('click',()=>navigate('links'));
+  const studio=main.querySelector<HTMLElement>('[data-u2-studio]');
+  if(studio)void import('./u2-studio').then(module=>{
+    if(!signal.aborted)void module.mountOriginalLessons(studio,navigate,signal);
+  }).catch(error=>{
+    if(!signal.aborted){studio.textContent='Original course studio unavailable. Source references remain available.';console.error(error);}
   });
   show(1);
 }

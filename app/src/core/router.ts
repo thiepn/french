@@ -1,7 +1,7 @@
 import { ROUTE_IDS,type RouteContext,type RouteId,type RouteModule,type ShellApi } from './types';
 const loaders:Record<RouteId,()=>Promise<RouteModule>>={
   home:()=>import('../routes/home'),learn:()=>import('../routes/learn'),review:()=>import('../routes/review'),read:()=>import('../routes/read'),words:()=>import('../routes/words'),
-  listen:()=>import('../routes/listen'),speak:()=>import('../routes/speak'),conversation:()=>import('../routes/conversation'),write:()=>import('../routes/write'),progress:()=>import('../routes/progress'),course:()=>import('../routes/course'),grammar:()=>import('../routes/grammar'),settings:()=>import('../routes/settings')
+  listen:()=>import('../routes/listen'),speak:()=>import('../routes/speak'),conversation:()=>import('../routes/conversation'),write:()=>import('../routes/write'),progress:()=>import('../routes/progress'),course:()=>import('../routes/course'),grammar:()=>import('../routes/grammar'),links:()=>import('../routes/links'),settings:()=>import('../routes/settings')
 };
 function current():RouteId{const value=location.hash.replace(/^#/,'')||'home';return ROUTE_IDS.includes(value as RouteId)?value as RouteId:'home';}
 export function createRouter(shell:ShellApi){
