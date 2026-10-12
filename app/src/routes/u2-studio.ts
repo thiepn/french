@@ -146,7 +146,7 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
     }
     const feedback=make('p','','u2-feedback');feedback.setAttribute('role','status');
     const repairPanel=make('aside',undefined,'u4-repair');repairPanel.hidden=true;
-    input.maxLength=160;
+    if(input instanceof HTMLInputElement)input.maxLength=160;
     const submit=make('button','Check answer','primary-action compact-action');submit.type='submit';
     form.addEventListener('submit',event=>{
      event.preventDefault();
