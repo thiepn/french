@@ -21,7 +21,7 @@ const authored:A1AuthoredSpec[]=[
  ['choice','Choose the feminine form of “better.”','meilleure','Meilleure agrees with a feminine singular noun.',['meilleurs','meilleure','mieux'],'agreement'],
  ['fill','Le bus est ___ cher que le taxi. (less)','moins','Moins ... que expresses a lower degree.',[],'comparison']
  ],
- writing:['Compare two apartments or transport choices and recommend one in six connected sentences.', ['Use plus, moins and aussi ... que with appropriate adjectives.','Explain one advantage and one drawback.','Use meilleur or mieux in the appropriate grammatical role.'],'Le premier appartement est plus grand que le second. Il est aussi plus cher. Le second est aussi lumineux. Il est moins loin de la gare. Son prix est meilleur. Je préfère le second parce qu’il est plus pratique.']
+ writing:['Compare two apartments or transport choices and recommend one in six connected sentences.', ['Use plus, moins and aussi ... que with appropriate adjectives.','Explain one advantage and one drawback.','Use meilleur or mieux in the appropriate grammatical role.'],'Le premier appartement est plus grand que le second. Il est aussi plus cher. Le second est aussi lumineux. Il est moins loin de la gare. Son rapport qualité-prix est meilleur. Je préfère le second parce qu’il est plus pratique.']
 },
 {
  id:'a2-16',title:'Planning tomorrow with futur simple',goal:'Differentiate a stated future event from futur proche and form common future stems.',grammarIds:['futur-proche'],grammar:[
