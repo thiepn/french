@@ -6,9 +6,12 @@ import './unified.css';
 
 export function mount({main,signal,navigate}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page">
-    <p class="eyebrow">Unified learning · U1</p><h1>Course</h1>
-    <p class="lede">60 indexed positions from Le Carnet Français. The source is pinned, but its lesson text and learner history are not yet approved for migration or redistribution.</p>
-    <div class="unified-alert" role="note">Course references only · no credit or mastery is granted from browsing. Existing Learn and Review remain authoritative.</div>
+    <p class="eyebrow">French curriculum · original teaching</p><h1>Course</h1>
+    <p class="lede">Start with 12 fully authored A1 foundation lessons. Study grammar, learn expressions, read original dialogues, practise recall and write your own French.</p>
+    <div class="unified-alert" role="note">The A1 course is practice-only and does not modify existing learner grades, SRS, CEFR or Account records. Native Learn and Review stay authoritative.</div>
+    <section data-u6-a1 aria-label="Original A1 full lesson course"></section>
+    <h2 class="u6-supplementary-heading">Supplementary source references</h2>
+    <p>Le Carnet Français: 60 indexed positions only. Lesson bodies and learner history remain rights-restricted and are not reproduced here.</p>
     <div class="unified-tools">
       <label>Jump to position <select data-position aria-label="Select course session"></select></label>
       <button type="button" class="secondary-action compact-action" data-grammar>Open Grammar</button>
@@ -16,6 +19,8 @@ export function mount({main,signal,navigate}:RouteContext):void {
     </div>
     <div class="unified-session-grid" data-grid aria-label="60 source session positions"></div>
     <article class="unified-detail" data-detail aria-live="polite"></article>
+    <h2 class="u6-supplementary-heading">Supplementary micro-lessons and practice missions</h2>
+    <p>Earlier short original lessons, thematic journeys and U5 missions remain available below the full A1 curriculum.</p>
     <section data-u2-studio aria-label="Original U2 lessons"></section>
     <div class="unified-tools"><button type="button" class="secondary-action compact-action" data-links>Open lexical review workbench</button></div>
     <section class="unified-import" aria-labelledby="u1-preflight-heading">
@@ -82,6 +87,12 @@ export function mount({main,signal,navigate}:RouteContext):void {
     }finally{fileInput.value='';}
   });
   main.querySelector('[data-links]')?.addEventListener('click',()=>navigate('links'));
+  const fullCourse=main.querySelector<HTMLElement>('[data-u6-a1]');
+  if(fullCourse)void import('./u6-a1-panel').then(module=>{
+    if(!signal.aborted)void module.mountA1FullCourse(fullCourse,navigate,signal);
+  }).catch(error=>{
+    if(!signal.aborted){fullCourse.textContent='Original A1 lessons unavailable. Native Learn remains available.';console.error(error);}
+  });
   const studio=main.querySelector<HTMLElement>('[data-u2-studio]');
   if(studio)void import('./u2-studio').then(module=>{
     if(!signal.aborted)void module.mountOriginalLessons(studio,navigate,signal);
