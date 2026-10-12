@@ -55,7 +55,7 @@ if(!Object.values(progress).every(plain))errors.push('INVALID_CARD_PROGRESS');
 if(plain(data.progress)&&data.settings!==undefined&&!plain(data.settings))errors.push('INVALID_SETTINGS');
 items=cardIds.length;
 }
-unknownFieldCount=Object.keys(data).filter(k=>!known[source].has(k)).length;
+if(plain(data))unknownFieldCount=Object.keys(data).filter(k=>!known[source].has(k)).length;
 if(unknownFieldCount)warnings.push('UNKNOWN_FIELDS_REQUIRE_PRESERVATION');
 }
 return{source,storageKey:keys[source],status:errors.length?'REJECTED':'VALID_PREVIEW',writeAllowed:false,
