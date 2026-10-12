@@ -71,7 +71,8 @@ function replayEvents(events:readonly PracticeEvent[]):{correct:number;practiced
  return {correct,practiced};
 }
 export function exportPracticeCheckpoint(events:readonly PracticeEvent[]):PracticeCheckpoint{
- const trimmed=events.slice(0,LIMIT).map((entry,index)=>({
+ if(events.length>LIMIT)throw new Error('Too many local practice events to export without loss');
+ const trimmed=events.map((entry,index)=>({
   sequence:index+1,lessonId:entry.lessonId,exerciseId:entry.exerciseId,submitted:entry.submitted
  }));
  const snapshot:PracticeCheckpoint={
