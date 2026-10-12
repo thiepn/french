@@ -65,7 +65,7 @@ export function mountMissionWorkspace(host:HTMLElement,actions:Actions):{setJour
   if(!event){status.textContent='Practice step could not be recorded.';return;}
   events.push(event);
   status.textContent='Recorded '+rating.replace('-claim',' (self-reported)')+' for '+step.title+'.';
-  refresh();
+  refresh(true);
  }
  function showStep(){
   stage.replaceChildren();
@@ -167,7 +167,7 @@ export function mountMissionWorkspace(host:HTMLElement,actions:Actions):{setJour
    if(advice.lessonId)recommendations.append(btn('Review original source lesson',()=>actions.openLesson(advice.lessonId!)));
   }else recommendations.append(make('p','All steps were self-reported. Repeat any step to strengthen recall; no completion credit is issued.'));
  }
- function refresh(){
+ function refresh(preserveStage=false){
   if(actions.signal.aborted)return;
   const latest=latestMissionRatings(mission,events);
   summary.textContent=mission.context+' · '+latest.size+'/'+mission.steps.length+
@@ -181,7 +181,7 @@ export function mountMissionWorkspace(host:HTMLElement,actions:Actions):{setJour
    button.dataset.missionStep=step.id;steps.append(button);
   }
   exportButton.disabled=events.length===0;
-  showStep();showAdvice();
+  if(!preserveStage)showStep();showAdvice();
  }
  steps.addEventListener('keydown',event=>{
   if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
