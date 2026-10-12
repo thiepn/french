@@ -1,6 +1,7 @@
 import {ORIGINAL_JOURNEYS,journeyStatus,validateJourneys} from '../core/unified/u4-journeys';
 import {ORIGINAL_PATH_LESSONS} from '../core/unified/u3-pathways';
 import {exportPracticeCheckpoint,inspectPracticeCheckpoint,type PracticeEvent} from '../core/unified/u4-checkpoints';
+import {mountMissionWorkspace} from './u5-mission-panel';
 import './unified-u4.css';
 
 interface JourneyActions{
@@ -35,6 +36,8 @@ export function mountJourneyWorkspace(host:HTMLElement,actions:JourneyActions):{
  const summary=el('p');summary.dataset.journeySummary='';summary.setAttribute('role','status');
  const listing=el('ol');listing.className='u4-journey-stops';
  const actionsRow=el('div');actionsRow.className='u4-checkpoint-actions';
+ const missionHost=el('section');missionHost.dataset.u5Missions='';
+ const missionWorkspace=mountMissionWorkspace(missionHost,{openLesson:actions.open,signal:actions.signal});
  const download=button('Export local practice checkpoint',()=>{
   const events=actions.events();
   if(!events.length){status.textContent='Complete a local recall attempt before exporting.';return;}
@@ -77,9 +80,13 @@ export function mountJourneyWorkspace(host:HTMLElement,actions:JourneyActions):{
  });
  actionsRow.append(download,fileLabel,clear);
  host.append(heading,info,label,summary,listing,actionsRow,status);
+ // Keep the separate mission handoff outside the legacy U4 checkpoint selector
+ // scope; the original U4 browser contract must continue to match exactly one file input.
+ host.after(missionHost);
  const refresh=()=>{
   const chosen=ORIGINAL_JOURNEYS.find(j=>j.id===select.value)??ORIGINAL_JOURNEYS[0];
   const state=journeyStatus(chosen.id,actions.practiced)!;
+  missionWorkspace.setJourney(chosen.id);
   summary.textContent=chosen.purpose+' · '+state.practiced+'/'+state.total+
    ' locally practiced · '+(state.suggestedId?
     'Suggested next: '+(ORIGINAL_PATH_LESSONS.find(l=>l.id===state.suggestedId)?.title??''):'All journey exercises attempted successfully.');

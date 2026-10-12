@@ -425,3 +425,73 @@ test('U4 optional checkpoint explicit export and replay are local, bounded and d
  await expect(journey.locator('.u4-checkpoint-status')).toContainText('Blocked:');
  await expect(studio.locator('.u2-practice-tally')).toContainText('1 / 2');
 });
+
+
+test('U5 integrated original reading, speaking and writing missions adapt recommendations',async({page})=>{
+ await page.goto('/#course');
+ const panel=page.locator('.u5-workspace');
+ await expect(panel.getByRole('heading',{name:'Integrated practice mission'})).toBeVisible();
+ await expect(panel.locator('[data-mission-step]')).toHaveCount(4);
+ await expect(panel.locator('[data-mission-stage]')).toContainText('Read an order');
+ await panel.getByRole('combobox',{name:'Reading response'}).selectOption('un café');
+ await panel.getByRole('button',{name:'Check mission answer'}).click();
+ await expect(panel.locator('.u5-step-feedback')).toContainText('Not yet');
+ await expect(panel.locator('.u5-recommendation')).toContainText('Revisit this step');
+ await panel.getByRole('combobox',{name:'Reading response'}).selectOption('un thé');
+ await panel.getByRole('button',{name:'Check mission answer'}).click();
+ await expect(panel.locator('.u5-step-feedback')).toContainText('Matches the original answer');
+ await expect(panel.locator('.u5-recommendation')).toContainText('Move to the next original task');
+ const speaking=panel.locator('[data-mission-step="introduce-and-order-2"]');
+ await speaking.click();
+ await expect(panel.locator('[data-mission-stage]')).toContainText('Introduce yourself aloud');
+ await panel.getByRole('button',{name:'Mark practiced independently'}).click();
+ await expect(panel.locator('.u5-step-feedback')).toContainText('Review all three criteria');
+ await panel.locator('.u5-criteria input[type=checkbox]').evaluateAll(nodes=>nodes.forEach(n=>n.click()));
+ await panel.getByRole('button',{name:'Mark practiced independently'}).click();
+ await expect(panel.locator('.u5-mission-summary')).toContainText('2/4 different steps attempted');
+ const writing=panel.locator('[data-mission-step="introduce-and-order-3"]');
+ await writing.click();
+ await panel.getByRole('textbox',{name:'Mission writing response'}).fill('Je n’aime pas les olives. J’aime les tomates.');
+ await panel.getByRole('button',{name:'Review writing prompts'}).click();
+ await expect(panel.locator('.u5-step-feedback')).toContainText('heuristic feedback');
+ await panel.getByRole('button',{name:'Mark practiced with support'}).click();
+ await expect(panel.locator('.u5-recommendation')).toContainText('Try another attempt without');
+ await panel.locator('[data-mission-step="introduce-and-order-1"]').focus();
+ await panel.locator('[data-mission-step="introduce-and-order-1"]').press('ArrowRight');
+ await expect(speaking).toBeFocused();
+ await expect(panel.locator('[data-mission-stage]')).toContainText('Introduce yourself aloud');
+});
+
+test('U5 explicit mission handoff replays self-ratings only and blocks forged claims',async({page})=>{
+ await page.goto('/#course');
+ const panel=page.locator('.u5-workspace');
+ await expect(panel.locator('[data-mission-stage]')).toContainText('Read an order');
+ await panel.getByRole('combobox',{name:'Reading response'}).selectOption('un thé');
+ await panel.getByRole('button',{name:'Check mission answer'}).click();
+ const wait=page.waitForEvent('download');
+ await panel.getByRole('button',{name:'Export mission handoff'}).click();
+ const file=await wait;
+ const {readFile}=await import('node:fs/promises');
+ const data=JSON.parse(await readFile(await file.path(),'utf8'));
+ expect(data.schema).toBe('thiepn-french-u5-mission-checkpoint-v1');
+ expect(data.custody).toBe('self-reported-local-only');
+ expect(data.approved).toBe(false);
+ expect(data.authoritative).toBe(false);
+ expect(data.events).toHaveLength(1);
+ expect(JSON.stringify(data)).not.toContain('Je voudrais un thé');
+ await panel.getByRole('button',{name:'Clear mission practice'}).click();
+ await expect(panel.locator('.u5-mission-summary')).toContainText('0/4');
+ await panel.locator('input[type=file]').setInputFiles({
+  name:'mission.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(data))
+ });
+ await expect(panel.locator('.u5-handoff-status')).toContainText('Imported 1 self-reported');
+ await expect(panel.locator('.u5-mission-summary')).toContainText('1/4');
+ await panel.locator('input[type=file]').setInputFiles({
+  name:'forged.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({...data,approved:true}))
+ });
+ await expect(panel.locator('.u5-handoff-status')).toContainText('Blocked:');
+ await expect(panel.locator('.u5-mission-summary')).toContainText('1/4');
+ await page.getByRole('combobox',{name:'Guided journey'}).selectOption('travel-day');
+ await expect(panel.locator('[data-mission-stage]')).toContainText('Read a ticket request');
+ await expect(panel.locator('.u5-mission-summary')).toContainText('0/4');
+});
