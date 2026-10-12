@@ -32,7 +32,7 @@ export function authorA1Unit(spec:A1AuthoredSpec,order:number):A1Unit{
  return Object.freeze({
   id:spec.id,order,title:spec.title,goal:spec.goal,
   prerequisites:Object.freeze(order===1?[]:['a1-'+String(order-1).padStart(2,'0')]),
-  minutes:25,source:provenance('original','session','u6-'+spec.id),
+  minutes:25,source:provenance('original','session',(order<=12?'u6-':'u7-')+spec.id),
   grammarIds:Object.freeze([...spec.grammarIds]),
   grammar:Object.freeze(spec.grammar.map(([heading,explanation,examples,correction])=>Object.freeze({
    heading,explanation,examples:Object.freeze(examples.map(row=>Object.freeze([...row] as const))),
@@ -47,7 +47,7 @@ export function authorA1Unit(spec:A1AuthoredSpec,order:number):A1Unit{
   writing:Object.freeze({prompt:spec.writing[0],criteria:Object.freeze([...spec.writing[1]]),model:spec.writing[2]})
  });
 }
-export function validateA1Units(units:readonly A1Unit[]):readonly string[]{
+export function validateA1Units(units:readonly A1Unit[],expectedCount=12):readonly string[]{
  const issues:string[]=[],ids=new Set<string>();
  for(const [i,unit] of units.entries()){
   if(ids.has(unit.id)||unit.id!=='a1-'+String(i+1).padStart(2,'0')||unit.order!==i+1)issues.push('Lesson identity/order '+unit.id);
@@ -70,6 +70,6 @@ export function validateA1Units(units:readonly A1Unit[]):readonly string[]{
   if(unit.dialogue.some(line=>!line.fr||!line.en)||unit.vocabulary.some(word=>!word.context||!word.english))
    issues.push('Empty dialogue/glossary '+unit.id);
  }
- if(units.length!==12)issues.push('Expected 12 full units');
+ if(units.length!==expectedCount)issues.push('Expected '+expectedCount+' full units');
  return issues;
 }
