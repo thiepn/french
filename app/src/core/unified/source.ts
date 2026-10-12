@@ -1,6 +1,6 @@
 export type SourceKey = 'native'|'carnet'|'french22'|'languages'|'original';
 export type SourceKind = 'session'|'grammar'|'lexeme'|'sense'|'example'|'reading'|'exercise';
-export type RightsState = 'native-verified'|'original-owned'|'review-required';
+export type RightsState = 'existing-runtime-mixed'|'original-owned'|'review-required';
 export interface SourceContract {
   readonly key: SourceKey;
   readonly repository: string;
@@ -10,10 +10,10 @@ export interface SourceContract {
   readonly displayName: string;
 }
 export const SOURCES: Readonly<Record<SourceKey,SourceContract>> = Object.freeze({
-  native: Object.freeze({key:'native',repository:'thiepn/french',revision:'74dc6fcf8eaa1b1b7a0ef6ea9f3d92625d5ee31f',rights:'native-verified',permitted:'native-runtime',displayName:'French vNext'}),
+  native: Object.freeze({key:'native',repository:'thiepn/french',revision:'74dc6fcf8eaa1b1b7a0ef6ea9f3d92625d5ee31f',rights:'existing-runtime-mixed',permitted:'native-runtime',displayName:'French vNext'}),
   carnet: Object.freeze({key:'carnet',repository:'thiepn/french-a1-a2',revision:'211208195e37dcb430e2321098c3ab545821548b',rights:'review-required',permitted:'metadata-only',displayName:'Le Carnet Français A1–A2'}),
   french22: Object.freeze({key:'french22',repository:'thiepn/french2.2',revision:'a4840e1db9376147d79dbc39d9e742023d773e47',rights:'review-required',permitted:'metadata-only',displayName:'French 2.2 German glosses'}),
-  languages: Object.freeze({key:'languages',repository:'thiepn/languages',revision:'b909b37c0e2a54e5ca93ba6880dbda1ad14d3405',rights:'native-verified',permitted:'native-runtime',displayName:'THIEPN Languages adapter'}),
+  languages: Object.freeze({key:'languages',repository:'thiepn/languages',revision:'b909b37c0e2a54e5ca93ba6880dbda1ad14d3405',rights:'existing-runtime-mixed',permitted:'native-runtime',displayName:'THIEPN Languages adapter'}),
   original: Object.freeze({key:'original',repository:'thiepn/french',revision:'unified-u1-original-v1',rights:'original-owned',permitted:'self-authored',displayName:'U1 original teaching content'})
 });
 export interface QualifiedProvenance {
