@@ -1,5 +1,6 @@
 import type {RouteId} from '../core/types';
-import {loadU2Curriculum,U2_ORIGINAL_LESSONS} from '../core/unified/u2-curriculum';
+import {loadUnifiedOriginalPath,ORIGINAL_PATH_LESSONS,getLessonPath,missingPrerequisites,suggestedLesson} from '../core/unified/u3-pathways';
+import {writingScaffold,inspectDraftStructure} from '../core/unified/u3-writing';
 import {enrichGrammar,checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {distributionAllowed} from '../core/unified/source';
 import './unified-u2.css';
@@ -13,16 +14,41 @@ function make<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string,css?:str
 function control(label:string,handler:()=>void,className='secondary-action compact-action'):HTMLButtonElement{
  const b=make('button',label,className);b.type='button';b.addEventListener('click',handler);return b;
 }
-const attempts=new Map<string,Set<string>>(); // memory-only; route reload resets exercise credit
 export async function mountOriginalLessons(host:HTMLElement,navigate:(route:RouteId)=>void,signal:AbortSignal):Promise<void>{
  host.replaceChildren(make('p','Loading reviewed source-qualified lessons…','unified-result'));
  try{
-  const lessons=await loadU2Curriculum();
+  const lessons=await loadUnifiedOriginalPath();
+  const attempts=new Map<string,Set<string>>(); // route-scoped, never canonical or account-owned
+  const practiced=new Set<string>();
   if(signal.aborted||!host.isConnected)return;
   if(lessons.some(l=>!distributionAllowed(l.source.source)||l.source.source!=='original'))throw Error('Unqualified lesson source');
   host.replaceChildren();
   const head=make('div',undefined,'u2-studio-head');
-  head.append(make('h2','Original guided lessons'),make('p','12 independently written micro-lessons · not the 60 Carnet source sessions · practice only'));
+  head.append(make('h2','Original guided lessons'),make('p','20 independently written micro-lessons · not the 60 Carnet source sessions · practice only'));
+  const pathSummary=make('p','','u3-path-summary');pathSummary.setAttribute('role','status');
+  const nextSuggested=control('Start suggested lesson',()=>{const next=suggestedLesson(practiced);if(next)open(next.id);});
+  const pathwayNav=make('div',undefined,'u3-path-controls');
+  const themeLabel=make('label','Learning pathway');
+  const themeSelect=make('select');themeSelect.setAttribute('aria-label','Learning pathway');
+  for(const [value,label] of [['all','All original lessons'],['everyday','Everyday situations'],['travel','Travel and services'],['storytelling','Past and storytelling']]){
+   const option=make('option',label);option.value=value;themeSelect.append(option);
+  }
+  themeLabel.append(themeSelect);pathwayNav.append(themeLabel,nextSuggested);
+  const updatePath=()=>{
+   const theme=themeSelect.value as 'all'|'everyday'|'travel'|'storytelling';
+   const suggested=suggestedLesson(practiced,theme);
+   pathSummary.textContent=practiced.size+'/'+lessons.length+' lesson exercise sets practiced in this temporary page visit · '+
+    (suggested?'Suggested next: '+suggested.title:'No additional suggested lesson in this pathway.');
+   nextSuggested.disabled=!suggested;
+   nextSuggested.textContent=suggested?'Open suggested: '+suggested.title:'No suggested lesson';
+   for(const button of grid.querySelectorAll<HTMLButtonElement>('[data-u2-id]')){
+    const node=getLessonPath(button.dataset.u2Id??'');
+    button.hidden=theme!=='all'&&node?.theme!==theme;
+    if(node)button.title=missingPrerequisites(node.lessonId,practiced).length?
+     'Suggested prerequisites: '+missingPrerequisites(node.lessonId,practiced).join(', '):'Suggested preparation available';
+   }
+  };
+  themeSelect.addEventListener('change',updatePath);head.append(pathwayNav,pathSummary);
   const grid=make('div',undefined,'u2-lessons-grid'),stage=make('article',undefined,'u2-lesson-stage');
   grid.dataset.u2Lessons='';
   stage.dataset.u2Stage='';
@@ -41,9 +67,20 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
    if(!lesson)return;
    select.value=id;stage.replaceChildren();
    const topic=make('header',undefined,'u2-lesson-heading');
-   topic.append(make('p',lesson.level+' · '+lesson.estimatedMinutes+' min · original U2','eyebrow'),
+   topic.append(make('p',lesson.level+' · '+lesson.estimatedMinutes+' min · original source-owned content','eyebrow'),
     make('h3',lesson.title),make('p',lesson.goal));
    stage.append(topic);
+   const outstanding=missingPrerequisites(lesson.id,practiced);
+   const prerequisite=make('aside',undefined,'u3-prerequisite');
+   prerequisite.append(make('strong',outstanding.length?
+    'Recommended first (not a lock):':'Recommended foundations:'));
+   if(outstanding.length)for(const dep of outstanding){
+    const prior=lessons.find(l=>l.id===dep);
+    if(prior)prerequisite.append(control('Review '+prior.title,()=>open(prior.id)));
+   }
+   else prerequisite.append(make('p','The suggested prerequisites have been practiced during this page visit, or this is an entry lesson.'));
+   prerequisite.append(make('small','Prerequisites are guidance only. Course browsing never grants mastery or blocks access.'));
+   stage.append(prerequisite);
    const situation=make('section',undefined,'u2-dialogue');
    situation.append(make('h4','Dialogue'),make('p',lesson.situation));
    for(const line of lesson.dialogue){
@@ -79,7 +116,11 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
    const tally=make('p','','u2-practice-tally');tally.setAttribute('role','status');
    const correct=attempts.get(id)??new Set<string>();
    attempts.set(id,correct);
-   const renderTally=()=>tally.textContent=correct.size+' / '+lesson.exercises.length+' tasks answered correctly in this temporary session.';
+   const renderTally=()=>{
+    tally.textContent=correct.size+' / '+lesson.exercises.length+' tasks answered correctly during this page visit.';
+    if(correct.size===lesson.exercises.length)practiced.add(id);
+    updatePath();
+   };
    renderTally();
    lesson.exercises.forEach((task,index)=>{
     const form=make('form',undefined,'u2-exercise');
@@ -109,9 +150,32 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
    practice.append(tally);stage.append(practice);
    const production=make('section',undefined,'u2-production');
    production.append(make('h4','Write it yourself'),make('p',lesson.productionPrompt));
+   const scaffold=writingScaffold(lesson.id);
+   const hint=make('div',undefined,'u3-writing-hints');
+   if(scaffold){
+    const reveal=control('Show optional writing guidance',()=>{
+     hint.hidden=!hint.hidden;
+     reveal.textContent=hint.hidden?'Show optional writing guidance':'Hide writing guidance';
+    });
+    production.append(reveal);
+    hint.hidden=true;
+    hint.append(make('p','Sentence starters: '+scaffold.starters.join(' / ')),
+     make('p','Useful words: '+scaffold.keyExpressions.join(' · ')),
+     make('p','Check: '+scaffold.checkpoints.join(' ')));
+    hint.append(control('Reveal a model to compare',()=>{
+     if(!hint.querySelector('[data-model]')){
+      const model=make('p','One possible response: '+scaffold.model);
+      model.dataset.model='';hint.append(model);
+     }
+    }));
+    production.append(hint);
+   }
    const response=make('textarea');response.rows=3;response.setAttribute('aria-label','Free writing response');
    const state=make('p','No answer stored. You can compare your sentence with the dialogue above.','u2-feedback');
-   production.append(response,control('Clear response',()=>{response.value='';state.textContent='Cleared. Nothing was saved.';}),state);
+   const check=control('Check structure (not grading)',()=>{
+    state.textContent=inspectDraftStructure(response.value).join(' ')+' No CEFR or mastery score is assigned.';
+   });
+   production.append(response,check,control('Clear response',()=>{response.value='';state.textContent='Cleared. Nothing was saved.';}),state);
    stage.append(production);
    const actions=make('div',undefined,'u2-actions');
    const index=lessons.indexOf(lesson),next=lessons[index+1];
@@ -133,6 +197,7 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
   let preferred:string|null=null;
   try{preferred=sessionStorage.getItem('french-u2-lesson-target');sessionStorage.removeItem('french-u2-lesson-target');}catch{}
   open(lessons.some(x=>x.id===preferred)?preferred!:lessons[0].id);
+  updatePath();
  }catch(error){
   if(signal.aborted)return;
   host.replaceChildren(make('p','Original curriculum unavailable. Native Learn and Review are unaffected.','unified-result'));
@@ -172,7 +237,7 @@ export function addGrammarDeepDive(host:HTMLElement,id:string,navigate:(route:Ro
  const links=make('div',undefined,'u2-grammar-links');
  links.append(make('h3','Use this in a lesson'));
  for(const lessonId of data.linkedLessonIds){
-  const lesson=U2_ORIGINAL_LESSONS.find(item=>item.id===lessonId);
+  const lesson=ORIGINAL_PATH_LESSONS.find(item=>item.id===lessonId);
   if(lesson)links.append(control(lesson.title,()=>{
    sessionStorage.setItem('french-u2-lesson-target',lesson.id);navigate('course');
   }));
