@@ -152,8 +152,8 @@ export async function mountOriginalLessons(host:HTMLElement,navigate:(route:Rout
      event.preventDefault();
      if(!input.value.trim()){feedback.textContent='Enter an answer first.';return;}
      const pass=checkPracticeAnswer(input.value,task.answer);
-     const event=practiceEvent(localEvents.length+1,lesson.id,task.id,input.value);
-     if(event)localEvents.push(event);
+     const record=practiceEvent(localEvents.length+1,lesson.id,task.id,input.value);
+     if(record)localEvents.push(record);
      if(pass)correct.add(task.id);
      const diagnosis=analyzeAttempt(input.value,task.answer,lesson.grammarIds[0]??null);
      feedback.textContent=pass?'Correct · '+task.explanation:'Not yet. '+diagnosis.cue+' '+task.explanation;
