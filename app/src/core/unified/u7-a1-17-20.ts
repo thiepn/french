@@ -1,0 +1,93 @@
+import {authorA1Unit,type A1AuthoredSpec} from './u6-a1-model.ts';
+// U7 original-authored A1 practice. Every row is locally authored, not imported.
+const authored:A1AuthoredSpec[]=[
+{
+ id:'a1-17',title:'Weather, seasons and plans',goal:'Describe weather, name seasons and adapt a simple plan.',grammarIds:['futur-proche','negation'],
+ grammar:[
+ ['Impersonal weather expressions','French often uses il fait + adjective or noun for weather: il fait chaud, il fait froid, il fait beau. Use il pleut for it is raining and il neige for it is snowing. These expressions describe the weather, not a person; avoid je suis chaud when you mean the air is warm.',[['Il fait froid ce matin.','It is cold this morning.'],['Il pleut depuis midi.','It has been raining since noon.']],['Il est pleut aujourd’hui.','Il pleut aujourd’hui.','Pleuvoir already has the impersonal subject il; no est is added.']],
+ ['Forecasts and changing intentions','Use demain and ce week-end to anchor a near-future prediction or intention. Il va pleuvoir is futur proche of pleuvoir, whereas nous allons rester describes a plan. To cancel a plan, put ne … pas around aller: nous n’allons pas sortir.',[['Il va pleuvoir demain.','It is going to rain tomorrow.'],['Nous n’allons pas marcher.','We are not going to walk.']],['Il va pleut demain.','Il va pleuvoir demain.','After aller, keep the infinitive pleuvoir.']]
+ ],
+ vocabulary:[['il fait beau','the weather is nice','Il fait beau samedi.'],['il fait chaud','it is hot','En été, il fait chaud.'],['il fait froid','it is cold','En hiver, il fait froid.'],['il pleut','it is raining','Il pleut maintenant.'],['il neige','it is snowing','Il neige en montagne.'],['le soleil','sun','Le soleil est là.'],['la pluie','rain','La pluie commence.'],['le vent','wind','Il y a du vent.'],['le printemps','spring','Au printemps, il pleut.'],['l’été','summer','En été, nous sortons.'],['l’automne','autumn','En automne, il fait frais.'],['l’hiver','winter','En hiver, il neige parfois.']],
+ dialogue:[['Chloé','Quel temps fait-il demain ?','What will the weather be like tomorrow?'],['Ibrahim','Il va pleuvoir le matin, mais il fera beau l’après-midi.','It will rain in the morning, but it will be nice in the afternoon.'],['Chloé','Alors, nous n’allons pas faire de vélo le matin.','Then we are not going cycling in the morning.'],['Ibrahim','On peut visiter le musée à midi.','We can visit the museum at noon.'],['Chloé','Bonne idée ! Je vais prendre un parapluie.','Good idea! I will take an umbrella.']],
+ tasks:[
+ ['fill','Il fait ___ aujourd’hui. (cold)','froid','Use il fait froid for cold weather.',[],'weather'],
+ ['choice','Choose a weather forecast with the near future.','Il va pleuvoir.','Futur proche uses aller plus an infinitive.',['Il va pleut.','Il est pleuvoir.','Il va pleuvoir.'],'futur proche'],
+ ['reading','When will it rain?','le matin','Ibrahim says il va pleuvoir le matin.',['le matin','le soir','la nuit'],'comprehension'],
+ ['fill','Il ___ en hiver. (snows)','neige','The impersonal weather verb is il neige.',[],'weather'],
+ ['choice','Which season is summer?','l’été','Été is the French noun for summer.',['l’hiver','le printemps','l’été'],'vocabulary'],
+ ['order','Arrange: pleuvoir / va / Il / demain','Il va pleuvoir demain','The impersonal subject il precedes va + infinitive.',['demain','pleuvoir','Il','va'],'word order'],
+ ['fill','Nous n’___ pas sortir. (aller)','allons','Negation surrounds the conjugated nous allons.',[],'negation'],
+ ['reading','What place do the friends propose visiting?','le musée','The friends propose a museum at noon.',['le marché','le musée','la piscine'],'comprehension'],
+ ['choice','How do you say “the weather is hot”?','Il fait chaud.','Il fait chaud is the impersonal weather pattern.',['Je suis chaud.','Il fait chaud.','Il a chaud.'],'weather'],
+ ['fill','Il y a du ___ aujourd’hui.','vent','Du vent means some wind in a weather report.',[],'partitive']
+ ],
+ writing:['Write a short weather message about tomorrow and revise your plan because of rain.', ['Use two correct weather expressions.','Make a plan with aller plus an infinitive.','Use negation for one cancelled activity.'],'Demain, il va pleuvoir le matin. Nous n’allons pas marcher. Nous allons visiter le musée.']
+},
+{
+ id:'a1-18',title:'Finding and describing a home',goal:'Explain what rooms and furniture a home has and where things are.',grammarIds:['articles','etre','avoir'],
+ grammar:[
+ ['Il y a for existence','Use il y a to say that a thing or several things exist in a place: il y a une cuisine, il y a deux chambres. It does not change with plural nouns. In negation, use il n’y a pas de + noun: il n’y a pas de balcon.',[['Il y a trois chambres.','There are three bedrooms.'],['Il n’y a pas de jardin.','There is no garden.']],['Ils y ont deux chambres.','Il y a deux chambres.','Il y a is an invariant expression of existence.']],
+ ['Contrasting place and possession','Use chez to locate someone at a person’s home: chez moi, chez mon ami. Use dans to say inside a room, sur for on a surface, and à côté de for beside. Possession can be expressed with avoir: nous avons un canapé, while location uses être: le canapé est dans le salon.',[['Le canapé est dans le salon.','The sofa is in the living room.'],['Je suis chez mes parents.','I am at my parents’ home.']],['La table est dans le mur.','La table est à côté du mur.','Dans means inside; beside the wall uses à côté de.']]
+ ],
+ vocabulary:[['l’appartement','apartment','L’appartement est calme.'],['la maison','house','La maison est grande.'],['le salon','living room','Le canapé est dans le salon.'],['la cuisine','kitchen','La cuisine est moderne.'],['la chambre','bedroom','J’ai une chambre.'],['la salle de bains','bathroom','La salle de bains est petite.'],['le canapé','sofa','Le canapé est gris.'],['le lit','bed','Le lit est près de la porte.'],['le balcon','balcony','Il y a un balcon.'],['le jardin','garden','Nous avons un jardin.'],['chez moi','at my place','Viens chez moi.'],['à côté de','next to','La table est à côté du lit.']],
+ dialogue:[['Noémie','Tu habites dans une maison ?','Do you live in a house?'],['Rayan','Non, j’habite dans un petit appartement.','No, I live in a small apartment.'],['Noémie','Il y a combien de chambres ?','How many bedrooms are there?'],['Rayan','Il y a deux chambres et un grand salon.','There are two bedrooms and a big living room.'],['Noémie','Tu as un balcon ?','Do you have a balcony?']],
+ tasks:[
+ ['fill','Il y ___ deux chambres.','a','Il y a does not change with a plural noun.',[],'existence'],
+ ['choice','Choose the negative of il y a un jardin.','Il n’y a pas de jardin.','After negated existence, the noun is normally introduced by de.',['Il ne y a pas un jardin.','Il n’y a pas de jardin.','Il y a ne pas de jardin.'],'negation'],
+ ['reading','Where does Rayan live?','dans un appartement','Rayan says he lives in a small apartment.',['dans une maison','dans un appartement','à l’hôtel'],'comprehension'],
+ ['fill','Le canapé est ___ le salon.','dans','Dans marks an object located inside a room.',[],'location'],
+ ['choice','What means “at my place”?','chez moi','Chez moi is the idiomatic expression for at my home.',['à côté de','chez moi','sous moi'],'location'],
+ ['order','Arrange: chambres / deux / a / Il y','Il y a deux chambres','Il y a is unchanged before the number and noun.',['chambres','Il y','deux','a'],'word order'],
+ ['fill','La table est à côté ___ lit. (de + le)','du','The preposition de and article le contract to du.',[],'contraction'],
+ ['reading','How many bedrooms does Rayan have?','deux','He clearly says il y a deux chambres.',['une','deux','trois'],'comprehension'],
+ ['choice','Which sentence expresses possession?','Nous avons un canapé.','Avoir expresses possession; être expresses location.',['Le salon est grand.','Nous avons un canapé.','Le canapé est dans le salon.'],'avoir'],
+ ['fill','Il n’y a pas ___ balcon.','de','The simple negative expression is pas de balcon.',[],'negation']
+ ],
+ writing:['Describe your ideal apartment in four sentences, naming rooms, one missing feature and furniture location.', ['Use il y a for rooms.','Use il n’y a pas de for an absent feature.','Use a precise place preposition for furniture.'],'Il y a deux chambres et un salon. Il y a une petite cuisine. Il n’y a pas de jardin. Le canapé est dans le salon.']
+},
+{
+ id:'a1-19',title:'Taking public transport',goal:'Choose a tram or bus, describe a route and check departure information.',grammarIds:['questions','futur-proche'],
+ grammar:[
+ ['Transport choices and departure verbs','Use prendre + transport: prendre le bus, le tram, le train. In the present it is irregular: je prends, tu prends, il prend, nous prenons, vous prenez, ils prennent. To ask a route, use Est-ce que ce bus va à… ? and Pour aller à… ? to request the correct direction.',[['Je prends le tram numéro quatre.','I take tram number four.'],['Vous prenez le bus pour la gare ?','Are you taking the bus to the station?']],['Nous prendons le tram.','Nous prenons le tram.','The nous form of prendre is prenons.']],
+ ['Schedules, departures and transfers','Partir means to leave or depart, arriver means to arrive; the bus part à huit heures and arrive à neuf heures. Changer à… describes a transfer at a station. Use prochain for the next service and en retard for late. Distinguish a destination (à la gare) from a route via an intermediate stop.',[['Le tram part à huit heures.','The tram leaves at eight.'],['Je change à République.','I transfer at République.']],['Le bus va en retard.','Le bus est en retard.','Use être en retard to say a vehicle is late.']]
+ ],
+ vocabulary:[['le bus','bus','Je prends le bus.'],['le tram','tram','Le tram arrive.'],['le train','train','Le train part à midi.'],['l’arrêt','stop','L’arrêt est à gauche.'],['la ligne','route or line','La ligne trois va au centre.'],['le quai','platform','Le train part du quai deux.'],['le billet','ticket','J’achète un billet.'],['le départ','departure','Le départ est à dix heures.'],['l’arrivée','arrival','L’arrivée est prévue à midi.'],['changer','to transfer','Je change à République.'],['en retard','late','Le bus est en retard.'],['le prochain','next','Le prochain tram arrive.']],
+ dialogue:[['Voyageuse','Excusez-moi, ce tram va à la gare ?','Excuse me, does this tram go to the station?'],['Agent','Non, prenez la ligne quatre.','No, take line four.'],['Voyageuse','Je change où ?','Where do I transfer?'],['Agent','Changez à République. Le prochain tram arrive dans cinq minutes.','Transfer at République. The next tram arrives in five minutes.'],['Voyageuse','Merci ! Je vais prendre la ligne quatre.','Thank you! I will take line four.']],
+ tasks:[
+ ['fill','Je ___ le bus tous les jours. (prendre)','prends','The je form of prendre is prends.',[],'prendre'],
+ ['choice','Which means the vehicle is late?','Le bus est en retard.','Être en retard is the standard construction.',['Le bus va tard.','Le bus est en retard.','Le bus a retardé toujours.'],'transport'],
+ ['reading','Which line does the traveler need?','la ligne quatre','The agent says prenez la ligne quatre.',['la ligne deux','la ligne trois','la ligne quatre'],'comprehension'],
+ ['fill','Nous ___ le tram à huit heures. (prendre)','prenons','The nous form of prendre is prenons.',[],'prendre'],
+ ['choice','What is a quai at a station?','platform','A quai is a platform for boarding.',['ticket','platform','departure time'],'vocabulary'],
+ ['order','Arrange: le tram / prends / Je','Je prends le tram','The finite verb follows the subject je.',['le tram','Je','prends'],'word order'],
+ ['fill','Le tram ___ à neuf heures. (partir)','part','The il/elle form of partir is part.',[],'departure'],
+ ['reading','Where does the traveler transfer?','à République','The agent says changez à République.',['à la gare','à République','à la mairie'],'comprehension'],
+ ['choice','Which asks whether a bus goes to the station?','Est-ce que ce bus va à la gare ?','Est-ce que introduces a yes/no question about destination.',['Pourquoi le bus est ici ?','Est-ce que ce bus va à la gare ?','Quelle heure est-il ?'],'questions'],
+ ['fill','Le ___ tram arrive dans cinq minutes.','prochain','Prochain identifies the next tram in the sequence.',[],'vocabulary']
+ ],
+ writing:['Ask for a route across town, including your destination, transfer stop and estimated departure.', ['Ask a full question about a bus or tram.','Mention a line or transfer stop.','State one departure or arrival time.'],'Excusez-moi, ce tram va à la gare ? Je prends la ligne quatre et je change à République. Le tram part à neuf heures.']
+},
+{
+ id:'a1-20',title:'Arriving in a new city',goal:'Handle a station arrival, hotel check-in and a simple travel problem.',grammarIds:['questions','avoir'],
+ grammar:[
+ ['At reception and the station','J’ai une réservation introduces a hotel booking; au nom de specifies the name. Use Est-ce que la chambre est prête ? to ask whether the room is ready. At a station, a ticket, passport or luggage may be requested; respond with j’ai or je n’ai pas according to possession.',[['J’ai une réservation au nom de Diallo.','I have a reservation under Diallo.'],['Est-ce que ma chambre est prête ?','Is my room ready?']],['Je suis une réservation.','J’ai une réservation.','Use avoir, not être, to say you have a reservation.']],
+ ['Explaining a practical problem politely','Je cherche … expresses looking for a place; je ne trouve pas … states that you cannot find something. Vous pouvez m’aider ? politely asks for help. Distinguish où est… ? (location) from comment aller à… ? (directions), then explain your travel problem in two short sentences.',[['Je ne trouve pas mon billet.','I cannot find my ticket.'],['Vous pouvez m’aider, s’il vous plaît ?','Can you help me, please?']],['Je ne trouve mon sac.','Je ne trouve pas mon sac.','The standard written negative includes pas after trouve.']]
+ ],
+ vocabulary:[['la réservation','reservation','J’ai une réservation.'],['le passeport','passport','Voici mon passeport.'],['la valise','suitcase','Ma valise est lourde.'],['la chambre','room','La chambre est prête.'],['la réception','reception','Je suis à la réception.'],['au nom de','under the name of','Au nom de Leroy.'],['l’hôtel','hotel','L’hôtel est près de la gare.'],['la clé','key','Voici votre clé.'],['aider','to help','Vous pouvez m’aider ?'],['chercher','to look for','Je cherche l’hôtel.'],['trouver','to find','Je ne trouve pas la clé.'],['perdu','lost','J’ai perdu mon billet.']],
+ dialogue:[['Réceptionniste','Bonsoir, bienvenue à l’hôtel.','Good evening, welcome to the hotel.'],['Voyageur','Bonsoir, j’ai une réservation au nom de Martin.','Good evening, I have a booking under Martin.'],['Réceptionniste','Très bien. Vous avez votre passeport ?','Very good. Do you have your passport?'],['Voyageur','Oui, voici mon passeport. Est-ce que la chambre est prête ?','Yes, here is my passport. Is the room ready?'],['Réceptionniste','Oui, voici la clé. La chambre est au deuxième étage.','Yes, here is the key. The room is on the second floor.']],
+ tasks:[
+ ['fill','J’___ une réservation.','ai','Avoir is used to express possession of a reservation.',[],'avoir'],
+ ['choice','Choose the phrase used to state a booking name.','au nom de','Au nom de introduces the reservation name.',['sous la gare','au nom de','près du train'],'travel'],
+ ['reading','What document does the receptionist ask for?','le passeport','The receptionist asks vous avez votre passeport ?',['le billet','le passeport','le permis'],'comprehension'],
+ ['fill','Je ne trouve ___ mon billet.','pas','Ne and pas surround the conjugated trouve.',[],'negation'],
+ ['choice','Which request is polite?','Vous pouvez m’aider, s’il vous plaît ?','Vous with please is a suitable polite request.',['Tu aides maintenant !','Vous pouvez m’aider, s’il vous plaît ?','Pourquoi moi ?'],'register'],
+ ['order','Arrange: mon passeport / Voici','Voici mon passeport','Voici precedes the object being presented.',['mon passeport','Voici'],'word order'],
+ ['fill','Est-ce ___ la chambre est prête ?','que','Use est-ce que before a complete statement.',[],'questions'],
+ ['reading','On which floor is the room?','au deuxième étage','The receptionist specifies the second floor.',['au premier étage','au troisième étage','au deuxième étage'],'comprehension'],
+ ['choice','Which phrase means “I am looking for the hotel”?','Je cherche l’hôtel.','Chercher means to look for something.',['Je trouve l’hôtel.','Je cherche l’hôtel.','Je suis l’hôtel.'],'verbs'],
+ ['fill','La ___ est au deuxième étage.','chambre','Chambre is the room described by the receptionist.',[],'vocabulary']
+ ],
+ writing:['Write a three-sentence hotel check-in request and ask for help with a missing item.', ['Introduce the booking using j’ai.','Give a name with au nom de.','Use a polite question and one clear problem.'],'Bonsoir, j’ai une réservation au nom de Martin. Est-ce que la chambre est prête ? Je ne trouve pas ma valise. Vous pouvez m’aider ?']
+}
+];
+export const A1_UNITS_17_20=Object.freeze(authored.map((spec,index)=>authorA1Unit(spec,index+17)));
