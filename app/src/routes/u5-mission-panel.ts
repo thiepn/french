@@ -190,7 +190,9 @@ export function mountMissionWorkspace(host:HTMLElement,actions:Actions):{setJour
   event.preventDefault();
   const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:
    (i+(event.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
-  buttons[next]?.focus();buttons[next]?.click();
+  const nextId=mission.steps[next]?.id;
+  buttons[next]?.click();
+  if(nextId)steps.querySelector<HTMLButtonElement>('[data-mission-step="'+nextId+'"]')?.focus();
  });
  file.addEventListener('change',async()=>{
   const selected=file.files?.[0];if(!selected)return;
