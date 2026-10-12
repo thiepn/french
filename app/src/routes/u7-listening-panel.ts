@@ -25,7 +25,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  };
  const cleanup=()=>{stop();signal.removeEventListener('abort',cleanup);};
  signal.addEventListener('abort',cleanup,{once:true});
- const play=(rate:number)=>{
+ const play=(rate:number,text:string=listeningDialogueText(unit))=>{
   if(!supported){status.textContent='Speech synthesis is unavailable. The transcript can be read instead.';return;}
   stop();
   const synth=window.speechSynthesis;
@@ -36,7 +36,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    status.textContent='No French TTS voice is listed on this device. Use the original transcript below.';
    return;
   }
-  const speech=new SpeechSynthesisUtterance(listeningDialogueText(unit));
+  const speech=new SpeechSynthesisUtterance(text);
   speech.lang='fr-FR';speech.rate=rate;speech.pitch=1;
   if(french)speech.voice=french;
   playing=true;
@@ -54,7 +54,20 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  const slow=action('Play slowly',()=>play(.78));
  const halt=action('Stop TTS',()=>{stop();status.textContent='Playback stopped.';});
  if(!supported){normal.disabled=true;slow.disabled=true;}
- controls.append(normal,slow,halt);host.append(controls,status);
+ const lineControls=el('div',undefined,'u7-line-controls');
+ const lineLabel=el('label','Repeat one dialogue turn');
+ const linePicker=el('select');linePicker.setAttribute('aria-label','Choose spoken dialogue turn');
+ unit.dialogue.forEach((line,i)=>{
+  const option=el('option',(i+1)+'. '+line.speaker);option.value=String(i);linePicker.append(option);
+ });
+ lineLabel.append(linePicker);
+ const repeat=action('Play selected turn',()=>{
+  const selected=unit.dialogue[Number(linePicker.value)];
+  if(selected)play(.85,selected.fr);
+ });
+ if(!supported)repeat.disabled=true;
+ lineControls.append(lineLabel,repeat);
+ controls.append(normal,slow,halt);host.append(controls,lineControls,status);
  const transcript=el('div',undefined,'u7-listening-transcript');
  transcript.hidden=true;transcript.setAttribute('aria-label','Original French transcript');
  for(const line of unit.dialogue){
