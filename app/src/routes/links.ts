@@ -46,6 +46,65 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  const search=main.querySelector<HTMLInputElement>('[data-search]')!;
  const exportButton=main.querySelector<HTMLButtonElement>('[data-export]')!;
  const decisions=new Map<string,CandidateDecision>();
+ const importFile=main.querySelector<HTMLInputElement>('[data-import-file]')!;
+ const importStatus=main.querySelector<HTMLElement>('[data-import-status]')!;
+ const importQueue=main.querySelector<HTMLElement>('[data-import-queue]')!;
+ const keepPending=main.querySelector<HTMLButtonElement>('[data-keep-pending]')!;
+ const dismissPending=main.querySelector<HTMLButtonElement>('[data-dismiss-pending]')!;
+ let pending:CandidateDecision[]=[];
+ let pendingIndex=0;
+ function paintPending(){
+  importQueue.replaceChildren();
+  const has=pending.length>0;
+  keepPending.disabled=!has;dismissPending.disabled=!has;
+  if(!has){importQueue.append(node('p','No proposals awaiting review.'));return;}
+  const list=node('div');list.className='u3-import-list';
+  pending.forEach((item,i)=>{
+   const source=ORIGINAL_SENSES.find(s=>s.sourceId===item.sourceId);
+   const b=node('button',(i+1)+'. '+(source?.form??'Unknown')+' — '+item.status);
+   b.type='button';b.className='u2-review-option';
+   if(i===pendingIndex){b.classList.add('selected');b.setAttribute('aria-current','true');}
+   b.addEventListener('click',()=>{pendingIndex=i;paintPending();});
+   list.append(b);
+  });
+  importQueue.append(list);
+  const item=pending[pendingIndex]??pending[0];
+  const source=ORIGINAL_SENSES.find(s=>s.sourceId===item.sourceId);
+  const summary=node('p','Inspect: '+(source?.form??'Unknown')+' · '+item.status+
+   ' · target: '+(item.targetId??'none')+' · rationale: '+(item.note||'not provided'));
+  summary.className='u3-import-note';importQueue.append(summary);
+ }
+ function consumePending(keep:boolean){
+  const entry=pending[pendingIndex];if(!entry)return;
+  if(keep)decisions.set(entry.sourceId,entry);
+  pending.splice(pendingIndex,1);pendingIndex=Math.min(pendingIndex,Math.max(0,pending.length-1));
+  importStatus.textContent=keep?'Kept as an unapproved local draft. No proficiency authority changed.':
+    'Discarded the proposal; nothing was imported into progress.';
+  if(keep)chosen=entry.sourceId;
+  paintCounts();paintList();paintDetail();paintPending();
+ }
+ keepPending.addEventListener('click',()=>consumePending(true));
+ dismissPending.addEventListener('click',()=>consumePending(false));
+ importFile.addEventListener('change',async()=>{
+  const file=importFile.files?.[0];if(!file)return;
+  pending=[];pendingIndex=0;paintPending();
+  try{
+   if(file.size>256*1024){importStatus.textContent='Blocked: file exceeds 256 KiB.';return;}
+   const raw=await file.text();if(signal.aborted)return;
+   const preview:ReviewPreview=inspectReviewExport(raw,report,revision);
+   if(preview.state==='blocked'){
+    importStatus.textContent='Blocked: '+preview.issues.join(' ')+' Existing local decisions unchanged.';
+    return;
+   }
+   pending=[...preview.pending];
+   importStatus.textContent='Validated '+pending.length+' unapproved review proposals. Inspect each before keeping it as a local draft.';
+   paintPending();
+  }catch{
+   if(!signal.aborted)importStatus.textContent='File inspection failed. No progress changed.';
+  }finally{importFile.value='';}
+ });
+ paintPending();
+
  let chosen=ORIGINAL_SENSES[0]?.sourceId??'';
  let nativeRows:VocabularySearchRow[]=[];
  let revision:string|null=null;
