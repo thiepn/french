@@ -925,3 +925,47 @@ export async function replaceCanonicalFeatureState(key:string,value:unknown):Pro
   }finally{db.close();}
   return updated;
 }
+
+
+/**
+ * U24 owner-native, atomic feature-key compare-and-set. This does not create a
+ * store, reschedule SRS or mutate activity records. Every write reads the latest
+ * canonical learner row inside the same readwrite IndexedDB transaction.
+ *
+ * expectedToken is the token last shown to the learner; a concurrent tab's
+ * newer checkpoint cannot be overwritten by a stale Save/Discard.
+ */
+export async function compareAndSetOriginalCourseCheckpoint(
+ expectedToken:string|null,
+ nextValue:unknown
+):Promise<'saved'|'conflict'>{
+ await ensureCanonicalLearnerState();
+ const db=await openFrenchDatabase();
+ const key='vU24OriginalCourse';
+ try{
+  return await new Promise<'saved'|'conflict'>((resolve,reject)=>{
+   const tx=db.transaction('learner','readwrite');
+   const store=tx.objectStore('learner');
+   let outcome:'saved'|'conflict'='conflict';
+   const get=store.get('state-v1');
+   get.onsuccess=()=>{
+    const learner=get.result as CanonicalLearnerStateV1|undefined;
+    if(!learner){outcome='conflict';return;}
+    const existing=learner.featureState?.[key];
+    const savedToken=existing===null||existing===undefined?null:
+     typeof existing==='object'&&!Array.isArray(existing)&&
+     typeof (existing as Record<string,unknown>).token==='string'?
+      (existing as Record<string,string>).token:'invalid';
+    if(savedToken!==expectedToken){outcome='conflict';return;}
+    store.put({
+     ...learner,
+     featureState:{...learner.featureState,[key]:nextValue}
+    } satisfies CanonicalLearnerStateV1,'state-v1');
+    outcome='saved';
+   };
+   tx.oncomplete=()=>resolve(outcome);
+   tx.onerror=()=>reject(tx.error??new Error('Original course checkpoint write failed.'));
+   tx.onabort=()=>reject(tx.error??new Error('Original course checkpoint write was aborted.'));
+  });
+ }finally{db.close();}
+}
