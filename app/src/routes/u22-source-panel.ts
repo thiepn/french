@@ -170,6 +170,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  };
  function render(){
   const s=getOriginalMaterial(selected),entry=getOriginalCatalogEntry(selected);
+  if(mode==='listen'&&'speechSynthesis' in window)window.speechSynthesis.cancel();
   stage.replaceChildren();actions.replaceChildren();
   if(!s||!entry){stage.append(el('p','This source is unavailable. Select another original lesson.','u22-source-note'));return;}
   stage.append(el('p',entry.id+' · '+entry.level+' · '+entry.qualifiedId,'u22-source-note'),

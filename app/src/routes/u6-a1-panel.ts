@@ -88,7 +88,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   };
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const unit of lessons)if(u22PracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
+   for(const [id,record] of answers)if(u22PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
    return passed;
   };
   function renderIndex(){

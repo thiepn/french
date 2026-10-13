@@ -136,7 +136,7 @@ export function browseOriginalMaterials(filters:OriginalBrowseFilters={}):Origin
   return tokens.every(token=>text.includes(token));
  });
  const offset=Math.max(0,Math.min(matching.length,Math.trunc(filters.offset??0)));
- const limit=Math.max(1,Math.min(120,Math.trunc(filters.limit??40)));
+ const limit=Math.max(1,Math.min(500,Math.trunc(filters.limit??40)));
  return {total:matching.length,entries:matching.slice(offset,offset+limit)};
 }
 export function neighboringOriginalLessons(id:string):Readonly<{previous:OriginalCatalogEntry|null;next:OriginalCatalogEntry|null}>{
