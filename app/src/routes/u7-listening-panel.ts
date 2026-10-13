@@ -2,6 +2,7 @@ import type {A1Unit} from '../core/unified/u6-a1-model';
 import {listeningDialogueText} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
+import {appendU26GrammarPractice} from './u26-grammar-panel';
 import './unified-u7.css';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,value?:string,css?:string):HTMLElementTagNameMap[K]{
@@ -119,5 +120,6 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   reveal.setAttribute('aria-expanded','false');
   practice.append(reveal,model);host.append(practice);
  }
+ appendU26GrammarPractice(host,unit.id,'listen');
  return cleanup;
 }

@@ -1,5 +1,6 @@
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
+import {appendU26GrammarPractice} from './u26-grammar-panel';
 import type {A1Unit} from '../core/unified/u6-a1-model';
 import type {B1ReadingQuestion} from '../core/unified/u10-readings-01-07';
 import './unified-u10.css';
@@ -58,4 +59,5 @@ export function appendOriginalB1Reading(container:HTMLElement,unit:A1Unit):void{
   section.append(sources);
  }
  container.append(section);
+ appendU26GrammarPractice(container,unit.id,'read');
 }

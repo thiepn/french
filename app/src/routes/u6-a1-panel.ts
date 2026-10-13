@@ -15,6 +15,7 @@ import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {inspectDraftStructure} from '../core/unified/u3-writing';
+import {appendU26GrammarPractice} from './u26-grammar-panel';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
@@ -605,12 +606,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.append(stageNav);
    const content=el('div',undefined,'u6-stage-body');content.dataset.u6Stage=stage;
    switch(stage){
-    case 'understand':renderUnderstand(current,content);break;
+    case 'understand':renderUnderstand(current,content);appendU26GrammarPractice(content,current.id,'course');break;
     case 'words':renderWords(current,content);break;
     case 'dialogue':renderDialogue(current,content);break;
     case 'listen':stopAudio=mountA1Listening(content,current,signal);break;
-    case 'practice':renderPractice(current,content);break;
-    case 'write':renderWrite(current,content);break;
+    case 'practice':renderPractice(current,content);appendU26GrammarPractice(content,current.id,'course');break;
+    case 'write':renderWrite(current,content);appendU26GrammarPractice(content,current.id,'write');break;
    }
    content.append(stepNavigation(stage));article.append(content);
    const trace=el('p','Source: '+current.source.qualifiedId+' · original-owned; learning activity is local only.','u6-provenance');
