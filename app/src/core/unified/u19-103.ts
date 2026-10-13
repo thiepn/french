@@ -180,7 +180,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "une sacoche",
         "une bicyclette",
         "un téléphone uniquement",
-        "Inaya mentions a small bag."
+        "Inaya identifie une petite sacoche remise à l’accueil, sans connaître encore son propriétaire légitime."
       ],
       [
         "Where was it received?",
