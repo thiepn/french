@@ -1,5 +1,5 @@
 import {getOriginalCatalogEntry,getOriginalMaterial,type OriginalLevel} from './u23-registry.ts';
-import {originalVocabularyForUnit,type OriginalLexeme} from './u28-vocabulary.ts';
+import {originalVocabularyForUnit} from './u28-vocabulary.ts';
 import {checkPracticeAnswer} from './u2-grammar.ts';
 
 export type OriginalReadingDecisionKind='locate'|'meaning'|'inference'|'reference'|'source';
@@ -224,6 +224,23 @@ function lexicalDecisions(id:string,text:string,qualified:string):OriginalReadin
   } satisfies OriginalReadingDecision;
  }).filter((x):x is NonNullable<typeof x>=>x!==null);
 }
+function dialogueDecisions(id:string,dialogue:readonly {readonly speaker:string;readonly fr:string}[],
+ tasks:readonly {readonly id:string;readonly type:string;readonly prompt:string;readonly answer:string;
+ readonly options:readonly string[];readonly explanation:string}[]):OriginalReadingDecision[]{
+ if(!dialogue.length)return [];
+ const full=dialogue.map(line=>line.speaker+': '+line.fr).join('\n');
+ return tasks.filter(task=>task.type==='reading'&&task.options.length>1&&
+  task.options.includes(task.answer)).slice(0,4).map(task=>({
+   id:'u29:'+id+':dialogue:'+task.id,kind:'inference',
+   question:task.prompt,sourceId:id,sourceLabel:'Original attributed Course dialogue',
+   evidence:full,options:task.options,answer:task.answer,
+   hint:'Read the unchanged original French speaker turns and look for the clue supporting one answer.',
+   explanation:task.explanation,
+   misconception:task.options.filter(value=>value!==task.answer).map(value=>({
+    value,repair:'This option is not the original keyed dialogue interpretation. '+task.explanation
+   }))
+ } satisfies OriginalReadingDecision));
+}
 export function originalIntegratedReading(id:string):OriginalReadingStudy|null{
  const entry=getOriginalCatalogEntry(id),material=getOriginalMaterial(id);
  if(!entry||!material)return null;
@@ -236,7 +253,8 @@ export function originalIntegratedReading(id:string):OriginalReadingStudy|null{
  const decisions:OriginalReadingDecision[]=[
   ...paragraphDecisions(id,paragraphs),
   ...(reading?authoredQuestions(id,paragraphs,entry.qualifiedId):[]),
-  ...(reading?lexicalDecisions(id,sourceText,entry.qualifiedId):[]),
+  ...(reading?lexicalDecisions(id,sourceText,entry.qualifiedId):
+   dialogueDecisions(id,material.unit.dialogue,material.unit.tasks)),
   ...sourceDecisions(id,material.evidence?.sources??[])
  ];
  return {
