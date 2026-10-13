@@ -102,10 +102,10 @@ export function appendOriginalEditorialJourney(
  const answerHistory=new Map<string,{value:string;matched:boolean}>();
  const pairNotes=new Map<string,[string,string,string]>();
  const pairChoices=choicesFor(source);
- let selectedPair=0;
+ let selectedPair=0,essayDraft='',independentEssay='',capturedEssay='';
  const live=el('p','','u33-live');live.setAttribute('role','status');
  const privateChanged=()=>{
-  const written=[...notes.values(),...second.values(),...[...pairNotes.values()].flat()];
+  const written=[...notes.values(),...second.values(),...[...pairNotes.values()].flat(),essayDraft,independentEssay];
   const present=written.some(s=>s.trim().length>0);
   root.dataset.hasPrivateDraft=String(present);
   options.onPrivateChange?.(present);
@@ -300,43 +300,90 @@ export function appendOriginalEditorialJourney(
   paint(selectedPair);
  }
  function renderSynthesis(){
-  revision.replaceChildren(el('h4','Long-form production and self-directed revision'),
-   el('p','Make a sustained editorial statement across your own connected paragraphs. Reuse prior sections if helpful, but do not claim that copying them establishes independent performance.','u33-caveat'));
-  const assembled=button('Preview five-stage working outline',()=>{
+  revision.replaceChildren(el('h4','Independent editorial exposition and revision'),
+   el('p','Compose a sustained original French argument across approximately '+source.paragraphGoal+
+    ' paragraphs, with a suggested minimum of '+source.sentenceGoal+
+    ' sentences. These are optional practice targets, not CEFR pass criteria.','u33-caveat'));
+  const preview=el('div','','u33-preview');
+  const showOutline=button('Preview my five-stage working outline',()=>{
    preview.replaceChildren();
    for(const stage of source.stages){
     preview.append(el('h5',stage.title),
-     el('p',notes.get(stage.stage)?.trim()||'(this stage has no draft)','u33-french'));
+     el('p',notes.get(stage.stage)?.trim()||'(no text for this stage)','u33-french'));
    }
   });
-  const preview=el('div','','u33-preview');
-  const checklist=el('ul','','u33-criteria');
+  const mainLabel=el('label','My multi-paragraph French exposition · temporary','u33-draft-label');
+  const main=el('textarea');main.rows=11;main.lang='fr';main.maxLength=12000;main.value=essayDraft;
+  main.placeholder='Selon le dialogue original… Cependant, une objection… Il faudrait vérifier…';
+  mainLabel.append(main);
+  const independentLabel=el('label','My second independent public explanation · without reviewing the first','u33-draft-label');
+  const independent=el('textarea');independent.rows=10;independent.lang='fr';independent.maxLength=12000;
+  independent.value=independentEssay;independentLabel.append(independent);independentLabel.hidden=true;
+  const feedback=el('p','','u33-live');feedback.setAttribute('role','status');
+  const compareView=el('div','','u33-revision');compareView.hidden=true;
+  const capture=button('Capture first exposition for later comparison',()=>{
+   if(!main.value.trim()){feedback.textContent='Write an exposition before capturing it.';return;}
+   capturedEssay=main.value;feedback.textContent='First draft captured in page memory only.';
+  });
+  const tryAlone=button('Try an unassisted second exposition',()=>{
+   mainLabel.hidden=true;independentLabel.hidden=false;preview.hidden=true;
+   independent.focus();feedback.textContent='Earlier prose hidden. Write from source memory without an automatic score.';
+  },true);
+  const returnTo=button('Return to my first version',()=>{
+   mainLabel.hidden=false;independentLabel.hidden=true;preview.hidden=false;main.focus();
+  });
+  const compare=button('Compare original, revision and independent essay',()=>{
+   if(!capturedEssay){feedback.textContent='Capture your original exposition first.';return;}
+   compareView.replaceChildren();
+   for(const [label,value] of [
+    ['Earlier captured draft',capturedEssay],['Current edited draft',main.value],
+    ['Independent retelling',independent.value.trim()||'(not written yet)']
+   ]){
+    const block=el('section');
+    block.append(el('h5',label),el('p',value,'u33-french'));compareView.append(block);
+   }
+   compareView.append(el('p','Evaluate evidence scope, paragraph cohesion, register, fair objection, warranted claims and conditional conclusions yourself. No semantic grade is given.','u33-caveat'));
+   compareView.hidden=false;
+  });
+  main.addEventListener('input',()=>{essayDraft=main.value;privateChanged();});
+  independent.addEventListener('input',()=>{independentEssay=independent.value;privateChanged();});
+  const clear=button('Discard both long-form drafts',()=>{
+   if((essayDraft.trim()||independentEssay.trim())&&
+     !window.confirm('Discard both temporary original French essays?'))return;
+   essayDraft='';independentEssay='';capturedEssay='';
+   main.value='';independent.value='';compareView.hidden=true;privateChanged();
+   feedback.textContent='Long-form drafts discarded; no server state changed.';
+  });
+  const controls=el('div','','u33-actions');
+  controls.append(capture,tryAlone,returnTo,compare,clear);
+  const criteria=el('ul','','u33-criteria');
   for(const x of [
-   'State a limited thesis and distinguish its source from your own interpretation.',
-   'Use independently attributed written records when available; otherwise label cross-media or same-dialogue comparison.',
-   'Present the strongest objection fairly before responding.',
-   'Preserve original negation, conditions, quotation scope and uncertainty.',
-   'Produce a neutral audience-facing conclusion with a proportionate follow-up.',
-   'Rehearse aloud without relying on a prepared script; report this only as self-reflection.'
-  ])checklist.append(el('li',x));
-  revision.append(assembled,preview,checklist);
+   'I distinguish the original source claim from my own interpretation.',
+   'I provide original witness attribution and do not invent an independent record.',
+   'I state the strongest objection fairly and reply proportionately.',
+   'I preserve original negation, uncertainty, dates, conditions and rights.',
+   'I change register without strengthening an unsupported factual claim.',
+   'I identify a responsible next step rather than asserting unverified proof.'
+  ])criteria.append(el('li',x));
+  revision.append(showOutline,preview,mainLabel,independentLabel,controls,feedback,compareView,criteria);
   transfers.replaceChildren(el('h4','Continue with the original learner workspaces'),
-   el('p','Original Course, Listen, Read, Write and canonical Review remain independent authorities. These buttons only transfer source-qualified navigation, not drafts, scores or imagined recordings.','u33-caveat'));
-  const row=el('div','','u33-actions');
+   el('p','Original Course, Listen, Read, Write and native Review retain their separate authorities. Navigation does not transfer private drafts, imagined speech or assessment credits.','u33-caveat'));
+  const destinations=el('div','','u33-actions');
   if(options.onOpenSurface){
-   const destinations:readonly [OriginalSurface,string,boolean][]=[
-    ['course','Return to original Course',true],['listen','Revisit original listening',true],
-    ['speak','Continue original oral practice',true],
+   const available:readonly [OriginalSurface,string,boolean][]=[
+    ['course','Return to original Course',true],['listen','Original listening',true],
+    ['speak','Original oral production',true],
     ['read','Read connected source',source.witnesses.some(x=>x.kind==='reading')],
-    ['write','Continue independent writing',true]
+    ['write','Independent original Write',true]
    ];
-   for(const [surface,label,available] of destinations)
-    if(available)row.append(button(label,()=>options.onOpenSurface?.(surface,id)));
+   for(const [surface,label,valid] of available)
+    if(valid)destinations.append(button(label,()=>options.onOpenSurface?.(surface,id)));
   }
-  if(options.onNativeReview)row.append(button('Open native Review',()=>options.onNativeReview?.()));
-  transfers.append(row);
+  if(options.onNativeReview)destinations.append(button('Native scheduled Review',()=>options.onNativeReview?.()));
+  transfers.append(destinations);
  }
  const clearAll=()=>{notes.clear();second.clear();earlier.clear();pairNotes.clear();spoken.clear();
+  essayDraft='';independentEssay='';capturedEssay='';
   privateChanged();};
  const cleanup=()=>{
   if(disposed)return;disposed=true;
