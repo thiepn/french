@@ -386,7 +386,7 @@ const SOURCE:readonly U15OriginalSourceStory[]=[
         "on verra",
         "jamais",
         "certainement",
-        "Hana quotes on verra."
+        "Hana quotes on verra. This detail comes directly from the original spoken exchange."
       ],
       [
         "Does Noah equate this with a refusal?",
