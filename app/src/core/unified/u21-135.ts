@@ -200,7 +200,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "un vote municipal contraignant",
         "le droit de discuter",
         "une consultation",
-        "The forum remains advisory."
+        "Lucas rappelle que le forum est consultatif et ne peut organiser un vote municipal contraignant."
       ],
       [
         "Which publication right is missing?",
