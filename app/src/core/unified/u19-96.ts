@@ -201,7 +201,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "trente",
         "trois cents",
         "une seule",
-        "Amandine mentions thirty."
+        "Amandine mentionne exactement trente réponses, mais le nombre de personnes invitées au sondage reste inconnu."
       ],
       [
         "Which survey quantity is missing?",
