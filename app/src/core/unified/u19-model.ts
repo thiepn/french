@@ -9,6 +9,7 @@ type QuestionTuple=[string,string,string[],string];
 type PromptTuple=[string,string[],string];
 export interface U19AuthoredScenario{
  id:string; title:string; goal:string; grammarKeys:[string,string];
+ grammarApplications:[[string,string,string,string],[string,string,string,string]];
  vocabulary:[string,string,string][]; dialogue:[string,string,string][];
  reading:{title:string;paragraphs:[string,string,string];questions:[QuestionTuple,QuestionTuple,QuestionTuple]};
  evidence:[TransferEvidence,TransferEvidence];
@@ -38,10 +39,11 @@ function writing([prompt,criteria,model]:PromptTuple){
 export function authorU19Scenario(spec:U19AuthoredScenario,n:number):U19Scenario{
  const id='transfer-'+String(n).padStart(2,'0');
  if(n<91||n>105||spec.id!==id)throw Error('U19 transfer identity '+spec.id);
- const grammar:A1AuthoredSpec['grammar']=spec.grammarKeys.map(key=>{
+ const grammar:A1AuthoredSpec['grammar']=spec.grammarKeys.map((key,index)=>{
   const g=TRANSFER_GRAMMAR[key];
   if(!g)throw Error('Unknown original teaching bridge '+key);
-  return [g[0],g[1],g[2].map(x=>[x[0],x[1]] as [string,string]),[g[3][0],g[3][1],g[3][2]]];
+  const [situation,wrong,right,reason]=spec.grammarApplications[index];
+  return [g[0]+' — '+spec.title,g[1]+' Applied U19 situation: '+situation+' Demonstrated error: « '+wrong+' ». Correct: « '+right+' ». '+reason,g[2].map(x=>[x[0],x[1]] as [string,string]).concat([[right,'Context-specific correct model from the scenario']]),[wrong,right,reason]];
  });
  const practice:A1AuthoredSpec['tasks']=[
   ...spec.reading.questions.map(([q,a,options,why]):A1AuthoredSpec['tasks'][number]=>['reading',q,a,why,[...options],'connected reading']),
