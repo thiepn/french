@@ -201,7 +201,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "About time",
         "Good morning",
         "No problem",
-        "Théo suggests About time."
+        "Théo propose l’expression About time pour évoquer l’impatience, tout en reconnaissant qu’elle durcit le ton."
       ],
       [
         "What does the camera show?",
