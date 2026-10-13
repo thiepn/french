@@ -182,7 +182,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "son identité exacte",
         "sa couleur dessinée",
         "son prix",
-        "The herb is not identified."
+        "The herb is not identified. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "What does the modern recipe substitute?",
@@ -437,21 +437,21 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "douze",
         "deux cents",
         "cent",
-        "Amin gives twelve."
+        "Amin gives twelve. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "What does a click fail to guarantee?",
         "une présence réelle",
         "une idée appréciée",
         "une date de page",
-        "Interest is not attendance."
+        "Interest is not attendance. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "What does the municipality require?",
         "un parcours détaillé",
         "un sondage de couleur",
         "une nouvelle application",
-        "Route approval is pending."
+        "Route approval is pending. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "Which needs conflict?",
@@ -713,7 +713,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "lieu, date et photo",
         "des intentions supposées",
         "un devis inventé",
-        "She plans a factual report."
+        "She plans a factual report. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "Who should determine any intervention?",
