@@ -184,7 +184,7 @@ const SOURCE:readonly U17OriginalSourceStory[]=[
         "des photos de l’entrée",
         "des billets de concert",
         "des rapports médicaux",
-        "She has move-in photos."
+        "She has move-in photos. The supported detail comes from the dialogue, not from a general assumption."
       ],
       [
         "Which document is missing?",
