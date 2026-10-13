@@ -4,6 +4,7 @@ import {
 } from '../core/unified/u33-editorial.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u33-editorial-panel.css';
+import {appendOriginalDebateJourney} from './u34-debate-panel.ts';
 
 type Register='peer'|'service'|'public';
 interface Options{
@@ -95,7 +96,8 @@ export function appendOriginalEditorialJourney(
  const comparisons=el('section','','u33-comparison');
  const revision=el('section','','u33-consolidation');
  const transfers=el('section','','u33-transfer');
- body.append(header,brief,levelControls,stageHost,decisions,evidence,comparisons,revision,transfers);
+ const debateHost=el('div','','u34-integration');
+ body.append(header,brief,levelControls,stageHost,decisions,evidence,comparisons,revision,transfers,debateHost);
  let current=0,unassisted=false,register:Register='peer',disposed=false,checkIndex=0;
  const notes=new Map<U33Stage,string>(),second=new Map<U33Stage,string>(),
   earlier=new Map<U33Stage,string>(),spoken=new Set<U33Stage>();
@@ -106,10 +108,17 @@ export function appendOriginalEditorialJourney(
  const live=el('p','','u33-live');live.setAttribute('role','status');
  const privateChanged=()=>{
   const written=[...notes.values(),...second.values(),...[...pairNotes.values()].flat(),essayDraft,independentEssay];
-  const present=written.some(s=>s.trim().length>0);
+  const present=written.some(s=>s.trim().length>0)||
+   !!debateHost.querySelector<HTMLElement>('.u34-debate[data-has-private-draft="true"]');
   root.dataset.hasPrivateDraft=String(present);
   options.onPrivateChange?.(present);
  };
+ const stopU34=appendOriginalDebateJourney(debateHost,id,{
+  signal:options.signal,
+  onPrivateChange:()=>privateChanged(),
+  onOpenSurface:options.onOpenSurface,
+  onNativeReview:options.onNativeReview
+ });
  function renderStage(focus=false){
   if(disposed)return;
   stageHost.replaceChildren();levelControls.replaceChildren();
@@ -388,7 +397,7 @@ export function appendOriginalEditorialJourney(
  const cleanup=()=>{
   if(disposed)return;disposed=true;
   options.signal.removeEventListener('abort',cleanup);
-  clearAll();root.remove();
+  stopU34();clearAll();root.remove();
  };
  options.signal.addEventListener('abort',cleanup,{once:true});
  renderStage();renderChoices();renderComparison();renderSynthesis();

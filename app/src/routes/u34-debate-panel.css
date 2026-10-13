@@ -1,0 +1,53 @@
+/* U34 uses the native original reader typography and square, functional surfaces. */
+.u34-debate{margin:1.5rem 0;min-width:0;border-top:1px solid var(--line,#999);padding-top:1rem}
+.u34-disclosure{border:1px solid var(--line,#aaa);background:var(--surface,transparent);min-width:0}
+.u34-disclosure>summary{cursor:pointer;min-height:44px;padding:.85rem 1rem;font-weight:650;line-height:1.5}
+.u34-disclosure[open]>summary{border-bottom:1px solid var(--line,#aaa)}
+.u34-body{display:grid;gap:1.25rem;padding:clamp(.7rem,2vw,1.2rem);min-width:0}
+.u34-body>section{display:grid;gap:.75rem;padding-top:.75rem;border-top:1px solid var(--line,#aaa);min-width:0}
+.u34-heading{display:grid;gap:.5rem}
+.u34-heading h3{font-size:1.18rem;margin:.2rem 0}
+.u34-body h4{font-size:1.06rem;margin:.25rem 0}
+.u34-body h5{font-size:.98rem;margin:.3rem 0}
+.u34-provenance,.u34-caveat,.u34-status{color:var(--muted,inherit);font-size:.86rem;line-height:1.6;overflow-wrap:anywhere;margin:.15rem 0}
+.u34-eyebrow{font-size:.73rem;font-weight:700;letter-spacing:.03em;color:var(--muted,inherit);margin:0}
+.u34-french{line-height:1.82;white-space:pre-wrap;overflow-wrap:anywhere}
+.u34-claim-grid,.u34-witness-list,.u34-compare-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.75rem}
+.u34-claim,.u34-witness{border:1px solid var(--line,#aaa);padding:.8rem;min-width:0}
+.u34-claim{display:grid;gap:.45rem;align-content:start}
+.u34-claim>details>summary{cursor:pointer;min-height:44px}
+.u34-claim .u34-witness{margin-top:.5rem}
+.u34-witness-library,.u34-genre-outline,.u34-genre-evidence,.u34-genre-example,.u34-decision-evidence{border:1px solid var(--line,#aaa);padding:.2rem .75rem .75rem}
+.u34-witness-library>summary,.u34-genre-outline>summary,.u34-genre-evidence>summary,.u34-genre-example>summary,.u34-decision-evidence>summary{cursor:pointer;padding:.6rem 0;min-height:44px;font-weight:600;line-height:1.4}
+.u34-witness-list{padding-top:.6rem}
+.u34-turn-nav,.u34-genre-nav,.u34-actions{display:flex;gap:.5rem;flex-wrap:wrap;min-width:0}
+.u34-turn-nav button,.u34-genre-nav button{min-height:44px;flex:1 1 7rem;text-align:left}
+.u34-turn-nav [aria-current=step],.u34-genre-nav [aria-current=step]{font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.u34-actions button{min-height:44px;max-width:100%;white-space:normal;text-align:left}
+.u34-turn-pane,.u34-genre-pane{display:grid;gap:.7rem;border:1px solid var(--line,#aaa);padding:.9rem;min-width:0}
+.u34-challenge{border-left:3px solid var(--accent,#596d80);padding:.75rem;margin:0;background:var(--surface-muted,transparent);line-height:1.7}
+.u34-challenge p{margin:.2rem 0}
+.u34-instruction{font-weight:600;line-height:1.65;margin:.15rem 0}
+.u34-helper,.u34-genre-support{display:grid;gap:.65rem}
+.u34-picker,.u34-draft-label{display:grid;gap:.4rem;font-size:.88rem;font-weight:600;min-width:0}
+.u34-picker select,.u34-draft-label textarea,.u34-decision-form select{width:100%;min-width:0;box-sizing:border-box;font:inherit;color:var(--text,inherit);background:var(--surface,transparent);border:1px solid var(--line,#888);border-radius:0;padding:.65rem}
+.u34-picker select,.u34-decision-form select{min-height:44px}
+.u34-draft-label textarea{min-height:8rem;resize:vertical;line-height:1.65}
+.u34-version-comparison{border:1px solid var(--line,#999);padding:.75rem;display:grid;gap:.4rem}
+.u34-version-comparison h5{margin-top:.5rem}
+.u34-self-check{font-size:.86rem;line-height:1.6;padding-left:1.2rem;display:grid;gap:.25rem}
+.u34-decision-form{display:grid;gap:.7rem}
+.u34-decision-form>button{justify-self:start;min-height:44px}
+.u34-decision-form h5{line-height:1.6}
+.u34-debate [hidden]{display:none!important}
+.u34-debate :is(button,summary,select,textarea):focus-visible{outline:2px solid var(--accent,#2254a0);outline-offset:3px}
+@media(max-width:650px){
+ .u34-body{padding:.7rem}
+ .u34-claim-grid,.u34-witness-list,.u34-compare-cards{grid-template-columns:minmax(0,1fr)}
+ .u34-turn-pane,.u34-genre-pane{padding:.7rem}
+ .u34-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+ .u34-actions button{width:100%}
+ .u34-turn-nav,.u34-genre-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:400px){.u34-turn-nav,.u34-genre-nav{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.u34-debate *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
