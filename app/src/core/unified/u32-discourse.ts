@@ -263,6 +263,89 @@ const CASES:readonly Case[]=[
  model:['« Soixante est un maximum théorique par heure, si le ciel est favorable. »','« Non, les nuages ont limité l’observation d’un groupe. »','« L’autre groupe a observé quarante-cinq minutes, contre trente pour le premier. »','« Comparons de nouvelles séances de quinze minutes avec lieu, visibilité, horizon et interruptions afin de présenter un bilan transparent. »']
  }
 ];
+
+interface SourceComparisonSpec{
+ readonly id:string;readonly leftAnchor:string;readonly rightAnchor:string;
+ readonly cases:readonly {
+  readonly question:string;readonly answer:string;
+  readonly distractors:readonly [string,string];
+  readonly corrections:readonly [string,string];readonly explanation:string;
+ }[];
+}
+/** All claims below require two intact original independently attributed
+ * U23 documentary text objects. A source change suppresses the extra task. */
+const SOURCE_COMPARISONS:readonly SourceComparisonSpec[]=[
+ {
+ id:'transfer-31',leftAnchor:'Entre 22 h et 7 h',rightAnchor:'Je ne sais pas s’ils ont réellement commencé',
+ cases:[
+  {question:'What do the building rules and tentative report establish together?',
+   answer:'Quiet hours are defined, but proposed works and the cause of the noise remain unconfirmed.',
+   distractors:['The rules identify the neighboring flat as the culprit.','The tentative report proves the works actually started.'],
+   corrections:['A general notice names no individual culprit.','The report explicitly says the author cannot confirm the works began.'],
+   explanation:'The notice states obligations for all residents; the separate message records a possibility, not a witnessed explanation.'},
+  {question:'Which spoken mediation summary preserves BOTH written sources?',
+   answer:'« Le règlement fixe des horaires; l’éventualité de travaux reste à vérifier avant toute accusation. »',
+   distractors:['« Le message confirme le responsable des bruits. »','« Le règlement prouve que tous les voisins sont coupables. »'],
+   corrections:['The report confirms neither actual works nor a named person.','A general rule does not imply a violation by every resident.'],
+   explanation:'A responsible summary distinguishes the rule, the unverified works report, and any later observations.'}
+ ]},
+ {
+ id:'transfer-121',leftAnchor:'Il me semblait que je savais',rightAnchor:'Sous-titre provisoire',
+ cases:[
+  {question:'How do the original script excerpt and the rehearsal/translation note differ?',
+   answer:'The script qualifies memory, while the provisional English wording drops that doubt and the staging choices remain unapproved.',
+   distractors:['The manuscript uses an unequivocal confession of proven deceit.','The rehearsal note proves the writer definitively chose version A.'],
+   corrections:['« Il me semblait » qualifies certainty rather than proving a lie.','The note explicitly denies documented author approval.'],
+   explanation:'The first source preserves a hedge; the second records provisional wording and variants rather than binding authorial choice.'},
+  {question:'Which public translator explanation is supported by the two records?',
+   answer:'« Notre traduction conserve le doute du texte; les variantes de jeu restent des choix interprétatifs. »',
+   distractors:['« Le texte prouve que la narratrice ment. »','« L’autrice a imposé une pause; aucune autre lecture n’est possible. »'],
+   corrections:['The text distinguishes limited observation from certainty, not intent to deceive.','The note gives two stagings without authorial approval.'],
+   explanation:'The stated translation position is an editorial recommendation grounded in a hedge, not a claim about historical author intent.'}
+ ]},
+ {
+ id:'transfer-148',leftAnchor:'Sous-titres automatiques intégralement fidèles',rightAnchor:'Mardi: négation « ne » absente',
+ cases:[
+  {question:'What tension emerges from comparing the theatre leaflet with the rehearsal incident log?',
+   answer:'The leaflet promises complete fidelity while the log documents a meaning-changing negation error and other defects.',
+   distractors:['The rehearsal log confirms the leaflet’s absolute accuracy.','The leaflet describes every documented timing and negation fault.'],
+   corrections:['The log records concrete faults, not absolute verification.','The leaflet makes a broad claim and omits those defects.'],
+   explanation:'The independently attributed promotional statement is not evidence that errors were absent; the log describes actual observed failures.'},
+  {question:'Which caption-release statement respects both documents and the recorded rights limit?',
+   answer:'« Une version contrôlée sera présentée en salle; une diffusion en ligne exige une autorisation distincte. »',
+   distractors:['« L’autorisation de projection suffit pour publier le fichier sur internet. »','« Aucune correction humaine n’est nécessaire car l’affiche garantit la fidélité. »'],
+   corrections:['The recorded agreement covers on-site projection only.','The log identifies substantive corrections still needed.'],
+   explanation:'Presenting a checked venue version while restricting online distribution preserves documented rights and uncertainty.'}
+ ]},
+ {
+ id:'transfer-149',leftAnchor:'Quatre habitants sur cinq approuvent notre jardin',rightAnchor:'Cent bulletins volontaires',
+ cases:[
+  {question:'How should the poster’s « four out of five » be interpreted after consulting the portal method note?',
+   answer:'Eighty of one hundred voluntary online submissions were favorable; this is not established as the entire town’s opinion.',
+   distractors:['A random sample showed 80% approval in every household.','A binding legal referendum has already authorized construction.'],
+   corrections:['The method note states voluntary entry without random sampling or household uniqueness.','The records do not describe a binding town-wide vote.'],
+   explanation:'The sample denominator is voluntary submissions, not all residents; the poster overgeneralizes the result.'},
+  {question:'What can the organizers publicly say about the 20 000 € budget?',
+   answer:'« Il s’agit d’une enveloppe indicative; le conseil doit encore examiner l’entretien et la faisabilité. »',
+   distractors:['« Toutes les dépenses futures ont été définitivement approuvées. »','« Le budget a été versé aux habitants ayant voté. »'],
+   corrections:['The council review remains outstanding.','The source describes no such payment.'],
+   explanation:'A provisional allocation does not settle future costs or feasibility decisions.'}
+ ]},
+ {
+ id:'transfer-150',leftAnchor:'Cette nuit, chacun observera soixante étoiles filantes',rightAnchor:'Maximum théorique estimé',
+ cases:[
+  {question:'What distinction resolves the invitation versus forecast/observations?',
+   answer:'Sixty per hour is a conditional theoretical maximum; the two local counts used different durations and conditions.',
+   distractors:['Every visitor should have observed exactly sixty visible meteors.','The observed nine and fifteen counts directly measure the same conditions.'],
+   corrections:['A model maximum is not a guaranteed personal observation.','The records describe differing durations, sites and incomplete conditions.'],
+   explanation:'The invitation overstates a conditional model; the log reports restricted local evidence rather than universal rates.'},
+  {question:'Which public follow-up would allow a fairer scientific comparison?',
+   answer:'« Nous indiquerons les durées, les nuages et les lieux, puis comparerons des séances standardisées. »',
+   distractors:['« Nous comparerons seulement les chiffres bruts, sans durée. »','« Un relevé local suffit à invalider tous les modèles. »'],
+   corrections:['Raw counts without observation time and visibility are not comparable.','A single local cloud-affected log cannot falsify the model universally.'],
+   explanation:'Observation metadata and standardized sessions permit cautious reproducible comparisons.'}
+ ]}
+];
 function norm(s:string){return s.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');}
 function rotateChoices(id:string,values:readonly string[]):readonly string[]{
  const unique=[...new Set(values)];if(unique.length<2)return Object.freeze(unique);
@@ -377,6 +460,21 @@ export function originalU32Discourse(id:string):U32Journey|null{
    'This is an authored register-choice comparison about a newly constructed situation, not a quotation from the historical dialogue.',
    {[c]:authored.repairs[2],[e]:authored.repairs[3]},locator,entry.qualifiedId);
   if(social)decisions.push(social);
+ }
+ const compared=SOURCE_COMPARISONS.find(item=>item.id===id);
+ const authoredDocuments=source.evidence?.sources??[];
+ if(compared&&authoredDocuments.length>=2&&
+   norm(authoredDocuments[0].french).includes(norm(compared.leftAnchor))&&
+   norm(authoredDocuments[1].french).includes(norm(compared.rightAnchor))){
+  compared.cases.forEach((item,index)=>{
+   const evidence=[id+':document:0',id+':document:1'];
+   const [first,second]=item.distractors;
+   const keyed=decision('u32:'+id+':original-paired-comparison:'+index,
+    'comparison',item.question,item.answer,item.distractors,item.explanation,
+    {[first]:item.corrections[0],[second]:item.corrections[1]},
+    evidence,entry.qualifiedId);
+   if(keyed)decisions.push(keyed);
+  });
  }
  // Reconstruct actual document provenance, with source-qualified original
  // records. Names must be unique and excerpts must not occur in other records.
