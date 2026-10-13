@@ -194,7 +194,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "non",
         "oui",
         "unanimement",
-        "Jonas confirms no vote."
+        "Jonas confirms no vote. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What competing uses are mentioned?",
@@ -700,7 +700,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "une lettre",
         "un outil",
         "un billet",
-        "Adèle speaks of a letter."
+        "Adèle speaks of a letter. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What does the narrator claim?",
