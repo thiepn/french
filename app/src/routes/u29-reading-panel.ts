@@ -61,11 +61,6 @@ export function appendOriginalReadingJourney(host:HTMLElement,id:string,opts:Opt
  const decisions=reading.decisions;
  const answered=new Map<string,{answer:string;matched:boolean}>();
  let categoryValue:OriginalReadingDecisionKind=decisions[0].kind,index=0;
- let draftInput:HTMLTextAreaElement|null=null;
- const hasDraft=()=>!!draftInput?.value.trim();
- const allowExit=()=>!hasDraft()||window.confirm(
-  'This original summary draft is temporary and not saved. Discard it before leaving this reading activity?'
- );
  const eligible=()=>decisions.filter(d=>d.kind===categoryValue);
  const drawCategories=()=>{
   category.replaceChildren();
@@ -100,7 +95,7 @@ export function appendOriginalReadingJourney(host:HTMLElement,id:string,opts:Opt
   const editor=el('textarea');editor.rows=6;editor.maxLength=4500;editor.lang='fr';
   editor.spellcheck=true;editor.placeholder='Écrivez votre résumé…';
   editor.setAttribute('aria-label','Independent original-source reading summary');
-  draftInput=editor;label.append(editor);section.append(label);
+  label.append(editor);section.append(label);
   const hints=el('details','','u29-summary-hints');
   hints.append(el('summary','Optional summary plan and source reminders'),
    el('p','1. Introduce the situation using the original reading title. 2. State a witnessed fact with a paragraph reference. 3. Describe a different view or constraint. 4. Explain what still cannot be concluded. 5. End with a provisional next step, if supported.','u29-note'));
@@ -192,5 +187,5 @@ export function appendOriginalReadingJourney(host:HTMLElement,id:string,opts:Opt
   drawCategories();draw();
  };
  revalidate();drawTransfer();
- opts.signal.addEventListener('abort',()=>{answered.clear();draftInput=null;},{once:true});
+ opts.signal.addEventListener('abort',()=>answered.clear(),{once:true});
 }
