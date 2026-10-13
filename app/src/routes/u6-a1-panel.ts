@@ -122,6 +122,15 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     button('B2 narratives & debate',()=>open('transfer-121','understand'),'u8-level-button'),
      button('B2 source critique',()=>open('transfer-136','understand'),'u8-level-button'));
    sidebar.append(jump);
+   if(!matches.entries.some(row=>row.id===current.id)){
+    const pinned=getOriginalCatalogEntry(current.id);
+    if(pinned){
+     const selected=button('Selected lesson: '+pinned.id+' · '+pinned.title,
+      ()=>open(pinned.id,'understand'),'u6-unit-button selected');
+     selected.setAttribute('aria-current','true');
+     sidebar.append(selected);
+    }
+   }
    for(const row of matches.entries){
     const unit=getOriginalUnit(row.id)!;
     if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and practical communication','u8-course-divider'));
@@ -415,7 +424,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(signal.aborted)return;
    article.replaceChildren();
    const head=el('header',undefined,'u6-unit-header');
-   head.append(el('p',(current.id.startsWith('transfer-')?'A1–B1 TRANSFER':current.id.startsWith('b1-')?'B1':current.id.startsWith('a2-')?'A2':'A1')+' · LESSON '+(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
+   head.append(el('p',(getOriginalCatalogEntry(current.id)?.level??'Original')+' · LESSON +(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
     el('h3',current.title),el('p',current.goal));
    const pre=el('p',current.prerequisites.length?
     'Suggested foundation: '+(getOriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
