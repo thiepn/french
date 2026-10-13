@@ -487,6 +487,7 @@ export function originalU32Discourse(id:string):U32Journey|null{
    const others=docs.filter(x=>x.locator!==current.locator&&x.label!==current.label).map(x=>x.label);
    if(others.length<2)continue;
    const traps=others.slice(0,2);
+   if(traps.length===1)traps.push('Neither original document contains this excerpt');
    const item=decision('u32:'+id+':document:'+current.index,'attribution',
     'Which independently published original *written* record contains this exact statement? « '+excerpt.slice(0,135)+' »',
     current.label,traps,
