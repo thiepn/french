@@ -19,6 +19,7 @@ import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {createOriginalPlacementPanel} from './u27-placement-panel';
 import {originalPlacementPrerequisites} from '../core/unified/u27-placement.ts';
 import {appendOriginalVocabularyJourney,createOriginalVocabularyDiscovery} from './u28-vocabulary-panel';
+import {appendOriginalReadingJourney} from './u29-reading-panel';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
@@ -55,7 +56,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   let stopAudio:(()=>void)|null=null;
   let tracking=false,reviewBusy=false,recoveryError='',saveChain=Promise.resolve();
   const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0)||
-   !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim();
+   !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
+   !!host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim();
   const allowExit=()=>!hasPrivateDrafts()||
    window.confirm('Leaving this Course discards unsent writing. Navigation checkpoints never include your text. Leave without the drafts?');
   const navigateSafely=(route:RouteId)=>{if(allowExit())navigate(route);};
@@ -406,6 +408,15 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     row.append(name,fr,toggle,english);container.append(row);
    }
    if(unit.id.startsWith('b1-')||unit.id.startsWith('transfer-'))appendOriginalB1Reading(container,unit);
+   appendOriginalReadingJourney(container,unit.id,{
+    mode:'course',signal,
+    onOpenCourse:id=>open(id,'words',undefined,true),
+    onOpenSurface:(surface,linkedId)=>{
+     if(!allowExit())return;
+     if(handoffOriginalLesson(surface,linkedId))navigate(surface);
+    },
+    onNativeReview:()=>navigateSafely('review')
+   });
    container.append(el('p','Next, try listening to the original dialogue without revealing the translations.','u6-small'));
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
@@ -658,8 +669,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   function open(id:string,next:Stage,resumeIndex?:number,focus=false){
    const lesson=getOriginalUnit(id);if(!lesson)return;
    if((id!==current.id||next!==stage)&&
-      host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()&&
-      !window.confirm('Your original vocabulary writing draft is temporary. Leave this learning stage and discard its text?'))return;
+      (host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
+       host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim())&&
+      !window.confirm('Your temporary vocabulary or reading summary draft is unsent. Leave this learning stage and discard its text?'))return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
