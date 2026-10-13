@@ -8,6 +8,7 @@ import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides.ts';
 import type {RouteId} from '../core/types';
 import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
+import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -205,6 +206,18 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   else if(mode==='listen')renderListen(stage,s,signal);
   else renderWrite(stage,s,drafts);
   appendU26GrammarPractice(stage,s.unit.id,mode);
+  appendOriginalVocabularyJourney(stage,s.unit.id,{
+   mode,signal,
+   onNativeReview:()=>{if(safeLeave())navigate('review');},
+   onOpenCourse:id=>{
+    if(!safeLeave())return;
+    if(handoffOriginalLesson('course',id,'words'))navigate('course');
+   },
+   onOpenSurface:(surface,id)=>{
+    if(!safeLeave())return;
+    if(handoffOriginalLesson(surface,id))navigate(surface);
+   }
+  });
  }
  query.addEventListener('input',()=>{selected='';refresh(true);});
  level.addEventListener('change',()=>{selected='';refresh(true);});

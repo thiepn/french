@@ -18,6 +18,7 @@ import {inspectDraftStructure} from '../core/unified/u3-writing';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {createOriginalPlacementPanel} from './u27-placement-panel';
 import {originalPlacementPrerequisites} from '../core/unified/u27-placement.ts';
+import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
@@ -370,6 +371,17 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    }
   }
   function renderWords(unit:A1Unit,container:HTMLElement){
+   appendOriginalVocabularyJourney(container,unit.id,{
+    mode:'course',signal,
+    onNativeReview:()=>navigateSafely('review'),
+    onOpenCourse:id=>open(id,'words',undefined,true),
+    onOpenSurface:(surface,id)=>{
+     if(!allowExit())return;
+     if(handoffOriginalLesson(surface,id))navigate(surface);
+    }
+   });
+   return;
+   /* U6 legacy flash reveal kept as historical source for comparison, unreachable here. */
    container.append(el('p','Learn the expression and its article or verb form together. Read the contextual example aloud before revealing the English meaning.','u6-small'));
    const list=el('div',undefined,'u6-word-grid');
    for(const word of unit.vocabulary){
