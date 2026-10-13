@@ -1,6 +1,5 @@
 import {
- originalU31OralJourney,evaluateU31Decision,
- type U31Decision,type U31Stage
+ originalU31OralJourney,evaluateU31Decision,type U31Stage
 } from '../core/unified/u31-oral.ts';
 import {
  browseOriginalMaterials,getOriginalCatalogEntry,handoffOriginalLesson,takeOriginalHandoff,
@@ -64,6 +63,7 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  const stageTitle=el('h4');stageTitle.tabIndex=-1;
  const task=el('p','','u31-task');
  const sourcePreview=el('div','','u31-source-preview');
+ const repairHint=el('p','','u31-repair');
  const hint=el('p','','u31-hint');hint.hidden=true;
  const supportLabel=el('p','','u31-support-state');supportLabel.setAttribute('role','status');
  const supportControls=el('div','','u31-support-controls');
@@ -79,6 +79,14 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
   transcript.append(li);
  });
  quote.append(transcript);
+ if(journey.reading){
+  const linked=el('details','','u31-linked-reading');
+  linked.append(el('summary','Original connected reading · '+journey.reading.title+' (separate written text)'));
+  for(const paragraph of journey.reading.text.split(/\n\s*\n/)){
+   if(paragraph.trim())linked.append(paragraphFrench(paragraph.trim()));
+  }
+  quote.append(linked);
+ }
  if(journey.documents.length){
   const docs=el('details','','u31-documents');
   docs.append(el('summary','Independent original written documents · not recorded dialogue'));
@@ -122,6 +130,7 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  }
  const modelAction=action('Reveal original oral model / speaking guide',()=>{
   model.hidden=!model.hidden;
+  modelAction.setAttribute('aria-expanded',String(!model.hidden));
   modelAction.textContent=model.hidden?'Reveal original oral model / speaking guide':'Hide oral model / guide';
   support=Math.max(support,3);drawSupport();
  });
@@ -135,6 +144,15 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  challenges.append(choiceTitle,choiceNote,question,questionNav,outcomes);
  const transfer=el('section','','u31-transfer');
  transfer.append(el('h4','Transfer to the original lesson, not a new progress engine'));
+ if(journey.writingChoices?.fromListening){
+  transfer.append(el('p','Original listening-to-writing assignment: '+journey.writingChoices.fromListening.prompt,'u31-notice'));
+ }
+ if(journey.writingChoices?.fromDebate){
+  transfer.append(el('p','Original independent argument assignment: '+journey.writingChoices.fromDebate.prompt,'u31-notice'));
+ }
+ if(journey.reading){
+  transfer.append(el('p','Original reading counterpart: '+journey.reading.title+'. Compare what the written passage establishes with what each dialogue participant actually says.','u31-notice'));
+ }
  const transferActions=el('div','','u31-transfer-actions');
  if(opts.onOpenSurface){
   const links:readonly [OriginalSurface,string,boolean][]=[
@@ -180,7 +198,7 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
    'Support: original attributed utterance revealed.',
    'Support: original oral guidance or full source consulted.'
   ][support]+' No formal proficiency inference.';
-  hint.hidden=support<1;
+  hint.hidden=support<1;repairHint.hidden=support<1;
   sourceTurn.hidden=support<2;
   sourceFull.hidden=support<3;
   hint.textContent=phase.hint;
@@ -193,7 +211,7 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  }
  function selectPhase(i:number,focus=true):void{
   if(i<0||i>=journey.stages.length)return;
-  phaseIndex=i;support=0;model.hidden=true;modelAction.textContent='Reveal original oral model / speaking guide';
+  phaseIndex=i;support=0;model.hidden=true;modelAction.setAttribute('aria-expanded','false');modelAction.textContent='Reveal original oral model / speaking guide';
   drawPhase();if(focus)stageTitle.focus({preventScroll:true});
  }
  function drawPhase():void{
@@ -208,16 +226,17 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
    ' stages self-reported as spoken (unverified). Private notes are never stored.';
   stage.replaceChildren();
   stageTitle.textContent=phase.title;task.textContent=phase.task;
+  repairHint.textContent='Suggested repair after your own attempt: '+phase.repair;
   sourcePreview.replaceChildren(
    el('p','Speaking objective: '+phase.target,'u31-target'),
-   el('p','Suggested repair: '+phase.repair,'u31-repair'),
+   repairHint,
    el('p','Original French source context is available below; objections are newly constructed practice prompts.','u31-notice')
   );
   const revealHint=action('1 · Speaking strategy',()=>{support=Math.max(support,1);drawSupport();});
   const revealTurn=action('2 · Source utterance',()=>{support=Math.max(support,2);drawSupport();});
   const revealFull=action('3 · Full source context',()=>{support=Math.max(support,3);drawSupport();});
   const independently=action('Retry independently (hide support)',()=>{
-   support=0;drawSupport();model.hidden=true;modelAction.textContent='Reveal original oral model / speaking guide';
+   support=0;drawSupport();model.hidden=true;modelAction.setAttribute('aria-expanded','false');modelAction.textContent='Reveal original oral model / speaking guide';
    draft.focus();rehearsalStatus.textContent='Support hidden. The private draft is retained for self-revision; no independent success is inferred.';
   });
   supportControls.replaceChildren(revealHint,revealTurn,revealFull,independently);
