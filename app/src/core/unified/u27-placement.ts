@@ -1,5 +1,5 @@
 import {
- getOriginalCatalogEntry,getOriginalMaterial,getOriginalUnit,neighboringOriginalLessons,
+ getOriginalCatalogEntry,getOriginalMaterial,neighboringOriginalLessons,
  type OriginalLevel,type OriginalSurface
 } from './u23-registry.ts';
 import {ORIGINAL_PATHWAYS,ORIGINAL_LEVEL_ORDER} from './u25-pathways.ts';
@@ -61,8 +61,6 @@ const ANCHORS:Readonly<Record<OriginalLevel,{
  'B1+':{grammar:['mediation-politeness','archival-past-attribution'],source:['transfer-31','transfer-76']},
  'Early B2':{grammar:['survey-conditional','forecast-concession'],source:['transfer-149','transfer-150']}
 };
-const expected=(unitId:string)=>getOriginalCatalogEntry(unitId)?.qualifiedId??'';
-
 function grammarQuestion(level:OriginalLevel,focusId:string,index:number):PlacementQuestion|null{
  const focus=originalU26GrammarById(focusId);
  const task=focus?.tasks[index];if(!focus||!task||focus.level!==level)return null;
