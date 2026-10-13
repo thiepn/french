@@ -18,7 +18,7 @@ import {inspectDraftStructure} from '../core/unified/u3-writing';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {createOriginalPlacementPanel} from './u27-placement-panel';
 import {originalPlacementPrerequisites} from '../core/unified/u27-placement.ts';
-import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
+import {appendOriginalVocabularyJourney,createOriginalVocabularyDiscovery} from './u28-vocabulary-panel';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
@@ -70,6 +70,14 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const pathways=el('nav',undefined,'u25-pathways');
   pathways.setAttribute('aria-label','Choose an original French level');
   const placement=el('div',undefined,'u27-course-entry');
+  const vocabularyDiscovery=createOriginalVocabularyDiscovery(signal,id=>{
+   const target=getOriginalCatalogEntry(id);if(!target)return;
+   if(host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()&&
+      !window.confirm('Leave your temporary original vocabulary writing draft? It is not saved.'))return;
+   search.value='';levelFilter.value=target.level;materialFilter.value='all';
+   openedGroups.clear();visible=60;
+   open(id,'words',undefined,true);
+  });
   const activities=el('section',undefined,'u25-activities');
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
@@ -125,7 +133,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    },
    onNativeReview:()=>navigateSafely('review')
   }));
-  host.append(header,hero,pathways,placement,activities,recovery,status,discovery,layout);
+  host.append(header,hero,pathways,vocabularyDiscovery,placement,activities,recovery,status,discovery,layout);
   function focusCourseLesson(){
    const heading=article.querySelector<HTMLElement>('.u6-unit-header h3');
    if(!heading)return;

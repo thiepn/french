@@ -142,7 +142,8 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  const showMore=button('Show more lessons',()=>{visible+=60;refresh(false);});
  const filters=el('div','','u23-material-filters');filters.append(queryLabel,levelLabel,pickerLabel,count,showMore);
  const stage=el('div','','u22-source-content'),drafts=new Map<string,string>();
- const unsent=()=>[...drafts.values()].some(value=>value.trim());
+ const unsent=()=>[...drafts.values()].some(value=>value.trim())||
+  !!stage.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim();
  const safeLeave=()=>!unsent()||window.confirm(
   'Your original writing is unsent and temporary. Navigation checkpoints save no text. Leave this workspace and discard its drafts?'
  );
@@ -219,9 +220,18 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
    }
   });
  }
- query.addEventListener('input',()=>{selected='';refresh(true);});
- level.addEventListener('change',()=>{selected='';refresh(true);});
- picker.addEventListener('change',()=>{selected=picker.value;render();});
+ query.addEventListener('input',()=>{
+  if(!safeLeave()){query.value='';return;}
+  selected='';refresh(true);
+ });
+ level.addEventListener('change',()=>{
+  if(!safeLeave()){level.value='all';return;}
+  selected='';refresh(true);
+ });
+ picker.addEventListener('change',()=>{
+  if(!safeLeave()){picker.value=selected;return;}
+  selected=picker.value;render();
+ });
  const returning=el('div','','u24-source-return');
  returning.setAttribute('aria-label','Return to a saved original Course lesson');
  panel.append(filters,returning,stage);
