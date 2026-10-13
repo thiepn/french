@@ -11,6 +11,7 @@ import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
 import {appendOriginalReadingJourney} from './u29-reading-panel';
 import {appendOriginalListeningJourney} from './u30-listening-panel';
+import {appendOriginalOralJourney} from './u31-oral-panel';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -145,11 +146,13 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  const filters=el('div','','u23-material-filters');filters.append(queryLabel,levelLabel,pickerLabel,count,showMore);
  const stage=el('div','','u22-source-content'),drafts=new Map<string,string>();
  let stopU30:()=>void=()=>{};
- signal.addEventListener('abort',()=>stopU30(),{once:true});
+ let stopU31:()=>void=()=>{};
+ signal.addEventListener('abort',()=>{stopU30();stopU31();},{once:true});
  const unsent=()=>[...drafts.values()].some(value=>value.trim())||
   !!stage.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
   !!stage.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
-  !!stage.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim();
+  !!stage.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim()||
+  !!stage.querySelector<HTMLElement>('.u31-oral[data-has-private-draft="true"]');
  const safeLeave=()=>!unsent()||window.confirm(
   'Your original writing is unsent and temporary. Navigation checkpoints save no text. Leave this workspace and discard its drafts?'
  );
@@ -189,7 +192,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   showMore.hidden=results.entries.length>=results.total||visible>=results.total;
  };
  function render(){
-  stopU30();
+  stopU30();stopU31();
   const s=getOriginalMaterial(selected),entry=getOriginalCatalogEntry(selected);
   if(mode==='listen'&&'speechSynthesis' in window)window.speechSynthesis.cancel();
   stage.replaceChildren();actions.replaceChildren();
@@ -235,6 +238,14 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
     onNativeReview:()=>{if(safeLeave())navigate('review');}
    });
   }else renderWrite(stage,s,drafts);
+  stopU31=appendOriginalOralJourney(stage,s.unit.id,{
+   mode,signal,parentHandlesDraftExit:true,
+   onOpenSurface:(surface,id)=>{
+    if(!safeLeave())return;
+    if(handoffOriginalLesson(surface,id,surface==='course'?'listen':undefined))navigate(surface);
+   },
+   onNativeReview:()=>{if(safeLeave())navigate('review');}
+  });
   appendU26GrammarPractice(stage,s.unit.id,mode);
   appendOriginalVocabularyJourney(stage,s.unit.id,{
    mode,signal,
