@@ -179,7 +179,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "une bande-annonce",
         "un film acheté",
         "un contrat signé",
-        "Alix received the trailer."
+        "Alix parle d’une bande-annonce envoyée pour traduction, sans licence du film entier."
       ],
       [
         "What work was requested?",
