@@ -175,7 +175,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "vendredi",
         "dimanche",
         "lundi",
-        "Céline mentions Friday."
+        "Céline mentions Friday. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "How long will it last?",
@@ -203,7 +203,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "elle l’apprend encore",
         "elle l’enseigne déjà",
         "elle refuse tout apprentissage",
-        "She is learning it."
+        "She is learning it. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "Will the application get automatic priority?",
@@ -685,7 +685,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "neuf heures",
         "midi",
         "dix-neuf heures",
-        "Julie gives nine o'clock."
+        "Julie gives nine o'clock. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "How long did measurement last?",
