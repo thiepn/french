@@ -1,9 +1,6 @@
 name: P9 Language Dashboard
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
