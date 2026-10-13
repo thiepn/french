@@ -1,4 +1,6 @@
 import type {RouteId} from '../core/types';
+import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
+ type ContinuityReview} from '../core/unified/u24-continuity';
 import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
 import {
  browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
@@ -41,9 +43,16 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const drafts=new Map<string,string>();
   // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
   const revisionSnapshots=new Map<string,string>();
+  let continuity:ContinuityReview=await readOriginalContinuity();
+  if(signal.aborted||!host.isConnected)return;
   const incoming=takeOriginalHandoff('course');
   let current=getOriginalUnit(incoming?.id??'')??lessons[0],stage:Stage=incoming?.stage??'understand',taskIndex=0;
   let stopAudio:(()=>void)|null=null;
+  let tracking=false,reviewBusy=false,recoveryError='',saveChain=Promise.resolve();
+  const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0);
+  const allowExit=()=>!hasPrivateDrafts()||
+   window.confirm('Leaving this Course discards unsent writing. Navigation checkpoints never include your text. Leave without the drafts?');
+  const navigateSafely=(route:RouteId)=>{if(allowExit())navigate(route);};
   host.replaceChildren();host.className='u6-full-course';
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
@@ -80,7 +89,86 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   search.addEventListener('input',()=>{visible=60;renderIndex();});
   levelFilter.addEventListener('change',()=>{visible=60;renderIndex();});
   materialFilter.addEventListener('change',()=>{visible=60;renderIndex();});
-  layout.append(sidebar,article);host.append(header,status,finder,layout);
+  const recovery=el('section',undefined,'u24-recovery');
+  recovery.setAttribute('aria-label','Original Course navigation recovery');
+  layout.append(sidebar,article);host.append(header,recovery,status,finder,layout);
+  function drawRecovery(){
+   if(signal.aborted)return;
+   const checkpoint=continuity.checkpoint;
+   recovery.replaceChildren(el('h3','Return to your original lesson'));
+   const message=el('p',continuity.message,'u24-recovery-copy');
+   message.setAttribute('role','status');recovery.append(message);
+   if(checkpoint)recovery.append(el('p',
+    'Saved: '+(getOriginalCatalogEntry(checkpoint.id)?.title??checkpoint.id)+
+    ' · '+checkpoint.stage+' · question '+(checkpoint.taskIndex+1)+
+    ' · '+new Date(checkpoint.updatedAt).toLocaleString(),'u24-recovery-snapshot'));
+   recovery.append(el('p','Only lesson identity, source revision, stage and question number are recoverable. Answers, essays, transcripts, audio and scores are not stored.','u24-recovery-copy'));
+   const controls=el('div',undefined,'u24-recovery-actions');
+   const add=(label:string,action:()=>void)=>{
+    const item=button(label,action);item.disabled=reviewBusy;controls.append(item);
+   };
+   if(continuity.status==='ready'&&!tracking&&checkpoint)
+    add('Resume saved lesson',()=>{
+     tracking=true;recoveryError='';
+     open(checkpoint.id,checkpoint.stage,checkpoint.taskIndex);
+     const title=article.querySelector<HTMLElement>('.u6-unit-header h3');
+     if(title){title.tabIndex=-1;title.focus({preventScroll:true});}
+    });
+   if((continuity.status==='empty'||continuity.status==='ready')&&!tracking)
+    add(continuity.status==='ready'?'Save this position instead':'Remember my lesson position',()=>{
+     tracking=true;recoveryError='';
+     schedulePosition(current.id,stage,taskIndex);drawRecovery();
+    });
+   if(tracking){
+    add('Save position now',()=>schedulePosition(current.id,stage,taskIndex));
+    add('Pause position saving',()=>{
+     tracking=false;recoveryError='Automatic position updates paused; the last saved checkpoint is unchanged.';
+     drawRecovery();
+    });
+   }
+   if(continuity.status==='ready'||continuity.status==='stale')
+    add('Discard saved position',()=>void discardSaved());
+   if(continuity.status==='stale'||continuity.status==='blocked'||
+      continuity.status==='unavailable'||recoveryError)
+    add('Refresh saved-state review',()=>void refreshReview());
+   recovery.append(controls);
+   if(recoveryError)recovery.append(el('p',recoveryError,'u24-recovery-warning'));
+  }
+  const schedulePosition=(id:string,next:Stage,index:number)=>{
+   if(!tracking||signal.aborted)return;
+   saveChain=saveChain.then(async()=>{
+    if(!tracking)return;
+    const result=await saveOriginalContinuity(continuity,id,next,index);
+    continuity=result.review;
+    if(result.outcome!=='saved'){
+     tracking=false;
+     recoveryError=result.outcome==='conflict'?
+      'A newer checkpoint exists, possibly from another tab. Review it before making changes.':
+      'This checkpoint or source cannot be updated safely.';
+    }else recoveryError='';
+    if(!signal.aborted)drawRecovery();
+   }).catch(()=>{
+    tracking=false;recoveryError='Saving failed. Course practice remains usable; do not rely on this position until it is saved.';
+    if(!signal.aborted)drawRecovery();
+   });
+  };
+  async function refreshReview(){
+   reviewBusy=true;drawRecovery();await saveChain;
+   continuity=await readOriginalContinuity();reviewBusy=false;recoveryError='';
+   if(!signal.aborted)drawRecovery();
+  }
+  async function discardSaved(){
+   if(!window.confirm('Discard only the saved lesson position? Existing graded study records are unchanged.'))return;
+   tracking=false;reviewBusy=true;drawRecovery();await saveChain;
+   try{
+    const result=await discardOriginalContinuity(continuity);continuity=result.review;
+    recoveryError=result.outcome==='discarded'?'Saved navigation position discarded.':
+     result.outcome==='conflict'?'A newer checkpoint exists. Review it before discarding.':
+     'The saved record cannot be discarded automatically.';
+   }catch{recoveryError='Could not discard this checkpoint. No other learning record changed.';}
+   reviewBusy=false;if(!signal.aborted)drawRecovery();
+  }
+  drawRecovery();
   const answerMap=(id:string)=>{
    let found=answers.get(id);
    if(!found){found=new Map();answers.set(id,found);}
@@ -194,7 +282,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     related.append(el('p','Continue with the existing grammar reference:'));
     for(const grammarId of unit.grammarIds)related.append(button('Open '+grammarId.replaceAll('-',' ')+' guide',()=>{
      try{sessionStorage.setItem('french-u2-grammar-target',grammarId);}catch{}
-     navigate('grammar');
+     navigateSafely('grammar');
     }));
     container.append(related);
    }
@@ -216,7 +304,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     item.append(fr,sample,reveal,gloss);list.append(item);
    }
    container.append(list,el('p','For scheduled vocabulary review, continue into native Learn/Review. This original course does not create unapproved vocabulary imports.','u6-small'),
-    button('Open native Learn',()=>navigate('learn')));
+    button('Open native Learn',()=>navigateSafely('learn')));
   }
   function renderDialogue(unit:A1Unit,container:HTMLElement){
    container.append(el('p','Read the complete exchange first. Reveal translations only when needed, then return to the French without them.','u6-small'));
@@ -243,7 +331,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     ' correct tasks during this temporary page visit. No FSRS or CEFR score is recorded.','u6-practice-status'));
    const nav=el('div',undefined,'u6-task-navigation');nav.setAttribute('role','group');nav.setAttribute('aria-label','Practice task navigation');
    unit.tasks.forEach((task,i)=>{
-    const b=button(String(i+1)+(record.get(task.id)?' ✓':''),()=>{taskIndex=i;render();},'u6-task-button');
+    const b=button(String(i+1)+(record.get(task.id)?' ✓':''),()=>{taskIndex=i;render();schedulePosition(current.id,stage,taskIndex);},'u6-task-button');
     b.setAttribute('aria-label','Open task '+(i+1));
     if(i===taskIndex){b.setAttribute('aria-current','step');b.classList.add('active');}
     nav.append(b);
@@ -311,7 +399,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     help.replaceChildren(el('p','Model answer: '+task.answer+'. '+task.explanation));
    });
    const next=button(taskIndex===unit.tasks.length-1?'Return to first question':'Next question →',()=>{
-    taskIndex=(taskIndex+1)%unit.tasks.length;render();
+    taskIndex=(taskIndex+1)%unit.tasks.length;render();schedulePosition(current.id,stage,taskIndex);
    });
    form.append(submit,reveal,result,help,next);card.append(form);container.append(card);
    if(errors.size)container.append(el('p','Recommended review topics from your attempts: '+[...errors].join(', ')+'.','u6-recommendation'));
@@ -440,6 +528,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     ] as const){
      if(!available)continue;
      cross.append(button(title,()=>{
+      if(!allowExit())return;
       if(handoffOriginalLesson(dest,current.id))navigate(dest);
      }));
     }
@@ -468,12 +557,13 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const trace=el('p','Source: '+current.source.qualifiedId+' · original-owned; learning activity is local only.','u6-provenance');
    article.append(trace);
   }
-  function open(id:string,next:Stage){
+  function open(id:string,next:Stage,resumeIndex?:number){
    const lesson=getOriginalUnit(id);if(!lesson)return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
+   if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
    current=lesson;stage=next;
-   renderIndex();render();
+   renderIndex();render();schedulePosition(current.id,stage,taskIndex);
   }
   sidebar.addEventListener('keydown',event=>{
    if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
@@ -487,7 +577,14 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(chosen){open(chosen.id,'understand');
     sidebar.querySelector<HTMLButtonElement>('[data-u6-unit="'+chosen.id+'"]')?.focus();}
   });
-  signal.addEventListener('abort',()=>stopAudio?.(),{once:true});
+  const beforeUnload=(event:BeforeUnloadEvent)=>{
+   if(!hasPrivateDrafts())return;
+   event.preventDefault();event.returnValue='';
+  };
+  window.addEventListener('beforeunload',beforeUnload);
+  signal.addEventListener('abort',()=>{
+   stopAudio?.();window.removeEventListener('beforeunload',beforeUnload);
+  },{once:true});
   open(current.id,stage);
  }catch(error){
   if(signal.aborted)return;
