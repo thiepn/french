@@ -1,4 +1,4 @@
-import {getU20ConnectedReading,u20OriginalEvidence} from '../core/unified/u20-material';
+import {getU21ConnectedReading,u21OriginalEvidence} from '../core/unified/u21-material';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import type {A1Unit} from '../core/unified/u6-a1-model';
 import type {B1ReadingQuestion} from '../core/unified/u10-readings-01-07';
@@ -32,7 +32,7 @@ function appendEvidenceQuestion(host:HTMLElement,question:B1ReadingQuestion,i:nu
 }
 /** Existing original Read stage: connected passages and original paired-source contextual transfer. */
 export function appendOriginalB1Reading(container:HTMLElement,unit:A1Unit):void{
- const reading=getU20ConnectedReading(unit.id);
+ const reading=getU21ConnectedReading(unit.id);
  if(!reading)return;
  const section=node('section',undefined,'u10-reading');
  section.setAttribute('aria-label','Original connected reading and evidence questions');
@@ -41,7 +41,7 @@ export function appendOriginalB1Reading(container:HTMLElement,unit:A1Unit):void{
  const article=node('article',reading.french,'u10-reading-text');
  article.lang='fr';section.append(article);
  reading.questions.forEach((question,i)=>appendEvidenceQuestion(section,question,i,'Reading inference'));
- const comparison=u20OriginalEvidence(unit.id);
+ const comparison=u21OriginalEvidence(unit.id);
  if(comparison){
   const sources=node('section',undefined,'u13-sources');
   sources.setAttribute('aria-label','Two original independent source documents');
