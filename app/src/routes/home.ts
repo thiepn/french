@@ -155,6 +155,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         resume.type='button';resume.addEventListener('click',()=>navigate('course'));
         summary.append(resume);side.append(summary);
       }
+    }else{
+      const original=node('section','','home-original-return');
+      original.append(node('h3','Original French Course'),
+       node('p','Choose an A1–early-B2 pathway or explore original lessons. This is separate from graded native Review.','home-note'));
+      const explore=node('button','Explore original Course','secondary-action compact-action');
+      explore.type='button';explore.addEventListener('click',()=>navigate('course'));
+      original.append(explore);side.append(original);
     }
     footer.replaceChildren();
     const metrics=node('div','','home-facts');

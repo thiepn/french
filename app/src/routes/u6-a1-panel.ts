@@ -309,12 +309,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const selected=STAGES.findIndex(([id])=>id===step);
    const next=STAGES[selected+1],previous=STAGES[selected-1];
    const row=el('div',undefined,'u6-stage-footer');
-   if(previous)row.append(button('← '+previous[1],()=>open(current.id,previous[0])));
-   if(next)row.append(button(next[1]+' →',()=>open(current.id,next[0]),'primary-action compact-action'));
+   if(previous)row.append(button('← '+previous[1],()=>open(current.id,previous[0],undefined,true)));
+   if(next)row.append(button(next[1]+' →',()=>open(current.id,next[0],undefined,true),'primary-action compact-action'));
    else row.append(button('Next original lesson →',()=>{
     const candidate=lessons[current.order];
-    if(candidate)open(candidate.id,'understand');
-    else open(lessons[0].id,'understand');
+    if(candidate)open(candidate.id,'understand',undefined,true);
+    else open(lessons[0].id,'understand',undefined,true);
    },'primary-action compact-action'));
    return row;
   }
@@ -593,12 +593,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     }
    }
    const neighbors=neighboringOriginalLessons(current.id);
-   if(neighbors.previous)cross.append(button('← Previous lesson',()=>open(neighbors.previous!.id,'understand')));
-   if(neighbors.next)cross.append(button('Next lesson →',()=>open(neighbors.next!.id,'understand')));
+   if(neighbors.previous)cross.append(button('← Previous lesson',()=>open(neighbors.previous!.id,'understand',undefined,true)));
+   if(neighbors.next)cross.append(button('Next lesson →',()=>open(neighbors.next!.id,'understand',undefined,true)));
    head.append(cross);article.append(head);
    const stageNav=el('div',undefined,'u6-stage-nav');stageNav.setAttribute('role','group');stageNav.setAttribute('aria-label','Lesson learning stages');
    for(const [id,title] of STAGES){
-    const tab=button(title,()=>open(current.id,id),'u6-stage-button');
+    const tab=button(title,()=>open(current.id,id,undefined,true),'u6-stage-button');
     if(stage===id){tab.classList.add('active');tab.setAttribute('aria-current','step');}
     stageNav.append(tab);
    }
