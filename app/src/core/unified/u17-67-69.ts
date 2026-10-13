@@ -434,7 +434,7 @@ const SOURCE:readonly U17OriginalSourceStory[]=[
         "en bêta",
         "sur une affiche",
         "dans un roman",
-        "The note names beta trials."
+        "The note names beta trials. The supported detail comes from the dialogue, not from a general assumption."
       ],
       [
         "What do some testers report?",
@@ -670,14 +670,14 @@ const SOURCE:readonly U17OriginalSourceStory[]=[
         "une veste",
         "un chapeau",
         "une paire de chaussures",
-        "Anaïs names a jacket."
+        "Anaïs names a jacket. The supported detail comes from the dialogue, not from a general assumption."
       ],
       [
         "What is wrong with it?",
         "une couture ouverte",
         "la taille absente",
         "une fermeture neuve",
-        "The seam is open."
+        "The seam is open. The supported detail comes from the dialogue, not from a general assumption."
       ],
       [
         "Do labeled sizes guarantee fit?",
