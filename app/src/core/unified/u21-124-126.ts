@@ -186,7 +186,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "octobre",
         "décembre",
         "février",
-        "Youssef specifies October."
+        "Youssef précise que le fournisseur ne garantit que le tarif d’octobre; les mois suivants restent ouverts."
       ],
       [
         "What major cost is missing?",
