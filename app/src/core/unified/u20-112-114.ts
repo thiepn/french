@@ -711,7 +711,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "la circulation",
         "une sonnerie d’école",
         "un train exclusivement",
-        "Traffic noise is present."
+        "Rémi indique que le court enregistrement du chant contient du bruit de circulation, ce qui limite l'identification."
       ],
       [
         "What visual evidence exists?",
