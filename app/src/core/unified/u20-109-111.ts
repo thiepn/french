@@ -187,7 +187,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "1930",
         "1830",
         "2000",
-        "The old leaflet names 1930. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "The original publicity labels the simulated market atmosphere as belonging to 1930, which the production notes contradict."
       ],
       [
         "Who recorded the spoken voices?",
@@ -440,7 +440,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "engagement",
         "maison",
         "voyage",
-        "Rania names engagement. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Rania explicitly identifies the French headword engagement as the disputed multilingual glossary entry."
       ],
       [
         "What English translation is currently used everywhere?",
@@ -482,13 +482,13 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "Le terme ___ nous discutons possède plusieurs sens.",
         "dont",
-        "Discuter de requires dont. The required construction determines the verb form in this sentence.",
+        "Discuter de requires dont; this refers back to the headword being discussed, without changing its sense.",
         "relative"
       ],
       [
         "Baptiste a expliqué que les usages ___ différents. (être, imparfait)",
         "étaient",
-        "Reported description takes plural imperfect étaient.",
+        "In the reported explanation, the plural subject les usages requires the imperfect plural étaient.",
         "reported nuance"
       ]
     ],
@@ -721,7 +721,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "un seul point",
         "dix endroits",
         "toute la rivière",
-        "Lila notes a single site. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Lila reports a single collection site just after rain; there is no repeated river-wide sampling."
       ],
       [
         "What did the club not finish?",
@@ -746,9 +746,9 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "condition"
       ],
       [
-        "Selon le carnet, les fragments ___ pas été identifiés. (avoir, passé composé passif)",
-        "n’ont",
-        "La négation encadre l’auxiliaire : n’ont pas été identifiés, sans prétendre connaître le matériau.",
+        "Selon le carnet, les fragments ___ identifiés. (être, passé composé passif négatif)",
+        "n’ont pas été",
+        "The complete French passive form is n’ont pas été identifiés; observed fragments have not undergone verified material identification.",
         "source"
       ]
     ],
