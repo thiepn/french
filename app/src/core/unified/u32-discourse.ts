@@ -108,14 +108,14 @@ const CASES:readonly Case[]=[
  description:'Respond to a fair size objection, compare real published trade-offs, and adapt from peer chat to a courteous housing inquiry.',
  settings:['Flatmates comparing homes','Polite housing-adviser meeting','Decision presentation'],
  reactions:['Le premier est plus grand !','La taille suffit à décider, non ?','Le deuxième est-il moins cher et plus proche ?','Résumez deux avantages et une limite avant de conseiller.'],
- instructions:['Explain the first apartment’s advantage and drawback.','Acknowledge the value of extra space but add other factors.','Avoid claiming a price for the second flat that the source never confirms.','Give a conditional recommendation tied to stated priorities.'],
+ instructions:['Explain the first apartment’s advantage and drawback.','Acknowledge the value of extra space but add other factors.','Avoid inventing an exact price for the second flat; the relative cost is described.','Give a conditional recommendation tied to stated priorities.'],
  repair:'« Le premier est plus grand, mais aussi plus cher ; le deuxième est plus près de la gare. »',
  scope:'The first flat is larger and more expensive; the second is nearer the station.',
  register:'« Pourriez-vous préciser le prix du deuxième appartement ? »',
  quote:'Cite both Romain’s original cost statement and the later proximity claim.',
- wrongScope:['The second apartment is definitively cheaper.','The first apartment is nearest the station.'],
+ wrongScope:['Both apartments cost exactly the same.','The first apartment is nearest the station.'],
  wrongRegister:['« Donne-moi le prix, vite ! »','« J’ordonne de choisir le premier. »'],
- repairs:['Only the first flat’s higher price is explicitly stated relative to its alternative; be careful with exact costs.','The second is described as closer to the station.','Abrupt imperative is not suited to an adviser.','A one-sided command bypasses the decision criteria.'],
+ repairs:['Romain explicitly describes the first flat as more expensive; the prices cannot be exactly the same.','The second is described as closer to the station.','Abrupt imperative is not suited to an adviser.','A one-sided command bypasses the decision criteria.'],
  model:['« Le premier est plus grand, mais il est plus cher. »','« C’est vrai, mais le prix est important aussi. »','« Le deuxième est plus près de la gare ; je vérifierais les prix exacts. »','« Si nous privilégions le trajet, le deuxième semble intéressant. En revanche, si nous voulons de l’espace, le premier a un avantage. »']
  },
  {
@@ -229,6 +229,38 @@ const CASES:readonly Case[]=[
  wrongRegister:['« Publiez immédiatement, personne ne remarquera les erreurs ! »','« Nous avons tous les droits, inutile de vérifier. »'],
  repairs:['The original permission is expressly limited to display in the venue.','Removing a negative changes the reported refusal into apparent acceptance.','Concealing significant errors is unacceptable in a transparent release notice.','Unsupported rights claims contradict the cited permission boundary.'],
  model:['« La transcription a perdu une négation : le refus a semblé devenir une acceptation. »','« L’accord actuel ne couvre que la projection dans la salle. »','« Non, l’improvisation peut différer du scénario approuvé. »','« Nous devons contrôler les répliques, annoncer les limites du sous-titrage et obtenir les droits nécessaires avant toute diffusion en ligne. »']
+ },
+ {
+ id:'transfer-149',speaker:'Aïcha',anchor:'Nous pourrons annoncer le soutien des répondants, pas celui de tous les habitants.',
+ title:'A garden survey without an invented population mandate',
+ description:'Compare an advocacy poster with the online consultation method and make a defensible public recommendation that recognizes non-response and pending costs.',
+ settings:['Community debate','Municipal public hearing','Accessible survey correction'],
+ reactions:['Quatre personnes sur cinq approuvent, n’est-ce pas ?','Pourquoi ne pas annoncer que toute la commune a voté ?','Les vingt mille euros sont donc définitivement accordés ?','Faites une déclaration avec le dénominateur, la méthode et la décision encore attendue.'],
+ instructions:['Identify the actual numerator and denominator reported.','Correct population-wide extrapolation without dismissing genuine respondent support.','Distinguish a provisional budget from approved maintenance and feasibility costs.','Propose a clearer invitation and qualified summary in a neutral public register.'],
+ repair:'« Quatre-vingts réponses sur cent bulletins volontaires étaient favorables, pas quatre habitants sur cinq de toute la commune. »',
+ scope:'The sample contains 80 favorable responses among 100 voluntary online ballots, not a verified municipality-wide majority.',
+ register:'« Le résultat concerne les répondants volontaires et ne représente pas nécessairement toute la commune. »',
+ quote:'Compare the association poster, portal method note and Aïcha’s final qualified speaker statement.',
+ wrongScope:['A randomized poll verified that 80% of every household supports the garden.','The council has already approved the final 20 000 € maintenance budget.'],
+ wrongRegister:['« Tous les habitants ont voté : la discussion est close ! »','« Les personnes sans internet n’ont pas leur mot à dire. »'],
+ repairs:['The online sample was voluntary, not randomized or household-verified.','The 20 000 € amount is indicative and costs await deliberation.','This wrongly turns respondents into the entire population.','Excluding those without internet repeats the documented access bias.'],
+ model:['« La plateforme a reçu cent bulletins, dont quatre-vingts favorables. »','« Cela montre l’avis de ces répondants, pas nécessairement celui de tous les habitants. »','« Non, le conseil doit encore examiner les dépenses et la faisabilité. »','« Nous publierons le nombre de réponses, les limites du recrutement et les coûts restant à confirmer avant une consultation plus ouverte. »']
+ },
+ {
+ id:'transfer-150',speaker:'Hugo',anchor:'Ce chiffre suppose un ciel sombre, dégagé et une longue observation.',
+ title:'Explaining conditional forecasts and unequal measurements',
+ description:'Defend an honest public astronomy announcement, compare two different observation durations and distinguish local clouds from a universal prediction.',
+ settings:['Astronomy club dialogue','Press and public Q&A','Scientific observation briefing'],
+ reactions:['Verrons-nous tous soixante météores par heure ?','Neuf observations prouvent-elles que la prévision est fausse partout ?','Mais un autre groupe a vu quinze météores !','Proposez un protocole commun et une conclusion conditionnelle et vérifiable.'],
+ instructions:['Identify the advertised theoretical limit and its viewing conditions.','Explain why clouds at one site do not disprove a general conditional model.','Contrast durations and missing observation conditions without equating raw counts.','Present a cautious public summary and the proposed standard fifteen-minute sessions.'],
+ repair:'« Soixante par heure est une estimation maximale sous conditions, non une observation garantie pour chaque visiteur. »',
+ scope:'Sixty per hour is a conditional theoretical maximum; groups observed 9 in 30 minutes and 15 in 45 minutes under differing conditions.',
+ register:'« Ces résultats locaux ne permettent pas de valider ou de réfuter universellement la prévision sans conditions comparables. »',
+ quote:'Distinguish Hugo’s qualification, Maya’s two local counts and the public invitation wording.',
+ wrongScope:['Each visitor is guaranteed sixty visible meteors every hour.','Nine observations in thirty minutes prove that every sky has no meteors.'],
+ wrongRegister:['« Nos chiffres prouvent tout, ne posez aucune question ! »','« Quinze est forcément mieux que neuf ; aucune autre donnée ne compte. »'],
+ repairs:['A model maximum with favorable assumptions is not a guaranteed personal observation.','A cloudy site is a restricted measurement, not a universal refutation.','Absolute certainty without comparable conditions is not justified.','Raw counts with different durations and visibility cannot be compared directly.'],
+ model:['« Soixante est un maximum théorique par heure, si le ciel est favorable. »','« Non, les nuages ont limité l’observation d’un groupe. »','« L’autre groupe a observé quarante-cinq minutes, contre trente pour le premier. »','« Comparons de nouvelles séances de quinze minutes avec lieu, visibilité, horizon et interruptions afin de présenter un bilan transparent. »']
  }
 ];
 function norm(s:string){return s.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');}
