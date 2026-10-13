@@ -103,6 +103,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   discovery.append(el('summary','Find a lesson · Search, level and material filters'),finder);
   const indexDetails=el('details',undefined,'u25-index-details');
   indexDetails.append(el('summary','Browse lesson groups'),sidebar);
+  indexDetails.addEventListener('toggle',()=>layout.classList.toggle('u25-browse-open',indexDetails.open));
   layout.append(indexDetails,article);
   host.append(header,hero,pathways,activities,recovery,status,discovery,layout);
   function focusCourseLesson(){
