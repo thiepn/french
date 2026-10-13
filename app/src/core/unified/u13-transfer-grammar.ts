@@ -212,7 +212,7 @@ export const TRANSFER_GRAMMAR:Readonly<Record<string,TransferGrammarBlock>>={
   ],
   "source": [
     "B1 transfer — facts, reports and uncertainty",
-    "Selon le courriel ... attributes a claim to a particular source; on peut en déduire que signals a supported inference, not an explicit quotation. Il est possible que may take the subjunctive in a finite clause, while il est probable que often uses the indicative. Report which facts are confirmed, which are reasonable interpretations and what remains unknown. An unsupported certainty is not stronger French.",
+    "Selon le courriel ... attributes a claim to a particular source; on peut en déduire que signals a supported inference, not an explicit quotation. Il est possible que may take the subjunctive in a finite clause, while il est probable que often uses the indicative. Report which facts are confirmed, which are reasonable interpretations and what remains unknown. An unsupported certainty is not stronger French. Always name the exact document and separate its explicit wording from what a learner reasonably infers. Check the publication date and source authority before communicating a change to other people.",
     [
       [
         "Selon l’avis, certaines salles ferment lundi.",
