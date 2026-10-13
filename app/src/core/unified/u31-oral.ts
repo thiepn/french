@@ -27,6 +27,7 @@ export interface U31Journey{
  readonly reading:Readonly<{title:string;text:string}>|null;
  readonly documents:readonly {readonly label:string;readonly type:string;readonly french:string}[];
  readonly oral:NonNullable<ReturnType<typeof getOriginalMaterial>>['oral'];
+ readonly writingChoices:NonNullable<ReturnType<typeof getOriginalMaterial>>['writingChoices'];
  readonly lexicalWitnesses:readonly {readonly french:string;readonly english:string;readonly originalContext:string}[];
  readonly scenarioTitle:string;readonly u30DecisionCount:number;readonly counterview:string;readonly misunderstanding:string;
  readonly desiredRegister:string;readonly stages:readonly U31StagePlan[];
@@ -403,6 +404,7 @@ export function originalU31OralJourney(id:string):U31Journey|null{
   lessonId:id,title:entry.title,level:entry.level,qualifiedId:entry.qualifiedId,
   sourceRevision:entry.sourceRevision,speakerNames:Object.freeze(speakerNames),dialogue,
   reading,documents:Object.freeze(documents),oral:material.oral,
+  writingChoices:material.writingChoices,
   lexicalWitnesses:Object.freeze(witness),
   scenarioTitle:context,u30DecisionCount:u30?.decisions.length??0,counterview,misunderstanding,desiredRegister:register,
   stages:Object.freeze(phases),decisions:Object.freeze(decisions),curated:!!design
