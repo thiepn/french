@@ -35,9 +35,14 @@ export function authorTransferScenario(spec:TransferAuthoredSpec,index:number):T
   if(!item)throw Error('Missing original grammar '+key);
   return item;
  });
+ const grammar:A1AuthoredSpec['grammar']=grammars.map(
+  (g):A1AuthoredSpec['grammar'][number]=>[
+   g[0],g[1],g[2].map(v=>[v[0],v[1]] as [string,string]),
+   [g[3][0],g[3][1],g[3][2]]
+  ]
+ );
  const input:A1AuthoredSpec={
-  id,title:spec.title,goal:spec.goal,grammarIds:[],
-  grammar:grammars.map(g=>[g[0],g[1],g[2].map(v=>[...v] as [string,string]),[...g[3]] as [string,string,string]]),
+  id,title:spec.title,goal:spec.goal,grammarIds:[],grammar,
   vocabulary:spec.vocabulary,dialogue:spec.dialogue,tasks:spec.tasks,writing:spec.writing
  };
  const unit=Object.freeze({...authorA1Unit(input,94+index),minutes:50,
