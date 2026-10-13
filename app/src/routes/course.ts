@@ -7,9 +7,11 @@ import './unified.css';
 export function mount({main,signal,navigate}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page">
     <p class="eyebrow">French curriculum · original teaching</p><h1>Course</h1>
-    <p class="lede">Study 94 original full A1–B1+ lessons and 150 multi-skill original transfer scenarios. U22 adds fifteen early-B2 source-critical cases spanning environmental evidence, health access, archives, accessibility, scientific inference, information rights, survey methodology and astronomy. Each includes independent long-form reading, dialogue, paired-source comparison, optional synthetic listening, long-form writing and ungraded self-revision.</p>
-    <div class="unified-alert" role="note">The original A1–B1 course is practice-only and does not modify existing learner grades, SRS, CEFR or Account records. Native Learn and Review stay authoritative.</div>
-    <section data-u6-a1 aria-label="Original A1 through B1 full lesson course"></section>
+    <p class="lede">Start or continue an original lesson, choose an A1–early-B2 pathway, or discover authored reading, listening and writing. Scheduled study remains in native Learn and Review.</p>
+    <div class="unified-alert" role="note">Original Course practice is ungraded. It cannot change native FSRS, SRS, CEFR or Account progress.</div>
+    <section data-u6-a1 aria-label="Original A1 through early B2 full lesson Course"></section>
+    <details class="u25-supplementary" data-u25-supplementary>
+      <summary>Other original teaching, source positions and export preflight</summary>
     <h2 class="u6-supplementary-heading">Supplementary source references</h2>
     <p>Le Carnet Français: 60 indexed positions only. Lesson bodies and learner history remain rights-restricted and are not reproduced here.</p>
     <div class="unified-tools">
@@ -35,6 +37,7 @@ export function mount({main,signal,navigate}:RouteContext):void {
       </div>
       <p class="unified-result" data-result role="status" aria-live="polite">No export inspected.</p>
     </section>
+    </details>
   </section>`;
   const select=main.querySelector<HTMLSelectElement>('[data-position]')!;
   const grid=main.querySelector<HTMLElement>('[data-grid]')!;
@@ -94,10 +97,17 @@ export function mount({main,signal,navigate}:RouteContext):void {
     if(!signal.aborted){fullCourse.textContent='Original A1 lessons unavailable. Native Learn remains available.';console.error(error);}
   });
   const studio=main.querySelector<HTMLElement>('[data-u2-studio]');
-  if(studio)void import('./u2-studio').then(module=>{
-    if(!signal.aborted)void module.mountOriginalLessons(studio,navigate,signal);
-  }).catch(error=>{
-    if(!signal.aborted){studio.textContent='Original course studio unavailable. Source references remain available.';console.error(error);}
-  });
+  const extra=main.querySelector<HTMLDetailsElement>('[data-u25-supplementary]');
+  let studioMounted=false;
+  const openSupplementaryStudio=()=>{
+    if(studioMounted||!studio||signal.aborted)return;
+    studioMounted=true;
+    void import('./u2-studio').then(module=>{
+      if(!signal.aborted)void module.mountOriginalLessons(studio,navigate,signal);
+    }).catch(error=>{
+      if(!signal.aborted){studio.textContent='Original course studio unavailable. Source references remain available.';console.error(error);}
+    });
+  };
+  extra?.addEventListener('toggle',()=>{if(extra.open)openSupplementaryStudio();});
   show(1);
 }
