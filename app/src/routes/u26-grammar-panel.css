@@ -1,0 +1,44 @@
+/* U26 source-owned grammar overlays are ungraded and do not override canonical Learn/Review. */
+.u26-grammar{margin:1.2rem 0;padding:clamp(.8rem,2vw,1.25rem);border:1px solid var(--line,var(--border,#999));border-radius:.35rem;display:grid;gap:.85rem;min-width:0}
+.u26-grammar h3{font-size:1.15rem;margin:0}
+.u26-grammar h4{font-size:1.08rem;margin:.2rem 0}
+.u26-grammar h5{font-size:.96rem;margin:.6rem 0 .35rem}
+.u26-note,.u26-context{font-size:.9rem;line-height:1.6;color:var(--muted,inherit);margin:.2rem 0}
+.u26-picker{display:grid;gap:.35rem;font-weight:600;max-width:36rem;font-size:.9rem}
+.u26-picker select{min-width:0;width:100%;min-height:44px;box-sizing:border-box;font:inherit;color:var(--text,inherit);background:var(--surface,transparent);border:1px solid var(--line,var(--border,#888));border-radius:.25rem;padding:.55rem}
+.u26-focus{display:grid;gap:.65rem;min-width:0}
+.u26-focus>p{line-height:1.65;margin:.2rem 0}
+.u26-contrast{border-left:3px solid var(--accent,#677c96);padding:.65rem .8rem;background:var(--surface,transparent)}
+.u26-contrast>p{line-height:1.55}
+.u26-contrast ul{padding-left:1.25rem;display:grid;gap:.5rem}
+.u26-contrast li{line-height:1.65}
+.u26-contrast li span{color:var(--muted,inherit)}
+.u26-correction{display:grid;gap:.3rem;margin-top:.8rem;border-top:1px solid var(--line,var(--border,#aaa));padding-top:.65rem}
+.u26-correction p{margin:.1rem 0;line-height:1.5}
+.u26-practice,.u26-transfer{border:1px solid var(--line,var(--border,#888));border-radius:.3rem;padding:.2rem .8rem .9rem;min-width:0}
+.u26-practice>summary,.u26-transfer>summary{font-weight:600;padding:.65rem 0;cursor:pointer;line-height:1.45;min-height:44px}
+.u26-question{padding:.9rem 0;border-top:1px solid var(--line,var(--border,#888))}
+.u26-answer{display:grid;gap:.6rem}
+.u26-question-label{display:grid;gap:.35rem;font-weight:600}
+.u26-question-label input{min-height:44px;width:100%;max-width:28rem;box-sizing:border-box;border:1px solid var(--line,var(--border,#888));border-radius:.25rem;color:var(--text,inherit);background:var(--surface,transparent);font:inherit;padding:.6rem}
+.u26-cue{font-size:.9rem;color:var(--muted,inherit);margin:.2rem 0}
+.u26-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+.u26-actions button,.u26-transfer button{min-height:44px}
+.u26-feedback,.u26-hint,.u26-explanation{font-size:.89rem;line-height:1.6;margin:.1rem 0}
+.u26-feedback{font-weight:500}
+.u26-hint{padding-left:.6rem;border-left:2px solid var(--accent,#677c96)}
+.u26-written-model{border-left:2px solid var(--accent,#677c96);padding:.6rem;line-height:1.8}
+.u26-grammar [hidden]{display:none!important}
+.u26-provenance{font-size:.73rem;color:var(--muted,inherit);overflow-wrap:anywhere}
+.u26-grammar :is(button,select,input,summary):focus-visible{outline:2px solid var(--accent,#677c96);outline-offset:3px}
+@media(max-width:560px){.u26-grammar{padding:.75rem}.u26-actions{display:grid;grid-template-columns:minmax(0,1fr)}.u26-actions button,.u26-transfer button{width:100%}}
+@media(prefers-reduced-motion:reduce){.u26-grammar *{animation:none!important;transition:none!important}}
+
+/* Original Grammar route: explicit library discovery without a parallel lesson engine. */
+.u26-library{margin-top:2rem}
+.u26-library>h2{font-size:clamp(1.15rem,2vw,1.5rem);margin:0}
+.u26-library-filters{display:grid;grid-template-columns:minmax(140px,1fr) minmax(0,2fr);gap:.8rem;align-items:end}
+.u26-library .u26-focus-content{min-width:0}
+.u26-library .u26-focus{border-top:1px solid var(--line,var(--border,#999));padding-top:.8rem}
+.u26-library .u26-actions>button{min-height:44px}
+@media(max-width:640px){.u26-library-filters{grid-template-columns:minmax(0,1fr)}}

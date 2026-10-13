@@ -7,6 +7,7 @@ import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides.ts';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides.ts';
 import type {RouteId} from '../core/types';
 import {readOriginalContinuity} from '../core/unified/u24-continuity';
+import {appendU26GrammarPractice} from './u26-grammar-panel';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -203,6 +204,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   if(mode==='read')renderRead(stage,s);
   else if(mode==='listen')renderListen(stage,s,signal);
   else renderWrite(stage,s,drafts);
+  appendU26GrammarPractice(stage,s.unit.id,mode);
  }
  query.addEventListener('input',()=>{selected='';refresh(true);});
  level.addEventListener('change',()=>{selected='';refresh(true);});
