@@ -485,7 +485,7 @@ export function originalU32Discourse(id:string):U32Journey|null{
    const excerpt=current.french.match(/[^.!?]+[.!?]+|[^.!?]+$/u)?.[0]?.trim()??'';
    if(excerpt.length<24||docs.some(x=>x!==current&&norm(x.french).includes(norm(excerpt))))continue;
    const others=docs.filter(x=>x.locator!==current.locator&&x.label!==current.label).map(x=>x.label);
-   if(others.length<2)continue;
+   if(!others.length)continue;
    const traps=others.slice(0,2);
    if(traps.length===1)traps.push('Neither original document contains this excerpt');
    const item=decision('u32:'+id+':document:'+current.index,'attribution',
