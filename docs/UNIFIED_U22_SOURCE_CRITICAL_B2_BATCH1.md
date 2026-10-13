@@ -1,3 +1,5 @@
+> **Historical batch-one record (6/15 at the time).** U22 has now been expanded to 15 original scenarios, registered across the Course and supplementary Read/Listen/Write practice surfaces. The current cumulative inventory, source integration, caveats and NOT_TESTED status are recorded in [UNIFIED_U22_SOURCE_CRITICAL_B2_COMPLETE.md](./UNIFIED_U22_SOURCE_CRITICAL_B2_COMPLETE.md). Counts below describe the historical first batch, not the final U22 branch.
+
 # THIEPN French U22 — Source-Critical Early-B2 Transfer (First Content Batch)
 
 ## Exact continuation
