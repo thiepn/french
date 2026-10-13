@@ -452,7 +452,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "des journées sans grand écart",
         "le titre",
         "un nom d’école",
-        "Bilal notes selective days."
+        "Bilal explique que le graphique ne montre que les journées où la différence entre les groupes était importante."
       ],
       [
         "What analysis type is involved?",
@@ -466,7 +466,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "une nouvelle expérience",
         "un titre plus fort",
         "une seule photo",
-        "Bilal proposes replication."
+        "Bilal suggère de répéter l'expérience afin d'évaluer l'hypothèse exploratoire issue des premières données."
       ],
       [
         "What will the revised poster say?",
