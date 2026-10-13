@@ -113,7 +113,10 @@ function create(id:string,kind:U30Kind,question:string,answer:string,
  documentLabel?:string):U30Decision|null{
  const choices=unique([answer,...options]);
  if(!answer||choices.length<2)return null;
- return Object.freeze({id,kind,question,answer,options:Object.freeze(choices),
+ // Stable authored-key-preserving rotation avoids always showing the answer first.
+ const offset=[...id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)%choices.length;
+ const ordered=[...choices.slice(offset),...choices.slice(0,offset)];
+ return Object.freeze({id,kind,question,answer,options:Object.freeze(ordered),
   turnIndex,evidence,translation,explanation,hint,errors,documentLabel});
 }
 function push(tasks:U30Decision[],task:U30Decision|null):void{
