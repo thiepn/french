@@ -12,6 +12,7 @@ import './u31-oral-panel.css';
 export type U31Mode='course'|'speak'|'listen'|'read'|'write';
 interface JourneyOptions{
  readonly mode:U31Mode;readonly signal:AbortSignal;
+ readonly parentHandlesDraftExit?:boolean;
  readonly onOpenSurface?:(surface:OriginalSurface,id:string)=>void;
  readonly onNativeReview?:()=>void;
 }
@@ -54,7 +55,8 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  if(!journey.curated)head.append(el('p','General oral framework for this original lesson; there is no separately authored U31 source-specific case.','u31-notice'));
  const context=el('div','','u31-context');
  context.append(el('p','Register: '+journey.desiredRegister),
-  el('p','Original participants: '+journey.speakerNames.join(', ')));
+  el('p','Original participants: '+journey.speakerNames.join(', ')),
+  el('p','Linked U30 original listening decisions: '+journey.u30DecisionCount+' (separate ungraded workflow).'));
  const stageNav=el('nav','','u31-stage-nav');
  stageNav.setAttribute('aria-label','Speaking journey stages');
  const stage=el('article','','u31-stage');
@@ -145,13 +147,13 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
   for(const [surface,label,available] of links){
    if(!available||surface===opts.mode)continue;
    transferActions.append(action(label,()=>{
-    if(!checkExit(root))return;
+    if(!opts.parentHandlesDraftExit&&!checkExit(root))return;
     opts.onOpenSurface?.(surface,journey.lessonId);
    }));
   }
  }
  if(opts.onNativeReview)transferActions.append(action('Open existing scheduled Review',()=>{
-  if(!checkExit(root))return;opts.onNativeReview?.();
+  if(!opts.parentHandlesDraftExit&&!checkExit(root))return;opts.onNativeReview?.();
  }));
  transfer.append(transferActions,
   el('p','All transfers preserve the original source identity. Revisiting a route is not a completed Practice session or review grade.','u31-notice'));
