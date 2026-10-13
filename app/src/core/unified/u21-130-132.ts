@@ -697,7 +697,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "une sur cinq",
         "une sur deux",
         "une sur dix",
-        "Nadia quotes one in five."
+        "Nadia indique une chance sur cinq comme probabilité, et non comme quota fixe de visiteurs gagnants."
       ],
       [
         "What does the English sign imply?",
@@ -711,7 +711,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "quatre",
         "deux",
         "vingt",
-        "Nadia reports exactly four."
+        "Le guide promet exactement quatre gagnants sur vingt, ce que le modèle probabiliste ne garantit pas."
       ],
       [
         "What may differ from theory?",
