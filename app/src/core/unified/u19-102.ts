@@ -180,7 +180,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "l’appareil a démarré",
         "l’appareil a disparu",
         "une garantie a été signée",
-        "Roxane reports one start."
+        "Roxane rapporte un unique démarrage pendant un essai limité, et non un fonctionnement fiable vérifié."
       ],
       [
         "What has not been determined?",
