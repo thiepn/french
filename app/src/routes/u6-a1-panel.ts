@@ -7,6 +7,7 @@ import {
  neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
 } from '../core/unified/u23-registry';
 import {u22ProductionChoices} from '../core/unified/u22-material';
+import {ORIGINAL_PATHWAYS,originalPathSectionFor,originalNextActions} from '../core/unified/u25-pathways.ts';
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides';
@@ -56,9 +57,15 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   host.replaceChildren();host.className='u6-full-course';
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
-    el('h2','Learn French from the beginning'),
-    el('p','A continuous 244-unit original French curriculum: 94 complete A1–B1+ lessons and 150 original U13–U22 transfer scenarios. U22 adds fifteen early-B2 source-critical cases with extended reading, dated evidence, dialogue, optional synthetic listening, independent writing and revision.'));
+    el('h2','Choose where to learn'),
+    el('p','244 original lessons from foundations to early B2. Learn in sequence, follow an authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
+  const hero=el('section',undefined,'u25-hero');
+  hero.setAttribute('aria-label','Start or continue original French');
+  const pathways=el('nav',undefined,'u25-pathways');
+  pathways.setAttribute('aria-label','Choose an original French level');
+  const activities=el('section',undefined,'u25-activities');
+  activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Filterable original French course lesson index');
   const article=el('article',undefined,'u6-lesson-content');article.dataset.u6LessonContent='';
@@ -81,6 +88,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }materialLabel.append(materialFilter);
   const matchCount=el('p','','u23-course-results');matchCount.setAttribute('role','status');
   let visible=60;
+  const openedGroups=new Set<string>();
   const loadMore=button('Show next 60 lessons',()=>{visible+=60;renderIndex();});
   const resetFilters=button('Clear filters',()=>{
    search.value='';levelFilter.value='all';materialFilter.value='all';visible=60;renderIndex();search.focus();
@@ -91,7 +99,69 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   materialFilter.addEventListener('change',()=>{visible=60;renderIndex();});
   const recovery=el('section',undefined,'u24-recovery');
   recovery.setAttribute('aria-label','Original Course navigation recovery');
-  layout.append(sidebar,article);host.append(header,recovery,status,finder,layout);
+  const discovery=el('details',undefined,'u25-discovery');
+  discovery.append(el('summary','Find a lesson · Search, level and material filters'),finder);
+  const indexDetails=el('details',undefined,'u25-index-details');
+  indexDetails.append(el('summary','Browse lesson groups'),sidebar);
+  layout.append(indexDetails,article);
+  host.append(header,hero,pathways,activities,recovery,status,discovery,layout);
+  function focusCourseLesson(){
+   const heading=article.querySelector<HTMLElement>('.u6-unit-header h3');
+   if(!heading)return;
+   heading.tabIndex=-1;heading.focus({preventScroll:true});
+   article.scrollIntoView({block:'start'});
+  }
+  function openPath(level:OriginalLevel){
+   const selected=ORIGINAL_PATHWAYS.find(path=>path.level===level);
+   if(!selected?.firstId)return;
+   levelFilter.value=level;materialFilter.value='all';search.value='';
+   visible=60;openedGroups.clear();indexDetails.open=true;
+   open(selected.firstId,'understand',undefined,true);
+  }
+  function renderLearningEntry(){
+   const saved=continuity.status==='ready'&&!tracking?continuity.checkpoint:null;
+   const entry=getOriginalCatalogEntry(current.id);
+   hero.replaceChildren();
+   hero.append(el('p',saved?'SAVED POSITION VERIFIED':'YOUR ORIGINAL LESSON','eyebrow'),
+    el('h3',saved?'Return to '+(getOriginalCatalogEntry(saved.id)?.title??saved.id):current.title),
+    el('p',saved?'Resume '+saved.stage+' · question '+(saved.taskIndex+1)+
+       '. Your checkpoint contains navigation only, not answers or drafts.':
+       (entry?.level??'Original')+' · '+current.goal,'u25-hero-description'));
+   const primary=button(saved?'Resume verified lesson':
+    current.id==='a1-01'&&stage==='understand'?'Start from A1':'Continue selected lesson',()=>{
+    if(saved){
+     tracking=true;recoveryError='';
+     open(saved.id,saved.stage,saved.taskIndex,true);drawRecovery();
+    }else open(current.id,stage,taskIndex,true);
+   },'primary-action compact-action');
+   const actions=el('div',undefined,'u25-hero-actions');
+   actions.append(primary,button('Native Review',()=>navigateSafely('review')),
+    button('Find a lesson',()=>{
+     discovery.open=true;indexDetails.open=true;
+     search.focus({preventScroll:true});discovery.scrollIntoView({block:'start'});
+    }));
+   hero.append(actions);
+   pathways.replaceChildren(el('h3','Choose a learning pathway'));
+   const cards=el('div',undefined,'u25-pathway-list');
+   for(const path of ORIGINAL_PATHWAYS){
+    const card=button(path.title,()=>openPath(path.level),'u25-pathway');
+    card.append(el('span',path.count+' lessons · '+path.readingCount+' linked readings'),
+     el('small',path.description));
+    if(path.level===entry?.level){card.classList.add('is-selected');card.setAttribute('aria-current','true');}
+    cards.append(card);
+   }
+   pathways.append(cards);
+   activities.replaceChildren(el('h3','Available next activities'));
+   const choices=el('div',undefined,'u25-activity-list');
+   for(const next of originalNextActions(current.id).filter(action=>action.key!=='understand')){
+    const card=button(next.title,()=>{
+     if(next.destination==='course')open(next.id,next.stage,undefined,true);
+     else if(allowExit()&&handoffOriginalLesson(next.destination,next.id))navigate(next.destination);
+    },'u25-activity');
+    card.append(el('span',next.detail));choices.append(card);
+   }
+   activities.append(choices,el('p','These are available authored activities, not due reviews or verified skill recommendations.','u6-small'));
+  }
   function drawRecovery(){
    if(signal.aborted)return;
    const checkpoint=continuity.checkpoint;
@@ -134,6 +204,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     add('Refresh saved-state review',()=>void refreshReview());
    recovery.append(controls);
    if(recoveryError)recovery.append(el('p',recoveryError,'u24-recovery-warning'));
+   renderLearningEntry();
   }
   const schedulePosition=(id:string,next:Stage,index:number)=>{
    if(!tracking||signal.aborted)return;
@@ -558,13 +629,14 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const trace=el('p','Source: '+current.source.qualifiedId+' · original-owned; learning activity is local only.','u6-provenance');
    article.append(trace);
   }
-  function open(id:string,next:Stage,resumeIndex?:number){
+  function open(id:string,next:Stage,resumeIndex?:number,focus=false){
    const lesson=getOriginalUnit(id);if(!lesson)return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
    current=lesson;stage=next;
-   renderIndex();render();schedulePosition(current.id,stage,taskIndex);
+   renderIndex();render();renderLearningEntry();schedulePosition(current.id,stage,taskIndex);
+   if(focus)focusCourseLesson();
   }
   sidebar.addEventListener('keydown',event=>{
    if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
@@ -586,6 +658,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   signal.addEventListener('abort',()=>{
    stopAudio?.();window.removeEventListener('beforeunload',beforeUnload);
   },{once:true});
+  levelFilter.value=getOriginalCatalogEntry(current.id)?.level??'all';
   open(current.id,stage);
  }catch(error){
   if(signal.aborted)return;
