@@ -250,27 +250,64 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    container.append(resetAll);
   }
   function renderWrite(unit:A1Unit,container:HTMLElement){
-   container.append(el('h4','Independent writing'),el('p',unit.writing.prompt));
+   const variants=u14ProductionChoices(unit.id);
+   let mode:'fromSources'|'fromListening'='fromSources';
+   const chosen=()=>variants?variants[mode]:unit.writing;
+   const draftKey=()=>variants?unit.id+'::'+mode:unit.id;
+   const heading=el('h4','Independent writing');
+   const prompt=el('p',chosen().prompt,'u14-production-prompt');
    const items=el('ul',undefined,'u6-write-criteria');
-   for(const criterion of unit.writing.criteria)items.append(el('li',criterion));
-   const editor=el('textarea');editor.rows=5;editor.lang='fr';editor.maxLength=2400;
-   editor.value=drafts.get(unit.id)??'';editor.setAttribute('aria-label','Original A1 writing response');
-   editor.addEventListener('input',()=>drafts.set(unit.id,editor.value));
+   const editor=el('textarea');editor.rows=8;editor.lang='fr';editor.maxLength=3500;
+   editor.setAttribute('aria-label','Independent original French writing response');
    const result=el('p','Your text remains in memory only until this Course view closes.','u6-small');
-   const check=button('Check structure (not grammar grading)',()=>{
-    result.textContent=inspectDraftStructure(editor.value).join(' ')+
-     ' Meaning, spelling and grammar are not automatically assessed.';
-   });
-   const model=el('blockquote',unit.writing.model,'u6-model');model.lang='fr';model.hidden=true;
+   const model=el('blockquote',chosen().model,'u6-model');model.lang='fr';model.hidden=true;
    const compare=button('Reveal original sample answer',()=>{
     model.hidden=!model.hidden;
     compare.textContent=model.hidden?'Reveal original sample answer':'Hide sample answer';
+    compare.setAttribute('aria-expanded',String(!model.hidden));
    });
-   const clear=button('Clear this writing draft',()=>{
-    editor.value='';drafts.delete(unit.id);result.textContent='Draft cleared. No account data was changed.';
+   compare.setAttribute('aria-expanded','false');
+   const updatePrompt=()=>{
+    const choice=chosen();
+    prompt.textContent=choice.prompt;
+    items.replaceChildren();
+    for(const criterion of choice.criteria)items.append(el('li',criterion));
+    editor.value=drafts.get(draftKey())??'';
+    model.textContent=choice.model;model.hidden=true;
+    compare.textContent='Reveal original sample answer';compare.setAttribute('aria-expanded','false');
+    result.textContent='Your text stays in this Course page memory only. The selected task is not graded or uploaded.';
+   };
+   if(variants){
+    const options=el('div',undefined,'u14-writing-mode');
+    const label=el('label','Choose an independent communication task');
+    const select=el('select');
+    select.setAttribute('aria-label','Choose evidence-to-writing transfer mode');
+    const source=el('option','Compare two source documents');source.value='fromSources';
+    const listening=el('option','Listen and write a neutral summary');listening.value='fromListening';
+    select.append(source,listening);
+    select.addEventListener('change',()=>{
+     mode=select.value==='fromListening'?'fromListening':'fromSources';
+     updatePrompt();
+    });
+    label.append(select);
+    const revisit=button('Review supporting sources',()=>{
+     open(unit.id,mode==='fromListening'?'listen':'dialogue');
+    });
+    options.append(label,el('p','Choose document-based synthesis or dialogue-to-writing. Both approaches have distinct prompts, criteria and models. No speaking or writing proficiency is automatically certified.','u6-small'),revisit);
+    container.append(options);
+   }
+   editor.addEventListener('input',()=>drafts.set(draftKey(),editor.value));
+   const check=button('Check structure (not grammar grading)',()=>{
+    result.textContent=inspectDraftStructure(editor.value).join(' ')+
+     ' Meaning, grammar and source fidelity require your own comparison; no automatic grade is awarded.';
    });
-   container.append(items,editor,check,compare,clear,result,model,
-    el('p','You decide whether your response meets the criteria; this does not certify A1 proficiency.','u6-small'));
+   const clear=button('Clear selected writing draft',()=>{
+    editor.value='';drafts.delete(draftKey());
+    result.textContent='Only the currently selected temporary draft was cleared. No account data changed.';
+   });
+   container.append(heading,prompt,items,editor,check,compare,clear,result,model,
+    el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
+   updatePrompt();
   }
   function render(){
    if(signal.aborted)return;
