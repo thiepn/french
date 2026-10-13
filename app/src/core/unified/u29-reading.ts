@@ -215,7 +215,7 @@ function lexicalDecisions(id:string,text:string,qualified:string):OriginalReadin
   return {
    id:'u29:'+id+':lexical:'+item.key,kind:'meaning' as const,
    question:'In this original reading, which published English gloss belongs to « '+item.french+' »?',
-   sourceId:id,sourceLabel:'Original connected reading + published original vocabulary',
+   sourceId:id,qualifiedSourceId:qualified,sourceLabel:'Original connected reading + published original vocabulary',
    evidence:witnessed,options:wordOptions,answer:item.english,lexemeKey:item.key,
    hint:'Locate the expression in the original sentence; choose its own source vocabulary gloss, not an unrelated word.',
    explanation:'The original vocabulary of '+id+' glosses « '+item.french+' » as « '+item.english+' ». Alternative contextual senses are not exhaustively assessed.',
