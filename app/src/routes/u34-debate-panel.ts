@@ -4,6 +4,7 @@ import {
 } from '../core/unified/u34-debate.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u34-debate-panel.css';
+import {appendOriginalU35Synthesis} from './u35-synthesis-panel.ts';
 
 interface Options {
  readonly signal:AbortSignal;
@@ -78,7 +79,8 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
  const exit=el('section','','u34-exits');
  exit.append(el('h4','Continue through the existing original workspaces'));
  const live=el('p','','u34-status');live.setAttribute('role','status');
- body.append(header,graph,evidence,debate,genres,comparison,checks,exit,live);
+ const u35Host=el('div','','u35-integration');
+ body.append(header,graph,evidence,debate,genres,comparison,checks,exit,u35Host,live);
 
  let selectedTurn=0,selectedGenre:U34Genre='service',support=0;
  let selectedPair=0,questionIndex=0,disposed=false;
@@ -91,10 +93,17 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
   if(disposed)return;
   const all=[...turns.values(),...genreDrafts.values()].flatMap(s=>[s.first,s.independent]);
   for(const fields of pairDrafts.values())all.push(...fields);
-  const hasDraft=all.some(s=>s.trim().length>0);
+  const hasDraft=all.some(s=>s.trim().length>0)||
+   !!u35Host.querySelector<HTMLElement>('.u35-synthesis[data-has-private-draft="true"]');
   root.dataset.hasPrivateDraft=String(hasDraft);
   options.onPrivateChange?.(hasDraft);
  };
+ const stopU35=appendOriginalU35Synthesis(u35Host,id,{
+  signal:options.signal,
+  onPrivateChange:()=>notify(),
+  onOpenSurface:options.onOpenSurface,
+  onNativeReview:options.onNativeReview
+ });
  function drawGraph(){
   mapCards.replaceChildren();
   const definitions:Readonly<Record<U34Claim['role'],string>>={
@@ -369,6 +378,7 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
  function cleanup(){
   if(disposed)return;disposed=true;
   options.signal.removeEventListener('abort',cleanup);
+  stopU35();
   turns.clear();genreDrafts.clear();pairDrafts.clear();localChecks.clear();
   root.remove();
  }
