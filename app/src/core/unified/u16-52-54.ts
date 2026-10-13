@@ -172,7 +172,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "chaque variété",
         "les horaires du samedi",
         "le nom du marché",
-        "The flyer is illustrative."
+        "The flyer is illustrative. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "Who must accept substitutes?",
@@ -193,7 +193,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "vendredi",
         "mardi soir",
         "dimanche matin",
-        "Hugo recommends Friday."
+        "Hugo recommends Friday. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ]
     ],
     "clozes": [
@@ -417,7 +417,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "attendre une version aboutie",
         "une publicité immédiate",
         "annuler le spectacle",
-        "Some want to delay sharing."
+        "Some want to delay sharing. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "Which rights must be examined?",
@@ -662,7 +662,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "non",
         "oui",
         "le symbole l’exige",
-        "Local systems may differ."
+        "Local systems may differ. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "What will Lucie share later?",
