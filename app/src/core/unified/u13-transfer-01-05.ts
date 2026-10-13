@@ -278,9 +278,9 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
       ],
       [
         "fill",
-        "___ est-ce que coûte un kilo ?",
+        "___ coûte un kilo de pommes ?",
         "Combien",
-        "Combien introduces a price question, followed by est-ce que in this exercise.",
+        "Combien asks the quantity or price in the normal direct question Combien coûte un kilo de pommes ?",
         [],
         "question word"
       ],
@@ -472,7 +472,6 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
       [
         "Which text establishes a definite new meeting at thirteen hours?",
         "aucun des deux",
-        "The later message proposes a time and requests a reply; it is not definitive.",
         [
           "le premier",
           "le deuxième",
@@ -483,7 +482,6 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
       [
         "What change can be inferred from the two sources?",
         "une préférence pour treize heures",
-        "No definite new booking is established, but the aunt prefers thirteen hours.",
         [
           "une annulation complète",
           "une préférence pour treize heures",
@@ -1075,7 +1073,6 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         [
           "Is the second train known to wait?",
           "non",
-          "The employee says no decision has been communicated about that connection.",
           [
             "oui",
             "non",
@@ -1394,7 +1391,6 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         [
           "Why is a direct total-cost comparison premature?",
           "les charges sont incomplètes",
-          "One property lacks complete cost details.",
           [
             "les appartements sont identiques",
             "les charges sont incomplètes",
@@ -1440,7 +1436,6 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
       [
         "Which apparent advantage of B is qualified?",
         "le trajet plus court",
-        "The 15-minute journey is an estimate stated by the listing, not independently verified.",
         [
           "le loyer plus bas",
           "le trajet plus court",
