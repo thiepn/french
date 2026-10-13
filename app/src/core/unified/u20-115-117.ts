@@ -186,7 +186,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "une partition",
         "un ordinateur",
         "une salle entière",
-        "The group obtained a score."
+        "Nina indique que l'orchestre a reçu une partition de musique pour préparer la répétition et le concert."
       ],
       [
         "What did a student change?",
@@ -438,7 +438,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "une rampe",
         "un escalier sans rampe",
         "un restaurant",
-        "Olga cites a ramp."
+        "Olga précise que le plan indique une rampe à l'entrée nord, sans attester le parcours jusqu'à tous les quais."
       ],
       [
         "What is wrongly assumed?",
@@ -697,7 +697,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "une bague",
         "une épée",
         "un livre",
-        "Camille discusses a ring."
+        "Camille parle d'une bague découverte lors de fouilles près d'un ancien mur, et non d'un autre objet."
       ],
       [
         "Where was it found?",
@@ -725,7 +725,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "non",
         "oui",
         "le cartel le garantit",
-        "The period is approximate."
+        "Idris rappelle que la datation de l'objet reste approximative malgré son contexte archéologique."
       ],
       [
         "What creative alternative does Camille propose?",
