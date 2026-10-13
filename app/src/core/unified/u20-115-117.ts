@@ -194,7 +194,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "non",
         "oui",
         "pour toujours",
-        "All three are occupied. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Sami states that all three simultaneous lending licenses are occupied, so none is immediately free."
       ],
       [
         "What does a matching cover not guarantee?",
@@ -222,7 +222,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "C’est le titre ___ les lecteurs parlent.",
         "dont",
-        "Parler de requires dont. The required construction determines the verb form in this sentence.",
+        "Parler de requires dont; the relative construction connects the title to what readers discuss.",
         "relative"
       ],
       [
