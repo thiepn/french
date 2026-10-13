@@ -383,6 +383,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    appendOriginalVocabularyJourney(container,unit.id,{
     mode:'course',signal,
     onNativeReview:()=>navigateSafely('review'),
+    onNativeLearn:()=>navigateSafely('learn'),
     onOpenCourse:id=>open(id,'words',undefined,true),
     onOpenSurface:(surface,id)=>{
      if(!allowExit())return;

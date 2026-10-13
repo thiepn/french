@@ -210,6 +210,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   appendOriginalVocabularyJourney(stage,s.unit.id,{
    mode,signal,
    onNativeReview:()=>{if(safeLeave())navigate('review');},
+   onNativeLearn:()=>{if(safeLeave())navigate('learn');},
    onOpenCourse:id=>{
     if(!safeLeave())return;
     if(handoffOriginalLesson('course',id,'words'))navigate('course');

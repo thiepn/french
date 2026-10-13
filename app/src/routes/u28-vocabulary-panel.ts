@@ -13,6 +13,7 @@ export interface OriginalVocabularyJourneyOptions {
  readonly mode:Mode;
  readonly signal:AbortSignal;
  readonly onNativeReview?:()=>void;
+ readonly onNativeLearn?:()=>void;
  readonly onOpenCourse?:(id:string)=>void;
  readonly onOpenSurface?:(surface:Exclude<OriginalSurface,'course'>,id:string)=>void;
 }
@@ -80,6 +81,7 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
   const next=words[words.indexOf(item)+1];
   actions.append(button('Read original lesson',()=>{if(allowDiscardWriting())opts.onOpenCourse?.(id);}));
   if(opts.onNativeReview)actions.append(button('Native scheduled Review',()=>{if(allowDiscardWriting())opts.onNativeReview?.();}));
+  if(opts.onNativeLearn)actions.append(button('Native Learn',()=>{if(allowDiscardWriting())opts.onNativeLearn?.();}));
   if(next)actions.append(button('Next expression →',()=>{
    if(!allowDiscardWriting())return;
    selected=next.key;exercise=0;picker.value=selected;draw();
