@@ -28,7 +28,7 @@ export interface U31Journey{
  readonly documents:readonly {readonly label:string;readonly type:string;readonly french:string}[];
  readonly oral:NonNullable<ReturnType<typeof getOriginalMaterial>>['oral'];
  readonly lexicalWitnesses:readonly {readonly french:string;readonly english:string;readonly originalContext:string}[];
- readonly scenarioTitle:string;readonly counterview:string;readonly misunderstanding:string;
+ readonly scenarioTitle:string;readonly u30DecisionCount:number;readonly counterview:string;readonly misunderstanding:string;
  readonly desiredRegister:string;readonly stages:readonly U31StagePlan[];
  readonly decisions:readonly U31Decision[];
  readonly curated:boolean;
@@ -391,7 +391,7 @@ export function originalU31OralJourney(id:string):U31Journey|null{
  // Canonical linked U30 interpretation remains accessible without duplicating
  // the existing engine or its responses.
  const u30=originalU30Listening(id);
- const hasU30=!!u30?.decisions.length;
+
  const witness=originalVocabularyForUnit(id).filter(word=>
   originalVocabularyWitnesses(word).some(w=>w.source==='original-dialogue'))
   .slice(0,3).map(word=>({french:word.french,english:word.english,
@@ -404,7 +404,7 @@ export function originalU31OralJourney(id:string):U31Journey|null{
   sourceRevision:entry.sourceRevision,speakerNames:Object.freeze(speakerNames),dialogue,
   reading,documents:Object.freeze(documents),oral:material.oral,
   lexicalWitnesses:Object.freeze(witness),
-  scenarioTitle:context,counterview,misunderstanding,desiredRegister:register,
+  scenarioTitle:context,u30DecisionCount:u30?.decisions.length??0,counterview,misunderstanding,desiredRegister:register,
   stages:Object.freeze(phases),decisions:Object.freeze(decisions),curated:!!design
  });
 }
