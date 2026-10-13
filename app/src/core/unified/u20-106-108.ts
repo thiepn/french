@@ -201,7 +201,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "non",
         "oui",
         "le plan le certifie",
-        "Other routes need checking. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "The maintenance notice establishes a lift closure, but other routes are not described completely; total closure is unproven."
       ],
       [
         "What personal data will Nina avoid requesting?",
