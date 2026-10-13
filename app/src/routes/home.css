@@ -32,3 +32,10 @@
 
 .home-build-block,.home-end-block{padding:.7rem .25rem;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line);font-size:.78rem;font-weight:700;text-align:left;cursor:pointer}
 .home-build-block:focus-visible,.home-end-block:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* U24 return action does not compete with the native graded study priority. */
+.home-original-return{border-top:1px solid var(--line,#999);margin-top:1rem;padding-top:1rem;display:grid;gap:.5rem}
+.home-original-return h3{font-size:1rem;margin:0}
+.home-original-return p{margin:0;line-height:1.55}
+.home-original-return button{justify-self:start;min-height:44px}
+@media(max-width:540px){.home-original-return button{justify-self:stretch}}
