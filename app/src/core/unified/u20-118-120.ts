@@ -180,7 +180,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "vendredi",
         "lundi",
         "dimanche",
-        "Émilie identifies Friday. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Émilie names Friday as the planned drill date; no observations from that future exercise yet exist."
       ],
       [
         "What does the flyer mistakenly claim?",
@@ -194,7 +194,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "des sorties",
         "chaque situation possible",
         "un bilan",
-        "Farid discusses two exits. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "The site map depicts two exits, but it does not verify every practical route or condition."
       ],
       [
         "Who should confirm the procedures?",
@@ -440,21 +440,21 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "1840",
         "1940",
         "1740",
-        "Luc quotes the old label. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Luc quotes the disputed display caption, which dates the supposed manuscript to 1840 without proving its provenance."
       ],
       [
         "What type of object is actually displayed?",
         "un fac-similé",
         "le manuscrit manuscrit",
         "une photographie seule",
-        "Aurore reads the inventory. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Aurore points to the inventory identifying the displayed item as a later facsimile, not the manuscript."
       ],
       [
         "Where does the disputed writing appear?",
         "dans la marge",
         "sur la couverture extérieure",
         "sur une autre vitrine",
-        "Luc sees a marginal note. This detail is directly supported by the characters' original exchange, not a general assumption."
+        "Luc describes a marginal annotation, but neither its author nor the date of writing is established."
       ],
       [
         "What is unknown about the annotation?",
