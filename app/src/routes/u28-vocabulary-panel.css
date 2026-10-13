@@ -37,3 +37,15 @@
 .u28-vocabulary :is(button,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent,#666);outline-offset:3px}
 @media(max-width:560px){.u28-phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.u28-phase{font-size:.78rem;padding:.4rem .2rem}.u28-actions{display:grid;grid-template-columns:minmax(0,1fr)}.u28-actions button{width:100%}.u28-body{padding:.7rem}}
 @media(prefers-reduced-motion:reduce){.u28-vocabulary *{animation:none!important;transition:none!important}}
+
+/* Optional original lexicon search; source records, not invented flashcard identities. */
+.u28-discovery-search{margin:1rem 0;border:1px solid var(--line,var(--border,#999));border-radius:.25rem;min-width:0}
+.u28-discovery-search>summary{cursor:pointer;font-weight:600;padding:.8rem 1rem;min-height:44px}
+.u28-discovery-search[open]>summary{border-bottom:1px solid var(--line,var(--border,#999))}
+.u28-discovery-search input[type=search],.u28-discovery-search select{box-sizing:border-box;width:100%;max-width:34rem;min-height:44px;background:var(--surface,transparent);color:var(--text,inherit);border:1px solid var(--line,var(--border,#999));padding:.6rem;font:inherit;border-radius:.25rem}
+.u28-vocabulary-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:.65rem}
+.u28-result{min-width:0;border:1px solid var(--line,var(--border,#999));padding:.75rem;border-radius:.25rem;display:grid;gap:.25rem;align-content:start}
+.u28-result strong{overflow-wrap:anywhere}
+.u28-result button{min-height:44px;white-space:normal}
+.u28-discovery-search :is(button,input,select,summary):focus-visible{outline:2px solid var(--accent,#666);outline-offset:3px}
+@media(max-width:560px){.u28-vocabulary-results{grid-template-columns:minmax(0,1fr)}}
