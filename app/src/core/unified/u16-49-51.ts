@@ -165,7 +165,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "vingt",
         "quatre",
         "trois",
-        "Éva gives the class size."
+        "Éva gives the class size. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "How many questionnaires were returned?",
