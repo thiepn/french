@@ -16,6 +16,7 @@ export interface OriginalReadingDecision{
  readonly explanation:string;
  readonly misconception:readonly {readonly value:string;readonly repair:string}[];
  readonly lexemeKey?:string;
+ readonly qualifiedSourceId?:string;
 }
 export interface OriginalReadingStudy{
  readonly lessonId:string;
@@ -221,7 +222,7 @@ function lexicalDecisions(id:string,text:string,qualified:string):OriginalReadin
    misconception:wordOptions.filter(x=>x!==item.english).map(value=>({value,
     repair:'« '+value+' » is the gloss of a different original expression; it is not the published gloss attached to « '+item.french+' ».'}))
   } satisfies OriginalReadingDecision;
- }).filter((x):x is OriginalReadingDecision=>x!==null);
+ }).filter((x):x is NonNullable<typeof x>=>x!==null);
 }
 export function originalIntegratedReading(id:string):OriginalReadingStudy|null{
  const entry=getOriginalCatalogEntry(id),material=getOriginalMaterial(id);

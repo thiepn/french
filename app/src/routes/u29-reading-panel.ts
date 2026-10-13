@@ -2,7 +2,7 @@ import {
  originalIntegratedReading,compareReadingChoice,originalReadingCorrection,
  type OriginalReadingDecision,type OriginalReadingDecisionKind
 } from '../core/unified/u29-reading.ts';
-import {getOriginalCatalogEntry,handoffOriginalLesson,type OriginalSurface} from '../core/unified/u23-registry.ts';
+import {getOriginalCatalogEntry,type OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u29-reading-panel.css';
 
 type Mode='course'|'read';
@@ -73,7 +73,6 @@ export function appendOriginalReadingJourney(host:HTMLElement,id:string,opts:Opt
    const pool=decisions.filter(q=>q.kind===kind);
    if(!pool.length)continue;
    const b=button(label+' · '+pool.length,()=>{
-    if(!allowExit())return;
     categoryValue=kind;index=0;draw();
    },'u29-kind');
    if(categoryValue===kind){b.setAttribute('aria-pressed','true');b.classList.add('is-active');}
@@ -114,16 +113,16 @@ export function appendOriginalReadingJourney(host:HTMLElement,id:string,opts:Opt
   });
   tools.append(read);
   if(opts.onOpenSurface&&entry.listening)tools.append(button('Listen to original dialogue',()=>{
-   if(allowExit())opts.onOpenSurface?.('listen',id);
+   opts.onOpenSurface?.('listen',id);
   }));
   if(opts.onOpenSurface&&entry.writing)tools.append(button('Continue in independent Write',()=>{
-   if(allowExit())opts.onOpenSurface?.('write',id);
+   opts.onOpenSurface?.('write',id);
   }));
   if(opts.onOpenCourse)tools.append(button('Review source vocabulary in Course',()=>{
-   if(allowExit())opts.onOpenCourse?.(id);
+   opts.onOpenCourse?.(id);
   }));
   if(opts.onNativeReview)tools.append(button('Go to native scheduled Review',()=>{
-   if(allowExit())opts.onNativeReview?.();
+   opts.onNativeReview?.();
   }));
   section.append(tools,el('p','Only you can decide whether the summary is accurate. No automatic scoring, upload, draft persistence or native mastery update is performed.','u29-note'));
   details.append(section);transfer.append(details);
