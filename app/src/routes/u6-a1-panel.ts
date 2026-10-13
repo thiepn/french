@@ -31,6 +31,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const answers=new Map<string,Map<string,boolean>>();
   const mistakes=new Map<string,Set<string>>();
   const drafts=new Map<string,string>();
+  // Draft comparisons are ephemeral and mode-specific. Never an Account/CEFR/review writer.
+  const firstDrafts=new Map<string,string>();
+  const revisionNotes=new Map<string,string>();
   let current=lessons[0],stage:Stage='understand',taskIndex=0;
   let stopAudio:(()=>void)|null=null;
   host.replaceChildren();host.className='u6-full-course';
@@ -314,13 +317,82 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     result.textContent=inspectDraftStructure(editor.value).join(' ')+
      ' Meaning, grammar and source fidelity require your own comparison; no automatic grade is awarded.';
    });
+   // U20 extends the existing writing surface: learner-owned revision, not a new grade or store.
+   const revision=el('section',undefined,'u20-revision-workspace');
+   revision.append(el('h5','Independent revision studio'),
+    el('p','Preserve one local first draft per lesson and writing approach, then revise your current draft. Compare evidence, nuance and argument structure yourself; nothing is submitted or graded.','u6-small'));
+   const focusLabel=el('label','Revision focus');
+   const focus=el('select');focus.setAttribute('aria-label','Choose a targeted French writing revision focus');
+   const guides:Record<string,readonly string[]>={
+    evidence:['Underline each factual claim in your current answer and identify which of the two source documents supports it.','Separate a verified observation from a possibility, proposal or quoted opinion.','Remove or qualify anything the available evidence cannot actually establish.'],
+    argument:['State your main position in a complete French sentence before presenting examples.','Present a reasonable objection fairly, without inventing an opponent’s words.','Answer the objection with evidence and a condition under which your position might change.'],
+    coherence:['Use an opening that identifies the topic and stakes before the details.','Connect source A and source B with meaningful contrast or cause-and-effect transitions.','Close with a concrete, proportionate next step rather than a repeated summary.'],
+    precision:['Check pronoun referents, reported speech and tense sequence against what was actually said.','Replace sweeping words such as « toujours » or « certain » with qualified language when required.','Rewrite one overlong sentence to improve clarity without losing the nuance of your argument.']
+   };
+   for(const [value,label] of [
+    ['evidence','Document attribution and evidence'],
+    ['argument','Thesis, objection and reply'],
+    ['coherence','Cohesion and paragraph sequence'],
+    ['precision','French nuance and precision']
+   ] as const){const o=el('option',label);o.value=value;focus.append(o);}
+   focusLabel.append(focus);
+   const notesLabel=el('label','My source quotation or revision intention (optional)');
+   const note=el('textarea');note.rows=2;note.maxLength=900;note.lang='fr';
+   note.setAttribute('aria-label','Private source quotation or revision plan');
+   note.addEventListener('input',()=>revisionNotes.set(draftKey(),note.value));
+   notesLabel.append(note);
+   const guidance=el('ul',undefined,'u20-revision-guidance');
+   const renderGuidance=()=>{guidance.replaceChildren();
+    for(const line of guides[focus.value]??guides.evidence)guidance.append(el('li',line));
+    for(const line of chosen().criteria)guidance.append(el('li','Task-specific: '+line));
+   };
+   const compareStatus=el('p','Pin a first draft before comparing revisions.','u6-small');
+   compareStatus.setAttribute('role','status');
+   const before=el('blockquote',undefined,'u20-revision-version');
+   const after=el('blockquote',undefined,'u20-revision-version');
+   const panes=el('div',undefined,'u20-revision-versions');panes.hidden=true;
+   const left=el('section');left.append(el('h6','Pinned first draft'),before);
+   const right=el('section');right.append(el('h6','Current revision'),after);
+   panes.append(left,right);
+   const saveFirst=button('Pin current text as first draft',()=>{
+    if(!editor.value.trim()){compareStatus.textContent='Write your first version before pinning it.';return;}
+    firstDrafts.set(draftKey(),editor.value);
+    compareStatus.textContent='First draft pinned in this page only. Edit the current text, then compare.';
+    panes.hidden=true;
+   });
+   const compareVersions=button('Compare two draft versions',()=>{
+    const pinned=firstDrafts.get(draftKey());
+    if(!pinned){compareStatus.textContent='No pinned first draft for this lesson and writing approach.';panes.hidden=true;return;}
+    before.textContent=pinned;after.textContent=editor.value||'(current draft is empty)';
+    panes.hidden=false;
+    const changed=pinned!==editor.value;
+    compareStatus.textContent=changed?
+     'The first and current drafts differ. Check source fidelity, nuance and counterarguments with the prompts below; no automatic grammar judgment is made.':
+     'The two versions are identical. Revise your writing before comparing again.';
+    renderGuidance();
+   });
+   focus.addEventListener('change',renderGuidance);
+   revision.append(focusLabel,notesLabel,saveFirst,compareVersions,compareStatus,guidance,panes);
+   // The same mode-key separation already used by drafts also isolates first versions and notes.
    const clear=button('Clear selected writing draft',()=>{
     editor.value='';drafts.delete(draftKey());
     result.textContent='Only the currently selected temporary draft was cleared. No account data changed.';
    });
-   container.append(heading,prompt,items,editor,check,compare,clear,result,model,
+   container.append(heading,prompt,items,editor,revision,check,compare,clear,result,model,
     el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
    updatePrompt();
+   note.value=revisionNotes.get(draftKey())??'';
+   renderGuidance();
+   // Restore notes and hide the old comparison whenever a writing approach is switched.
+   const changeMode=container.querySelector<HTMLSelectElement>('.u14-writing-mode select');
+   changeMode?.addEventListener('change',()=>{
+    note.value=revisionNotes.get(draftKey())??'';
+    panes.hidden=true;
+    compareStatus.textContent=firstDrafts.has(draftKey())?
+     'A first version is available for this writing approach. Compare when ready.':
+     'Pin a first draft before comparing revisions.';
+    renderGuidance();
+   });
   }
   function render(){
    if(signal.aborted)return;
