@@ -160,7 +160,7 @@ const SOURCE:readonly U15OriginalSourceStory[]=[
         "320 euros",
         "200 euros",
         "500 euros",
-        "Jules states the price."
+        "Jules states the price. This detail comes directly from the original spoken exchange."
       ],
       [
         "What limitation has been disclosed?",
@@ -414,7 +414,7 @@ const SOURCE:readonly U15OriginalSourceStory[]=[
       [
         "C’est le rapport ___ nous parlons.",
         "dont",
-        "Parler de takes dont.",
+        "Parler de takes dont. The source sentence requires this precise grammatical relationship.",
         "relative de"
       ],
       [
