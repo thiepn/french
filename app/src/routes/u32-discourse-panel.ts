@@ -116,14 +116,21 @@ export function appendOriginalDiscourseJourney(
  const independentDrafts=new Map<string,string>(),spoke=new Set<string>();
  const keyed=new Map<string,{value:string;correct:boolean}>();
  const pairDrafts=[pairA,pairB,pairS];
- const pairCache=['','',''];
+ const pairCacheBySource=new Map<string,[string,string,string]>();
+ let activePairKey='';
  const privateChanged=()=>{
-  const present=[...notes.values(),...independentDrafts.values(),...pairCache].some(x=>x.trim().length>0);
+  const present=[...notes.values(),...independentDrafts.values(),
+   ...[...pairCacheBySource.values()].flat()].some(x=>x.trim().length>0);
   root.dataset.hasPrivateDraft=String(present);
   options.onPrivateChange?.(present);
  };
  pairDrafts.forEach((textarea,i)=>textarea.addEventListener('input',()=>{
-  pairCache[i]=textarea.value;privateChanged();
+  if(!activePairKey)return;
+  const previous=pairCacheBySource.get(activePairKey)??['','',''];
+  const current:[string,string,string]=[...previous];
+  current[i]=textarea.value;
+  pairCacheBySource.set(activePairKey,current);
+  privateChanged();
  }));
  function originalWitness(locator:string):U32Witness|null{
   return source.witnesses.find(x=>x.locator===locator)??null;
@@ -152,7 +159,10 @@ export function appendOriginalDiscourseJourney(
   const info=el('p','','u32-caveat');
   const refresh=()=>{
    const [label,first,second]=choices[selected];
-   info.textContent=label+'. Source labels and text are published originals; your comparison must distinguish attribution from factual verification.';
+   activePairKey=first.locator+'::'+second.locator;
+   const preserved=pairCacheBySource.get(activePairKey)??['','',''];
+   pairDrafts.forEach((textarea,i)=>{textarea.value=preserved[i];});
+   info.textContent=label+'. Source labels and text are published originals; your comparison must distinguish attribution from factual verification. Notes are kept separately for this exact source pair.';
    examples.replaceChildren(evidenceCard(first),evidenceCard(second));
   };
   choices.forEach(([label],i)=>{
