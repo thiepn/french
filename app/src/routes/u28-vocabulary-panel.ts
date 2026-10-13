@@ -280,3 +280,56 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
  },{once:true});
  draw();
 }
+
+
+/** Search original vocabulary across all five authored pathways without a shadow lexicon. */
+export function createOriginalVocabularyDiscovery(
+ signal:AbortSignal,onOpenCourse:(id:string)=>void
+):HTMLElement{
+ const section=el('details','','u28-discovery-search');
+ section.append(el('summary','Find an original French word or expression'));
+ const body=el('div','','u28-body');
+ body.append(el('h3','Original source-qualified vocabulary'),
+  el('p','Search original unit vocabulary, its English gloss and authored example. Source IDs are lesson IDs, not new flashcards. Results do not claim current SRS status.','u28-note'));
+ const label=el('label','Search French, English or lesson topic','u28-picker');
+ const input=el('input');input.type='search';input.autocomplete='off';
+ input.placeholder='e.g. information, reason, rendez-vous';
+ input.setAttribute('aria-label','Search original French vocabulary');
+ label.append(input);
+ const level=el('select');level.setAttribute('aria-label','Filter original vocabulary by level');
+ for(const l of ['all','A1','A2','B1','B1+','Early B2'] as const){
+  const opt=el('option',l==='all'?'All levels':l);opt.value=l;level.append(opt);
+ }
+ const results=el('div','','u28-vocabulary-results');
+ const status=el('p','','u28-status');status.setAttribute('role','status');
+ body.append(label,level,status,results);section.append(body);
+ let limit=24;
+ const more=button('Show next source entries',()=>{limit+=24;draw();});
+ body.append(more);
+ function draw(){
+  if(signal.aborted)return;
+  const words=browseOriginalVocabulary(input.value,level.value as 'all'|'A1'|'A2'|'B1'|'B1+'|'Early B2',limit);
+  results.replaceChildren();
+  const unique=new Set<string>();
+  for(const word of words){
+   if(unique.has(word.key))continue;
+   unique.add(word.key);
+   const card=el('article','','u28-result');
+   const name=el('strong',word.french);name.lang='fr';
+   card.append(name,el('p',word.english,'u28-note'));
+   contextLine(card,word.context,'Published French example');
+   card.append(el('p',word.level+' · '+word.lessonId+' · '+word.qualifiedSourceId,'u28-source'));
+   card.append(button('Study expression in its original lesson',()=>{
+    if(!signal.aborted)onOpenCourse(word.lessonId);
+   }));
+   results.append(card);
+  }
+  more.hidden=words.length<limit;
+  status.textContent=words.length+' source vocabulary entries shown'+
+   (input.value.trim()?' matching your search':' from original Course material')+
+   '. No learner score or imported card created.';
+ }
+ input.addEventListener('input',()=>{limit=24;draw();});
+ level.addEventListener('change',()=>{limit=24;draw();});
+ draw();return section;
+}
