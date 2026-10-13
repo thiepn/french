@@ -468,7 +468,7 @@ const SOURCE:readonly U17OriginalSourceStory[]=[
       [
         "Le photographe ___ nous parlons reste à identifier.",
         "dont",
-        "Parler de selects dont.",
+        "Parler de selects dont. This form follows the governing verb and its required construction.",
         "relative"
       ]
     ],
