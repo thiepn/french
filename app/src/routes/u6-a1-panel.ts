@@ -54,7 +54,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   let current=getOriginalUnit(incoming?.id??'')??lessons[0],stage:Stage=incoming?.stage??'understand',taskIndex=0;
   let stopAudio:(()=>void)|null=null;
   let tracking=false,reviewBusy=false,recoveryError='',saveChain=Promise.resolve();
-  const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0);
+  const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0)||
+   !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim();
   const allowExit=()=>!hasPrivateDrafts()||
    window.confirm('Leaving this Course discards unsent writing. Navigation checkpoints never include your text. Leave without the drafts?');
   const navigateSafely=(route:RouteId)=>{if(allowExit())navigate(route);};
@@ -380,25 +381,6 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      if(handoffOriginalLesson(surface,id))navigate(surface);
     }
    });
-   return;
-   /* U6 legacy flash reveal kept as historical source for comparison, unreachable here. */
-   container.append(el('p','Learn the expression and its article or verb form together. Read the contextual example aloud before revealing the English meaning.','u6-small'));
-   const list=el('div',undefined,'u6-word-grid');
-   for(const word of unit.vocabulary){
-    const item=el('article',undefined,'u6-word');
-    const fr=el('strong',word.french);fr.lang='fr';
-    const sample=el('p',word.context);sample.lang='fr';
-    const gloss=el('p',word.english,'u6-gloss');gloss.hidden=true;
-    const reveal=button('Reveal meaning',()=>{
-     gloss.hidden=!gloss.hidden;
-     reveal.textContent=gloss.hidden?'Reveal meaning':'Hide meaning';
-     reveal.setAttribute('aria-expanded',String(!gloss.hidden));
-    });
-    reveal.setAttribute('aria-expanded','false');
-    item.append(fr,sample,reveal,gloss);list.append(item);
-   }
-   container.append(list,el('p','For scheduled vocabulary review, continue into native Learn/Review. This original course does not create unapproved vocabulary imports.','u6-small'),
-    button('Open native Learn',()=>navigateSafely('learn')));
   }
   function renderDialogue(unit:A1Unit,container:HTMLElement){
    container.append(el('p','Read the complete exchange first. Reveal translations only when needed, then return to the French without them.','u6-small'));
@@ -666,6 +648,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function open(id:string,next:Stage,resumeIndex?:number,focus=false){
    const lesson=getOriginalUnit(id);if(!lesson)return;
+   if((id!==current.id||next!==stage)&&
+      host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()&&
+      !window.confirm('Your original vocabulary writing draft is temporary. Leave this learning stage and discard its text?'))return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
