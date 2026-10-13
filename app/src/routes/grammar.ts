@@ -1,6 +1,7 @@
 import type {RouteContext} from '../core/types';
 import {ORIGINAL_GRAMMAR,CARNET_GRAMMAR_COUNT,type GrammarGuide} from '../core/unified/catalog';
 import './unified.css';
+import {appendU26GrammarLibrary} from './u26-grammar-panel';
 
 function normalizeAnswer(value:string):string{
   return value.normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('fr');
@@ -11,11 +12,14 @@ export function mount({main,navigate,signal}:RouteContext):void {
     <p class="lede">Short self-authored guides with immediate, ungraded recall. The source coursebook's ${CARNET_GRAMMAR_COUNT} grammar concepts remain separate until licensing and exact-source mapping are verified.</p>
     <div class="unified-tools">
       <label>Level <select data-level><option value="all">All levels</option><option value="A1">A1</option><option value="A2">A2</option></select></label>
-      <button type="button" data-course class="secondary-action compact-action">Browse 60-session course</button>
+      <button type="button" data-course class="secondary-action compact-action">Open original Course</button>
     </div>
     <div class="unified-grammar-list" data-list aria-label="Grammar topics"></div>
     <article class="unified-detail" data-lesson aria-live="polite"></article>
+    <section data-u26-library aria-label="Original A1 through early B2 contextual grammar"></section>
   </section>`;
+  const library=main.querySelector<HTMLElement>('[data-u26-library]');
+  if(library)appendU26GrammarLibrary(library,navigate);
   const list=main.querySelector<HTMLElement>('[data-list]')!;
   const detail=main.querySelector<HTMLElement>('[data-lesson]')!;
   const level=main.querySelector<HTMLSelectElement>('[data-level]')!;
