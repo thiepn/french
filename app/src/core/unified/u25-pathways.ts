@@ -69,6 +69,12 @@ export const ORIGINAL_PATHWAYS:readonly OriginalPathway[]=Object.freeze(ORIGINAL
   sections:sectionsFor(level,entries)
  });
 }));
+const sectionByLesson=new Map<string,OriginalPathSection>();
+for(const pathway of ORIGINAL_PATHWAYS)for(const section of pathway.sections)
+ for(const entry of section.entries)sectionByLesson.set(entry.id,section);
+export function originalPathSectionFor(id:string):OriginalPathSection|null {
+ return sectionByLesson.get(id)??null;
+}
 export function pathwayForOriginalLesson(id:string):OriginalPathway|null{
  const item=getOriginalCatalogEntry(id);
  return ORIGINAL_PATHWAYS.find(path=>path.level===item?.level)??null;
