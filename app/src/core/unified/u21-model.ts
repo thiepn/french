@@ -37,7 +37,7 @@ function writing([prompt,criteria,model]:PromptTuple){
 /** Additional original practice material, never an alternate academic or review authority. */
 export function authorU21Scenario(spec:U21AuthoredScenario,n:number):U21Scenario{
  const id='transfer-'+String(n).padStart(2,'0');
- if(n<121||n>135||spec.id!==id)throw Error('U21 transfer identity '+spec.id);
+ if(n<121||n>141||spec.id!==id)throw Error('Source-owned transfer identity '+spec.id);
  const grammar:A1AuthoredSpec['grammar']=spec.grammarKeys.map(key=>{
   const g=TRANSFER_GRAMMAR[key];
   if(!g)throw Error('Unknown original teaching bridge '+key);
@@ -54,7 +54,7 @@ export function authorU21Scenario(spec:U21AuthoredScenario,n:number):U21Scenario
  const authored:A1AuthoredSpec={id,title:spec.title,goal:spec.goal,grammarIds:[],grammar,
   vocabulary:spec.vocabulary,dialogue:spec.dialogue,tasks:practice,writing:spec.writing.fromSources};
  const unit=Object.freeze({...authorA1Unit(authored,94+n),
-  minutes:95,source:provenance('original','session','u21-'+id),
+  minutes:95,source:provenance('original','session',(n<=135?'u21-':'u22-')+id),
   prerequisites:Object.freeze(['transfer-'+String(n-1).padStart(2,'0')])});
  const reading:B1Reading=Object.freeze({unitId:id,title:spec.reading.title,
   french:spec.reading.paragraphs.join('\n\n'),
