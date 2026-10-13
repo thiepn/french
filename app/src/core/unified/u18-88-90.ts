@@ -430,7 +430,7 @@ const SOURCE:readonly U18OriginalSourceStory[]=[
         "un dinosaure",
         "un cheval",
         "un poisson vivant",
-        "Aline describes a dinosaur."
+        "Aline describes a dinosaur. The original dialogue establishes this detail explicitly, rather than implying a broader conclusion."
       ],
       [
         "What misleading claim appears in the leaflet?",
