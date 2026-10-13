@@ -235,3 +235,38 @@ export function originalLexicalCorrection(item:OriginalLexeme,submitted:string):
  };
  return errors[form]?.[response]??null;
 }
+
+
+/**
+ * Curated morphological/semantic connections. Display only expressions whose
+ * written forms genuinely appear in the original course vocabulary index.
+ * A family is a teacher-authored contrast, not a claim that a derived form
+ * appeared in the same text or that a stemmer established etymology.
+ */
+export interface OriginalLexicalFamily{
+ readonly name:string;readonly teaching:string;
+ readonly members:readonly OriginalLexeme[];
+}
+const FAMILY_GUIDES:readonly [string,string,readonly string[]][]=[
+ ['Decide and explain','Décider is an action; une décision names its outcome. Describe the reason separately from the decision.',['décider','une décision','la décision']],
+ ['Inform and attribute','Information names what is communicated; informer names the action of telling someone. State the source.',['informer','une information','l’information']],
+ ['Observe versus observation','Constater or observer concerns noticing facts; an observation is the attributed record of what was noticed.',['observer','une observation','constater']],
+ ['Verify versus confirmation','Vérifier checks evidence; confirmer acknowledges a verified fact. An apparent agreement alone is not independent proof.',['vérifier','une vérification','confirmer','une confirmation']],
+ ['Compare and comparison','Comparer is an analytic action; une comparaison should name the actual sources and dimensions compared.',['comparer','une comparaison','la comparaison']],
+ ['Explain and justification','Justifier gives reasons; une justification is that reasoning, not automatic proof of its accuracy.',['justifier','une justification','la justification']],
+ ['Translate and translation','Traduire produces a translation; une traduction is an authored version which should remain attributed.',['traduire','une traduction','la traduction']],
+ ['Revise and revision','Réviser changes or reviews an earlier version; une révision is the resulting review or revision.',['réviser','une révision','la révision']],
+ ['Doubt and uncertainty','Un doute denotes a doubt; une incertitude marks unresolved certainty. Neither alone proves a contrary claim.',['un doute','une incertitude','douter']],
+ ['Claim and evidence','Une preuve supports a defined assertion; une hypothèse is a possible explanation requiring validation.',['une preuve','une hypothèse','un témoignage']]
+];
+export function originalVocabularyFamiliesFor(item:OriginalLexeme):readonly OriginalLexicalFamily[]{
+ const needle=normalize(item.french);
+ const result:OriginalLexicalFamily[]=[];
+ for(const [name,teaching,terms] of FAMILY_GUIDES){
+  if(!terms.map(normalize).includes(needle))continue;
+  const members=terms.flatMap(term=>(byForm.get(normalize(term))??[]).slice(0,2));
+  if(new Set(members.map(m=>normalize(m.french))).size<2)continue;
+  result.push({name,teaching,members:Object.freeze(members)});
+ }
+ return result;
+}
