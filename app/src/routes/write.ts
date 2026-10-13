@@ -1,5 +1,5 @@
 import './write.css';
-import {createU22SourcePanel} from './u22-source-panel';
+import {createOriginalMaterialPanel} from './u22-source-panel';
 import type {RouteContext} from '../core/types';
 import {loadStableSentenceExercises,loadStableUsageCorpus,loadVocabularySearchIndex} from '../core/content/loader';
 import {diagnoseSentence,type SentenceDiagnosis} from '../core/content/sentence-diagnosis';
@@ -32,7 +32,7 @@ const CAPTIONS:Record<WritingMode,string>={
   transfer:'Apply a familiar construction to a different situation.',
   bridge:'Apply a P10 construction you have recalled independently to an original P12 contextual sentence.'
 };
-export async function mount({main,signal}:RouteContext):Promise<void>{
+export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const host=element('section','','page write-workspace');
   host.append(element('p','ACTIVE PRODUCTION','eyebrow'),element('h1','Write'),
     element('p','Produce French from a prompt, inspect deterministic feedback, and decide whether the answer needs more practice. This does not change scheduled SRS.','lede'));
@@ -41,7 +41,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const tabs=element('div','','write-modes');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Writing practice track');
   const message=element('p','Loading sentence exercises…','inline-status');message.setAttribute('aria-live','polite');
   const stage=element('div','','write-stage');
-  host.append(switcher,tabs,message,stage,createU22SourcePanel('write',signal));main.replaceChildren(host);
+  host.append(switcher,tabs,message,stage,createOriginalMaterialPanel('write',signal,navigate));main.replaceChildren(host);
 
   const [pack,stateValue,usagePack,usageSaved]=await Promise.all([
     loadStableSentenceExercises(signal),loadWritingState(),loadStableUsageCorpus(signal),loadUsageState()

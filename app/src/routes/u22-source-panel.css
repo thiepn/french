@@ -16,3 +16,16 @@
 .u22-source-panel details summary{cursor:pointer;font-weight:600}
 .u22-source-panel [hidden]{display:none!important}
 @media(max-width:640px){.u22-source-panel{padding:.8rem}.u22-source-controls button{flex:1 1 auto;min-height:44px}.u22-source-controls>select{width:100%;flex-basis:100%}}
+
+
+/* U23 shared source search; retains the existing U22 reading and listening controls. */
+.u23-material-filters{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:.65rem;align-items:end}
+.u23-material-filters label:first-child{grid-column:1/-1}
+.u23-material-filters label:nth-child(3){grid-column:1/-1}
+.u23-material-filters button{justify-self:start;min-height:44px}
+.u23-material-filters p{margin:.2rem 0;line-height:1.5}
+.u22-source-panel :is(input,select,textarea,button,summary):focus-visible{outline:2px solid var(--accent,#68758c);outline-offset:3px}
+.u22-source-panel input[type=search]{width:100%;min-height:44px;box-sizing:border-box;font:inherit;color:inherit;background:var(--surface,transparent);border:1px solid var(--border,#9299a4);border-radius:.35rem;padding:.6rem}
+.u22-source-panel .u22-source-content nav{display:flex;flex-wrap:wrap;gap:.6rem}
+.u22-source-panel .u22-source-content nav button{min-height:44px}
+@media(max-width:540px){.u23-material-filters{grid-template-columns:minmax(0,1fr)}.u22-source-panel .u22-source-content nav button{flex:1 1 42%}}

@@ -74,3 +74,16 @@
 .u14-writing-mode :is(select,button):focus-visible{outline:2px solid var(--accent,currentColor);outline-offset:3px}
 .u14-production-prompt{font-weight:500;max-width:72ch}
 @media(max-width:570px){.u14-writing-mode{padding:.75rem}.u14-writing-mode select{width:100%;max-width:100%}}
+
+
+/* U23 native original discovery and cross-workspace actions. */
+.u23-course-finder{display:grid;grid-template-columns:minmax(0,2fr) minmax(140px,1fr) minmax(160px,1fr);gap:.7rem;align-items:end;margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:.4rem;background:var(--surface)}
+.u23-course-finder label{display:grid;gap:.35rem;min-width:0;font-size:.86rem}
+.u23-course-finder input,.u23-course-finder select{width:100%;min-width:0;box-sizing:border-box;font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:.3rem;padding:.6rem;min-height:44px}
+.u23-course-finder button{min-height:44px}
+.u23-course-results{font-size:.86rem;color:var(--muted);margin:.4rem 0}
+.u23-course-handoffs{display:flex;flex-wrap:wrap;gap:.5rem;margin:.9rem 0}
+.u23-course-handoffs button{min-height:44px}
+.u23-course-finder :is(input,select,button):focus-visible,.u23-course-handoffs button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:800px){.u23-course-finder{grid-template-columns:repeat(2,minmax(0,1fr))}.u23-course-finder label:first-child{grid-column:1/-1}}
+@media(max-width:540px){.u23-course-finder{grid-template-columns:minmax(0,1fr)}.u23-course-finder label:first-child{grid-column:auto}.u23-course-handoffs button{flex:1 1 45%}}

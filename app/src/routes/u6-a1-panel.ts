@@ -1,5 +1,9 @@
 import type {RouteId} from '../core/types';
-import {loadU22OriginalFrenchCourse,getU22OriginalUnit,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
+import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
+import {
+ browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
+ neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
+} from '../core/unified/u23-registry';
 import {u22ProductionChoices} from '../core/unified/u22-material';
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
@@ -37,18 +41,46 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const drafts=new Map<string,string>();
   // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
   const revisionSnapshots=new Map<string,string>();
-  let current=lessons[0],stage:Stage='understand',taskIndex=0;
+  const incoming=takeOriginalHandoff('course');
+  let current=getOriginalUnit(incoming?.id??'')??lessons[0],stage:Stage=incoming?.stage??'understand',taskIndex=0;
   let stopAudio:(()=>void)|null=null;
   host.replaceChildren();host.className='u6-full-course';
   const header=el('header',undefined,'u6-head');
-  header.append(el('p','ORIGINAL COURSE · A1 + A2 + B1','eyebrow'),
+  header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
     el('h2','Learn French from the beginning'),
     el('p','A continuous 244-unit original French curriculum: 94 complete A1–B1+ lessons and 150 original U13–U22 transfer scenarios. U22 adds fifteen early-B2 source-critical cases with extended reading, dated evidence, dialogue, optional synthetic listening, independent writing and revision.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const layout=el('div',undefined,'u6-layout');
-  const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Original A1, A2 and B1 full course lessons');
+  const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Filterable original French course lesson index');
   const article=el('article',undefined,'u6-lesson-content');article.dataset.u6LessonContent='';
-  layout.append(sidebar,article);host.append(header,status,layout);
+  const finder=el('section',undefined,'u23-course-finder');
+  finder.setAttribute('role','search');finder.setAttribute('aria-label','Find original French lessons');
+  const searchLabel=el('label','Search 244 original lessons');
+  const search=el('input');search.type='search';search.autocomplete='off';
+  search.placeholder='Title, French word, topic or grammar';
+  search.setAttribute('aria-label','Search original course lessons');searchLabel.append(search);
+  const levelLabel=el('label','Level'),levelFilter=el('select');
+  for(const value of ['all','A1','A2','B1','B1+','Early B2'] as const){
+   const option=el('option',value==='all'?'All levels':value);option.value=value;levelFilter.append(option);
+  }levelLabel.append(levelFilter);
+  const materialLabel=el('label','Material'),materialFilter=el('select');
+  for(const [value,title] of [
+   ['all','All lessons'],['reading','With connected reading'],['listening','With dialogue'],
+   ['writing','With writing'],['source-comparison','With source comparison']
+  ] as const){
+   const option=el('option',title);option.value=value;materialFilter.append(option);
+  }materialLabel.append(materialFilter);
+  const matchCount=el('p','','u23-course-results');matchCount.setAttribute('role','status');
+  let visible=60;
+  const loadMore=button('Show next 60 lessons',()=>{visible+=60;renderIndex();});
+  const resetFilters=button('Clear filters',()=>{
+   search.value='';levelFilter.value='all';materialFilter.value='all';visible=60;renderIndex();search.focus();
+  });
+  finder.append(searchLabel,levelLabel,materialLabel,resetFilters,matchCount,loadMore);
+  search.addEventListener('input',()=>{visible=60;renderIndex();});
+  levelFilter.addEventListener('change',()=>{visible=60;renderIndex();});
+  materialFilter.addEventListener('change',()=>{visible=60;renderIndex();});
+  layout.append(sidebar,article);host.append(header,status,finder,layout);
   const answerMap=(id:string)=>{
    let found=answers.get(id);
    if(!found){found=new Map();answers.set(id,found);}
@@ -56,7 +88,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   };
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const unit of lessons)if(u22PracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
+   for(const [id,record] of answers)if(u22PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
    return passed;
   };
   function renderIndex(){
@@ -64,7 +96,14 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    status.textContent=done.size+'/'+lessons.length+
     ' lesson exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
+   const matches=browseOriginalMaterials({
+    query:search.value,level:levelFilter.value as OriginalLevel|'all',
+    material:materialFilter.value as OriginalMaterialKind|'all',limit:visible
+   });
+   matchCount.textContent=matches.total+' matching lessons · '+matches.entries.length+' currently shown';
+   loadMore.hidden=matches.entries.length>=matches.total;
    sidebar.replaceChildren(el('h3','A1–B2 lesson sequence'));
+   if(!matches.total)sidebar.append(el('p','No original lessons match. Try a broader topic, level or material type.','u6-small'));
    const jump=el('div',undefined,'u8-jump-level');
    jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
     button('A2 stories',()=>open('a2-01','understand'),'u8-level-button'),
@@ -83,7 +122,17 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     button('B2 narratives & debate',()=>open('transfer-121','understand'),'u8-level-button'),
      button('B2 source critique',()=>open('transfer-136','understand'),'u8-level-button'));
    sidebar.append(jump);
-   for(const unit of lessons){
+   if(!matches.entries.some(row=>row.id===current.id)){
+    const pinned=getOriginalCatalogEntry(current.id);
+    if(pinned){
+     const selected=button('Selected lesson: '+pinned.id+' · '+pinned.title,
+      ()=>open(pinned.id,'understand'),'u6-unit-button selected');
+     selected.setAttribute('aria-current','true');
+     sidebar.append(selected);
+    }
+   }
+   for(const row of matches.entries){
+    const unit=getOriginalUnit(row.id)!;
     if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and practical communication','u8-course-divider'));
     if(unit.id==='a2-15')sidebar.append(el('h4','A2 · Practical independence','u8-course-divider'));
     if(unit.id==='b1-01')sidebar.append(el('h4','B1 · Connected reading and explanation','u8-course-divider'));
@@ -375,12 +424,30 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(signal.aborted)return;
    article.replaceChildren();
    const head=el('header',undefined,'u6-unit-header');
-   head.append(el('p',(current.id.startsWith('transfer-')?'A1–B1 TRANSFER':current.id.startsWith('b1-')?'B1':current.id.startsWith('a2-')?'A2':'A1')+' · LESSON '+(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
+   head.append(el('p',(getOriginalCatalogEntry(current.id)?.level??'Original')+' · LESSON +(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
     el('h3',current.title),el('p',current.goal));
    const pre=el('p',current.prerequisites.length?
-    'Suggested foundation: '+(getU22OriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
+    'Suggested foundation: '+(getOriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
     'Start here: no prior lesson is required.','u6-small');
-   head.append(pre);article.append(head);
+   head.append(pre);
+   const cross=el('nav',undefined,'u23-course-handoffs');
+   cross.setAttribute('aria-label','Open this lesson in another workspace');
+   const entry=getOriginalCatalogEntry(current.id);
+   if(entry){
+    for(const [dest,title,available] of [
+     ['read','Open Read',entry.reading],['listen','Open Listen',entry.listening],
+     ['write','Open Write',entry.writing]
+    ] as const){
+     if(!available)continue;
+     cross.append(button(title,()=>{
+      if(handoffOriginalLesson(dest,current.id))navigate(dest);
+     }));
+    }
+   }
+   const neighbors=neighboringOriginalLessons(current.id);
+   if(neighbors.previous)cross.append(button('← Previous lesson',()=>open(neighbors.previous!.id,'understand')));
+   if(neighbors.next)cross.append(button('Next lesson →',()=>open(neighbors.next!.id,'understand')));
+   head.append(cross);article.append(head);
    const stageNav=el('div',undefined,'u6-stage-nav');stageNav.setAttribute('role','group');stageNav.setAttribute('aria-label','Lesson learning stages');
    for(const [id,title] of STAGES){
     const tab=button(title,()=>open(current.id,id),'u6-stage-button');
@@ -402,7 +469,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.append(trace);
   }
   function open(id:string,next:Stage){
-   const lesson=getU22OriginalUnit(id);if(!lesson)return;
+   const lesson=getOriginalUnit(id);if(!lesson)return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    current=lesson;stage=next;
@@ -416,12 +483,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    event.preventDefault();
    const selected=event.key==='Home'?0:event.key==='End'?buttons.length-1:
     (at+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;
-   const chosen=lessons[selected];
+   const chosen=getOriginalUnit(buttons[selected]?.dataset.u6Unit??'');
    if(chosen){open(chosen.id,'understand');
     sidebar.querySelector<HTMLButtonElement>('[data-u6-unit="'+chosen.id+'"]')?.focus();}
   });
   signal.addEventListener('abort',()=>stopAudio?.(),{once:true});
-  open(lessons[0].id,'understand');
+  open(current.id,stage);
  }catch(error){
   if(signal.aborted)return;
   host.replaceChildren(el('p','Original French lessons unavailable. Existing native Learn and Review remain unaffected.'));
