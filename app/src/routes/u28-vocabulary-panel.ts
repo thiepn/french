@@ -1,8 +1,8 @@
 import {
  originalVocabularyForUnit,originalVocabularyRelated,originalVocabularyWitnesses,
  originalLexicalContrastsForUnit,originalLexicalExercises,compareOriginalLexicalAnswer,
- originalLexicalCorrection,browseOriginalVocabulary,
- type OriginalLexeme,type OriginalLexicalExercise
+ originalLexicalCorrection,originalVocabularyFamiliesFor,browseOriginalVocabulary,
+ type OriginalLexeme
 } from '../core/unified/u28-vocabulary.ts';
 import {getOriginalCatalogEntry,neighboringOriginalLessons,type OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u28-vocabulary-panel.css';
@@ -40,7 +40,6 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
  disclosure.append(el('summary','Vocabulary journey · '+words.length+' original expressions'));
  const body=el('div','','u28-body');
  wrapper.append(disclosure);disclosure.append(body);host.append(wrapper);
- const selectedWords=new Set<string>();
  const keyedMatches=new Set<string>();
  let selected=words[0].key,phase:Phase='discover',exercise=0;
  const heading=el('h3','Use vocabulary in context');heading.tabIndex=-1;
@@ -53,6 +52,12 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
  const status=el('p','','u28-status');status.setAttribute('role','status');
  const content=el('div','','u28-content');
  body.append(heading,note,tabs,pickerLabel,status,content);
+ const allowDiscardWriting=()=>{
+  const draft=content.querySelector<HTMLTextAreaElement>('.u28-writing textarea');
+  return !draft?.value.trim()||window.confirm(
+   'Discard this temporary original vocabulary writing draft? No text is automatically saved.'
+  );
+ };
  const play=(utterance:string)=>{
   if(opts.signal.aborted||!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
    status.textContent='French device speech is unavailable. The original text remains readable.';
@@ -73,9 +78,10 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
  const footer=(item:OriginalLexeme,area:HTMLElement)=>{
   const actions=el('div','','u28-actions');
   const next=words[words.indexOf(item)+1];
-  actions.append(button('Read original lesson',()=>opts.onOpenCourse?.(id)));
-  if(opts.onNativeReview)actions.append(button('Native scheduled Review',opts.onNativeReview));
+  actions.append(button('Read original lesson',()=>{if(allowDiscardWriting())opts.onOpenCourse?.(id);}));
+  if(opts.onNativeReview)actions.append(button('Native scheduled Review',()=>{if(allowDiscardWriting())opts.onNativeReview?.();}));
   if(next)actions.append(button('Next expression →',()=>{
+   if(!allowDiscardWriting())return;
    selected=next.key;exercise=0;picker.value=selected;draw();
   }));
   area.append(actions);
@@ -120,6 +126,22 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
     parallels.append(block);
    }
    pane.append(parallels);
+  }
+  const families=originalVocabularyFamiliesFor(item);
+  for(const family of families){
+   const related=el('details','','u28-related');
+   related.append(el('summary','Verified word family: '+family.name),
+    el('p',family.teaching,'u28-note'),
+    el('p','Each listed form is attested by an original vocabulary record. This link does not assert that both appear in the same passage.','u28-note'));
+   for(const member of family.members){
+    const linked=el('div','','u28-parallel');
+    linked.append(el('p',member.french+' — '+member.english,'u28-french'),
+     el('p',member.lessonId+' · '+member.qualifiedSourceId,'u28-source'),
+     el('p',member.context,'u28-note'));
+    linked.append(button('Open original word in Course',()=>{if(allowDiscardWriting())opts.onOpenCourse?.(member.lessonId);}));
+    related.append(linked);
+   }
+   pane.append(related);
   }
   const contrasts=originalLexicalContrastsForUnit(id).filter(c=>
    c.terms.some(t=>t.normalize('NFC').toLowerCase()===item.french.normalize('NFC').toLowerCase()));
@@ -187,7 +209,7 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
     'Not an exact match to this limited authored key. '+task.hint+
     ' Other valid French or English expressions are not automatically evaluated.';
    next.disabled=false;
-   selectedWords.add(item.key);status.textContent=keyedMatches.size+
+   status.textContent=keyedMatches.size+
     ' question keys matched during this temporary visit. No native score or SRS review recorded.';
   });
   input.addEventListener('input',()=>{
@@ -222,12 +244,12 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
   pane.append(actions,writing);
   const cross=el('div','','u28-actions');
   const availability=getOriginalCatalogEntry(item.lessonId);
-  if(availability?.reading&&opts.onOpenSurface)cross.append(button('Read linked original text',()=>opts.onOpenSurface!('read',id)));
-  if(availability?.listening&&opts.onOpenSurface)cross.append(button('Listen to original dialogue',()=>opts.onOpenSurface!('listen',id)));
-  if(availability?.writing&&opts.onOpenSurface)cross.append(button('Open independent Write',()=>opts.onOpenSurface!('write',id)));
+  if(availability?.reading&&opts.onOpenSurface)cross.append(button('Read linked original text',()=>{if(allowDiscardWriting())opts.onOpenSurface?.('read',id);}));
+  if(availability?.listening&&opts.onOpenSurface)cross.append(button('Listen to original dialogue',()=>{if(allowDiscardWriting())opts.onOpenSurface?.('listen',id);}));
+  if(availability?.writing&&opts.onOpenSurface)cross.append(button('Open independent Write',()=>{if(allowDiscardWriting())opts.onOpenSurface?.('write',id);}));
   pane.append(cross);
   const n=neighboringOriginalLessons(id).next;
-  if(n&&opts.onOpenCourse)pane.append(button('Preview next lesson: '+n.title,()=>opts.onOpenCourse!(n.id)));
+  if(n&&opts.onOpenCourse)pane.append(button('Preview next lesson: '+n.title,()=>{if(allowDiscardWriting())opts.onOpenCourse?.(n.id);}));
   pane.append(el('p','Source: '+item.qualifiedSourceId+' · no CEFR, pronunciation or writing grade.','u28-source'));
   footer(item,pane);content.append(pane);
  };
@@ -238,7 +260,7 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
   content.replaceChildren();picker.value=item.key;
   tabs.replaceChildren();
   for(const [value,label] of [['discover','1. Discover'],['retrieve','2. Recall'],['transfer','3. Use']] as const){
-   const b=button(label,()=>{phase=value;exercise=0;draw();},'u28-phase');
+   const b=button(label,()=>{if(!allowDiscardWriting())return;phase=value;exercise=0;draw();},'u28-phase');
    if(phase===value){b.classList.add('is-current');b.setAttribute('aria-current','step');}
    tabs.append(b);
   }
@@ -248,9 +270,12 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
   else if(phase==='retrieve')renderRetrieve(item);
   else renderTransfer(item);
  }
- picker.addEventListener('change',()=>{selected=picker.value;phase='discover';exercise=0;draw();});
+ picker.addEventListener('change',()=>{
+  if(!allowDiscardWriting()){picker.value=selected;return;}
+  selected=picker.value;phase='discover';exercise=0;draw();
+ });
  opts.signal.addEventListener('abort',()=>{
-  keyedMatches.clear();selectedWords.clear();
+  keyedMatches.clear();
   if('speechSynthesis' in window)window.speechSynthesis.cancel();
  },{once:true});
  draw();
