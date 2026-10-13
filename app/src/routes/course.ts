@@ -7,7 +7,7 @@ import './unified.css';
 export function mount({main,signal,navigate}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page">
     <p class="eyebrow">French curriculum · original teaching</p><h1>Course</h1>
-    <p class="lede">Study 80 full original lessons: 24 A1 foundations, 28 A2 practical and narrative lessons, and 28 B1 lessons. B1 includes original multi-paragraph reading across practical genres, evidence-based inference and synthesis, optional device-TTS listening, active recall and guided independent writing.</p>
+    <p class="lede">Study 94 full original lessons: 24 A1 foundations, 28 A2 practical and narrative lessons, and 42 B1/B1+ lessons. U12 adds original long-form dialogue, three-paragraph genre reading, inference, optional device-TTS listening, ungraded oral-response preparation, contextual recall and extended independent writing.</p>
     <div class="unified-alert" role="note">The original A1–B1 course is practice-only and does not modify existing learner grades, SRS, CEFR or Account records. Native Learn and Review stay authoritative.</div>
     <section data-u6-a1 aria-label="Original A1 through B1 full lesson course"></section>
     <h2 class="u6-supplementary-heading">Supplementary source references</h2>
