@@ -1,7 +1,7 @@
 import {
- originalU30Listening,evaluateU30Answer,type U30Kind,type U30Decision
+ originalU30Listening,evaluateU30Answer,type U30Kind
 } from '../core/unified/u30-listening.ts';
-import {getOriginalMaterial,handoffOriginalLesson,type OriginalSurface} from '../core/unified/u23-registry.ts';
+import {getOriginalMaterial,type OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u30-listening-panel.css';
 
 interface Options{
@@ -69,7 +69,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   if(voices.length&& !french){
    voiceStatus.textContent='No French voice is available on this device. Open the written transcript instead.';return;
   }
-  const rate=Number(speed.value)===.8?.8:1;
+  const rate=Number(speed.value)===0.8?0.8:1;
   requestCount++;if(rate<1)usedSlow=true;
   active=true;
   const valid=indices.filter(i=>i>=0&&i<lesson.turns.length);
@@ -106,7 +106,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  lesson.turns.forEach((turn,i)=>english.append(el('li','Turn '+(i+1)+' · '+turn.en)));
  let supportLevel=0;
  const supportState=el('p','Support: transcript hidden.','u30-support-state');
- const showTurn=action('Reveal current French turn',()=>{
+ const showTurn=action('Reveal question evidence',()=>{
   supportLevel=Math.max(supportLevel,1);updateExcerpt();excerpt.hidden=false;
   supportState.textContent='Support: one original French turn revealed.';
  });
@@ -153,8 +153,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   'Distinguish a written independent document from words actually spoken.',
   'Say your summary aloud without reading it; revise unclear formulations.'
  ])revision.append(el('li',check));
- const selfModel=el('p',oral?.model??'Compare your own interpretation with the original French turns and their published English explanations.','u30-model');
- selfModel.lang='fr';selfModel.hidden=true;
+ const selfModel=el('p',oral?.model??'Compare your interpretation with the original French turns and their published English explanations.','u30-model');
+ if(oral?.model)selfModel.lang='fr';selfModel.hidden=true;
  const modelToggle=action('Reveal original oral model / guidance',()=>{
   selfModel.hidden=!selfModel.hidden;modelToggle.textContent=selfModel.hidden?'Reveal original oral model / guidance':'Hide original oral model / guidance';
  });
@@ -164,13 +164,11 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    if(surface==='read'&&!source.reading)continue;
    if(surface==='write'&&!source.unit.writing.prompt)continue;
    handoffs.append(action(label,()=>{
-    if(editor.value.trim()&&!window.confirm('This U30 private draft is not saved. Discard it and change workspace?'))return;
     opts.onOpenSurface?.(surface,id);
    }));
   }
  }
  if(opts.onNativeReview)handoffs.append(action('Open native scheduled Review',()=>{
-  if(editor.value.trim()&&!window.confirm('Discard the U30 private draft and open native Review?'))return;
   opts.onNativeReview?.();
  }));
  transfer.append(taskPrompt,editorLabel,el('h5','Self-review checklist'),revision,modelToggle,selfModel,handoffs,
@@ -181,7 +179,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  const visibleDecisions=()=>category?decisions.filter(d=>d.kind===category):decisions;
  function updateExcerpt(){
   const d=visibleDecisions()[index],turn=d?.turnIndex;
-  if(turn==null){excerpt.textContent=d?.evidence??'';return;}
+  if(turn==null){excerpt.textContent='Written documentary excerpt · '+(d?.evidence??'');return;}
   excerpt.textContent='Turn '+(turn+1)+' · '+lesson.turns[turn].fr;
  }
  function showWrittenEvidence():void{
@@ -210,7 +208,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    category=null;index=0;drawTabs();draw();
   }));
  }
- function draw():void{
+ function draw(shouldFocus=false):void{
   const pool=visibleDecisions();const d=pool[index];
   questionHost.replaceChildren();navigation.replaceChildren();
   if(!d)return;
@@ -246,8 +244,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   });
   form.append(selectLabel,submit,hintButton,hint,feedback);
   questionHost.append(form);
-  const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw();});
-  const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw();});
+  const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw(true);});
+  const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw(true);});
   prev.disabled=index===0;next.disabled=index===pool.length-1;
   navigation.append(prev,next);
   const key=action('Show correct source and explanation',()=>{
@@ -256,9 +254,9 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    questionHost.append(note);
   });
   navigation.append(key);
-  heading.focus({preventScroll:true});
+  if(shouldFocus)heading.focus({preventScroll:true});
  }
- const cleanup=()=>{destroyed=true;stop();};
+ const cleanup=()=>{if(destroyed)return;destroyed=true;stop();opts.signal.removeEventListener('abort',cleanup);};
  opts.signal.addEventListener('abort',cleanup,{once:true});
  showWrittenEvidence();drawTabs();draw();
  return cleanup;
