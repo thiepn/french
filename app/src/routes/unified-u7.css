@@ -22,3 +22,13 @@
 .u7-line-controls select{min-height:44px;max-width:100%;padding:.55rem;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.25rem;font:inherit}
 .u7-line-controls button{min-height:44px!important}
 @media(max-width:540px){.u7-line-controls{display:grid}.u7-line-controls>*{width:100%}}
+
+/* U12: learner-owned, ungraded oral preparation inside the inherited Listen stage. */
+.u12-speaking-prep{margin-top:1.5rem;border-top:1px solid var(--line, currentColor);padding:1.1rem 0;line-height:1.65}
+.u12-speaking-prep h4{margin:0 0 .6rem}
+.u12-speaking-prep ol{padding-inline-start:1.5rem;max-width:68ch}
+.u12-speaking-prep li{margin:.45rem 0}
+.u12-speaking-prep .u12-speaking-model{margin-top:.9rem;padding:.9rem 1rem;white-space:pre-wrap;border-inline-start:3px solid var(--accent, currentColor);background:var(--surface, transparent);max-width:72ch}
+.u12-speaking-prep button{min-height:44px}
+.u12-speaking-prep button:focus-visible{outline:2px solid var(--accent, currentColor);outline-offset:3px}
+@media(max-width:570px){.u12-speaking-prep .u12-speaking-model{padding:.7rem}}
