@@ -6,6 +6,7 @@ import {
  type OriginalLevel,type OriginalSurface
 } from '../core/unified/u23-registry.ts';
 import type {RouteId} from '../core/types.ts';
+import {appendOriginalDiscourseJourney} from './u32-discourse-panel.ts';
 import './u31-oral-panel.css';
 
 export type U31Mode='course'|'speak'|'listen'|'read'|'write';
@@ -175,7 +176,8 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  }));
  transfer.append(transferActions,
   el('p','All transfers preserve the original source identity. Revisiting a route is not a completed Practice session or review grade.','u31-notice'));
- body.append(head,context,stageNav,counter,stage,challenges,quote,transfer);
+ const discourseHost=el('div','','u32-integration');
+ body.append(head,context,stageNav,counter,stage,challenges,quote,discourseHost,transfer);
  let phaseIndex=0,decisionIndex=0,support=0;
  const privateNotes=new Map<U31Stage,string>(),snapshots=new Map<U31Stage,string>();
  const selfReported=new Set<U31Stage>(),checksByStage=new Map<U31Stage,Set<number>>();
@@ -186,9 +188,14 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  };
  window.addEventListener('beforeunload',onBeforeUnload);
  let disposed=false;
+ function syncDraftFlag():void{
+  const original=[...privateNotes.values()].some(text=>text.trim().length>0);
+  const advanced=!!root.querySelector<HTMLElement>('.u32-discourse[data-has-private-draft="true"]');
+  root.dataset.hasPrivateDraft=String(original||advanced);
+ }
  function noteChange():void{
   privateNotes.set(journey.stages[phaseIndex].id,draft.value);
-  root.dataset.hasPrivateDraft=([...privateNotes.values()].some(x=>x.trim())?'true':'false');
+  syncDraftFlag();
  }
  function drawSupport(){
   const phase=journey.stages[phaseIndex],selected=journey.dialogue[phase.sourceTurn];
@@ -327,9 +334,21 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
   before.disabled=decisionIndex===0;after.disabled=decisionIndex>=rows.length-1;
   questionNav.append(before,after);
  }
+ const stopU32=appendOriginalDiscourseJourney(discourseHost,lessonId,{
+  signal:opts.signal,onPrivateChange:syncDraftFlag,
+  onOpenSurface:(surface,id)=>{
+   if(!opts.parentHandlesDraftExit&&!checkExit(root))return;
+   opts.onOpenSurface?.(surface,id);
+  },
+  onNativeReview:()=>{
+   if(!opts.parentHandlesDraftExit&&!checkExit(root))return;
+   opts.onNativeReview?.();
+  }
+ });
  drawPhase();drawDecision();
  const cleanup=()=>{
   if(disposed)return;disposed=true;
+  stopU32();
   window.removeEventListener('beforeunload',onBeforeUnload);
   opts.signal.removeEventListener('abort',cleanup);
  };
