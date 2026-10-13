@@ -187,7 +187,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "1930",
         "1830",
         "2000",
-        "The old leaflet names 1930."
+        "The old leaflet names 1930. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "Who recorded the spoken voices?",
@@ -440,7 +440,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "engagement",
         "maison",
         "voyage",
-        "Rania names engagement."
+        "Rania names engagement. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What English translation is currently used everywhere?",
@@ -482,7 +482,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "Le terme ___ nous discutons possède plusieurs sens.",
         "dont",
-        "Discuter de requires dont.",
+        "Discuter de requires dont. The required construction determines the verb form in this sentence.",
         "relative"
       ],
       [
@@ -721,7 +721,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "un seul point",
         "dix endroits",
         "toute la rivière",
-        "Lila notes a single site."
+        "Lila notes a single site. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What did the club not finish?",
@@ -746,9 +746,9 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "condition"
       ],
       [
-        "Selon le carnet, les fragments ___ pas identifiés. (être, passé composé passif)",
-        "n’ont été",
-        "N’ont pas été identifiés keeps the observation explicitly unverified.",
+        "Selon le carnet, les fragments ___ pas été identifiés. (avoir, passé composé passif)",
+        "n’ont",
+        "La négation encadre l’auxiliaire : n’ont pas été identifiés, sans prétendre connaître le matériau.",
         "source"
       ]
     ],
