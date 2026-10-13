@@ -36,8 +36,8 @@ function parseCheckpoint(value:unknown):OriginalCourseCheckpoint|null{
  const v=object(value);
  if(!v||v.schema!==SCHEMA||typeof v.token!=='string'||v.token.length<8||v.token.length>100||
     typeof v.id!=='string'||typeof v.qualifiedId!=='string'||typeof v.sourceRevision!=='string'||
-    !STAGES.includes(v.stage as OriginalStage)||!Number.isSafeInteger(v.taskIndex)||
-    !Number.isFinite(v.updatedAt)||v.navigationOnly!==true)return null;
+    !STAGES.includes(v.stage as OriginalStage)||typeof v.taskIndex!=='number'||!Number.isSafeInteger(v.taskIndex)||
+    typeof v.updatedAt!=='number'||!Number.isFinite(v.updatedAt)||v.navigationOnly!==true)return null;
  return v as unknown as OriginalCourseCheckpoint;
 }
 export function reviewOriginalContinuity(value:unknown,now=Date.now()):ContinuityReview{
