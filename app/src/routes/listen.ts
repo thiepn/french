@@ -1,4 +1,5 @@
 import type { RouteContext } from '../core/types';
+import {createU22SourcePanel} from './u22-source-panel';
 import { loadStableReadingPack,loadVocabularySearchIndex,loadVocabularyWord,type ReadingItem,type VocabularyWord,type VocabularySearchRow } from '../core/content/loader';
 import { readRecentReviewEvents,recordPracticeEvidence } from '../core/learner/repository';
 import { levenshtein } from '../core/learner/grader';
@@ -57,6 +58,7 @@ function sentenceVocabulary(sentence:string,rows:VocabularySearchRow[],targets:s
 
 export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   main.innerHTML='<section class="page practice-page listen-contextual"><p class="eyebrow">Contextual listening</p><h1>Listen</h1><p class="lede">Sentence-level dictation with progressive support. Listening evidence is practice-only and never moves scheduled FSRS reviews.</p><div class="mode-tabs" role="group" aria-label="Listening mode"><button data-mode="comprehensible" class="is-active" type="button">Comprehensible</button><button data-mode="intensive" type="button">Intensive</button><button data-mode="targeted" type="button">Targeted</button></div><p class="inline-status" data-status>Preparing contextual listening…</p><div data-practice></div></section>';
+  main.querySelector('.practice-page')?.append(createU22SourcePanel('listen',signal));
   const host=main.querySelector<HTMLElement>('[data-practice]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!host||!status)return;

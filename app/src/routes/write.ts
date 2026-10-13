@@ -1,4 +1,5 @@
 import './write.css';
+import {createU22SourcePanel} from './u22-source-panel';
 import type {RouteContext} from '../core/types';
 import {loadStableSentenceExercises,loadStableUsageCorpus,loadVocabularySearchIndex} from '../core/content/loader';
 import {diagnoseSentence,type SentenceDiagnosis} from '../core/content/sentence-diagnosis';
@@ -40,7 +41,7 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   const tabs=element('div','','write-modes');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Writing practice track');
   const message=element('p','Loading sentence exercises…','inline-status');message.setAttribute('aria-live','polite');
   const stage=element('div','','write-stage');
-  host.append(switcher,tabs,message,stage);main.replaceChildren(host);
+  host.append(switcher,tabs,message,stage,createU22SourcePanel('write',signal));main.replaceChildren(host);
 
   const [pack,stateValue,usagePack,usageSaved]=await Promise.all([
     loadStableSentenceExercises(signal),loadWritingState(),loadStableUsageCorpus(signal),loadUsageState()
