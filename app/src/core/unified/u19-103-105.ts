@@ -188,7 +188,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "un colloque",
         "un festival de films",
         "un tournoi",
-        "Nora discusses a symposium."
+        "Nora is organizing a research symposium whose principal speaker has withdrawn."
       ],
       [
         "What happened to the principal speaker?",
