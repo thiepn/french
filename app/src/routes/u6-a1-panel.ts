@@ -16,6 +16,8 @@ import {mountA1Listening} from './u7-listening-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {inspectDraftStructure} from '../core/unified/u3-writing';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
+import {createOriginalPlacementPanel} from './u27-placement-panel';
+import {originalPlacementPrerequisites} from '../core/unified/u27-placement.ts';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
@@ -65,6 +67,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   hero.setAttribute('aria-label','Start or continue original French');
   const pathways=el('nav',undefined,'u25-pathways');
   pathways.setAttribute('aria-label','Choose an original French level');
+  const placement=el('div',undefined,'u27-course-entry');
   const activities=el('section',undefined,'u25-activities');
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
@@ -106,7 +109,21 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   indexDetails.append(el('summary','Browse lesson groups'),sidebar);
   indexDetails.addEventListener('toggle',()=>layout.classList.toggle('u25-browse-open',indexDetails.open));
   layout.append(indexDetails,article);
-  host.append(header,hero,pathways,activities,recovery,status,discovery,layout);
+  placement.append(createOriginalPlacementPanel({
+   signal,
+   onOpenCourse:id=>{
+    const target=getOriginalCatalogEntry(id);if(!target)return;
+    search.value='';levelFilter.value=target.level;materialFilter.value='all';
+    visible=60;openedGroups.clear();
+    open(target.id,'understand',undefined,true);
+   },
+   onOpenSurface:(surface,id)=>{
+    if(!allowExit())return;
+    if(handoffOriginalLesson(surface,id))navigate(surface);
+   },
+   onNativeReview:()=>navigateSafely('review')
+  }));
+  host.append(header,hero,pathways,placement,activities,recovery,status,discovery,layout);
   function focusCourseLesson(){
    const heading=article.querySelector<HTMLElement>('.u6-unit-header h3');
    if(!heading)return;
@@ -137,7 +154,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     }else open(current.id,stage,taskIndex,true);
    },'primary-action compact-action');
    const actions=el('div',undefined,'u25-hero-actions');
-   actions.append(primary,button('Native Review',()=>navigateSafely('review')),
+   actions.append(primary,button('Find my starting lesson',()=>{
+     const disclosure=placement.querySelector<HTMLDetailsElement>('details');
+     if(!disclosure)return;
+     disclosure.open=true;disclosure.scrollIntoView({block:'start'});
+     disclosure.querySelector<HTMLElement>('summary')?.focus({preventScroll:true});
+    }),button('Native Review',()=>navigateSafely('review')),
     button('Find a lesson',()=>{
      discovery.open=true;indexDetails.open=true;
      search.focus({preventScroll:true});discovery.scrollIntoView({block:'start'});
@@ -578,6 +600,19 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     'Suggested foundation: '+(getOriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
     'Start here: no prior lesson is required.','u6-small');
    head.append(pre);
+   const foundations=originalPlacementPrerequisites(current.id,3);
+   if(foundations.length){
+    const details=el('details',undefined,'u27-foundations');
+    details.append(el('summary','Review '+foundations.length+' suggested foundation'+(foundations.length===1?'':'s')+' · optional'));
+    const list=el('div',undefined,'u27-foundation-list');
+    for(const p of foundations){
+     const item=button(p.level+' · '+p.title,()=>open(p.id,'understand',undefined,true));
+     item.title='Original source '+p.qualifiedId+'; opening a foundation does not mark any lesson complete.';
+     list.append(item);
+    }
+    details.append(el('p','Original author-listed prerequisites, not a pass requirement or a verified assessment.','u6-small'),list);
+    head.append(details);
+   }
    const cross=el('nav',undefined,'u23-course-handoffs');
    cross.setAttribute('aria-label','Open this lesson in another workspace');
    const entry=getOriginalCatalogEntry(current.id);

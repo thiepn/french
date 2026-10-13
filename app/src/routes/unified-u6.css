@@ -146,3 +146,13 @@
 .u25-supplementary[open]{padding:0 1rem 1rem}
 .u25-supplementary[open]>summary{margin:0 -1rem 1rem;border-bottom:1px solid var(--line)}
 @media(max-width:560px){.u25-supplementary[open]{padding:0 .75rem .75rem}.u25-supplementary[open]>summary{margin:0 -.75rem .75rem}}
+
+/* U27: optional source-authoritative foundations, never gating a Course lesson. */
+.u27-course-entry{min-width:0}
+.u27-foundations{border:1px solid var(--line);margin:.7rem 0;border-radius:.25rem}
+.u27-foundations>summary{cursor:pointer;font-size:.86rem;font-weight:600;min-height:44px;padding:.65rem .75rem}
+.u27-foundations>p{padding:0 .75rem;margin:0 0 .6rem}
+.u27-foundation-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:.5rem;padding:.35rem .75rem .75rem}
+.u27-foundation-list button{min-height:44px;white-space:normal;text-align:left}
+.u27-foundations summary:focus-visible,.u27-foundation-list button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){.u27-foundation-list{grid-template-columns:minmax(0,1fr)}}
