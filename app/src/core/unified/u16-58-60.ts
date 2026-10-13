@@ -172,7 +172,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "le nombre de fichiers",
         "les heures de sommeil",
         "les frais de transport",
-        "The student cites uploads."
+        "The student cites uploads. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "What work can the platform history miss?",
