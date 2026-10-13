@@ -188,7 +188,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "Camille",
         "Jules",
         "Noémie",
-        "Noémie names Camille."
+        "Noémie identifies Camille as the selected actor despite another candidate's longer audition."
       ],
       [
         "What was Jules's distinguishing trait?",
@@ -216,7 +216,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "non",
         "oui",
         "le choix du rôle le prouve",
-        "Intent is not established."
+        "The reported difference in materials does not establish deliberate favoritism by the panel."
       ],
       [
         "What kind of feedback will help candidates?",
