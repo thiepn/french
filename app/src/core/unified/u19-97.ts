@@ -194,7 +194,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "huit heures trois",
         "huit heures vingt",
         "neuf heures",
-        "Malik reads 08:03."
+        "Malik lit un événement enregistré à huit heures trois, sans preuve que ce soit l’ouverture des portes à l’arrêt."
       ],
       [
         "What identification did the witness lack?",
