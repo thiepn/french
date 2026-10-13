@@ -164,7 +164,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "le poème",
         "les notes de répétition",
         "aucun",
-        "The excerpt repeats encore."
+        "La répétition du mot « encore » apparaît explicitement dans les vers originaux, pas seulement dans la récitation."
       ],
       [
         "Which source records two ways to use silence?",
@@ -180,7 +180,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "une porte",
         "un train",
         "un livre",
-        "Maëlle quotes a door."
+        "Maëlle cite la porte qui attend dans son poème; c’est une image originale de ce texte."
       ],
       [
         "What contrast appears in the imagery?",
@@ -208,7 +208,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "encore",
         "jamais",
         "toujours",
-        "Élias identifies encore."
+        "Élias relève « encore », répété dans les vers, et s’interroge sur son rôle dans le rythme."
       ],
       [
         "How should competing interpretations be evaluated?",
