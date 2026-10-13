@@ -160,7 +160,7 @@ const SOURCE:readonly U15OriginalSourceStory[]=[
         "une boulangerie",
         "une librairie",
         "un musée",
-        "Inès names a bakery."
+        "Inès names a bakery. This detail comes directly from the original spoken exchange."
       ],
       [
         "When might the donation arrive?",
