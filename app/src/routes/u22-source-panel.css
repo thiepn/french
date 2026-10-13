@@ -29,3 +29,10 @@
 .u22-source-panel .u22-source-content nav{display:flex;flex-wrap:wrap;gap:.6rem}
 .u22-source-panel .u22-source-content nav button{min-height:44px}
 @media(max-width:540px){.u23-material-filters{grid-template-columns:minmax(0,1fr)}.u22-source-panel .u22-source-content nav button{flex:1 1 42%}}
+
+/* U24 — visible, source-honest return to saved original Course position. */
+.u24-source-return{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem}
+.u24-source-return:empty{display:none}
+.u24-source-return p{flex:1 1 14rem;margin:0}
+.u24-source-return button{min-height:44px}
+@media(max-width:560px){.u24-source-return button{width:100%}}

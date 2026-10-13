@@ -6,6 +6,7 @@ import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides.ts';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides.ts';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides.ts';
 import type {RouteId} from '../core/types';
+import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -139,6 +140,16 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  const showMore=button('Show more lessons',()=>{visible+=60;refresh(false);});
  const filters=el('div','','u23-material-filters');filters.append(queryLabel,levelLabel,pickerLabel,count,showMore);
  const stage=el('div','','u22-source-content'),drafts=new Map<string,string>();
+ const unsent=()=>[...drafts.values()].some(value=>value.trim());
+ const safeLeave=()=>!unsent()||window.confirm(
+  'Your original writing is unsent and temporary. Navigation checkpoints save no text. Leave this workspace and discard its drafts?'
+ );
+ const onBeforeUnload=(event:BeforeUnloadEvent)=>{
+  if(!unsent())return;
+  event.preventDefault();event.returnValue='';
+ };
+ window.addEventListener('beforeunload',onBeforeUnload);
+ signal.addEventListener('abort',()=>window.removeEventListener('beforeunload',onBeforeUnload),{once:true});
  const actions=el('nav','','u22-source-controls');actions.setAttribute('aria-label','Open selected lesson in another workspace');
  const availability=mode==='read'?'reading':mode==='listen'?'listening':'writing';
  let visible=60;
@@ -183,6 +194,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
    const permitted=surface==='course'||(surface==='read'?entry.reading:surface==='listen'?entry.listening:entry.writing);
    if(!permitted)continue;
    actions.append(button(label,()=>{
+    if(!safeLeave())return;
     if(handoffOriginalLesson(surface,entry.id,surface==='course'?
       mode==='read'?'dialogue':mode==='listen'?'listen':'write':undefined))navigate(surface);
    }));
@@ -195,7 +207,21 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  query.addEventListener('input',()=>{selected='';refresh(true);});
  level.addEventListener('change',()=>{selected='';refresh(true);});
  picker.addEventListener('change',()=>{selected=picker.value;render();});
- panel.append(filters,stage);
+ const returning=el('div','','u24-source-return');
+ returning.setAttribute('aria-label','Return to a saved original Course lesson');
+ panel.append(filters,returning,stage);
+ // This reads only the existing canonical learner feature and never auto-resumes
+ // or transfers a writing draft. Course independently validates before resuming.
+ void readOriginalContinuity().then(review=>{
+  if(signal.aborted||!panel.isConnected||!review.checkpoint)return;
+  returning.replaceChildren(el('p',
+   review.status==='ready'?'An original Course position is available.':
+    'A saved original Course position needs source or age review.',
+   'u22-source-note'));
+  returning.append(button('Review Course resume choices',()=>{
+   if(safeLeave())navigate('course');
+  }));
+ });
  refresh(true);
  if(initial&&selected===initial.id)queueMicrotask(()=>{
   if(!signal.aborted&&panel.isConnected){panel.scrollIntoView({block:'start'});heading.focus({preventScroll:true});}

@@ -87,3 +87,14 @@
 .u23-course-finder :is(input,select,button):focus-visible,.u23-course-handoffs button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:800px){.u23-course-finder{grid-template-columns:repeat(2,minmax(0,1fr))}.u23-course-finder label:first-child{grid-column:1/-1}}
 @media(max-width:540px){.u23-course-finder{grid-template-columns:minmax(0,1fr)}.u23-course-finder label:first-child{grid-column:auto}.u23-course-handoffs button{flex:1 1 45%}}
+
+/* U24 — small, explicit original Course continuity controls; no mastery indicators. */
+.u24-recovery{border:1px solid var(--line);background:var(--surface);border-radius:.4rem;padding:clamp(.8rem,2vw,1.2rem);margin:.9rem 0;display:grid;gap:.55rem}
+.u24-recovery h3{font-size:1.05rem;margin:0}
+.u24-recovery-copy{max-width:78ch;font-size:.88rem;line-height:1.6;color:var(--muted);margin:0}
+.u24-recovery-snapshot{font-size:.91rem;line-height:1.5;font-weight:600;margin:.1rem 0;overflow-wrap:anywhere}
+.u24-recovery-warning{font-size:.89rem;line-height:1.5;border-inline-start:3px solid var(--accent);padding:.5rem .75rem;margin:.25rem 0}
+.u24-recovery-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+.u24-recovery-actions button{min-height:44px}
+.u24-recovery-actions :is(button,select):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:560px){.u24-recovery-actions{display:grid;grid-template-columns:minmax(0,1fr)}.u24-recovery-actions button{width:100%;text-align:center}.u24-recovery{padding:.75rem}}
