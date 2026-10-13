@@ -1,0 +1,12 @@
+/* U20: local-only draft comparison in the inherited Write stage. */
+.u20-revision-workspace{margin-block:1.25rem;padding:1rem;border:1px solid var(--border,#9ca3af);background:var(--surface,#fff);display:grid;gap:.85rem}
+.u20-revision-workspace h5,.u20-revision-workspace h6{margin:0;font-size:1rem;line-height:1.45}
+.u20-revision-workspace>label{display:grid;gap:.4rem;font-weight:600;font-size:.9rem}
+.u20-revision-workspace select,.u20-revision-workspace textarea{width:100%;max-width:100%;font:inherit;padding:.55rem;border:1px solid var(--border,#9ca3af);background:var(--background,#fff);color:inherit}
+.u20-revision-workspace button{max-width:100%;justify-self:start}
+.u20-revision-guidance{margin:.15rem 0;padding-left:1.4rem;display:grid;gap:.35rem;line-height:1.55}
+.u20-revision-versions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.85rem}
+.u20-revision-versions[hidden]{display:none}
+.u20-revision-versions>section{min-width:0;border:1px solid var(--border,#9ca3af);padding:.75rem}
+.u20-revision-version{white-space:pre-wrap;overflow-wrap:anywhere;margin:.55rem 0 0;font:inherit;line-height:1.58}
+@media(max-width:740px){.u20-revision-versions{grid-template-columns:1fr}.u20-revision-workspace{padding:.75rem}}
