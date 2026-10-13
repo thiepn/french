@@ -180,7 +180,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "vendredi",
         "lundi",
         "dimanche",
-        "Émilie identifies Friday."
+        "Émilie identifies Friday. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What does the flyer mistakenly claim?",
@@ -194,7 +194,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "des sorties",
         "chaque situation possible",
         "un bilan",
-        "Farid discusses two exits."
+        "Farid discusses two exits. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "Who should confirm the procedures?",
@@ -440,21 +440,21 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
         "1840",
         "1940",
         "1740",
-        "Luc quotes the old label."
+        "Luc quotes the old label. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What type of object is actually displayed?",
         "un fac-similé",
         "le manuscrit manuscrit",
         "une photographie seule",
-        "Aurore reads the inventory."
+        "Aurore reads the inventory. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "Where does the disputed writing appear?",
         "dans la marge",
         "sur la couverture extérieure",
         "sur une autre vitrine",
-        "Luc sees a marginal note."
+        "Luc sees a marginal note. This detail is directly supported by the characters' original exchange, not a general assumption."
       ],
       [
         "What is unknown about the annotation?",
