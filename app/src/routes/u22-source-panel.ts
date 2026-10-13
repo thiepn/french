@@ -8,6 +8,7 @@ import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides.ts';
 import type {RouteId} from '../core/types';
 import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
+import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -141,7 +142,8 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  const showMore=button('Show more lessons',()=>{visible+=60;refresh(false);});
  const filters=el('div','','u23-material-filters');filters.append(queryLabel,levelLabel,pickerLabel,count,showMore);
  const stage=el('div','','u22-source-content'),drafts=new Map<string,string>();
- const unsent=()=>[...drafts.values()].some(value=>value.trim());
+ const unsent=()=>[...drafts.values()].some(value=>value.trim())||
+  !!stage.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim();
  const safeLeave=()=>!unsent()||window.confirm(
   'Your original writing is unsent and temporary. Navigation checkpoints save no text. Leave this workspace and discard its drafts?'
  );
@@ -205,10 +207,32 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   else if(mode==='listen')renderListen(stage,s,signal);
   else renderWrite(stage,s,drafts);
   appendU26GrammarPractice(stage,s.unit.id,mode);
+  appendOriginalVocabularyJourney(stage,s.unit.id,{
+   mode,signal,
+   onNativeReview:()=>{if(safeLeave())navigate('review');},
+   onNativeLearn:()=>{if(safeLeave())navigate('learn');},
+   onOpenCourse:id=>{
+    if(!safeLeave())return;
+    if(handoffOriginalLesson('course',id,'words'))navigate('course');
+   },
+   onOpenSurface:(surface,id)=>{
+    if(!safeLeave())return;
+    if(handoffOriginalLesson(surface,id))navigate(surface);
+   }
+  });
  }
- query.addEventListener('input',()=>{selected='';refresh(true);});
- level.addEventListener('change',()=>{selected='';refresh(true);});
- picker.addEventListener('change',()=>{selected=picker.value;render();});
+ query.addEventListener('input',()=>{
+  if(!safeLeave()){query.value='';return;}
+  selected='';refresh(true);
+ });
+ level.addEventListener('change',()=>{
+  if(!safeLeave()){level.value='all';return;}
+  selected='';refresh(true);
+ });
+ picker.addEventListener('change',()=>{
+  if(!safeLeave()){picker.value=selected;return;}
+  selected=picker.value;render();
+ });
  const returning=el('div','','u24-source-return');
  returning.setAttribute('aria-label','Return to a saved original Course lesson');
  panel.append(filters,returning,stage);
