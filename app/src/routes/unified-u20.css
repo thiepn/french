@@ -1,0 +1,12 @@
+/* Specific compact evidence-revision layout within the existing Course Write stage. */
+.u20-revision-studio{margin-block:1.2rem;padding:1rem;border:1px solid var(--border-color,rgba(125,125,125,.28));background:var(--surface,transparent)}
+.u20-revision-studio h4{margin:0 0 .5rem;font-size:1rem}
+.u20-revision-studio ol{padding-inline-start:1.5rem;line-height:1.55}
+.u20-revision-studio li{margin-block:.45rem}
+.u20-revision-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-block:1rem}
+.u20-revision-comparison{margin-block:.75rem}
+.u20-revision-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.u20-revision-columns>div{min-width:0;border:1px solid var(--border-color,rgba(125,125,125,.28));padding:.7rem}
+.u20-revision-columns h5{margin:0 0 .5rem;font-size:.92rem}
+.u20-revision-copy{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;margin:0}
+@media(max-width:720px){.u20-revision-columns{grid-template-columns:1fr}.u20-revision-studio{padding:.7rem}}
