@@ -8,7 +8,7 @@ export interface U15OriginalSourceStory{
  vocabulary:V[];dialogue:[string,string,string][];
  paragraphs:[string,string,string];readingTitle:string;
  evidence:[TransferEvidence,TransferEvidence];
- reading:Q[];compare:Q[];listen:Q[];
+ reading:[Q,Q,Q];compare:[Q,Q];listen:[Q,Q,Q,Q];
  clozes:[[string,string,string,string],[string,string,string,string]];
  order:[string,[string,string],string,string];
  writing:{
