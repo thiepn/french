@@ -1,12 +1,17 @@
 import {ORIGINAL_FRENCH_U21_COURSE,validateU21OriginalCourse} from './u21-course.ts';
 import {U22_136_138} from './u22-136-138.ts';
 import {U22_139_141} from './u22-139-141.ts';
+import {U22_142_144} from './u22-142-144.ts';
+import {U22_145_147} from './u22-145-147.ts';
+import {U22_148} from './u22-148.ts';
+import {U22_149} from './u22-149.ts';
+import {U22_150} from './u22-150.ts';
 import {SOURCES} from './source.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
-/** Additive native authoring: no changes to existing 229 originals or learner authority. */
-export const ORIGINAL_U22_SCENARIOS:readonly U21Scenario[]=Object.freeze([...U22_136_138,...U22_139_141]);
+/** Additive native authoring: 15 complete U22 scenarios, all original prior IDs retained. */
+export const ORIGINAL_U22_SCENARIOS:readonly U21Scenario[]=Object.freeze([...U22_136_138,...U22_139_141,...U22_142_144,...U22_145_147,...U22_148,...U22_149,...U22_150]);
 export const ORIGINAL_U22_UNITS:readonly A1Unit[]=Object.freeze(ORIGINAL_U22_SCENARIOS.map(x=>x.unit));
 export const ORIGINAL_FRENCH_U22_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U21_COURSE,...ORIGINAL_U22_UNITS
@@ -23,9 +28,9 @@ export function u22PracticeStatus(id:string,answers:ReadonlyMap<string,boolean>)
 }
 export function validateU22OriginalCourse():readonly string[]{
  const problems=[...validateU21OriginalCourse()];
- if(ORIGINAL_U22_SCENARIOS.length!==6)problems.push('Expected six original U22 first-batch scenarios');
- if(ORIGINAL_FRENCH_U22_COURSE.length!==235)problems.push('Expected 235 original Course units');
- if(new Set(ORIGINAL_FRENCH_U22_COURSE.map(u=>u.id)).size!==235)
+ if(ORIGINAL_U22_SCENARIOS.length!==15)problems.push('Expected fifteen complete original U22 scenarios');
+ if(ORIGINAL_FRENCH_U22_COURSE.length!==244)problems.push('Expected 244 original Course units');
+ if(new Set(ORIGINAL_FRENCH_U22_COURSE.map(u=>u.id)).size!==244)
   problems.push('Duplicate original course identities');
  for(const [i,story] of ORIGINAL_U22_SCENARIOS.entries()){
   const unit=story.unit,id='transfer-'+(i+136);

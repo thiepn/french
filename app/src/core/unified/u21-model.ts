@@ -37,7 +37,7 @@ function writing([prompt,criteria,model]:PromptTuple){
 /** Additional original practice material, never an alternate academic or review authority. */
 export function authorU21Scenario(spec:U21AuthoredScenario,n:number):U21Scenario{
  const id='transfer-'+String(n).padStart(2,'0');
- if(n<121||n>141||spec.id!==id)throw Error('Source-owned transfer identity '+spec.id);
+ if(n<121||n>150||spec.id!==id)throw Error('Source-owned transfer identity '+spec.id);
  const grammar:A1AuthoredSpec['grammar']=spec.grammarKeys.map(key=>{
   const g=TRANSFER_GRAMMAR[key];
   if(!g)throw Error('Unknown original teaching bridge '+key);

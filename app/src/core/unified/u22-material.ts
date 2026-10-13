@@ -27,8 +27,8 @@ export function u22ProductionChoices(id:string){
 }
 export function validateU22Materials():readonly string[]{
  const errors=[...validateU21Materials()];
- if(ORIGINAL_U22_CONNECTED_READINGS.length!==183)
-  errors.push('Expected 183 original connected readings');
+ if(ORIGINAL_U22_CONNECTED_READINGS.length!==192)
+  errors.push('Expected 192 original connected readings');
  for(const story of ORIGINAL_U22_SCENARIOS){
   const id=story.unit.id;
   if(getU22ConnectedReading(id)?.questions.length!==3)errors.push(id+' reading');
