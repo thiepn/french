@@ -5,6 +5,7 @@ type Q=[string,string,string,string,string]; // prompt, correct, wrong1, wrong2,
 type V=[string,string,string]; // term, gloss, original contextual example
 export interface U19OriginalSourceStory{
  id:string;title:string;goal:string;grammarKeys:[string,string];
+ grammarApplications:[[string,string,string,string],[string,string,string,string]];
  vocabulary:V[];dialogue:[string,string,string][];
  paragraphs:[string,string,string];readingTitle:string;
  evidence:[TransferEvidence,TransferEvidence];
@@ -27,7 +28,7 @@ export function originalB1ComplexProduction(spec:U19OriginalSourceStory,n:number
    ['Give one defensible recommendation based on the known evidence.','Acknowledge a credible competing preference or interpretation.','Explain a condition under which your recommendation should change.'],
    v[1]];
  const specFull:U19AuthoredScenario={
-  id:spec.id,title:spec.title,goal:spec.goal,grammarKeys:spec.grammarKeys,
+  id:spec.id,title:spec.title,goal:spec.goal,grammarKeys:spec.grammarKeys,grammarApplications:spec.grammarApplications,
   vocabulary:spec.vocabulary as U19AuthoredScenario['vocabulary'],dialogue:spec.dialogue as U19AuthoredScenario['dialogue'],
   reading:{title:spec.readingTitle,paragraphs:spec.paragraphs,
    questions:[q(spec.reading[0]),q(spec.reading[1]),q(spec.reading[2])]},
