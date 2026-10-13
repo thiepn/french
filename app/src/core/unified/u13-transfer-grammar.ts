@@ -226,7 +226,7 @@ export const TRANSFER_GRAMMAR:Readonly<Record<string,TransferGrammarBlock>>={
     [
       "Le message dit « certaines salles », donc toutes les salles ferment.",
       "Le message annonce la fermeture de certaines salles.",
-      "Some does not mean all."
+      "Some does not mean all. This correction preserves the exact intended grammatical or evidential meaning."
     ]
   ],
   "purpose": [
