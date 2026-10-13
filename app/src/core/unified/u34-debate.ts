@@ -11,7 +11,7 @@ export interface U34Claim{
  readonly role:'claim'|'evidence'|'counterclaim'|'rebuttal'|'limit';
  readonly label:string;readonly coaching:string;
  readonly sourceLocators:readonly string[];
- readonly original:Boolean;
+ readonly original:boolean;
 }
 export interface U34Turn{
  readonly id:string;readonly move:U34Move;readonly title:string;
@@ -284,7 +284,7 @@ export function originalU34Debate(id:string):U34Journey|null{
   genres:Object.freeze(genres),checks:Object.freeze(decisions),
   witnesses:Object.freeze(witnesses),
   independentlyPublishedDocuments:written.length>=2,
-  suitableTargets:Object.freeze(['course','speak','listen','read','write','review'].filter(s=>
+  suitableTargets:Object.freeze(['course','speak','listen','read','write'].filter(s=>
    s!=='read'||reading.length>0) as OriginalSurface[])
  });
 }

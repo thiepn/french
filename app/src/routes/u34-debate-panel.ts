@@ -80,14 +80,13 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
  const live=el('p','','u34-status');live.setAttribute('role','status');
  body.append(header,graph,evidence,debate,genres,comparison,checks,exit,live);
 
- let selectedTurn=0,selectedGenre:U34Genre='service',support=0,showIndependent=false;
+ let selectedTurn=0,selectedGenre:U34Genre='service',support=0;
  let selectedPair=0,questionIndex=0,disposed=false;
  const turns=new Map<string,DraftState>(),genreDrafts=new Map<U34Genre,DraftState>();
  const pairDrafts=new Map<string,[string,string,string]>();
  const localChecks=new Map<string,{answer:string;matched:boolean}>();
  const getTurn=(key:string)=>turns.get(key)??initialState();
  const getGenre=(key:U34Genre)=>genreDrafts.get(key)??initialState();
- let activePairKey='';
  const notify=()=>{
   if(disposed)return;
   const all=[...turns.values(),...genreDrafts.values()].flatMap(s=>[s.first,s.independent]);
@@ -284,7 +283,7 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
   if(docs.length>=2)choices.push(['Two independently attributed written records',docs[0].locator,docs[1].locator]);
   if(readings.length&&docs.length)choices.push(['Reading and independently attributed written document',readings[0].locator,docs[0].locator]);
   if(dialogue.length&&docs.length)choices.push(['Original dialogue versus independent written document',dialogue[0].locator,docs[0].locator]);
-  if(!choices.length&&reading.length&&dialogue.length)choices.push(['Original reading versus original dialogue',readings[0].locator,dialogue[0].locator]);
+  if(!choices.length&&readings.length&&dialogue.length)choices.push(['Original reading versus original dialogue',readings[0].locator,dialogue[0].locator]);
   if(!choices.length&&dialogue.length>=2)choices.push(['Two turns of the SAME original dialogue (not independent publications)',dialogue[0].locator,dialogue[1].locator]);
   if(!choices.length){comparison.append(el('p','No two distinct original source witnesses are available for a comparison.','u34-caveat'));return;}
   const toolbar=el('nav','','u34-actions'),texts=el('div','','u34-compare-cards');
@@ -298,7 +297,6 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
   const paint=(index:number)=>{
    selectedPair=index;
    const [title,first,second]=choices[index],key=first+'::'+second;
-   activePairKey=key;
    texts.replaceChildren();
    for(const locator of [first,second]){
     const card=witnessCard(locator);if(card)texts.append(card);
