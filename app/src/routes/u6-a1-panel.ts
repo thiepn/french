@@ -57,7 +57,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   let tracking=false,reviewBusy=false,recoveryError='',saveChain=Promise.resolve();
   const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0)||
    !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
-   !!host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim();
+   !!host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
+   !!host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim();
   const allowExit=()=>!hasPrivateDrafts()||
    window.confirm('Leaving this Course discards unsent writing. Navigation checkpoints never include your text. Leave without the drafts?');
   const navigateSafely=(route:RouteId)=>{if(allowExit())navigate(route);};
@@ -670,7 +671,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const lesson=getOriginalUnit(id);if(!lesson)return;
    if((id!==current.id||next!==stage)&&
       (host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
-       host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim())&&
+       host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
+       host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim())&&
       !window.confirm('Your temporary vocabulary or reading summary draft is unsent. Leave this learning stage and discard its text?'))return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
