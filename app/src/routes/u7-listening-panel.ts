@@ -4,6 +4,7 @@ import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
 import './unified-u7.css';
+import {appendOriginalListeningJourney} from './u30-listening-panel';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,value?:string,css?:string):HTMLElementTagNameMap[K]{
  const item=document.createElement(tag);
@@ -25,7 +26,8 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  const stop=()=>{
   if(playing&&supported){window.speechSynthesis.cancel();playing=false;}
  };
- const cleanup=()=>{stop();signal.removeEventListener('abort',cleanup);};
+ let stopU30:()=>void=()=>{};
+ const cleanup=()=>{stop();stopU30();signal.removeEventListener('abort',cleanup);};
  signal.addEventListener('abort',cleanup,{once:true});
  const play=(rate:number,text:string=listeningDialogueText(unit))=>{
   if(!supported){status.textContent='Speech synthesis is unavailable. The transcript can be read instead.';return;}
@@ -120,6 +122,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   reveal.setAttribute('aria-expanded','false');
   practice.append(reveal,model);host.append(practice);
  }
+ stopU30=appendOriginalListeningJourney(host,unit.id,{signal,mode:'course'});
  appendU26GrammarPractice(host,unit.id,'listen');
  return cleanup;
 }

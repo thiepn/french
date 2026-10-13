@@ -10,6 +10,7 @@ import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {appendOriginalVocabularyJourney} from './u28-vocabulary-panel';
 import {appendOriginalReadingJourney} from './u29-reading-panel';
+import {appendOriginalListeningJourney} from './u30-listening-panel';
 import './u22-source-panel.css';
 
 type Mode='read'|'listen'|'write';
@@ -143,9 +144,12 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
  const showMore=button('Show more lessons',()=>{visible+=60;refresh(false);});
  const filters=el('div','','u23-material-filters');filters.append(queryLabel,levelLabel,pickerLabel,count,showMore);
  const stage=el('div','','u22-source-content'),drafts=new Map<string,string>();
+ let stopU30:()=>void=()=>{};
+ signal.addEventListener('abort',()=>stopU30(),{once:true});
  const unsent=()=>[...drafts.values()].some(value=>value.trim())||
   !!stage.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
-  !!stage.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim();
+  !!stage.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
+  !!stage.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim();
  const safeLeave=()=>!unsent()||window.confirm(
   'Your original writing is unsent and temporary. Navigation checkpoints save no text. Leave this workspace and discard its drafts?'
  );
@@ -185,6 +189,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   showMore.hidden=results.entries.length>=results.total||visible>=results.total;
  };
  function render(){
+  stopU30();
   const s=getOriginalMaterial(selected),entry=getOriginalCatalogEntry(selected);
   if(mode==='listen'&&'speechSynthesis' in window)window.speechSynthesis.cancel();
   stage.replaceChildren();actions.replaceChildren();
@@ -219,8 +224,17 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
     },
     onNativeReview:()=>{if(safeLeave())navigate('review');}
    });
-  }else if(mode==='listen')renderListen(stage,s,signal);
-  else renderWrite(stage,s,drafts);
+  }else if(mode==='listen'){
+   renderListen(stage,s,signal);
+   stopU30=appendOriginalListeningJourney(stage,s.unit.id,{
+    mode:'listen',signal,
+    onOpenSurface:(surface,id)=>{
+     if(!safeLeave())return;
+     if(handoffOriginalLesson(surface,id))navigate(surface);
+    },
+    onNativeReview:()=>{if(safeLeave())navigate('review');}
+   });
+  }else renderWrite(stage,s,drafts);
   appendU26GrammarPractice(stage,s.unit.id,mode);
   appendOriginalVocabularyJourney(stage,s.unit.id,{
    mode,signal,
