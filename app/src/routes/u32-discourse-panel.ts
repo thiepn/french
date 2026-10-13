@@ -126,8 +126,8 @@ export function appendOriginalDiscourseJourney(
  };
  pairDrafts.forEach((textarea,i)=>textarea.addEventListener('input',()=>{
   if(!activePairKey)return;
-  const previous=pairCacheBySource.get(activePairKey)??['','',''];
-  const current:[string,string,string]=[...previous];
+  const previous=pairCacheBySource.get(activePairKey)??(['','',''] as [string,string,string]);
+  const current:[string,string,string]=[previous[0],previous[1],previous[2]];
   current[i]=textarea.value;
   pairCacheBySource.set(activePairKey,current);
   privateChanged();
@@ -160,7 +160,7 @@ export function appendOriginalDiscourseJourney(
   const refresh=()=>{
    const [label,first,second]=choices[selected];
    activePairKey=first.locator+'::'+second.locator;
-   const preserved=pairCacheBySource.get(activePairKey)??['','',''];
+   const preserved=pairCacheBySource.get(activePairKey)??(['','',''] as [string,string,string]);
    pairDrafts.forEach((textarea,i)=>{textarea.value=preserved[i];});
    info.textContent=label+'. Source labels and text are published originals; your comparison must distinguish attribution from factual verification. Notes are kept separately for this exact source pair.';
    examples.replaceChildren(evidenceCard(first),evidenceCard(second));
