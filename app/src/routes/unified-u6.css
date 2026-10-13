@@ -65,3 +65,12 @@
 @media(max-width:840px){.u6-layout{grid-template-columns:1fr}.u6-lesson-index{position:static;max-height:none;grid-template-columns:repeat(2,minmax(0,1fr))}.u6-lesson-index h3,.u6-lesson-index .u6-small{grid-column:1/-1}}
 @media(max-width:560px){.u6-word-grid,.u6-examples,.u6-lesson-index{grid-template-columns:1fr}.u6-stage-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.u6-stage-button{text-align:left}.u6-stage-footer button{width:100%}}
 @media(prefers-reduced-motion:reduce){.u6-full-course *{animation:none!important;transition:none!important}}
+
+/* U14: independent source-to-writing or listening-to-writing, no new authoring engine. */
+.u14-writing-mode{display:grid;gap:.6rem;margin:0 0 1.1rem;padding:1rem;border:1px solid var(--line,currentColor);border-radius:.2rem}
+.u14-writing-mode label{display:grid;gap:.4rem;font-weight:600}
+.u14-writing-mode select{max-width:36rem;min-height:44px;padding:.5rem;font:inherit}
+.u14-writing-mode button{justify-self:start;min-height:44px}
+.u14-writing-mode :is(select,button):focus-visible{outline:2px solid var(--accent,currentColor);outline-offset:3px}
+.u14-production-prompt{font-weight:500;max-width:72ch}
+@media(max-width:570px){.u14-writing-mode{padding:.75rem}.u14-writing-mode select{width:100%;max-width:100%}}
