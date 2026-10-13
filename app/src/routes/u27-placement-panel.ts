@@ -6,7 +6,7 @@ import {
 } from '../core/unified/u27-placement.ts';
 import {ORIGINAL_PATHWAYS} from '../core/unified/u25-pathways.ts';
 import {
- getOriginalCatalogEntry,handoffOriginalLesson,type OriginalLevel,type OriginalSurface
+ getOriginalCatalogEntry,type OriginalLevel,type OriginalSurface
 } from '../core/unified/u23-registry.ts';
 import './u27-placement-panel.css';
 
@@ -89,7 +89,7 @@ export function createOriginalPlacementPanel({signal,onOpenCourse,onOpenSurface,
   if(signal.aborted)return;
   const entry=getOriginalCatalogEntry(id);
   const possible=entry&&(surface==='read'?entry.reading:surface==='listen'?entry.listening:entry.writing);
-  if(possible&&handoffOriginalLesson(surface,id))onOpenSurface(surface,id);
+  if(possible)onOpenSurface(surface,id);
  };
  const syncSettings=()=>{
   selectedLevel=level.value as OriginalLevel;
