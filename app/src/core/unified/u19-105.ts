@@ -187,7 +187,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "cinquante",
         "douze",
         "cent",
-        "The marketing states fifty."
+        "Mina souligne que cinquante outils sont promis sur l’affiche, tandis que le registre n’en confirme que douze."
       ],
       [
         "How many are actually logged?",
