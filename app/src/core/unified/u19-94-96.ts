@@ -188,7 +188,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "une tablette",
         "une statue moderne",
         "un tissu",
-        "Aurore examines a tablet."
+        "Aurore is discussing the inscribed archaeological tablet, whose middle signs are missing."
       ],
       [
         "What issue appears in the photograph?",
@@ -456,7 +456,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "quatre sur cinq",
         "deux sur dix",
         "un sur cinq",
-        "The rubric gives 4/5."
+        "Léo explicitly identifies a score of four points out of five in the assessment rubric."
       ],
       [
         "Which severe phrase is quoted?",
@@ -470,7 +470,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "structure plutôt claire",
         "projet inexistant",
         "aucune référence",
-        "They see clear structure."
+        "The second reader describes the structure as clear while questioning two bibliographic references."
       ],
       [
         "How many sources need clarification?",
@@ -745,7 +745,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "un dessin de motifs",
         "les fils originaux",
         "la photographie de l’artisane",
-        "It is a pattern drawing."
+        "The archived artifact is a drawing of textile patterns, not a surviving original woven piece."
       ],
       [
         "Which materials are modern?",
