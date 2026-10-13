@@ -29,5 +29,50 @@ export const U22_REVISION_GUIDES:Readonly<Record<string,readonly [string,string,
   'Do not turn a seasonal drought-risk outlook into a certain shortage next Monday.',
   'Identify incomplete southern soil records, the unchecked probe and different crop needs.',
   'Defend a temporary, revisable water-sharing plan anchored to comparable observations.'
+ ],
+ 'transfer-142':[
+  "Restore the poetic sea as a metaphor rather than claiming a literal underground reservoir.",
+  "Attribute the translation, writer and limited in-gallery permission distinctly from any additional online reuse.",
+  "Keep plausible interpretations provisional and request separate permission for any video or commercial catalog.",
+ ],
+ 'transfer-143':[
+  "Withdraw the daily per-student waste claim inferred from one Friday weigh-in of mixed material.",
+  "Distinguish food from packaging, record meal denominator and balance calibration before comparing sites.",
+  "Suggest a repeatable multi-day sampling plan rather than presenting a campus-wide estimate as established.",
+ ],
+ 'transfer-144':[
+  "Separate the permission to preserve or digitize a historical record from the right to publish living-person identifiers.",
+  "Describe which dated consent, identity or access restrictions each archive document actually establishes.",
+  "Offer a restricted-access research alternative and an explicit privacy review before public release.",
+ ],
+ 'transfer-145':[
+  "Change the brochure's guaranteed household saving into a conditional model dependent on weather and tariffs.",
+  "List the unsigned purchase agreement, unpriced batteries and unresolved cooperative membership terms.",
+  "Recommend a transparent budget and voluntary vote before presenting any savings or contributions as certain.",
+ ],
+ 'transfer-146':[
+  "Replace the promise of continuous qualified interpretation with the confirmed volunteer times and covered languages.",
+  "Clearly distinguish informal language assistance from emergency, medical or legally certified interpretation.",
+  "Recommend a published scope statement, safeguarding referral and a reviewed escalation route for unsupported cases.",
+ ],
+ 'transfer-147':[
+  "Do not infer doubled visitor numbers from a defective counter across unequal seasons.",
+  "Compare the recorded site conditions, missing days and ecological observations without asserting causality.",
+  "Propose comparable repeat measurements and targeted site protection only when supporting evidence warrants it.",
+ ],
+ 'transfer-148':[
+  "Restore the missing negation in the contract scene and correct the swapped character names.",
+  "Separate the printed script from witnessed Wednesday improvisations; record remaining timing and readability defects.",
+  "Limit public claims to verified captions and on-site consent while seeking independent online-publication permission.",
+ ],
+ 'transfer-149':[
+  "Replace four in five residents with eighty favorable ballots among one hundred voluntary online submissions.",
+  "Identify missing random sampling, uncertain household identities and residents unable to use the portal.",
+  "Separate the indicative budget from council approval and invite additional accessible consultation before deciding.",
+ ],
+ 'transfer-150':[
+  "Replace a guaranteed sixty meteors per hour for everyone with a conditional theoretical maximum.",
+  "Explain unequal observation windows, clouds, sky brightness and missing horizon notes for the two groups.",
+  "Recommend standardized fifteen-minute observations and clearly separate forecasts, actual counts and uncertainty.",
  ]
 });

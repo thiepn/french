@@ -43,7 +43,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 + A2 + B1','eyebrow'),
     el('h2','Learn French from the beginning'),
-    el('p','A continuous 235-unit original French curriculum: 94 complete A1–B1+ lessons and 141 original U13–U22 transfer scenarios. U22 adds six early-B2 source-critical cases with extended reading, dated evidence, dialogue, listening and independent revision.'));
+    el('p','A continuous 244-unit original French curriculum: 94 complete A1–B1+ lessons and 150 original U13–U22 transfer scenarios. U22 adds fifteen early-B2 source-critical cases with extended reading, dated evidence, dialogue, optional synthetic listening, independent writing and revision.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Original A1, A2 and B1 full course lessons');
@@ -64,7 +64,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    status.textContent=done.size+'/'+lessons.length+
     ' lesson exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
-   sidebar.replaceChildren(el('h3','A1–B1 lesson sequence'));
+   sidebar.replaceChildren(el('h3','A1–B2 lesson sequence'));
    const jump=el('div',undefined,'u8-jump-level');
    jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
     button('A2 stories',()=>open('a2-01','understand'),'u8-level-button'),
