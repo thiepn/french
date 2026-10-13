@@ -1,0 +1,56 @@
+.u31-discovery,.u31-oral{margin:1.25rem 0;max-width:100%;min-width:0}
+.u31-discovery{padding-top:1.2rem;border-top:1px solid var(--line,#cdd2d9)}
+.u31-disclosure{border:1px solid var(--line,#cdd2d9);padding:0 1rem;background:var(--surface,#fff)}
+.u31-disclosure>summary{cursor:pointer;padding:1rem .3rem;font-weight:700;line-height:1.5}
+.u31-body{padding:.75rem 0 1.3rem;display:grid;gap:1.1rem;min-width:0}
+.u31-heading h3{margin:.3rem 0 .6rem}
+.u31-provenance,.u31-notice,.u31-original-gloss{color:var(--muted,#606877);line-height:1.6}
+.u31-context{border-left:3px solid var(--accent,#406584);padding:.4rem .9rem;background:var(--surface-muted,#f4f6f8);line-height:1.5}
+.u31-context p{margin:.35rem 0}
+.u31-stage-nav,.u31-support-controls,.u31-oral-actions,.u31-stage-actions,.u31-decision-nav,.u31-transfer-actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.u31-stage-nav{border-block:1px solid var(--line,#cdd2d9);padding:.8rem 0}
+.u31-stage-nav button{flex:1 1 8.5rem;text-align:left;min-height:2.7rem}
+.u31-stage-nav [aria-current=step]{font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.u31-stage,.u31-choices,.u31-transfer{display:grid;gap:.75rem;padding:1rem;border:1px solid var(--line,#cdd2d9);min-width:0}
+.u31-stage h4,.u31-choices h4,.u31-transfer h4{margin:.2rem 0}
+.u31-task,.u31-target,.u31-repair{line-height:1.65;overflow-wrap:anywhere}
+.u31-target{font-weight:600}
+.u31-repair{border-left:2px solid var(--line,#b5bac3);padding-left:.8rem}
+.u31-source-turn,.u31-source-full,.u31-cited,.u31-document{border-inline-start:3px solid var(--accent,#5b748c);padding:.75rem .9rem;background:var(--surface-muted,#f4f6f8);overflow-wrap:anywhere;white-space:pre-wrap}
+.u31-french{line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.u31-hint,.u31-support-state,.u31-progress,.u31-rehearsal-status,.u31-feedback,.u31-choice-outcome{line-height:1.6;overflow-wrap:anywhere}
+.u31-rehearsal{display:grid;gap:.75rem}
+.u31-private-draft{display:grid;gap:.45rem;font-weight:600}
+.u31-private-draft textarea{width:100%;min-width:0;min-height:7.5rem;resize:vertical;border:1px solid var(--line,#9ca3af);border-radius:0;padding:.7rem;font:inherit;color:inherit;background:var(--surface,#fff);font-weight:400}
+.u31-checklist{padding:1rem;border:1px solid var(--line,#cdd2d9);display:grid;gap:.65rem}
+.u31-checklist legend{font-weight:700;padding:0 .3rem}
+.u31-check-row{display:flex;align-items:start;gap:.6rem;line-height:1.55}
+.u31-check-row input{margin-top:.3rem;flex:0 0 auto;width:1rem;height:1rem}
+.u31-revision{padding:1rem;border:1px solid var(--line,#cdd2d9);overflow-wrap:anywhere}
+.u31-revision h5{margin:.6rem 0 .2rem}
+.u31-choices,.u31-decision{min-width:0}
+.u31-choice-form{display:grid;gap:.7rem}
+.u31-choice-form>label{display:grid;gap:.5rem}
+.u31-choice-form select,.u31-filters input,.u31-filters select{font:inherit;padding:.55rem;border:1px solid var(--line,#9199a5);border-radius:0;min-width:0;width:100%;max-width:100%;color:inherit;background:var(--surface,#fff)}
+.u31-choice-form button{justify-self:start}
+.u31-source-list{border:1px solid var(--line,#cdd2d9);padding:.75rem 1rem}
+.u31-source-list>summary,.u31-documents>summary,.u31-lexical>summary{cursor:pointer;line-height:1.55}
+.u31-transcript{padding-left:1.7rem}
+.u31-transcript li{margin-bottom:1rem;line-height:1.5}
+.u31-documents,.u31-lexical{margin:1rem 0;padding:.6rem;border:1px solid var(--line,#cdd2d9)}
+.u31-document{margin:.65rem 0}
+.u31-filters{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(9rem,.6fr) minmax(0,1.5fr);gap:.7rem;align-items:end;margin:1rem 0}
+.u31-filters label{display:grid;gap:.4rem;min-width:0}
+.u31-filters>p{grid-column:1/3}
+.u31-filters>button{justify-self:end}
+.u31-oral button:focus-visible,.u31-oral summary:focus-visible,.u31-oral textarea:focus-visible,.u31-oral select:focus-visible,.u31-filters :focus-visible{outline:2px solid var(--accent,#2254a0);outline-offset:3px}
+@media(max-width:700px){
+ .u31-disclosure{padding:0 .6rem}
+ .u31-filters{grid-template-columns:minmax(0,1fr)}
+ .u31-filters>p{grid-column:auto}
+ .u31-filters>button{justify-self:stretch}
+ .u31-stage,.u31-choices,.u31-transfer{padding:.7rem}
+ .u31-stage-nav button{flex-basis:calc(50% - .6rem)}
+ .u31-support-controls button,.u31-oral-actions button,.u31-decision-nav button,.u31-transfer-actions button{width:100%;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){.u31-oral *{scroll-behavior:auto}}

@@ -1,4 +1,5 @@
 import type { RouteContext } from '../core/types';
+import {createOriginalOralDiscovery} from './u31-oral-panel';
 import {
   loadStableReadingPack,loadStableSentenceExercises,loadVocabularySearchIndex,loadVocabularyWord,
   type ReadingItem,type SentenceExercise,type VocabularySearchRow,type VocabularyWord
@@ -89,8 +90,9 @@ function create<K extends keyof HTMLElementTagNameMap>(tag:K,value='',className=
   const el=document.createElement(tag);if(value)el.textContent=value;if(className)el.className=className;return el;
 }
 
-export async function mount({main,signal}:RouteContext):Promise<void>{
+export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   main.innerHTML='<section class="page practice-page speak-workspace"><p class="eyebrow">Spoken production</p><h1>Speak</h1><p class="lede">Record locally, compare intelligibility conservatively, and self-assess. Recognition may use a browser/OS network service and is never an accent score.</p><div class="mode-tabs" role="group" aria-label="Speaking mode"><button data-mode="pronunciation" class="is-active" type="button">Pronunciation</button><button data-mode="shadowing" type="button">Shadowing</button><button data-mode="recall" type="button">Spoken recall</button><button data-mode="transfer" type="button">Spoken transfer</button></div><p class="inline-status" data-status>Preparing speaking prompts…</p><div data-practice></div></section>';
+  main.querySelector('.practice-page')?.prepend(createOriginalOralDiscovery(signal,navigate));
   const host=main.querySelector<HTMLElement>('[data-practice]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!host||!status)return;

@@ -13,6 +13,7 @@ import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides';
 import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
+import {appendOriginalOralJourney} from './u31-oral-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {inspectDraftStructure} from '../core/unified/u3-writing';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -58,7 +59,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0)||
    !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
    !!host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
-   !!host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim();
+   !!host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim()||
+   !!host.querySelector<HTMLElement>('.u31-oral[data-has-private-draft="true"]');
   const allowExit=()=>!hasPrivateDrafts()||
    window.confirm('Leaving this Course discards unsent writing. Navigation checkpoints never include your text. Leave without the drafts?');
   const navigateSafely=(route:RouteId)=>{if(allowExit())navigate(route);};
@@ -659,7 +661,20 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     case 'understand':renderUnderstand(current,content);appendU26GrammarPractice(content,current.id,'course');break;
     case 'words':renderWords(current,content);break;
     case 'dialogue':renderDialogue(current,content);break;
-    case 'listen':stopAudio=mountA1Listening(content,current,signal);break;
+    case 'listen':{
+     const stopEarlier=mountA1Listening(content,current,signal);
+     const stopOral=appendOriginalOralJourney(content,current.id,{
+      mode:'course',signal,parentHandlesDraftExit:true,
+      onOpenSurface:(surface,id)=>{
+       if(!allowExit())return;
+       if(surface==='course')open(id,'listen',undefined,true);
+       else if(handoffOriginalLesson(surface,id))navigate(surface);
+      },
+      onNativeReview:()=>navigateSafely('review')
+     });
+     stopAudio=()=>{stopEarlier();stopOral();};
+     break;
+    }
     case 'practice':renderPractice(current,content);appendU26GrammarPractice(content,current.id,'course');break;
     case 'write':renderWrite(current,content);appendU26GrammarPractice(content,current.id,'write');break;
    }
@@ -672,7 +687,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if((id!==current.id||next!==stage)&&
       (host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
        host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
-       host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim())&&
+       host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim()||
+       host.querySelector<HTMLElement>('.u31-oral[data-has-private-draft="true"]'))&&
       !window.confirm('Your temporary vocabulary or reading summary draft is unsent. Leave this learning stage and discard its text?'))return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
