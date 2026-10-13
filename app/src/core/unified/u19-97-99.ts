@@ -216,7 +216,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "comme hypothèse",
         "comme vérité certaine",
         "en supprimant le lieu",
-        "She will mark uncertainty."
+        "Zoé plans to label the proposed location as uncertain rather than entering a verified address."
       ],
       [
         "What will be preserved for later staff?",
@@ -456,7 +456,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "Léonie",
         "Éva",
         "Julien",
-        "Éva discusses Léonie."
+        "Éva is discussing Léonie, the character whose departure and possible return remain open."
       ],
       [
         "What does the narrator infer?",
@@ -724,7 +724,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "un",
         "douze",
         "tous les points",
-        "Chloé mentions only one."
+        "Chloé explains that the recent laboratory result concerns one specific sampling location."
       ],
       [
         "On which day was the sample taken?",
