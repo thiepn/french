@@ -484,7 +484,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "deux",
         "douze",
         "aucune",
-        "The reply states two."
+        "The administration reports two meetings; that number does not establish each pupil's personal experience."
       ],
       [
         "What will be checked before publication?",
