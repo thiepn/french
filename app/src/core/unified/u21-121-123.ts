@@ -438,7 +438,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "cinq degrés",
         "un degré",
         "dix degrés",
-        "Anaïs quotes five degrees."
+        "Anaïs cite une différence annoncée de cinq degrés, sans mesure répétée validant une différence permanente."
       ],
       [
         "What measurement problem does Karim identify?",
@@ -452,7 +452,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "des bancs ombragés",
         "un parking fermé",
         "un nouvel examen",
-        "Shade is a stated concern."
+        "Anaïs décrit les bancs ombragés demandés par certains habitants, pas un aménagement déjà approuvé."
       ],
       [
         "What do other residents want to preserve?",
@@ -704,7 +704,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "lundi",
         "vendredi",
         "samedi",
-        "The notebook reads Monday."
+        "Le carnet tenu par le frère mentionne lundi, en contradiction avec le souvenir oral du dimanche."
       ],
       [
         "What did Dalia initially write?",
@@ -718,7 +718,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "selon ma grand-mère",
         "une accusation de mensonge",
         "une suppression du carnet",
-        "He advises a source marker."
+        "Paul conseille d’attribuer la date à la grand-mère plutôt que de la transformer en vérité établie."
       ],
       [
         "What tense problem exists?",
