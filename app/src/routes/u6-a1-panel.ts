@@ -264,57 +264,43 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    loadMore.hidden=matches.entries.length>=matches.total;
    sidebar.replaceChildren(el('h3','A1–B2 lesson sequence'));
    if(!matches.total)sidebar.append(el('p','No original lessons match. Try a broader topic, level or material type.','u6-small'));
-   const jump=el('div',undefined,'u8-jump-level');
-   jump.append(button('Start A1',()=>open('a1-01','understand'),'u8-level-button'),
-    button('A2 stories',()=>open('a2-01','understand'),'u8-level-button'),
-    button('A2 practical',()=>open('a2-15','understand'),'u8-level-button'),
-    button('B1 reading',()=>open('b1-01','understand'),'u8-level-button'),
-    button('B1 depth',()=>open('b1-15','understand'),'u8-level-button'),
-    button('B1 production',()=>open('b1-29','understand'),'u8-level-button'),
-    button('Integrated transfer',()=>open('transfer-01','understand'),'u8-level-button'),
-    button('Independent B1+',()=>open('transfer-16','understand'),'u8-level-button'),
-    button('B1+ argumentation',()=>open('transfer-31','understand'),'u8-level-button'),
-    button('Extended inference',()=>open('transfer-46','understand'),'u8-level-button'),
-    button('Genre-aware B1+',()=>open('transfer-61','understand'),'u8-level-button'),
-    button('Advanced discourse',()=>open('transfer-76','understand'),'u8-level-button'),
-    button('Critical B1+/B2',()=>open('transfer-91','understand'),'u8-level-button'),
-    button('Early B2 revision',()=>open('transfer-106','understand'),'u8-level-button'),
-    button('B2 narratives & debate',()=>open('transfer-121','understand'),'u8-level-button'),
-     button('B2 source critique',()=>open('transfer-136','understand'),'u8-level-button'));
-   sidebar.append(jump);
+   let sectionId='',chapter:HTMLElement=sidebar;
    if(!matches.entries.some(row=>row.id===current.id)){
     const pinned=getOriginalCatalogEntry(current.id);
     if(pinned){
-     const selected=button('Selected lesson: '+pinned.id+' · '+pinned.title,
-      ()=>open(pinned.id,'understand'),'u6-unit-button selected');
+     const selected=button('Current lesson · '+pinned.title,
+      ()=>open(pinned.id,'understand',undefined,true),'u6-unit-button selected');
+     selected.dataset.u6Unit=pinned.id;
      selected.setAttribute('aria-current','true');
      sidebar.append(selected);
     }
    }
    for(const row of matches.entries){
-    const unit=getOriginalUnit(row.id)!;
-    if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and practical communication','u8-course-divider'));
-    if(unit.id==='a2-15')sidebar.append(el('h4','A2 · Practical independence','u8-course-divider'));
-    if(unit.id==='b1-01')sidebar.append(el('h4','B1 · Connected reading and explanation','u8-course-divider'));
-    if(unit.id==='b1-15')sidebar.append(el('h4','B1 · Genres, evidence and independent expression','u8-course-divider'));
-    if(unit.id==='b1-29')sidebar.append(el('h4','B1 · Discussion, listening and independent production','u8-course-divider'));
-    if(unit.id==='transfer-01')sidebar.append(el('h4','A1–B1 · Integrated real-world transfer','u8-course-divider'));
-    if(unit.id==='transfer-16')sidebar.append(el('h4','B1+ · Unseen communication and independent transfer','u8-course-divider'));
-    if(unit.id==='transfer-31')sidebar.append(el('h4','B1+ · Autonomous argumentation, evidence and nuanced response','u8-course-divider'));
-    if(unit.id==='transfer-46')sidebar.append(el('h4','B1+ · Extended conversations, complex inference and autonomous expression','u8-course-divider'));
-    if(unit.id==='transfer-61')sidebar.append(el('h4','B1+ · Genre-aware reading, spontaneous dialogue and independent production','u8-course-divider'));
-    if(unit.id==='transfer-76')sidebar.append(el('h4','B1+ · Advanced discourse, nuanced listening and long-form synthesis','u8-course-divider'));
-    if(unit.id==='transfer-91')sidebar.append(el('h4','B1+/early B2 · Critical reading, complex narratives and independent argumentation','u8-course-divider'));
-    if(unit.id==='transfer-106')sidebar.append(el('h4','B1+/early B2 · Critical synthesis, extended discourse and independent revision','u8-course-divider'));
-    if(unit.id==='transfer-121')sidebar.append(el('h4','Early B2 · Extended narratives, debate and autonomous revision','u8-course-divider'));
-     if(unit.id==='transfer-136')sidebar.append(el('h4','Early B2 · Source-critical reading and responsible decisions','u8-course-divider'));
-    const practice=u22PracticeStatus(unit.id,answerMap(unit.id))!;
-    const label=String(unit.order).padStart(2,'0')+' · '+unit.title+
-     (practice.correct?' ('+practice.correct+'/'+practice.total+')':'');
-    const item=button(label,()=>open(unit.id,'understand'),'u6-unit-button');
+    const unit=getOriginalUnit(row.id);
+    const groupInfo=originalPathSectionFor(row.id);
+    if(!unit||!groupInfo)continue;
+    if(groupInfo.id!==sectionId){
+     sectionId=groupInfo.id;
+     const details=el('details',undefined,'u25-lesson-group');
+     details.open=openedGroups.has(groupInfo.id)||
+      groupInfo.entries.some(item=>item.id===current.id)||search.value.trim().length>0;
+     const key=groupInfo.id;
+     details.addEventListener('toggle',()=>{
+      if(details.open)openedGroups.add(key);else openedGroups.delete(key);
+     });
+     details.append(el('summary',groupInfo.title),
+      el('p',groupInfo.description,'u6-small'));
+     chapter=el('div',undefined,'u25-group-items');
+     details.append(chapter);sidebar.append(details);
+    }
+    const record=answers.get(unit.id);
+    const practice=record?u22PracticeStatus(unit.id,record):null;
+    const label=String(unit.order).padStart(3,'0')+' · '+unit.title+
+     (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'');
+    const item=button(label,()=>open(unit.id,'understand',undefined,true),'u6-unit-button');
     item.dataset.u6Unit=unit.id;
     if(current.id===unit.id){item.classList.add('selected');item.setAttribute('aria-current','true');}
-    sidebar.append(item);
+    chapter.append(item);
    }
    sidebar.append(el('p','Recommended order only. Browsing or local correctness never updates native mastery.','u6-small'));
   }
@@ -640,7 +626,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   sidebar.addEventListener('keydown',event=>{
    if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
-   const buttons=[...sidebar.querySelectorAll<HTMLButtonElement>('[data-u6-unit]')];
+   const buttons=[...sidebar.querySelectorAll<HTMLButtonElement>('[data-u6-unit]')].filter(item=>{
+    const group=item.closest('details');return !group||group.open;
+   });
    const at=buttons.indexOf(document.activeElement as HTMLButtonElement);
    if(at<0)return;
    event.preventDefault();
