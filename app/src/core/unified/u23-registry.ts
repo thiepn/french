@@ -13,7 +13,7 @@ import type {B1Reading} from './u10-readings-01-07.ts';
  */
 export type OriginalLevel='A1'|'A2'|'B1'|'B1+'|'Early B2';
 export type OriginalMaterialKind='reading'|'listening'|'writing'|'source-comparison';
-export type OriginalSurface='course'|'read'|'listen'|'write';
+export type OriginalSurface='course'|'read'|'listen'|'write'|'speak';
 export type OriginalStage='understand'|'words'|'dialogue'|'listen'|'practice'|'write';
 
 export interface OriginalCatalogEntry {
@@ -152,7 +152,7 @@ export function handoffOriginalLesson(surface:OriginalSurface,id:string,stage?:O
  const entry=entryById.get(id);
  if(!entry)return false;
  if(surface==='read'&&!entry.reading)return false;
- if(surface==='listen'&&!entry.listening)return false;
+ if((surface==='listen'||surface==='speak')&&!entry.listening)return false;
  if(surface==='write'&&!entry.writing)return false;
  pending.set(surface,{id,stage});return true;
 }
