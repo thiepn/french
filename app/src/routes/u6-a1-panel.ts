@@ -252,9 +252,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    container.append(resetAll);
   }
   function renderWrite(unit:A1Unit,container:HTMLElement){
-   const variants=u14ProductionChoices(unit.id);
-   let mode:'fromSources'|'fromListening'='fromSources';
-   const chosen=()=>variants?variants[mode]:unit.writing;
+   const variants=u15ProductionChoices(unit.id);
+   let mode:'fromSources'|'fromListening'|'fromDebate'='fromSources';
+   const chosen=()=>variants?(variants[mode]??variants.fromSources):unit.writing;
    const draftKey=()=>variants?unit.id+'::'+mode:unit.id;
    const heading=el('h4','Independent writing');
    const prompt=el('p',chosen().prompt,'u14-production-prompt');
@@ -287,15 +287,16 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const source=el('option','Compare two source documents');source.value='fromSources';
     const listening=el('option','Listen and write a neutral summary');listening.value='fromListening';
     select.append(source,listening);
+    if(variants.fromDebate){const argument=el('option','Make a reasoned recommendation and address a counterargument');argument.value='fromDebate';select.append(argument);}
     select.addEventListener('change',()=>{
-     mode=select.value==='fromListening'?'fromListening':'fromSources';
+     mode=select.value==='fromListening'?'fromListening':select.value==='fromDebate'&&variants.fromDebate?'fromDebate':'fromSources';
      updatePrompt();
     });
     label.append(select);
     const revisit=button('Review supporting sources',()=>{
      open(unit.id,mode==='fromListening'?'listen':'dialogue');
     });
-    options.append(label,el('p','Choose document-based synthesis or dialogue-to-writing. Both approaches have distinct prompts, criteria and models. No speaking or writing proficiency is automatically certified.','u6-small'),revisit);
+    options.append(label,el('p','Choose original source synthesis, dialogue-to-writing, or—where available—an independent argument with an explicit counterpoint. Each has a distinct prompt, rubric and model; no proficiency is automatically graded.','u6-small'),revisit);
     container.append(options);
    }
    editor.addEventListener('input',()=>drafts.set(draftKey(),editor.value));
