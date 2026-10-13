@@ -1,9 +1,10 @@
 import {checkPracticeAnswer} from '../core/unified/u2-grammar.ts';
 import {
- originalU26GrammarForUnit,originalU26GrammarForLevel,
+ U26_ORIGINAL_GRAMMAR,originalU26GrammarForUnit,originalU26GrammarForLevel,
  type U26GrammarFocus,type U26IndependentPrompt
 } from '../core/unified/u26-grammar-content.ts';
-import {getOriginalCatalogEntry} from '../core/unified/u23-registry.ts';
+import {getOriginalCatalogEntry,handoffOriginalLesson} from '../core/unified/u23-registry.ts';
+import type {RouteId} from '../core/types';
 import './u26-grammar-panel.css';
 
 type Mode='course'|'read'|'listen'|'write';
@@ -148,4 +149,53 @@ export function appendU26GrammarPractice(host:HTMLElement,id:string,mode:Mode='c
  picker.addEventListener('change',render);
  section.append(pickerLabel,content);
  render();host.append(section);
+}
+
+
+/** Grammar reference discovery uses exactly the same source-owned U26 focus renderer. */
+export function appendU26GrammarLibrary(host:HTMLElement,navigate:(route:RouteId)=>void):void{
+ const section=node('section','','u26-grammar u26-library');
+ section.setAttribute('aria-label','Original contextual grammar progression');
+ section.append(node('h2','Contextual grammar · A1 to early B2'),
+  node('p','Original lesson-anchored explanations and independently answerable grammatical contrasts. Open-ended writing is not graded, and these topics do not certify CEFR achievement.','u26-note'));
+ const filters=node('div','','u26-library-filters');
+ const levelLabel=node('label','Choose authored pathway','u26-picker'),level=node('select');
+ level.setAttribute('aria-label','Filter original grammar by level');
+ for(const name of ['all','A1','A2','B1','B1+','Early B2']){
+  const option=node('option',name==='all'?'All original levels':name);
+  option.value=name;level.append(option);
+ }
+ levelLabel.append(level);
+ const topicLabel=node('label','Choose a grammar topic','u26-picker');
+ const topic=node('select');topic.setAttribute('aria-label','Original contextual grammar topic');
+ topicLabel.append(topic);filters.append(levelLabel,topicLabel);
+ const content=node('div','','u26-focus-content');
+ const links=node('div','','u26-actions');
+ const count=node('p','','u26-note');count.setAttribute('role','status');
+ let selected=U26_ORIGINAL_GRAMMAR[0]?.id??'';
+ function render(){
+  content.replaceChildren();links.replaceChildren();
+  const focus=U26_ORIGINAL_GRAMMAR.find(x=>x.id===topic.value);
+  if(!focus)return;
+  appendFocus(content,focus,'course',true);
+  links.append(action('Open the original anchor lesson in Course',()=>{
+   if(handoffOriginalLesson('course',focus.anchorId,'understand'))navigate('course');
+  }));
+ }
+ function refresh(){
+  const filtered=U26_ORIGINAL_GRAMMAR.filter(x=>level.value==='all'||x.level===level.value);
+  topic.replaceChildren();
+  for(const focus of filtered){
+   const opt=node('option',focus.title+' · '+focus.anchorId);
+   opt.value=focus.id;topic.append(opt);
+  }
+  if(!filtered.some(x=>x.id===selected))selected=filtered[0]?.id??'';
+  topic.value=selected;
+  count.textContent=filtered.length+' source-owned topics · '+filtered.reduce((n,x)=>n+x.tasks.length,0)+
+   ' keyed independent prompts. No progress is recorded.';
+  render();
+ }
+ level.addEventListener('change',refresh);
+ topic.addEventListener('change',()=>{selected=topic.value;render();});
+ section.append(filters,count,links,content);host.append(section);refresh();
 }
