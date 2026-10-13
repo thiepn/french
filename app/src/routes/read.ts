@@ -1,5 +1,5 @@
 import type { RouteContext } from '../core/types';
-import {createU22SourcePanel} from './u22-source-panel';
+import {createOriginalMaterialPanel} from './u22-source-panel';
 import { loadStableReadingPack,loadVocabularySearchIndex,type ReadingItem,type VocabularySearchRow } from '../core/content/loader';
 import { readAllSrsRecords,readCanonicalLearnerState,recordPracticeEvidence,replaceCanonicalFeatureState } from '../core/learner/repository';
 import type { CanonicalSrsRecordV1 } from '../core/learner/model';
@@ -388,7 +388,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const levels=['ALL',...new Set(pack.readings.map(reading=>reading.level))];
     const types=['ALL',...new Set(pack.readings.map(reading=>reading.type))];
     main.innerHTML='<section class="page read-page"><p class="eyebrow">Comprehensible input</p><h1>Read</h1><p class="lede">25 original graded texts from A1 through B2. Reading exposure never moves SRS; only explicit retrieval creates practice evidence.</p><div class="reading-filters"><label>Level<select data-level></select></label><label>Type<select data-type></select></label></div><section class="reading-recommendations"><h2>Recommended now</h2><div class="reading-grid" data-recommended></div></section><section class="reading-library"><div class="section-heading"><h2>Library</h2><span data-count></span></div><div class="reading-grid" data-library></div></section><section class="data-panel saved-reading"><h2>Saved discoveries</h2><div data-saved></div></section></section>';
-    main.querySelector('.read-page')?.append(createU22SourcePanel('read',signal));
+    main.querySelector('.read-page')?.append(createOriginalMaterialPanel('read',signal,navigate));
     const header=main.querySelector<HTMLElement>('.reading-recommendations');
     header?.parentElement?.insertBefore(renderOpenWorldEntry(),header);
     const levelSelect=main.querySelector<HTMLSelectElement>('[data-level]'),typeSelect=main.querySelector<HTMLSelectElement>('[data-type]');

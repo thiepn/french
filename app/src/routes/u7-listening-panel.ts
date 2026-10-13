@@ -1,6 +1,6 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
 import {listeningDialogueText} from '../core/unified/u7-listening';
-import {listeningQuestionsForU22,originalOralResponseU22} from '../core/unified/u22-material';
+import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import './unified-u7.css';
 
@@ -81,7 +81,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  });
  toggle.setAttribute('aria-expanded','false');
  host.append(toggle,transcript,el('p','Try each question after listening. If TTS is unavailable, use the text. Comprehension checking is temporary, not a formal listening assessment.','u6-small'));
- listeningQuestionsForU22(unit).forEach((question,i)=>{
+ getOriginalMaterial(unit.id)?.listening.forEach((question,i)=>{
   const form=el('form',undefined,'u7-listening-question');
   const label=el('label',(i+1)+'. '+question.prompt);
   const select=el('select');select.setAttribute('aria-label','Listening answer '+(i+1));
@@ -99,7 +99,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   });
   form.append(label,submit,result);host.append(form);
  });
- const oral=originalOralResponseU22(unit.id);
+ const oral=getOriginalMaterial(unit.id)?.oral;
  if(oral){
   const practice=el('section',undefined,'u12-speaking-prep');
   practice.setAttribute('aria-label','Ungraded oral-response preparation');
