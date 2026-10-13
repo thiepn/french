@@ -141,6 +141,21 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       list.append(control);
     }
     side.append(list);
+    // Lightweight hint only: source/version and owner state are reviewed inside Course.
+    // Do not eagerly load the 244-unit curriculum into Home.
+    const savedPosition=learner?.featureState?.vU24OriginalCourse;
+    if(savedPosition&&typeof savedPosition==='object'&&!Array.isArray(savedPosition)){
+      const value=savedPosition as Record<string,unknown>;
+      if(value.schema==='original-course-checkpoint-v1'&&typeof value.id==='string'){
+        const summary=node('section','','home-original-return');
+        summary.append(node('h3','Original Course position'),
+          node('p','A navigation-only position is saved for '+value.id+
+            '. Course will verify its source and let you resume or discard it. Writing and answer text were not saved.','home-note'));
+        const resume=node('button','Review saved Course position','secondary-action compact-action');
+        resume.type='button';resume.addEventListener('click',()=>navigate('course'));
+        summary.append(resume);side.append(summary);
+      }
+    }
     footer.replaceChildren();
     const metrics=node('div','','home-facts');
     const facts:Array<[string,string]>=[
