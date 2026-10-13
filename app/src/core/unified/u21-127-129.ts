@@ -704,7 +704,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "un étalonnage documenté",
         "des couleurs",
         "des batteries garanties",
-        "Roxane flags calibration."
+        "Roxane relève l’absence d’étalonnage documenté des différents téléphones utilisés pour la carte sonore."
       ],
       [
         "What other factor differs?",
