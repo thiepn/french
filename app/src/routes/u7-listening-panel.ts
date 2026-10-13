@@ -99,5 +99,25 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   });
   form.append(label,submit,result);host.append(form);
  });
+ const oral=oralResponseForU12(unit.id);
+ if(oral){
+  const practice=el('section',undefined,'u12-speaking-prep');
+  practice.setAttribute('aria-label','Ungraded oral-response preparation');
+  practice.append(el('h4','Prepare an independent spoken response'),
+   el('p','Optional speaking prompt. Plan and say your answer aloud yourself. No microphone capture, transcription, automatic scoring or verified proficiency credit.','u7-listening-notice'),
+   el('p',oral.prompt));
+  const steps=el('ol');
+  for(const step of oral.plan)steps.append(el('li',step));
+  practice.append(steps);
+  const model=el('p',oral.model,'u12-speaking-model');
+  model.lang='fr';model.hidden=true;
+  const reveal=action('Show example response',()=>{
+   model.hidden=!model.hidden;
+   reveal.textContent=model.hidden?'Show example response':'Hide example response';
+   reveal.setAttribute('aria-expanded',String(!model.hidden));
+  });
+  reveal.setAttribute('aria-expanded','false');
+  practice.append(reveal,model);host.append(practice);
+ }
  return cleanup;
 }
