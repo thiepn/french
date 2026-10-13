@@ -728,7 +728,7 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
         "comme partagée",
         "comme inexistante",
         "comme réglée juridiquement",
-        "She suggests shared fault."
+        "Éva parle d’une responsabilité potentiellement partagée, ce qui reste une interprétation du manuscrit incomplet."
       ],
       [
         "What approach does Basile prefer?",
