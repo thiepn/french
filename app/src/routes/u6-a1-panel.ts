@@ -1,5 +1,6 @@
 import type {RouteId} from '../core/types';
-import {loadU13OriginalFrenchCourse,getU13OriginalUnit,suggestedU13OriginalUnit,u13PracticeStatus} from '../core/unified/u13-course';
+import {loadU14OriginalFrenchCourse,getU14OriginalUnit,suggestedU14OriginalUnit,u14PracticeStatus} from '../core/unified/u14-course';
+import {u14ProductionChoices} from '../core/unified/u14-material';
 import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
@@ -24,7 +25,7 @@ function button(label:string,action:()=>void,classes='secondary-action compact-a
 export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId)=>void,signal:AbortSignal):Promise<void>{
  host.replaceChildren(el('p','Loading the original French full Course…'));
  try{
-  const lessons=await loadU13OriginalFrenchCourse();
+  const lessons=await loadU14OriginalFrenchCourse();
   if(signal.aborted||!host.isConnected)return;
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
@@ -36,7 +37,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 + A2 + B1','eyebrow'),
     el('h2','Learn French from the beginning'),
-    el('p','A continuous original French curriculum with 94 full A1–B1/B1+ lessons and 15 new integrated practical transfer scenarios. The transfer sessions combine mixed grammar, paired authentic-style original sources, dialogue listening, inference and independent communication.'));
+    el('p','A continuous original French curriculum: 94 full A1–B1/B1+ lessons, 15 U13 applied transfer scenarios and 15 original U14 independent communication scenarios. U14 adds deeper listening, distinct practical source comparisons and two independent writing approaches per scenario.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Original A1, A2 and B1 full course lessons');
@@ -49,11 +50,11 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   };
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const unit of lessons)if(u13PracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
+   for(const unit of lessons)if(u14PracticeStatus(unit.id,answerMap(unit.id))?.locallyPracticed)passed.add(unit.id);
    return passed;
   };
   function renderIndex(){
-   const done=practiced(),next=suggestedU13OriginalUnit(done);
+   const done=practiced(),next=suggestedU14OriginalUnit(done);
    status.textContent=done.size+'/'+lessons.length+
     ' lesson exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
@@ -65,7 +66,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     button('B1 reading',()=>open('b1-01','understand'),'u8-level-button'),
     button('B1 depth',()=>open('b1-15','understand'),'u8-level-button'),
     button('B1 production',()=>open('b1-29','understand'),'u8-level-button'),
-    button('Integrated transfer',()=>open('transfer-01','understand'),'u8-level-button'));
+    button('Integrated transfer',()=>open('transfer-01','understand'),'u8-level-button'),
+    button('Independent B1+',()=>open('transfer-16','understand'),'u8-level-button'));
    sidebar.append(jump);
    for(const unit of lessons){
     if(unit.id==='a2-01')sidebar.append(el('h4','A2 · Past actions and practical communication','u8-course-divider'));
@@ -74,7 +76,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     if(unit.id==='b1-15')sidebar.append(el('h4','B1 · Genres, evidence and independent expression','u8-course-divider'));
     if(unit.id==='b1-29')sidebar.append(el('h4','B1 · Discussion, listening and independent production','u8-course-divider'));
     if(unit.id==='transfer-01')sidebar.append(el('h4','A1–B1 · Integrated real-world transfer','u8-course-divider'));
-    const practice=u13PracticeStatus(unit.id,answerMap(unit.id))!;
+    if(unit.id==='transfer-16')sidebar.append(el('h4','B1+ · Unseen communication and independent transfer','u8-course-divider'));
+    const practice=u14PracticeStatus(unit.id,answerMap(unit.id))!;
     const label=String(unit.order).padStart(2,'0')+' · '+unit.title+
      (practice.correct?' ('+practice.correct+'/'+practice.total+')':'');
     const item=button(label,()=>open(unit.id,'understand'),'u6-unit-button');
@@ -163,7 +166,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
-   const practicedCount=u13PracticeStatus(unit.id,record)!;
+   const practicedCount=u14PracticeStatus(unit.id,record)!;
    const errors=mistakes.get(unit.id)??new Set<string>();
    container.append(el('p',practicedCount.correct+'/'+practicedCount.total+
     ' correct tasks during this temporary page visit. No FSRS or CEFR score is recorded.','u6-practice-status'));
@@ -230,7 +233,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const label=nav.querySelector<HTMLButtonElement>('button:nth-child('+(taskIndex+1)+')');
     if(label&&passed)label.textContent=String(taskIndex+1)+' ✓';
     container.querySelector<HTMLElement>('.u6-practice-status')!.textContent=
-     u13PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
+     u14PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
      ' correct tasks this visit · ungraded and not saved.';
    });
    const reveal=button('Show worked answer (assisted)',()=>{
@@ -247,27 +250,64 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    container.append(resetAll);
   }
   function renderWrite(unit:A1Unit,container:HTMLElement){
-   container.append(el('h4','Independent writing'),el('p',unit.writing.prompt));
+   const variants=u14ProductionChoices(unit.id);
+   let mode:'fromSources'|'fromListening'='fromSources';
+   const chosen=()=>variants?variants[mode]:unit.writing;
+   const draftKey=()=>variants?unit.id+'::'+mode:unit.id;
+   const heading=el('h4','Independent writing');
+   const prompt=el('p',chosen().prompt,'u14-production-prompt');
    const items=el('ul',undefined,'u6-write-criteria');
-   for(const criterion of unit.writing.criteria)items.append(el('li',criterion));
-   const editor=el('textarea');editor.rows=5;editor.lang='fr';editor.maxLength=2400;
-   editor.value=drafts.get(unit.id)??'';editor.setAttribute('aria-label','Original A1 writing response');
-   editor.addEventListener('input',()=>drafts.set(unit.id,editor.value));
+   const editor=el('textarea');editor.rows=8;editor.lang='fr';editor.maxLength=3500;
+   editor.setAttribute('aria-label','Independent original French writing response');
    const result=el('p','Your text remains in memory only until this Course view closes.','u6-small');
-   const check=button('Check structure (not grammar grading)',()=>{
-    result.textContent=inspectDraftStructure(editor.value).join(' ')+
-     ' Meaning, spelling and grammar are not automatically assessed.';
-   });
-   const model=el('blockquote',unit.writing.model,'u6-model');model.lang='fr';model.hidden=true;
+   const model=el('blockquote',chosen().model,'u6-model');model.lang='fr';model.hidden=true;
    const compare=button('Reveal original sample answer',()=>{
     model.hidden=!model.hidden;
     compare.textContent=model.hidden?'Reveal original sample answer':'Hide sample answer';
+    compare.setAttribute('aria-expanded',String(!model.hidden));
    });
-   const clear=button('Clear this writing draft',()=>{
-    editor.value='';drafts.delete(unit.id);result.textContent='Draft cleared. No account data was changed.';
+   compare.setAttribute('aria-expanded','false');
+   const updatePrompt=()=>{
+    const choice=chosen();
+    prompt.textContent=choice.prompt;
+    items.replaceChildren();
+    for(const criterion of choice.criteria)items.append(el('li',criterion));
+    editor.value=drafts.get(draftKey())??'';
+    model.textContent=choice.model;model.hidden=true;
+    compare.textContent='Reveal original sample answer';compare.setAttribute('aria-expanded','false');
+    result.textContent='Your text stays in this Course page memory only. The selected task is not graded or uploaded.';
+   };
+   if(variants){
+    const options=el('div',undefined,'u14-writing-mode');
+    const label=el('label','Choose an independent communication task');
+    const select=el('select');
+    select.setAttribute('aria-label','Choose evidence-to-writing transfer mode');
+    const source=el('option','Compare two source documents');source.value='fromSources';
+    const listening=el('option','Listen and write a neutral summary');listening.value='fromListening';
+    select.append(source,listening);
+    select.addEventListener('change',()=>{
+     mode=select.value==='fromListening'?'fromListening':'fromSources';
+     updatePrompt();
+    });
+    label.append(select);
+    const revisit=button('Review supporting sources',()=>{
+     open(unit.id,mode==='fromListening'?'listen':'dialogue');
+    });
+    options.append(label,el('p','Choose document-based synthesis or dialogue-to-writing. Both approaches have distinct prompts, criteria and models. No speaking or writing proficiency is automatically certified.','u6-small'),revisit);
+    container.append(options);
+   }
+   editor.addEventListener('input',()=>drafts.set(draftKey(),editor.value));
+   const check=button('Check structure (not grammar grading)',()=>{
+    result.textContent=inspectDraftStructure(editor.value).join(' ')+
+     ' Meaning, grammar and source fidelity require your own comparison; no automatic grade is awarded.';
    });
-   container.append(items,editor,check,compare,clear,result,model,
-    el('p','You decide whether your response meets the criteria; this does not certify A1 proficiency.','u6-small'));
+   const clear=button('Clear selected writing draft',()=>{
+    editor.value='';drafts.delete(draftKey());
+    result.textContent='Only the currently selected temporary draft was cleared. No account data changed.';
+   });
+   container.append(heading,prompt,items,editor,check,compare,clear,result,model,
+    el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
+   updatePrompt();
   }
   function render(){
    if(signal.aborted)return;
@@ -276,7 +316,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    head.append(el('p',(current.id.startsWith('transfer-')?'A1–B1 TRANSFER':current.id.startsWith('b1-')?'B1':current.id.startsWith('a2-')?'A2':'A1')+' · LESSON '+(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
     el('h3',current.title),el('p',current.goal));
    const pre=el('p',current.prerequisites.length?
-    'Suggested foundation: '+(getU13OriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
+    'Suggested foundation: '+(getU14OriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
     'Start here: no prior lesson is required.','u6-small');
    head.append(pre);article.append(head);
    const stageNav=el('div',undefined,'u6-stage-nav');stageNav.setAttribute('role','group');stageNav.setAttribute('aria-label','Lesson learning stages');
@@ -300,7 +340,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.append(trace);
   }
   function open(id:string,next:Stage){
-   const lesson=getU13OriginalUnit(id);if(!lesson)return;
+   const lesson=getU14OriginalUnit(id);if(!lesson)return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    current=lesson;stage=next;
