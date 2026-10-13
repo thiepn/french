@@ -1,6 +1,7 @@
 import type {RouteId} from '../core/types';
 import {loadU20OriginalFrenchCourse,getU20OriginalUnit,suggestedU20OriginalUnit,u20PracticeStatus} from '../core/unified/u20-course';
 import {u20ProductionChoices} from '../core/unified/u20-material';
+import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
@@ -8,6 +9,7 @@ import {inspectDraftStructure} from '../core/unified/u3-writing';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u6.css';
 import './unified-u8.css';
+import './unified-u20.css';
 type Stage='understand'|'words'|'dialogue'|'listen'|'practice'|'write';
 const STAGES:readonly [Stage,string][]=[
  ['understand','1. Understand'],['words','2. Vocabulary'],['dialogue','3. Read'],
@@ -31,6 +33,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const answers=new Map<string,Map<string,boolean>>();
   const mistakes=new Map<string,Set<string>>();
   const drafts=new Map<string,string>();
+  // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
+  const revisionSnapshots=new Map<string,string>();
   let current=lessons[0],stage:Stage='understand',taskIndex=0;
   let stopAudio:(()=>void)|null=null;
   host.replaceChildren();host.className='u6-full-course';
@@ -263,6 +267,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function renderWrite(unit:A1Unit,container:HTMLElement){
    const variants=u20ProductionChoices(unit.id);
+   let onWritingModeChanged=()=>{};
    let mode:'fromSources'|'fromListening'|'fromDebate'='fromSources';
    const chosen=()=>variants?(variants[mode]??variants.fromSources):unit.writing;
    const draftKey=()=>variants?unit.id+'::'+mode:unit.id;
@@ -288,6 +293,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     model.textContent=choice.model;model.hidden=true;
     compare.textContent='Reveal original sample answer';compare.setAttribute('aria-expanded','false');
     result.textContent='Your text stays in this Course page memory only. The selected task is not graded or uploaded.';
+    onWritingModeChanged();
    };
    if(variants){
     const options=el('div',undefined,'u14-writing-mode');
@@ -320,6 +326,43 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    });
    container.append(heading,prompt,items,editor,check,compare,clear,result,model,
     el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
+   const revisionPrompts=U20_REVISION_GUIDES[unit.id];
+   if(revisionPrompts){
+    const studio=el('section',undefined,'u20-revision-studio');
+    studio.append(el('h4','Revise your argument · ungraded'));
+    const instructions=el('p','Write independently first. Capture a version, revise it, then compare both versions yourself. No automatic claim of grammar, source correctness or level is made.','u6-small');
+    const questions=el('ol');
+    for(const item of revisionPrompts)questions.append(el('li',item));
+    const comparison=el('div',undefined,'u20-revision-comparison');
+    comparison.setAttribute('role','status');
+    onWritingModeChanged=()=>{
+     comparison.replaceChildren(el('p','Select a writing mode and capture an initial draft to compare revisions in this visit.','u6-small'));
+    };
+    const capture=button('Capture this draft as the earlier version',()=>{
+     if(!editor.value.trim()){comparison.textContent='Write a draft before capturing a version.';return;}
+     revisionSnapshots.set(draftKey(),editor.value);
+     comparison.textContent='Earlier version captured in this page visit. Revise the text above, then compare.';
+    });
+    const show=button('Compare revised draft with captured version',()=>{
+     const before=revisionSnapshots.get(draftKey());
+     if(!before){comparison.textContent='Capture an earlier version of this writing mode first.';return;}
+     comparison.replaceChildren();
+     const columns=el('div',undefined,'u20-revision-columns');
+     const old=el('div'),newDraft=el('div');
+     old.append(el('h5','Earlier version'),el('p',before,'u20-revision-copy'));
+     newDraft.append(el('h5','Current version'),el('p',editor.value||'(empty draft)','u20-revision-copy'));
+     columns.append(old,newDraft);
+     comparison.append(columns,el('p','Review changed claims, source attribution, counterargument and conditional language. Only you decide whether the revision is accurate.','u6-small'));
+    });
+    const discard=button('Discard captured version',()=>{
+     revisionSnapshots.delete(draftKey());
+     comparison.textContent='Only the earlier temporary snapshot for this selected writing mode was discarded.';
+    });
+    const actions=el('div',undefined,'u20-revision-actions');actions.append(capture,show,discard);
+    studio.append(instructions,questions,actions,comparison);
+    container.append(studio);
+    onWritingModeChanged();
+   }
    updatePrompt();
   }
   function render(){
