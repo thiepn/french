@@ -809,7 +809,7 @@ const authored:readonly U12AuthoredLesson[]=[
       ],
       [
         "fill",
-        "Tout à coup, un message nous a ___. (arriver? use annoncer)",
+        "Tout à coup, un message nous a ___ le retard. (annoncer)",
         "annoncé",
         "The past participle annoncé describes a completed announcement.",
         [],
