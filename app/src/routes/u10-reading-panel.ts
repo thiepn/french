@@ -1,4 +1,4 @@
-import {getFullB1Reading} from '../core/unified/u11-readings';
+import {getOriginalB1ReadingU12} from '../core/unified/u12-material';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import type {A1Unit} from '../core/unified/u6-a1-model';
 import './unified-u10.css';
@@ -11,7 +11,7 @@ function node<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string,classes?
 }
 /** Adds longer evidence-based B1 reading to the existing Read stage; no new progress engine. */
 export function appendOriginalB1Reading(container:HTMLElement,unit:A1Unit):void{
- const reading=getFullB1Reading(unit.id);
+ const reading=getOriginalB1ReadingU12(unit.id);
  if(!reading)return;
  const section=node('section',undefined,'u10-reading');
  section.setAttribute('aria-label','Original B1 connected reading and evidence questions');
