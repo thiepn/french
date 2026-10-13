@@ -144,6 +144,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     // Lightweight hint only: source/version and owner state are reviewed inside Course.
     // Do not eagerly load the 244-unit curriculum into Home.
     const savedPosition=learner?.featureState?.vU24OriginalCourse;
+    let hasCourseReturn=false;
     if(savedPosition&&typeof savedPosition==='object'&&!Array.isArray(savedPosition)){
       const value=savedPosition as Record<string,unknown>;
       if(value.schema==='original-course-checkpoint-v1'&&typeof value.id==='string'){
@@ -153,8 +154,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
             '. Course will verify its source and let you resume or discard it. Writing and answer text were not saved.','home-note'));
         const resume=node('button','Review saved Course position','secondary-action compact-action');
         resume.type='button';resume.addEventListener('click',()=>navigate('course'));
-        summary.append(resume);side.append(summary);
+        summary.append(resume);side.append(summary);hasCourseReturn=true;
       }
+    }
+    if(!hasCourseReturn){
+      const original=node('section','','home-original-return');
+      original.append(node('h3','Original French Course'),
+       node('p','Choose an A1–early-B2 pathway or explore original lessons. This is separate from graded native Review.','home-note'));
+      const explore=node('button','Explore original Course','secondary-action compact-action');
+      explore.type='button';explore.addEventListener('click',()=>navigate('course'));
+      original.append(explore);side.append(original);
     }
     footer.replaceChildren();
     const metrics=node('div','','home-facts');
