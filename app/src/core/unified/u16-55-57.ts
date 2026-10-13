@@ -186,7 +186,7 @@ const SOURCE:readonly U16OriginalSourceStory[]=[
         "l’arbitre",
         "un parent choisi",
         "un magasin",
-        "Bilal names the arbiter."
+        "Bilal names the arbiter. This answer follows the speaker's precise statement, rather than an assumed conclusion."
       ],
       [
         "What will be explained to families?",
