@@ -115,7 +115,8 @@ export async function saveOriginalContinuity(
 }
 export async function discardOriginalContinuity(current:ContinuityReview):
  Promise<{outcome:'discarded'|'conflict'|'blocked';review:ContinuityReview}>{
- if(current.status==='empty'||current.status==='unavailable'||current.status==='blocked')
+ if(current.status==='empty'||current.status==='unavailable'||
+    (current.status==='blocked'&&current.expectedToken===null))
   return {outcome:'blocked',review:current};
  const outcome=await compareAndSetOriginalCourseCheckpoint(current.expectedToken,null);
  if(outcome==='conflict')return {outcome:'conflict',review:await readOriginalContinuity()};

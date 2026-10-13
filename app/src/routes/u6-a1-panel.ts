@@ -126,7 +126,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      drawRecovery();
     });
    }
-   if(continuity.status==='ready'||continuity.status==='stale')
+   if(continuity.status==='ready'||continuity.status==='stale'||
+      (continuity.status==='blocked'&&continuity.expectedToken!==null))
     add('Discard saved position',()=>void discardSaved());
    if(continuity.status==='stale'||continuity.status==='blocked'||
       continuity.status==='unavailable'||recoveryError)
