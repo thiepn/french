@@ -3,6 +3,7 @@ import {
  type U32Witness,type U32Turn,type U32Decision
 } from '../core/unified/u32-discourse.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
+import {appendOriginalEditorialJourney} from './u33-editorial-panel.ts';
 import './u32-discourse-panel.css';
 
 interface Options{
@@ -109,7 +110,8 @@ export function appendOriginalDiscourseJourney(
  }
  if(options.onNativeReview)exitActions.append(action('Native scheduled Review',()=>options.onNativeReview?.()));
  exits.append(exitActions,el('p','These are navigation handoffs using the original U23 source identity; no completion, grading or Account sync is inferred.','u32-caveat'));
- body.append(heading,nav,progress,round,compare,questions,sourceExplorer,exits);
+ const editorialHost=el('div','','u33-integration');
+ body.append(heading,nav,progress,round,compare,questions,sourceExplorer,exits,editorialHost);
 
  let roundIndex=0,questionIndex=0,shownSupport=0,independent=false,disposed=false;
  const notes=new Map<string,string>(),firstDrafts=new Map<string,string>();
@@ -120,10 +122,17 @@ export function appendOriginalDiscourseJourney(
  let activePairKey='';
  const privateChanged=()=>{
   const present=[...notes.values(),...independentDrafts.values(),
-   ...[...pairCacheBySource.values()].flat()].some(x=>x.trim().length>0);
+   ...[...pairCacheBySource.values()].flat()].some(x=>x.trim().length>0)||
+   !!editorialHost.querySelector<HTMLElement>('.u33-editorial[data-has-private-draft="true"]');
   root.dataset.hasPrivateDraft=String(present);
   options.onPrivateChange?.(present);
  };
+ const stopU33=appendOriginalEditorialJourney(editorialHost,lessonId,{
+  signal:options.signal,
+  onPrivateChange:()=>privateChanged(),
+  onOpenSurface:options.onOpenSurface,
+  onNativeReview:options.onNativeReview
+ });
  pairDrafts.forEach((textarea,i)=>textarea.addEventListener('input',()=>{
   if(!activePairKey)return;
   const previous=pairCacheBySource.get(activePairKey)??(['','',''] as [string,string,string]);
@@ -336,6 +345,7 @@ export function appendOriginalDiscourseJourney(
  }
  const cleanup=()=>{
   if(disposed)return;disposed=true;
+  stopU33();
   options.signal.removeEventListener('abort',cleanup);
  };
  options.signal.addEventListener('abort',cleanup,{once:true});
