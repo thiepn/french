@@ -1,9 +1,7 @@
 name: P30 B2 corpus and benchmark
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

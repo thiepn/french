@@ -1,9 +1,7 @@
 name: P32 integrated skills capstone
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
