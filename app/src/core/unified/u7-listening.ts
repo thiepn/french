@@ -129,6 +129,15 @@ export function validateListeningCatalog(units:readonly A1Unit[]):readonly strin
   for(const item of items){
    if(item.options.length<3||!item.options.includes(item.answer)||item.explanation.length<20)
     issues.push('Invalid listening response '+item.id);
+   if(item.sourceTurnIndex!==undefined&&
+    (!Number.isInteger(item.sourceTurnIndex)||item.sourceTurnIndex<0||
+     item.sourceTurnIndex>=unit.dialogue.length))
+    issues.push('Original dialogue source-turn navigation out of range '+item.id);
+   if(item.misconceptionFeedback){
+    for(const [wrong,why] of Object.entries(item.misconceptionFeedback))
+     if(!item.options.includes(wrong)||wrong===item.answer||why.length<40)
+      issues.push('Misconception key invalid '+item.id+': '+wrong);
+   }
   }
  }
  return issues;
