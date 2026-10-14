@@ -17,7 +17,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
 
   const active=await readActiveStudySession();
-  if(active&&resumeHost){
+  const unfinished=Boolean(active&&active.cursor<active.queueIds.length);
+  if(unfinished){
+    if(todayButton)todayButton.disabled=true;
+    if(newButton)newButton.disabled=true;
+    if(status)status.textContent+=' An unfinished native study session must be resumed before starting another.';
+  }
+  if(unfinished&&active&&resumeHost){
     const card=document.createElement('div');card.className='inline-status resume-session';
     const text=document.createElement('span');
     text.textContent='Saved '+active.mode+' session · '+Math.max(0,active.queueIds.length-active.cursor)+' items remaining';
@@ -27,6 +33,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
 
   const start=async(kind:'today'|'new')=>{
+    const pending=await readActiveStudySession();
+    if(pending&&pending.cursor<pending.queueIds.length){
+      if(status)status.textContent='An unfinished session is saved. Resume it in Review before beginning another session.';
+      return;
+    }
     if(todayButton)todayButton.disabled=true;
     if(newButton)newButton.disabled=true;
     try{

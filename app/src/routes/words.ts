@@ -42,7 +42,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let timer=0;
 
   const openDetail=async(row:VocabularySearchRow)=>{
-    detail.innerHTML='<p>Loading '+row.word+'…</p>';
+    detail.replaceChildren();
+    const loading=document.createElement('p');loading.textContent='Loading '+row.word+'…';detail.append(loading);
     try{
       const word=await loadVocabularyWord(row.id,signal);
       if(!word){detail.innerHTML='<p>This vocabulary record could not be resolved.</p>';return;}

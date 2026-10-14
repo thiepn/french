@@ -1,4 +1,4 @@
-import {resolveU40LessonLinks,handoffU40CanonicalWord,type U40LessonLinks} from '../core/unified/u40-lexical-bridge';
+import {resolveU40LessonLinks,handoffU40CanonicalWord} from '../core/unified/u40-lexical-bridge';
 import {readSrsByNoteIds,readActiveStudySession} from '../core/learner/repository';
 import {createU40LessonVocabularySession} from '../core/learner/study-session-builder';
 import type {CanonicalSrsRecordV1} from '../core/learner/model';
@@ -32,7 +32,8 @@ export async function mountU40NativeLesson(host:HTMLElement,lessonId:string,opts
   const mapped=await resolveU40LessonLinks(lessonId,opts.signal);
   if(!live())return;
   const ids=[...new Set(mapped.links.flatMap(item=>item.native?[item.native.id]:[]))];
-  const [records,active]=await Promise.all([readSrsByNoteIds(ids),readActiveStudySession()]);
+  const [records,currentSession]=await Promise.all([readSrsByNoteIds(ids),readActiveStudySession()]);
+  const active=Boolean(currentSession&&currentSession.cursor<currentSession.queueIds.length);
   if(!live())return;
   host.replaceChildren();
   const heading=el('h3','Native vocabulary connections');
