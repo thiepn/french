@@ -57,6 +57,22 @@ const QUESTIONS:Readonly<Record<string,readonly [Q,Q]>>={
 };
 type Bonus=readonly [string,string,readonly string[],string,Readonly<Record<string,string>>];
 /** Additional original U6 dialogue inference — existing listen-1 semantics stay unchanged. */
+/** Additional third listening item for U7 original dialogues, never modifying listen-1/2. */
+const ORIGINAL_LATE_A1_DIALOGUE_TRANSFER:Readonly<Record<string,Bonus>>=Object.freeze({
+ "a1-13":["After Nadir asks about soup, which food does Camille actually say is available?","de la salade et des œufs",["de la salade et des œufs","de la soupe et du riz","du pain seulement"],"Camille explicitly says Non, mais il y a de la salade et des œufs; Nadir then chooses salad. The question tests the response to the soup request, not a guessed menu.",{"de la soupe et du riz":"Camille answers non to soup and never mentions rice in the dialogue; don't treat the initial question as the answer.","du pain seulement":"Bread was mentioned at the beginning, but Camille later offers salad and eggs in response to the soup question."}],
+ "a1-14":["Which price belongs to the black bag rather than the blue jacket?","douze euros",["douze euros","trente euros","aucun prix annoncé"],"The seller gives trente euros for the blue jacket, then douze euros for the black bag before asking about card payment.",{"trente euros":"That price belongs to the blue jacket; the client's next question about the black bag receives a different amount.","aucun prix annoncé":"The seller clearly states douze euros after the client asks about the black bag; the price is not unknown."}],
+ "a1-15":["After requesting apples and tomatoes, what does the customer add?","une bouteille d’eau et un paquet de riz",["une bouteille d’eau et un paquet de riz","une salade et des œufs","deux kilos de tomates"],"The market customer says Oui, une bouteille d’eau et un paquet de riz when the seller asks Autre chose ? after the first order.",{"une salade et des œufs":"Those foods belong to another situation and are not added in this market dialogue.","deux kilos de tomates":"The customer already asked for three tomatoes, not a new two-kilogram order after Autre chose ?"}],
+ "a1-16":["What does the customer order after hearing the plat du jour?","le plat du jour et de l’eau",["le plat du jour et de l’eau","une salade verte et du vin","une table et des billets"],"After the server announces vegetable soup as the daily special, the diner says Je voudrais le plat du jour et de l’eau.",{"une salade verte et du vin":"Neither green salad nor wine is requested. The server has described soup, not a second special.","une table et des billets":"The table was requested earlier for seating, not ordered as a dish; tickets are never mentioned."}],
+ "a1-17":["What does Chloé decide to bring despite planning a museum visit?","un parapluie",["un parapluie","un vélo","un billet de train"],"Chloé says Je vais prendre un parapluie after the speakers discuss morning rain and possibly visiting the museum at noon.",{"un vélo":"She says they will not go cycling in the rainy morning; the final item she plans to take is an umbrella.","un billet de train":"No train appears in their weather-and-museum exchange, so the item cannot be inferred."}],
+ "a1-18":["Has the conversation established whether Rayan has a balcony?","non, Rayan n’a pas encore répondu",["non, Rayan n’a pas encore répondu","oui, il a un balcon","non, il n’a pas de balcon"],"Noémie asks Tu as un balcon ? at the end, and the dialogue stops without Rayan's answer. The number of bedrooms does not establish the presence of a balcony.",{"oui, il a un balcon":"A question is not a confirmation. Rayan does not respond about the balcony in the given conversation.","non, il n’a pas de balcon":"No balcony answer is heard. A small apartment with two bedrooms may or may not have a balcony."}],
+ "a1-19":["When the traveller asks where to change, which instruction does the agent give?","changez à République",["changez à République","restez à la gare","changez à la mairie"],"The traveller asks Je change où ? and the agent answers Changez à République, then adds the arrival time of the next tram.",{"restez à la gare":"The station is the destination mentioned in the first question, not the transfer stop the agent gives.","changez à la mairie":"The agent explicitly names République as the transfer location, not the town hall."}],
+ "a1-20":["What does the receptionist confirm after checking the passport?","la chambre est prête et la clé est donnée",["la chambre est prête et la clé est donnée","la chambre n’est pas prête","le passeport manque"],"The guest supplies the passport and asks Est-ce que la chambre est prête ? The receptionist replies oui, offers the key and mentions the second floor.",{"la chambre n’est pas prête":"The receptionist says oui and hands over the key, not that the guest must wait.","le passeport manque":"The guest has already said voici mon passeport before the receptionist confirms the room."}],
+ "a1-21":["After Omar mentions Mila’s bag, what does le refer to in Je le prends?","le sac",["le sac","le billet","les clés"],"Omar has just said Je vois ton sac, so Mila's immediate Je le prends picks up the masculine singular noun sac. Earlier le in Je le cherche referred to billet.",{"le billet":"The first le referred to billet, but the closest noun mentioned before Je le prends is ton sac; context changes reference.","les clés":"Keys are plural and introduced only in the following question. Les, not le, later refers to them."}],
+ "a1-22":["What detail does Farah propose after Hugo suggests meeting Monday?","lundi à midi",["lundi à midi","dimanche à midi","lundi à minuit"],"Hugo asks On peut se retrouver lundi ? Farah replies Lundi à midi ? Avec plaisir ! She proposes noon; the snippet ends before a further answer from Hugo.",{"dimanche à midi":"Hugo cannot attend Sunday because he works; Monday is the alternative he offers.","lundi à minuit":"Farah says midi, noon, not minuit, midnight. These time words are easy to confuse in rapid speech."}],
+ "a1-23":["Why does the customer's final request not establish that the stamp information was understood?","elle demande de répéter plus lentement",["elle demande de répéter plus lentement","elle confirme avoir tout compris","elle achète déjà deux timbres"],"The customer says Pardon, vous pouvez répéter plus lentement ? after the clerk quotes two euros. The request is for clarification, not proof of a purchase or comprehension.",{"elle confirme avoir tout compris":"She requests slower repetition and gives no confirmation that she understood the quoted price.","elle achète déjà deux timbres":"The clerk says a stamp costs two euros, not that the customer bought two stamps; do not mix quantity and price."}],
+ "a1-24":["What information has the market seller not yet answered when the dialogue ends?","combien ça coûte",["combien ça coûte","si du pain est proposé","si le tram est en retard"],"The seller offers bread and water, and Nina asks Combien ça coûte ? The dialogue ends before a price is stated, so no numerical answer is supported.",{"si du pain est proposé":"The merchant explicitly offered bread and a bottle of water; the available items are not uncertain.","si le tram est en retard":"The transit agent already confirmed the tram's delay, before Nina went to the market."}]
+});
+
 const ORIGINAL_A1_DIALOGUE_FOLLOWUPS:Readonly<Record<string,Bonus>>=Object.freeze({
  "a1-01":["How does Malik introduce himself after Inès says her name?","Moi, c’est Malik.",["Moi, c’est Malik.","Je suis professeur ici.","Je cherche un travail."],"Malik says Moi, c’est Malik. This informal introduction is not Inès's greeting or a description of his job.",{"Je suis professeur ici.":"The dialogue says nothing about Malik being a teacher; this is a different statement from a later lesson.","Je cherche un travail.":"This is neither Malik's name nor an introduction in this conversation; look for Moi, c’est."}],
  "a1-02":["What does Aya say about herself and her friends being students?","nous sommes tous étudiants",["nous sommes tous étudiants","nous sommes professeurs","je suis seule étudiante"],"Aya says Oui, nous sommes tous étudiants, including herself and her friends; Nora later says she is a teacher.",{"nous sommes professeurs":"Aya uses étudiants, not professeurs. The later professor is Nora, the other speaker.","je suis seule étudiante":"Tous means everyone in the group, not that Aya is the only student."}],
@@ -74,9 +90,18 @@ const ORIGINAL_A1_DIALOGUE_FOLLOWUPS:Readonly<Record<string,Bonus>>=Object.freez
 
 export function listeningQuestions(unit:A1Unit):readonly A1ListeningQuestion[]{
  const authored=QUESTIONS[unit.id];
- if(authored)return authored.map(([prompt,answer,options,explanation],i)=>Object.freeze({
-  id:unit.id+'-listen-'+(i+1),prompt,answer,options:Object.freeze([...options]),explanation
- }));
+ if(authored){
+  const original=authored.map(([prompt,answer,options,explanation],i)=>Object.freeze({
+   id:unit.id+'-listen-'+(i+1),prompt,answer,options:Object.freeze([...options]),explanation
+  }));
+  const added=ORIGINAL_LATE_A1_DIALOGUE_TRANSFER[unit.id];
+  if(!added)return original;
+  const [prompt,answer,options,explanation,misconceptionFeedback]=added;
+  return [...original,Object.freeze({
+   id:unit.id+'-listen-3',prompt,answer,options:Object.freeze([...options]),
+   explanation,misconceptionFeedback:Object.freeze({...misconceptionFeedback})
+  })];
+ }
  // U6 units remain usable with an original, already authored reading-comprehension task.
  const reading=unit.tasks.find(task=>task.type==='reading');
  if(!reading)return [];
@@ -95,9 +120,10 @@ export function validateListeningCatalog(units:readonly A1Unit[]):readonly strin
  const issues:string[]=[];
  if(Object.keys(QUESTIONS).length!==12)issues.push('12 original U7 listening sets required');
  if(Object.keys(ORIGINAL_A1_DIALOGUE_FOLLOWUPS).length!==12)issues.push('12 original U6 A1 listening followups required');
+ if(Object.keys(ORIGINAL_LATE_A1_DIALOGUE_TRANSFER).length!==12)issues.push('12 original U7 later-A1 dialogue followups required');
  for(const unit of units){
   const items=listeningQuestions(unit);
-  if(items.length<(unit.order>12?2:1))issues.push('Missing listening questions '+unit.id);
+  if(items.length<(unit.order>12?3:2))issues.push('Missing listening questions '+unit.id);
   for(const item of items){
    if(item.options.length<3||!item.options.includes(item.answer)||item.explanation.length<20)
     issues.push('Invalid listening response '+item.id);
