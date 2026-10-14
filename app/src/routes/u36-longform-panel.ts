@@ -4,6 +4,7 @@ import {
 } from '../core/unified/u36-longform.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u36-longform-panel.css';
+import {appendOriginalU37Communication} from './u37-communication-panel.ts';
 
 interface Options{
  readonly signal:AbortSignal;
@@ -97,7 +98,8 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
  const continuation=el('section','','u36-continuation');
  continuation.append(el('h4','Continue using existing original learning routes'));
  const live=el('p','','u36-status');live.setAttribute('role','status');
- body.append(intro,originals,ledger,paired,stages,corrective,genres,continuation,live);
+ const u37Host=el('div','','u37-integration');
+ body.append(intro,originals,ledger,paired,stages,corrective,genres,u37Host,continuation,live);
 
  let disposed=false,activePair=0,activeStage=0,activeCheck=0,activeGenre:U36Genre='correspondence';
  const stagesWork=new Map<U36StepKind,Work>();
@@ -112,7 +114,8 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
   const notes=[...ledgerWork.values()].some(v=>!!v.claim.trim()||!!v.limitation.trim());
   const pairNotes=[...pairsWork.values()].some(v=>
    !!v.first.trim()||!!v.second.trim()||!!v.interpretation.trim());
-  return writing||notes||pairNotes;
+  return writing||notes||pairNotes||
+   !!u37Host.querySelector<HTMLElement>('.u37-communication[data-has-private-draft="true"]');
  };
  const changed=()=>{
   if(disposed)return;
@@ -120,6 +123,12 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
   root.dataset.hasPrivateDraft=String(current);
   options.onPrivateChange?.(current);
  };
+ const stopU37=appendOriginalU37Communication(u37Host,id,{
+  signal:options.signal,
+  onPrivateChange:()=>changed(),
+  onOpenSurface:options.onOpenSurface,
+  onNativeReview:options.onNativeReview
+ });
  const witnessCard=(locator:string)=>{
   const w=source.witnesses.find(x=>x.locator===locator);
   if(!w)return null;
@@ -410,6 +419,7 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
  const cleanup=()=>{
   if(disposed)return;disposed=true;
   options.signal.removeEventListener('abort',cleanup);
+  stopU37();
   stagesWork.clear();genreWork.clear();ledgerWork.clear();
   pairsWork.clear();choices.clear();support.clear();
   root.remove();
