@@ -1,5 +1,5 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
-import {listeningDialogueText,originalA1SoundContrasts} from '../core/unified/u7-listening';
+import {listeningDialogueText,originalA1SoundContrasts,originalA1ConversationTransfer} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -49,6 +49,11 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   speech.lang='fr-FR';speech.rate=rate;speech.pitch=1;
   if(french)speech.voice=french;
   activeSpeech=speech;
+  speech.onstart=()=>{
+   if(activeSpeech!==speech||signal.aborted||!host.isConnected)return;
+   status.textContent=french?'Device synthesized French started using '+french.name+'.':
+    'Device synthesized French started. The voice inventory was not exposed; pronunciation accuracy is unverified.';
+  };
   speech.onend=()=>{
    if(activeSpeech!==speech)return;
    activeSpeech=null;
@@ -61,8 +66,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   };
   try{
    synth.speak(speech);
-   status.textContent=french?'Playing synthesized French using '+french.name+'.':
-    'French TTS requested. The device did not expose a voice inventory, so speech quality cannot be verified.';
+   status.textContent='Device French TTS requested. If no sound starts, use the written original text; voices and pronunciation quality are not verified.';
   }catch{
    activeSpeech=null;status.textContent='TTS playback failed. Use the transcript instead.';
   }
@@ -91,12 +95,15 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   const section=el('details',undefined,'u44-original-sounds');
   const summary=el('summary','French sound focus · '+soundContrasts.length+' original A1 contrasts (ungraded)');
   section.append(summary,
-   el('p','Optional listening and spoken self-correction in this original lesson. Hear A and B before revealing the French spellings. The installed device TTS is synthetic and may render liaison, homophones or vowel quality inaccurately; no automatic recognition, microphone recording, pronunciation grade or FSRS event is created.','u7-listening-notice'));
+   el('p','Compare two meaningful sentences. Play A and B if reliable device French TTS is available, or reveal and read them yourself. The examples are not always minimal pairs: some sound identical and need context or spelling. IPA labels describe only the focus words or phrase, not a certified whole-sentence recording. No microphone, grade, FSRS change or automatic hearing claim.','u7-listening-notice'));
+  section.addEventListener('toggle',()=>{if(!section.open)stop();});
   soundContrasts.forEach((contrast,index)=>{
    const panel=el('section',undefined,'u44-original-sound-case');
    panel.setAttribute('aria-label','Pronunciation contrast '+(index+1)+': '+contrast.focus);
    panel.append(el('h5',(index+1)+'. '+contrast.focus),
     el('p',contrast.selfCheck,'u44-sound-prompt'));
+   const beforeReveal=el('p','A/B audio is optional. You can compare written forms first; focus on the sounds noted below, then say your own related sentence.','u6-small');
+   panel.append(beforeReveal);
    const actions=el('div',undefined,'u7-audio-actions');
    const playA=action('Hear A',()=>play(.85,contrast.a.french));
    const playB=action('Hear B',()=>play(.85,contrast.b.french));
@@ -110,18 +117,54 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
     answer.append(expression,english);
    }
    answer.append(el('p',contrast.guidance,'u44-sound-guidance'));
-   const reveal=action('Reveal written forms and sound explanation',()=>{
+   const reveal=action('Show / hide French text and sound guidance',()=>{
     answer.hidden=!answer.hidden;
-    reveal.textContent=answer.hidden?'Reveal written forms and sound explanation':'Hide written forms and explanation';
+    reveal.textContent=answer.hidden?'Show French text and sound guidance':'Hide French text and sound guidance';
     reveal.setAttribute('aria-expanded',String(!answer.hidden));
    });
    reveal.setAttribute('aria-expanded','false');
    panel.append(reveal,answer);section.append(panel);
   });
+  const transfer=originalA1ConversationTransfer(unit.id);
+  if(transfer){
+   const practice=el('section',undefined,'u46-original-speech-transfer');
+   practice.setAttribute('aria-label','Independent everyday French conversation practice');
+   practice.append(el('h5','Try it in another situation'),
+    el('p',transfer.context,'u46-transfer-context'),
+    el('p',transfer.task,'u46-transfer-task'),
+    el('p','Prepare your own two or three sentences, then say them aloud. No answer text is captured, stored or automatically graded. You may use the original dialogue as a model, but change the people, place or decision to fit this new situation.','u6-small'));
+   const turn=unit.dialogue[transfer.relevantTurnIndex];
+   if(turn){
+    const actions=el('div',undefined,'u7-audio-actions');
+    const speak=action('Hear one original turn (device TTS)',()=>play(.85,turn.fr));
+    if(!supported)speak.disabled=true;
+    const originalText=el('p',turn.speaker+': '+turn.fr,'u46-transfer-source');
+    originalText.lang='fr';originalText.hidden=true;
+    const read=action('Read the original turn instead',()=>{
+     originalText.hidden=!originalText.hidden;
+     read.textContent=originalText.hidden?'Read the original turn instead':'Hide the original turn';
+     read.setAttribute('aria-expanded',String(!originalText.hidden));
+    });
+    read.setAttribute('aria-expanded','false');
+    actions.append(speak,read);
+    practice.append(actions,originalText);
+   }
+   const reflection=el('p',transfer.check,'u46-transfer-check');
+   reflection.hidden=true;
+   const reveal=action('Show independent self-check',()=>{
+    reflection.hidden=!reflection.hidden;
+    reveal.textContent=reflection.hidden?'Show independent self-check':'Hide independent self-check';
+    reveal.setAttribute('aria-expanded',String(!reflection.hidden));
+   });
+   reveal.setAttribute('aria-expanded','false');
+   practice.append(reveal,reflection);
+   section.append(practice);
+  }
   host.append(section);
  }
 
  const transcript=el('div',undefined,'u7-listening-transcript');
+ transcript.id='original-french-transcript-'+unit.id;
  transcript.hidden=true;transcript.setAttribute('aria-label','Original French transcript');
  for(const line of unit.dialogue){
   const turn=el('p',line.speaker+': '+line.fr);turn.lang='fr';transcript.append(turn);
@@ -132,6 +175,7 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   toggle.setAttribute('aria-expanded',String(!transcript.hidden));
  });
  toggle.setAttribute('aria-expanded','false');
+ toggle.setAttribute('aria-controls',transcript.id);
  host.append(toggle,transcript,el('p','Try each question after listening. If TTS is unavailable, use the text. Comprehension checking is temporary, not a formal listening assessment.','u6-small'));
  getOriginalMaterial(unit.id)?.listening.forEach((question,i)=>{
   const form=el('form',undefined,'u7-listening-question');
@@ -142,15 +186,49 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   label.append(select);
   const result=el('p',undefined,'u7-listening-result');result.setAttribute('role','status');
   const submit=el('button','Check listening answer','secondary-action compact-action');submit.type='submit';
+  const sourceSupport=el('div',undefined,'u46-listen-source-support');
+  sourceSupport.hidden=true;
+  const showAnswer=action('Reveal authored answer and explanation',()=>{
+   answerText.hidden=!answerText.hidden;
+   showAnswer.textContent=answerText.hidden?'Reveal authored answer and explanation':'Hide authored answer and explanation';
+   showAnswer.setAttribute('aria-expanded',String(!answerText.hidden));
+  });
+  const answerText=el('p','Authored key: '+question.answer+'. '+question.explanation,'u7-listening-result');
+  answerText.hidden=true;showAnswer.setAttribute('aria-expanded','false');
+  sourceSupport.append(showAnswer,answerText);
+  const index=question.sourceTurnIndex;
+  if(Number.isInteger(index)&&index!==undefined&&index>=0&&index<unit.dialogue.length){
+   const originalTurn=unit.dialogue[index];
+   const replay=action('Replay relevant original turn',()=>play(.85,originalTurn.fr));
+   if(!supported)replay.disabled=true;
+   const written=el('p',originalTurn.speaker+': '+originalTurn.fr,'u46-listen-source-turn');
+   written.lang='fr';written.hidden=true;
+   const revealSource=action('Read relevant original turn',()=>{
+    written.hidden=!written.hidden;
+    revealSource.textContent=written.hidden?'Read relevant original turn':'Hide original turn';
+    revealSource.setAttribute('aria-expanded',String(!written.hidden));
+   });
+   revealSource.setAttribute('aria-expanded','false');
+   sourceSupport.prepend(replay,revealSource,written);
+  }
+  let attempts=0;
   form.addEventListener('submit',event=>{
    event.preventDefault();
    if(!select.value){result.textContent='Choose a response first.';return;}
+   attempts++;
    const correct=checkPracticeAnswer(select.value,question.answer);
    const repair=question.misconceptionFeedback?.[select.value];
-   result.textContent=correct?'Correct. '+question.explanation:
-    'Not yet. '+(repair??'Listen again or reveal the original French transcript.')+' '+question.explanation;
+   sourceSupport.hidden=false;
+   if(correct){
+    result.textContent='Matches the original authored answer. '+question.explanation;
+    answerText.hidden=true;showAnswer.setAttribute('aria-expanded','false');
+    return;
+   }
+   result.textContent='Not yet. '+(repair??'Check the original source before choosing again.')+
+    ' Reconsider your answer, replay a relevant turn or consult the French text. No listening score is saved.';
+   if(attempts>1)showAnswer.textContent='Reveal authored answer and explanation';
   });
-  form.append(label,submit,result);host.append(form);
+  form.append(label,submit,result,sourceSupport);host.append(form);
  });
  const oral=getOriginalMaterial(unit.id)?.oral;
  if(oral){
