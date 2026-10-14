@@ -146,7 +146,7 @@ export function appendOriginalU38Independence(host:HTMLElement,id:string,opts:Op
  };
  noteSelect.addEventListener('change',renderNotes);
 
- const editable=(store:Map<U38Role,Draft>|Map<U38Artifact,Draft>,key:U38Role|U38Artifact,
+ const editable=(key:U38Role|U38Artifact,
   register:U37Register,parent:HTMLElement,scaffolding:HTMLElement,label:string)=>{
   // Both stores are page-local and keyed by the original U38 turn or artifact.
   const get=():Draft=>{
@@ -250,7 +250,7 @@ export function appendOriginalU38Independence(host:HTMLElement,id:string,opts:Op
    button('3 · New authored French illustration',()=>paintSupport(3)));
   rolePane.append(heading,quote,task,helpButtons,scaffolding);
   paintSupport(supportLevels.get(turn.role)??0);
-  editable(roleDrafts,turn.role,turn.register,rolePane,scaffolding,turn.role);
+  editable(turn.role,turn.register,rolePane,scaffolding,turn.role);
   rolePane.append(cite(turn.sourceLocators,'Original source evidence, separate from fictional dialogue'));
   const spoken=el('div','','u38-actions');
   const report=el('p','','u38-status');report.setAttribute('role','status');
@@ -328,7 +328,7 @@ export function appendOriginalU38Independence(host:HTMLElement,id:string,opts:Op
   const model=el('p',task.illustrativeFrench,'u38-french');model.lang='fr';example.append(model);
   helper.append(outline,example);
   artifactPane.append(helper);
-  editable(artifactDrafts,task.kind,'professional',artifactPane,helper,task.kind);
+  editable(task.kind,'professional',artifactPane,helper,task.kind);
   artifactPane.append(cite(task.sourceLocators,'Original witnesses relevant to this document'));
  };
  const renderRecord=()=>{
