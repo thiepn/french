@@ -164,14 +164,14 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "l'invitation",
         "la fiche de relevé",
         "les deux documents",
-        "The invitation turns a conditional astronomical forecast into a guaranteed personal outcome."
+        "The invitation promotes up to 60 meteors per hour as though each visitor will see that many. The technical forecast depends on a dark, clear sky and sustained observation, so no individual outcome is guaranteed."
       ],
       [
         "Which source identifies unequal observation durations?",
         "les relevés",
         "l'invitation",
         "aucune source",
-        "The logs specify thirty and forty-five minutes for the two groups, invalidating raw-count equivalence."
+        "The observation log compares nine meteors in 30 minutes with fifteen in 45 minutes at different times and conditions. Raw totals cannot establish which site performed better; record duration, weather and visibility before comparison."
       ]
     ],
     "listen": [
@@ -247,7 +247,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Lina rapporte que l'invitation promet jusqu'à soixante météores par heure, mais Hugo rappelle que la prévision suppose des conditions idéales. Maya précise que son équipe a compté neuf météores en trente minutes jeudi, malgré des passages nuageux. L'autre groupe signale quinze météores sur quarante-cinq minutes, sans décrire entièrement l'horizon. Ces chiffres ne sont donc pas immédiatement comparables. L'équipe propose de nouvelles séances de quinze minutes, avec indication du lieu, de la visibilité et des interruptions, avant de publier des conclusions plus solides."
       ],
       "sources": [
-        "Correct the invitation using the observation log, making prediction, measurement and uncertainty distinct.",
+        "Correct the invitation for a first-time stargazer, distinguishing the ideal-condition upper forecast from the local recorded counts and weather limitations. After comparing with the model, independently write a two-sentence update for a cloudy night without promising any meteor count.",
         "L'invitation promet à chaque visiteur soixante météores par heure, alors que la fiche technique présente ce nombre comme un maximum théorique sous ciel sombre et dégagé. Les bénévoles ont réellement relevé neuf météores en trente minutes sur un site partiellement nuageux; un autre groupe en annonce quinze pendant quarante-cinq minutes, dans des conditions différentes et incomplètement décrites. Aucune de ces observations ne prouve que le modèle est juste ou faux partout. Nous publierons les périodes et les limites de mesure avant de proposer un nouveau comptage comparable."
       ],
       "debate": [

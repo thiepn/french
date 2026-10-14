@@ -164,14 +164,14 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "l'affiche de l'association",
         "la note méthodologique",
         "l'ordre du jour du conseil",
-        "The campaign poster improperly extends the voluntary sample ratio to all residents."
+        "The association's poster says four residents out of five support the proposal, but the method note records 80 favourable online responses among 100 voluntary ballots. Neither households nor all residents were randomly sampled."
       ],
       [
         "Which source states that the respondents were not randomly chosen?",
         "la note du portail",
         "l'affiche",
         "aucune source",
-        "The method note identifies the non-random online invitation and limits of account uniqueness."
+        "The portal note says participation was voluntary and online, one response per account rather than verified household. It cannot establish how many residents were reached or that the wider population agrees."
       ]
     ],
     "listen": [
@@ -247,7 +247,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Samira rapporte que l'affiche mentionne quatre habitants sur cinq, tandis que Louis explique que la plateforme compte seulement quatre-vingts bulletins favorables sur cent réponses volontaires. Aïcha précise qu'aucun échantillon représentatif n'a été constitué. L'obligation d'utiliser internet et l'absence de vérification par ménage peuvent modifier le profil des répondants. Le financement reste lui aussi conditionnel, puisque le conseil doit examiner les coûts. Une permanence ouverte et une communication plus précise permettraient de poursuivre le débat sans nier les réponses déjà recueillies."
       ],
       "sources": [
-        "Write an accurate public correction contrasting the association's poster with the method note.",
+        "Write a public correction for neighbours contrasting the poster's population-wide claim with 80 favourable responses among 100 voluntary online ballots. Keep the pending budget decision separate. After comparing with the model, draft one follow-up question for an offline resident who did not receive the invitation.",
         "L'affiche de l'association indique que quatre habitants sur cinq approuvent le jardin, mais la note méthodologique confirme seulement quatre-vingts réponses favorables sur cent bulletins en ligne. Les personnes ont participé volontairement; il ne s'agit ni d'un sondage aléatoire ni d'une preuve de soutien majoritaire dans toute la commune. Par ailleurs, les vingt mille euros figurent comme enveloppe indicative, sans décision définitive sur l'entretien ou la faisabilité. Nous publierons ces limites et accueillerons d'autres avis avant la délibération."
       ],
       "debate": [
