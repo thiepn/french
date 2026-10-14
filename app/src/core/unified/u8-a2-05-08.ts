@@ -19,7 +19,9 @@ const authored:A1AuthoredSpec[]=[
  ['fill','Il ___ froid dans la maison. (faire)','faisait','Faire has the imperfect form faisait for il.',[],'weather imperfect'],
  ['reading','What did Léa often do at that time?','lire des livres','Léa says je lisais beaucoup de livres.',['jouer au foot','lire des livres','nager'],'comprehension'],
  ['choice','What is the correct imparfait of finir with nous?','finissions','Remove -ons from finissons and add -ions: finissions.',['finions','finissions','finisais'],'imparfait stem'],
- ['fill','Ils ___ toujours tôt. (arriver)','arrivaient','The ils imperfect ending is -aient.',[],'imparfait endings']
+ ['fill','Ils ___ toujours tôt. (arriver)','arrivaient','The ils imperfect ending is -aient.',[],'imparfait endings'],
+ ["choice","You describe a former weekly habit, not one single completed match. Which sentence uses the right tense and subject?","Chaque samedi, nous jouions aux cartes.","The imparfait describes a repeated background habit, and nous takes the -ions ending.",["Chaque samedi, nous jouaient aux cartes.","Chaque samedi, nous jouions aux cartes.","Chaque samedi, nous jouons aux cartes."],"habitual past"],
+ ["fill","Quand elle était petite, elle ___ souvent des histoires. (lire, imparfait)","lisait","The continuing childhood habit takes imparfait: elle lisait, formed from nous lisons.",[],"imparfait habit"]
  ],
  writing:['Describe childhood life in six sentences using location, weather and at least three repeated activities.', ['Use ét- and at least two other correct imparfait stems.','Include souvent or chaque été to mark repeated habits.','Describe a background state instead of only naming events.'],'Quand j’étais petit, j’habitais près de la mer. Il faisait chaud en été. Je jouais souvent dehors. Nous allions à la plage chaque samedi. Mon frère nageait. Le soir, nous lisions ensemble.']
 },
@@ -41,7 +43,9 @@ const authored:A1AuthoredSpec[]=[
  ['fill','Pendant que nous ___, elle écrivait. (manger)','mangions','Two simultaneous ongoing activities can use imparfait.',[],'simultaneous aspect'],
  ['reading','How was the weather at the station?','il pleuvait','Théo states that it was raining when he arrived.',['il neigeait','il pleuvait','il faisait soleil'],'comprehension'],
  ['choice','Which expression often marks a sudden event?','tout à coup','Tout à coup introduces a change in the narrative.',['chaque matin','d’habitude','tout à coup'],'time marker'],
- ['fill','Hier, je ___ malade, donc je suis resté chez moi. (être)','étais','The illness is described as a past state even with hier.',[],'past state']
+ ['fill','Hier, je ___ malade, donc je suis resté chez moi. (être)','étais','The illness is described as a past state even with hier.',[],'past state'],
+ ["choice","The crossing was already in progress when one bell rang. Which sentence preserves that meaning?","Je traversais la place quand la cloche a sonné.","Traversais sets the scene in progress; a sonné introduces the punctual bell event.",["Je traversé la place quand la cloche sonnait.","Je traversais la place quand la cloche a sonné.","Je traversais la place quand la cloche a sonner."],"narrative aspect"],
+ ["fill","Complete the ongoing activity: Pendant que nous ___, le téléphone a sonné. (dîner, imparfait)","dînions","Pendant que sets the simultaneous background here, so nous dînions is imparfait.",[],"simultaneous background"]
  ],
  writing:['Tell a short incident in six sentences with a background scene, simultaneous action and sudden event.', ['Use imparfait for at least two ongoing descriptions.','Use passé composé for a specific event that changes the scene.','Explain your tense choices with the difference in viewpoint.'],'Hier, il pleuvait et la rue était vide. Je marchais vers la gare. Pendant que je cherchais mon billet, mon téléphone a sonné. J’ai répondu et mon ami a annoncé son arrivée.']
 },

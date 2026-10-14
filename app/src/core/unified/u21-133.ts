@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-133",
     "title": "Film festival: translating a trailer is not permission to screen the full work",
+    "readingTitle": "Une bande-annonce traduite ne donne pas le droit de projeter",
     "goal": "Revise a festival announcement using distinct screening permissions and accurate context-sensitive subtitles.",
     "grammarKeys": [
       "relative",

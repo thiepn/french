@@ -33,7 +33,8 @@ for(const [i,unit] of ORIGINAL_A2_UNITS.entries()){
  assert.ok(!seen.has(identity));seen.add(identity);
  assert.equal(unit.vocabulary.length,12);
  assert.ok(unit.dialogue.length>=5);
- assert.equal(unit.tasks.length,10);
+ assert.equal(unit.tasks.length,["a2-05","a2-06"].includes(unit.id)?12:10);
+  for(const [index,task] of unit.tasks.slice(0,10).entries())assert.equal(task.id,unit.id+'-task-'+String(index+1).padStart(2,'0'),'Historical exercise IDs remain unchanged');
  assert.equal(unit.grammar.length,2);
  assert.ok(unit.grammar.every(g=>g.explanation.length>=120&&g.examples.length>=2&&
   g.correction.every(line=>line.length>0)));
@@ -66,7 +67,7 @@ for(const [i,unit] of ORIGINAL_A2_UNITS.entries()){
 assert.equal(vocabulary,168);
 assert.ok(dialogue>=70);
 assert.equal(grammar,28);
-assert.equal(recall,140);
+assert.equal(recall,144);
 assert.equal(listening,28);
 assert.equal(getOriginalFrenchUnit('a2-14')?.title,'A2 narrative capstone: from memory to message');
 assert.equal(getOriginalFrenchUnit('a1-24')?.title,'A1 capstone — a day in France');

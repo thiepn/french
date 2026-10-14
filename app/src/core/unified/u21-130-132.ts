@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-130",
     "title": "Student newspaper correction: anonymous allegation versus verified record",
+    "readingTitle": "Corriger une accusation sans multiplier les dommages",
     "goal": "Revise a misleading investigative headline with fair attribution and independent source corroboration.",
     "grammarKeys": [
       "report",
@@ -262,6 +263,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-131",
     "title": "Community flood-memory map: historical high-water marks and uncertain present risk",
+    "readingTitle": "Souvenirs de crue et risques d’aujourd’hui",
     "goal": "Compare archival flood memories with modern topographic information without converting one past mark into a forecast.",
     "grammarKeys": [
       "past",
@@ -521,6 +523,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-132",
     "title": "Multilingual science museum caption: interpreting probability without misleading certainty",
+    "readingTitle": "Traduire une probabilité sans fabriquer de certitude",
     "goal": "Revise a translated probability claim and preserve both its numerical scope and explanatory uncertainty.",
     "grammarKeys": [
       "compare",

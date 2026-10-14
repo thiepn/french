@@ -74,47 +74,47 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Samira",
         "Le panneau annonce que quatre habitants sur cinq veulent le jardin partagé.",
-        "Samira quotes a claim about overwhelming support."
+        "The sign announces that four out of five residents want the community garden."
       ],
       [
         "Louis",
         "Le tableau indique seulement quatre-vingts votes favorables sur cent bulletins reçus.",
-        "Louis distinguishes the actual respondent denominator."
+        "The table only shows eighty votes in favour out of one hundred ballots received."
       ],
       [
         "Aïcha",
         "Ces cent bulletins ne proviennent pas d'un échantillon tiré au hasard.",
-        "Aïcha identifies the non-random participation mechanism."
+        "Those one hundred ballots do not come from a randomly selected sample."
       ],
       [
         "Samira",
         "Des personnes sans internet n'ont peut-être même pas vu l'appel à voter.",
-        "Samira notes missing offline access."
+        "People without internet access may not even have seen the invitation to vote."
       ],
       [
         "Louis",
         "Le portail autorisait une réponse par compte, pas nécessairement par ménage.",
-        "Louis distinguishes accounts from households."
+        "The portal allowed one answer per account, not necessarily per household."
       ],
       [
         "Aïcha",
-        "La proposition a-t-elle déjà obtenu les vingt mille euros prévus?",
-        "Aïcha asks whether the earmarked budget is final."
+        "Les vingt mille euros prévus ont-ils déjà été accordés à ce projet ?",
+        "Have the planned twenty thousand euros already been awarded to this project?"
       ],
       [
         "Samira",
         "Non, le conseil doit encore vérifier le coût de l'entretien et la faisabilité.",
-        "Samira says costs and feasibility await council review."
+        "No, the council still has to check the maintenance costs and feasibility."
       ],
       [
         "Louis",
         "Organisons une permanence et publions les critères avant de relancer la consultation.",
-        "Louis proposes a more inclusive consultation."
+        "Let's organise an information session and publish the criteria before reopening the consultation."
       ],
       [
         "Aïcha",
         "Nous pourrons annoncer le soutien des répondants, pas celui de tous les habitants.",
-        "Aïcha formulates an accurate and qualified conclusion."
+        "We will be able to report support among respondents, not among all residents."
       ]
     ],
     "readingTitle": "Quatre-vingts voix, mais de quelle population?",

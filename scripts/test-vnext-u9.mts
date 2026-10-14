@@ -34,7 +34,8 @@ for(const [offset,unit] of PRACTICAL_A2_UNITS.entries()){
  assert.equal(unit.vocabulary.length,12);
  assert.equal(unit.grammar.length,2);
  assert.ok(unit.dialogue.length>=5);
- assert.equal(unit.tasks.length,10);
+ assert.equal(unit.tasks.length,["a2-15","a2-20"].includes(unit.id)?12:10);
+  for(const [index,task] of unit.tasks.slice(0,10).entries())assert.equal(task.id,unit.id+'-task-'+String(index+1).padStart(2,'0'),'Historical exercise IDs remain unchanged');
  assert.ok(unit.grammar.every(g=>g.explanation.length>=120&&g.examples.length>=2&&g.correction.every(t=>t.length>5)));
  assert.ok(unit.writing.model.length>=65&&unit.writing.criteria.length>=3);
  const modes=new Set<string>();
@@ -63,7 +64,7 @@ for(const [offset,unit] of PRACTICAL_A2_UNITS.entries()){
 assert.equal(vocab,168);
 assert.equal(grammar,28);
 assert.equal(dialogue,70);
-assert.equal(exercises,140);
+assert.equal(exercises,144);
 assert.equal(questions,28);
 assert.equal(getFullFrenchUnit('a2-28')?.title,'A2 practical capstone: independent decisions');
 assert.equal(getFullFrenchUnit('a1-24')?.title,'A1 capstone — a day in France');
@@ -72,7 +73,7 @@ const older=new Set(ORIGINAL_FRENCH_UNITS.map(u=>u.id));
 assert.equal(suggestedFullFrenchUnit(older)?.id,'a2-15');
 assert.equal(suggestedFullFrenchUnit(new Set(FULL_ORIGINAL_FRENCH_COURSE.map(u=>u.id))),null);
 const first=PRACTICAL_A2_UNITS[0];
-assert.equal(fullFrenchPracticeStatus(first.id,new Map())?.remaining,10);
+assert.equal(fullFrenchPracticeStatus(first.id,new Map())?.remaining,12);
 assert.equal(fullFrenchPracticeStatus(first.id,new Map(first.tasks.map(t=>[t.id,true])))?.locallyPracticed,true);
 assert.equal(fullFrenchPracticeStatus('missing',new Map()),null);
 console.log(JSON.stringify({schema:'thiepn-french-u9-original-a2',status:'PASS',

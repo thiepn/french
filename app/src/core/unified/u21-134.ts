@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-134",
     "title": "Protected bicycle junction: near-miss reports and incomplete traffic records",
+    "readingTitle": "Un carrefour à vélo vu par plusieurs témoins",
     "goal": "Defend a proportionate cycling improvement without converting near misses or incomplete counters into certified crash statistics.",
     "grammarKeys": [
       "concession",

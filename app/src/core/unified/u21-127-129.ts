@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-127",
     "title": "Public-library repair diaries: maintenance logs, anecdotal failures and user trust",
+    "readingTitle": "La panne observée et la panne racontée",
     "goal": "Differentiate reported incidents from complete reliability statistics and write a reasoned service-status report.",
     "grammarKeys": [
       "passive",
@@ -262,6 +263,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-128",
     "title": "Historic neighborhood cookbook: oral recipe variants and false claims of a single authentic version",
+    "readingTitle": "Une recette, plusieurs mémoires",
     "goal": "Compare multiple family recollections without fabricating ingredient identity or declaring one tradition uniquely authentic.",
     "grammarKeys": [
       "report",
@@ -521,6 +523,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-129",
     "title": "Community science fair: citizen noise maps, uncalibrated devices and policy claims",
+    "readingTitle": "La carte du bruit et ses mesures incertaines",
     "goal": "Critically compare crowd-sourced sound readings and source methodology before proposing urban policy.",
     "grammarKeys": [
       "compare",

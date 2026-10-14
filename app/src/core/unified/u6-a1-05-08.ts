@@ -40,7 +40,9 @@ const authored:A1AuthoredSpec[]=[
  ['order','Arrange: tu / où / habites / ?','Tu habites où ?','Spoken French often puts où at the end of the question.',['où','Tu','?','habites'],'syntax'],
  ['reading','What is Zoé asking about at the end?','la carte','Zoé asks about the price of the card.',['le musée','la carte','le train'],'comprehension'],
  ['choice','Choose the feminine form of “which” before heure.','quelle','Heure is feminine, so use quelle.',['quel','quelle','quels'],'agreement'],
- ['fill','Est-ce ___ il arrive à huit heures ?','qu’','Use qu’ before the vowel in il after est-ce.',[],'elision']
+ ['fill','Est-ce ___ il arrive à huit heures ?','qu’','Use qu’ before the vowel in il after est-ce.',[],'elision'],
+ ["choice","You speak to a station employee you do not know. Which question uses formal vous and correct est-ce que word order?","Est-ce que vous travaillez ici ?","After est-ce que, preserve normal subject–verb order; vous also fits an unfamiliar adult.",["Est-ce que travaillez vous ici ?","Est-ce que vous travaillez ici ?","Est-ce que tu travaillez ici ?"],"polite questions"],
+ ["fill","___ est-ce que le bus arrive ? (When does the bus arrive?)","Quand","Quand asks about time; use a question word before est-ce que and keep the statement order afterward.",[],"time question"]
  ],
  writing:['Write three questions for a librarian: one about location, one about opening hours and one about price.', ['Use where/when/how much appropriately.','Include an est-ce que question.','Check question marks and normal word order.'],'Où est la bibliothèque ? Est-ce qu’elle est ouverte demain ? Combien coûte la carte ?']
 },
@@ -62,7 +64,9 @@ const authored:A1AuthoredSpec[]=[
  ['order','Arrange: pas / Je / ne / travaille','Je ne travaille pas','Ne precedes travaille and pas follows it.',['pas','Je','travaille','ne'],'word order'],
  ['reading','What does Lina have instead of sugar?','du miel','Lina says mais j’ai du miel.',['du lait','du miel','du sucre'],'comprehension'],
  ['choice','Which expresses a positive preference?','Je préfère le thé.','Préférer expresses what someone likes better.',['Je ne travaille pas.','Je préfère le thé.','Je n’ai pas de voiture.'],'meaning'],
- ['fill','Nous n’___ pas le café. (aimer)','aimons','With nous, aimer becomes aimons, inside n’ … pas.',[],'conjugation']
+ ['fill','Nous n’___ pas le café. (aimer)','aimons','With nous, aimer becomes aimons, inside n’ … pas.',[],'conjugation'],
+ ["choice","You have no ticket at the bus stop. Which standard written sentence expresses the missing ticket?","Je n’ai pas de billet.","A plain negative possession statement changes un billet to de billet; ne and pas surround ai.",["Je n’ai pas du billet.","Je n’ai pas de billet.","Je ne suis pas de billet."],"negative possession"],
+ ["fill","A friend offers olives. Complete: Je n’___ pas les olives. (aimer, je)","aime","Aimer keeps the definite article les for a general preference; the negative surrounds aime.",[],"negated preference"]
  ],
  writing:['Write a short food conversation: what you like, what you dislike and something you do not have.', ['Use one affirmative preference.','Use ne/n’ … pas twice correctly.','After negative avoir, check whether de is needed.'],'J’aime le thé, mais je n’aime pas le café. Je n’ai pas de sucre.']
 },

@@ -74,47 +74,47 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "Nina",
         "Notre affiche annonce que les archives sont accessibles à tous, parce que le plan montre une rampe à l’entrée principale.",
-        "Our notice says universally accessible because a ramp appears on a plan."
+        "Our poster says that the archives are accessible to everyone because the map shows a ramp at the main entrance."
       ],
       [
         "Hugo",
         "Le plan date du printemps et ne décrit ni le couloir intérieur ni l’ascenseur qui mène aux salles de lecture.",
-        "The older plan omits the corridor and reading-room lift."
+        "The map dates from the spring and describes neither the interior corridor nor the lift leading to the reading rooms."
       ],
       [
         "Nina",
         "Un message récent indique que l’ascenseur sera indisponible mardi, mais je ne sais pas quelles salles seront concernées.",
-        "Tuesday's lift closure is confirmed, not its full impact."
+        "A recent message says the lift will be unavailable on Tuesday, but I don't know which rooms will be affected."
       ],
       [
         "Hugo",
         "Il serait trompeur de promettre un parcours complet ou de déclarer les archives inaccessibles sans connaître les autres possibilités.",
-        "Neither universal access nor total closure is established."
+        "It would be misleading to promise access throughout the building or to declare the archives inaccessible without knowing what other options exist."
       ],
       [
         "Nina",
         "Je souhaiterais donner aux visiteurs un contact et des informations datées, sans leur demander de révéler un diagnostic personnel.",
-        "We can provide practical help without requiring diagnoses."
+        "I would like to give visitors a contact person and dated information, without asking them to disclose a personal medical diagnosis."
       ],
       [
         "Hugo",
-        "La présence d’une rampe ne dit pas si toutes les portes et tous les paliers conviennent à chaque personne.",
-        "One feature cannot prove the whole route."
+        "La présence d’une rampe ne permet pas de savoir si toutes les portes et tous les paliers conviennent à chaque personne.",
+        "The presence of a ramp does not tell us whether all the doors and landings suit every person."
       ],
       [
         "Nina",
         "Nous devrions distinguer le trajet observé, le service momentanément indisponible et les possibilités qui restent à confirmer.",
-        "Separate observed route, temporary disruption and unknown options."
+        "We should distinguish the route we have observed, the service that is temporarily unavailable and the options still to be confirmed."
       ],
       [
         "Hugo",
         "Une version révisée peut expliquer précisément l’incertitude et inviter à vérifier son trajet auprès de l’accueil.",
-        "A revised notice can state limits with an official contact."
+        "A revised version can explain the uncertainty precisely and invite visitors to check their route with reception."
       ],
       [
         "Nina",
         "Je vais rédiger une annonce respectueuse, puis demander un contrôle sur place avant de faire de nouvelles promesses.",
-        "I will update the notice and seek an on-site verification."
+        "I'll write a respectful announcement, then request an on-site inspection before making any new promises."
       ]
     ],
     "readingTitle": "Avis de visite : un symbole d’accessibilité ne décrit pas tout un déplacement",
@@ -334,47 +334,47 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "Camille",
         "Nous avons enregistré un entretien sur l’histoire du marché, et notre affiche annonce déjà que tous les témoignages seront publiés en podcast.",
-        "The project advertises every interview as a podcast."
+        "We recorded an interview about the market's history, and our poster already says that all the testimonies will be published as podcasts."
       ],
       [
         "Idriss",
         "Une participante avait accepté une conservation dans les archives, mais son formulaire ne mentionne aucune diffusion sur Internet.",
-        "One participant agreed only to archival storage."
+        "One participant had agreed to preservation in the archives, but her form says nothing about distribution on the internet."
       ],
       [
         "Camille",
         "Le montage court enlève aussi sa phrase « je ne suis plus certaine de la date », ce qui donne à son souvenir une certitude qu’il n’avait pas.",
-        "An edit removes her important date uncertainty."
+        "The short edit also removes her words 'I'm no longer sure of the date', giving her memory a certainty it did not have."
       ],
       [
         "Idriss",
         "Nous devons restaurer la nuance et vérifier séparément les autorisations pour chaque usage prévu.",
-        "We need faithful editing and use-specific permission."
+        "We need to restore that nuance and check the permissions separately for each intended use."
       ],
       [
         "Camille",
         "Les bénévoles disent que publier les voix rendrait le projet plus vivant, et je comprends leur enthousiasme.",
-        "Publishing voices could make the history vivid."
+        "The volunteers say that publishing the voices would make the project more vivid, and I understand their enthusiasm."
       ],
       [
         "Idriss",
         "Cela n’autorise pas à transformer une permission d’archivage en accord de publication, même si les intentions sont bonnes.",
-        "Good intentions don't expand rights."
+        "That does not authorize us to turn permission to archive something into consent to publish it, even if our intentions are good."
       ],
       [
         "Camille",
         "Je pourrais préparer une présentation anonyme des thèmes déjà autorisés, sans utiliser la voix ou le nom de cette participante.",
-        "We can summarize authorized themes without exposing the speaker."
+        "I could prepare an anonymous presentation of the already approved themes without using this participant's voice or name."
       ],
       [
         "Idriss",
         "Il faudrait aussi permettre de vérifier la transcription et d’expliquer le montage avant d’inviter la personne à prendre une décision.",
-        "Offer transcript review and explain edits."
+        "We should also allow her to check the transcript and explain the editing before inviting her to make a decision."
       ],
       [
         "Camille",
         "Je corrigerai l’affiche et distinguerai les entretiens enregistrés, les extraits validés et les épisodes effectivement publiables.",
-        "I'll separate recording, approved excerpts and release."
+        "I'll correct the poster and distinguish recorded interviews, approved excerpts and episodes that can actually be published."
       ]
     ],
     "readingTitle": "Mémoire sonore : enregistrer une voix n’autorise pas toutes les utilisations",
@@ -594,47 +594,47 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       [
         "Solène",
         "Les photos avant-après de notre campagne montrent un ciel beaucoup plus sombre depuis le changement des lampadaires.",
-        "The before/after photos show a darker sky after lamp replacement."
+        "The before-and-after photographs from our campaign show a much darker sky since the streetlights were changed."
       ],
       [
         "Mathis",
         "La première photo a été prise par temps couvert avec une exposition longue, la seconde par ciel dégagé avec d’autres réglages.",
-        "Different clouds and exposure settings undermine comparison."
+        "The first photo was taken under cloudy skies with a long exposure, and the second under clear skies with different settings."
       ],
       [
         "Solène",
         "Cela ne prouve donc pas que l’amélioration est fausse, seulement que ces images ne permettent pas de la quantifier.",
-        "The photos don't prove no effect, but can't measure it."
+        "So that does not prove that the improvement is false, only that these images cannot be used to quantify it."
       ],
       [
         "Mathis",
         "Les deux relevés concernent aussi des heures différentes et des rues qui n’ont pas exactement le même éclairage.",
-        "The numerical readings differ by hour and location."
+        "The two readings also relate to different times and to streets that do not have exactly the same lighting."
       ],
       [
         "Solène",
         "Notre affiche attribue pourtant toute la différence au remplacement des lampes.",
-        "The poster claims sole causation without controls."
+        "Yet our poster attributes the entire difference to the replacement of the lamps."
       ],
       [
         "Mathis",
         "Nous devrions comparer des observations répétées dans des conditions aussi proches que possible.",
-        "Repeated comparable measurements would strengthen conclusions."
+        "We should compare repeated observations made under conditions as similar as possible."
       ],
       [
         "Solène",
         "Les habitants parlent également de confort et de sécurité, ce que la seule photo du ciel ne suffit pas à décrire.",
-        "Public concerns extend beyond sky photographs."
+        "Residents also talk about comfort and safety, which a photograph of the sky alone is not enough to describe."
       ],
       [
         "Mathis",
-        "Nous pouvons proposer un essai local et recueillir plusieurs types de retours, sans promettre une amélioration déjà démontrée.",
-        "Try a bounded evaluation."
+        "Nous pouvons proposer un essai local et recueillir plusieurs types de retours, sans présenter cette amélioration comme déjà démontrée.",
+        "We can propose a local trial and gather several types of feedback without presenting the improvement as already proven."
       ],
       [
         "Solène",
         "Je réécrirai le dossier pour séparer résultats observés, effets possibles et décisions encore à discuter.",
-        "I'll separate observation, hypotheses and choices."
+        "I'll rewrite the report to distinguish observed results, possible effects and decisions that still need to be discussed."
       ]
     ],
     "readingTitle": "Carnet d’observation : une photographie impressionnante n’est pas encore une mesure comparable",
