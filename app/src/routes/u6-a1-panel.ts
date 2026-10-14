@@ -401,6 +401,24 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    }
   }
   function renderWords(unit:A1Unit,container:HTMLElement){
+   const native=el('div',undefined,'u40-lesson-native');
+   container.append(native);
+   void import('./u40-native-panel').then(module=>{
+    if(signal.aborted||!native.isConnected)return;
+    void module.mountU40NativeLesson(native,unit.id,{
+     signal,
+     onReview:()=>navigateSafely('review'),
+     onLearn:()=>navigateSafely('learn'),
+     onWords:id=>{
+      if(!allowExit())return;
+      module.handoffU40Word(id);
+      navigate('words');
+     }
+    });
+   }).catch(error=>{
+    if(!signal.aborted&&native.isConnected)native.textContent='Native lexical links unavailable. Original vocabulary below still works.';
+    console.error('U40 lexical bridge unavailable',error);
+   });
    appendOriginalVocabularyJourney(container,unit.id,{
     mode:'course',signal,
     onNativeReview:()=>navigateSafely('review'),
