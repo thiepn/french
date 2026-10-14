@@ -142,6 +142,7 @@ export interface OriginalA1SoundContrast{
  readonly b:Readonly<{french:string;meaning:string;reading:string}>;
  readonly guidance:string;
  readonly selfCheck:string;
+ readonly hearingLimit?:'homophone'|'device-variation';
 }
 /**
  * Source-owned pronunciation contrasts for original A1-01..12. IPA is pedagogical,
@@ -167,12 +168,12 @@ export const ORIGINAL_A1_SOUND_CONTRASTS:Readonly<Record<string,readonly Origina
   {"focus":"silent d becomes audible","a":{"french":"Ce sac est lourd.","meaning":"This bag is heavy.","reading":"lourd /luʁ/"},"b":{"french":"Cette valise est lourde.","meaning":"This suitcase is heavy.","reading":"lourde /luʁd/"},"guidance":"Lourd normally ends without an audible d; lourde adds audible /d/. Written feminine e is not simply pronounced as an English ee.","selfCheck":"Listen for the final consonant in lourde, not an extra final vowel; repeat it after both different noun genders."}
  ],
  "a1-05":[
-  {"focus":"written -ent is usually silent","a":{"french":"Il parle français.","meaning":"He speaks French.","reading":"parle /paʁl/"},"b":{"french":"Ils parlent français.","meaning":"They speak French.","reading":"parlent /paʁl/"},"guidance":"Parle and parlent are normally homophonous in these sentences. Sound alone does NOT distinguish subject number; the written subject and context do.","selfCheck":"These two verb forms normally sound the same. Can you infer the number from context instead?"},
+  {"focus":"written -ent is usually silent","hearingLimit":"homophone","a":{"french":"Il parle français.","meaning":"He speaks French.","reading":"parle /paʁl/"},"b":{"french":"Ils parlent français.","meaning":"They speak French.","reading":"parlent /paʁl/"},"guidance":"Parle and parlent are normally homophonous in these sentences. Sound alone does NOT distinguish subject number; the written subject and context do.","selfCheck":"These two verb forms normally sound the same. Can you infer the number from context instead?"},
   {"focus":"-ons vs -ez","a":{"french":"Nous parlons français.","meaning":"We speak French.","reading":"parlons /paʁlɔ̃/"},"b":{"french":"Vous parlez français.","meaning":"You speak French.","reading":"parlez /paʁle/"},"guidance":"The nous ending -ons contains a nasal vowel, while vous -ez ends in /e/. The endings are audible even though some other -er endings are silent.","selfCheck":"Listen for the verb ending; then replace the speaker and say the new form."}
  ],
  "a1-06":[
   {"focus":"qui vs que","a":{"french":"Qui arrive demain ?","meaning":"Who arrives tomorrow?","reading":"qui /ki/"},"b":{"french":"Que voulez-vous ?","meaning":"What would you like?","reading":"que /kə/"},"guidance":"Qui normally has /i/; unstressed que usually has schwa /ə/ (sometimes weakened or elided in connected speech). They are not interchangeable question words.","selfCheck":"Hear the vowel following /k/, and compare their grammatical roles."},
-  {"focus":"où vs ou: written distinction","a":{"french":"Où est le parc ?","meaning":"Where is the park?","reading":"où /u/"},"b":{"french":"Thé ou café ?","meaning":"Tea or coffee?","reading":"ou /u/"},"guidance":"Où (where) and ou (or) are homophones in standard French. Only accent, syntax and meaning distinguish them; this is NOT a valid sound-only discrimination test.","selfCheck":"Try the audio, then explain why the spelling and meaning differ despite the shared sound."}
+  {"focus":"où vs ou: written distinction","hearingLimit":"homophone","a":{"french":"Où est le parc ?","meaning":"Where is the park?","reading":"où /u/"},"b":{"french":"Thé ou café ?","meaning":"Tea or coffee?","reading":"ou /u/"},"guidance":"Où (where) and ou (or) are homophones in standard French. Only accent, syntax and meaning distinguish them; this is NOT a valid sound-only discrimination test.","selfCheck":"Try the audio, then explain why the spelling and meaning differ despite the shared sound."}
  ],
  "a1-07":[
   {"focus":"negation in careful and casual speech","a":{"french":"Je ne sais pas.","meaning":"I do not know (careful form).","reading":"ne ... pas /nə ... pa/"},"b":{"french":"Je sais pas.","meaning":"I don't know (common casual speech).","reading":"pas /pa/"},"guidance":"Spoken French often omits ne while keeping pas. Both examples mean a negative: deleting ne alone does NOT turn the sentence positive. Formal writing generally keeps ne.","selfCheck":"Compare what remains of the negative construction; do not infer opposite meaning from missing ne."},
@@ -247,6 +248,101 @@ export const ORIGINAL_A1_SOUND_CONTRASTS:Readonly<Record<string,readonly Origina
   {"focus":"polite service: link after vous","a":{"french":"Vous voulez du pain ?","meaning":"Would you like some bread?","reading":"vous voulez /vu vule/"},"b":{"french":"Vous avez du pain ?","meaning":"Do you have any bread?","reading":"vous avez /vuz‿ave/"},"guidance":"The polite vous links a /z/ before vowel-initial avez, not before the consonant in voulez. The first question offers bread; the second asks whether any is available.","selfCheck":"Hear the liaison and distinguish an offer from a question about stock before answering."}
  ]
 });
+/** Original passage indexes for targeted replay. Inclusive zero-based dialogue-turn ranges,
+ * indexed by the *existing* lesson + listening-question order, never a new question identity. */
+const ORIGINAL_A1_LISTENING_EVIDENCE:Readonly<Record<string,readonly (readonly [number,number])[]>>=Object.freeze({
+ "a1-01":[[1,1],[1,1]],
+ "a1-02":[[1,1],[2,3]],
+ "a1-03":[[1,1],[2,3]],
+ "a1-04":[[2,3],[3,3]],
+ "a1-05":[[1,1],[1,1]],
+ "a1-06":[[0,1],[3,4]],
+ "a1-07":[[0,1],[2,3]],
+ "a1-08":[[1,1],[1,3]],
+ "a1-09":[[2,3],[2,3]],
+ "a1-10":[[2,3],[2,3]],
+ "a1-11":[[2,3],[2,3]],
+ "a1-12":[[1,3],[2,3]],
+ "a1-13":[[2,3],[4,4],[1,3]],
+ "a1-14":[[1,2],[3,4],[2,4]],
+ "a1-15":[[0,1],[4,4],[2,3]],
+ "a1-16":[[0,1],[2,2],[2,3]],
+ "a1-17":[[0,1],[2,3],[3,4]],
+ "a1-18":[[0,1],[2,3],[3,4]],
+ "a1-19":[[0,1],[2,3],[2,3]],
+ "a1-20":[[0,1],[3,4],[2,4]],
+ "a1-21":[[2,3],[4,4],[1,2]],
+ "a1-22":[[1,3],[3,4],[3,4]],
+ "a1-23":[[0,0],[3,4],[3,4]],
+ "a1-24":[[0,1],[3,3],[3,4]]
+});
+/** Optional original source context for an existing listening question, no grading. */
+export function originalA1ListeningEvidence(unit:A1Unit,questionId:string):readonly A1Unit['dialogue'][number][]{
+ const prefix=unit.id+'-listen-';
+ if(!questionId.startsWith(prefix))return [];
+ const index=Number(questionId.slice(prefix.length))-1;
+ if(!Number.isInteger(index)||index<0)return [];
+ const range=ORIGINAL_A1_LISTENING_EVIDENCE[unit.id]?.[index];
+ if(!range||range[0]<0||range[1]>=unit.dialogue.length||range[0]>range[1])return [];
+ return unit.dialogue.slice(range[0],range[1]+1);
+}
+export function validateOriginalA1ListeningEvidence(units:readonly A1Unit[]):readonly string[]{
+ const issues:string[]=[];
+ for(const unit of units.filter(x=>x.id.startsWith('a1-'))){
+  const questions=listeningQuestions(unit),rows=ORIGINAL_A1_LISTENING_EVIDENCE[unit.id];
+  if(!rows||rows.length!==questions.length){issues.push('Missing evidence for '+unit.id);continue;}
+  for(const question of questions){
+   const lines=originalA1ListeningEvidence(unit,question.id);
+   if(!lines.length||lines.length>3)issues.push('Invalid original turn replay '+question.id);
+  }
+ }
+ if(Object.keys(ORIGINAL_A1_LISTENING_EVIDENCE).length!==24)issues.push('Expected 24 original A1 evidence maps');
+ return issues;
+}
+/** Independent, spoken, learner-owned transfer after the original phonology comparisons. */
+export interface OriginalA1SpokenTransfer{
+ readonly context:string;
+ readonly selfCheck:string;
+}
+const ORIGINAL_A1_SPOKEN_TRANSFER:Readonly<Record<string,OriginalA1SpokenTransfer>>=Object.freeze({
+ "a1-01":{"context":"A new colleague greets you formally at a community class. Greet them, introduce yourself, and end politely, then switch to greeting a close friend.","selfCheck":"Choose bonjour versus salut for the relationship; contrast the rounded vowel in tu with ou in tout when practising a separate sentence."},
+ "a1-02":{"context":"You are at a shared lunch. Describe a good soup and a good cake, then ask where one friend studies.","selfCheck":"Choose bonne for soupe and bon for gâteau; make the nasal versus oral vowel and final /n/ clear without treating the accent as a grade."},
+ "a1-03":{"context":"You are unpacking school supplies with another student. Say you have a friend waiting and identify a hero from a story.","selfCheck":"Use un ami versus un héros with the appropriate liaison boundary; an aspirated h category blocks liaison but is not English /h/."},
+ "a1-04":{"context":"At the luggage counter, tell a friend that a small bag is light but a large suitcase is heavy.","selfCheck":"Match adjectives to nouns; compare petit/petite or lourd/lourde and check whether the written final consonant is pronounced."},
+ "a1-05":{"context":"You and a classmate introduce your work schedules to a neighbour. First describe one person's job, then what several people do.","selfCheck":"Say a clear singular and plural subject; note parle/parlent may sound the same, but nous parlons and vous parlez carry different endings."},
+ "a1-06":{"context":"Ask an unfamiliar employee where the nearest library is, then ask a friend which café they prefer.","selfCheck":"Use a polite vous question for the employee; distinguish qui from que and remember où and ou can sound identical."},
+ "a1-07":{"context":"A friend offers you coffee and sugar, but you want tea without sugar. Refuse naturally and say what you prefer.","selfCheck":"Retain pas in a casual spoken refusal even if ne weakens; use de after a neutral negative quantity without erasing a definite article after aimer."},
+ "a1-08":{"context":"Describe two things in a shop window: a green jacket and a long green scarf, choosing appropriate adjective agreement.","selfCheck":"Say the actual nouns before their adjective forms; check whether the final /t/ of verte or /g/ of longue becomes audible."},
+ "a1-09":{"context":"Give a visitor directions from the town hall to the museum, including a polite request to turn left.","selfCheck":"Use vous allez with liaison before a vowel and vous tournez without an inserted /z/ before t; distinguish au from où in context."},
+ "a1-10":{"context":"You need to change a reservation from two days to two hours before the event. Explain both timings clearly.","selfCheck":"Keep the time unit audible: deux heures has /z/ liaison; deux jours does not. Confirm the time rather than assuming agreement."},
+ "a1-11":{"context":"Tell a roommate about waking up, getting dressed, and going to bed early when you are tired.","selfCheck":"Use je me lève versus je m'habille with appropriate elision; describe an independent routine rather than repeating the model."},
+ "a1-12":{"context":"A friend proposes a cinema visit, but you are busy on Saturday. Propose Sunday and say where you will meet.","selfCheck":"Use on a with /n/ liaison when a follows, but no artificial /n/ before va; a new proposal is not accepted until someone responds."},
+ "a1-13":{"context":"At a friend's picnic, ask for bread, water and some eggs, then politely decline soup.","selfCheck":"Use du pain, de l'eau and des œufs with appropriate boundaries; distinguish actual negative pas from the changed article."},
+ "a1-14":{"context":"In a small bookshop, ask whether a notebook costs two euros or twenty euros, then ask about card payment.","selfCheck":"Ask for the price rather than inventing it; two euros links /z/, twenty euros links /t/ in standard French."},
+ "a1-15":{"context":"At a fruit stall, request one kilogram of apples, three eggs and a bottle of water.","selfCheck":"Maintain kilo de and bouteille d' constructions; listen for /z/ in trois œufs, not in trois tomates."},
+ "a1-16":{"context":"A restaurant server asks about a booking. Request a table for two and two starters, then ask politely for the bill.","selfCheck":"Use vous for the server and distinguish des entrées with /z/ liaison from des plats; give a coherent service exchange."},
+ "a1-17":{"context":"Rain cancels your morning cycling plan. Suggest a museum instead and explain what you will bring.","selfCheck":"Say il pleut with /l/ rather than il peut; make the cancelled plan negative and name the alternative clearly."},
+ "a1-18":{"context":"A friend asks about your new flat. Tell them how many rooms it has and whether there is a balcony.","selfCheck":"Use il y a without changing its singular structure; compare dans un with liaison to dans le without an extra /z/."},
+ "a1-19":{"context":"You missed a tram. Politely ask the agent which line to take and where to transfer.","selfCheck":"Use prenez rather than a blunt familiar command to a stranger; distinguish the transfer stop from the final destination."},
+ "a1-20":{"context":"At a hotel desk, state your reservation name, show the requested document and ask whether your room is ready.","selfCheck":"Use formal vous forms and un hôtel with liaison; avoid an English h and do not assert readiness before staff confirms it."},
+ "a1-21":{"context":"You are looking for your friend's keys and your own ticket. Tell your friend what you see and whom you will call.","selfCheck":"Track each le or les to a noun from the prior sentence; distinguish je le prends from je les prends and use t' before appelle."},
+ "a1-22":{"context":"A friend invites you on Sunday, but you work. Decline politely and suggest Monday noon without assuming the answer.","selfCheck":"Keep pas even when conversational speech drops ne; distinguish avec plaisir from peut-être when interpreting acceptance."},
+ "a1-23":{"context":"At the post office, ask to send a letter and request a slower repetition of a price.","selfCheck":"Use je voudrais rather than an abrupt demand; do not confuse the /z/ liaison in deux euros with buying two stamps."},
+ "a1-24":{"context":"A late tram changes your plans. Ask at the market for bread and water, then ask the price without guessing.","selfCheck":"Use vous avez versus vous voulez with their different word boundaries; distinguish a seller's offer from a stated price."}
+});
+export function originalA1SpokenTransfer(id:string):OriginalA1SpokenTransfer|null{
+ return ORIGINAL_A1_SPOKEN_TRANSFER[id]??null;
+}
+export function validateOriginalA1SpokenTransfer():readonly string[]{
+ const issues:string[]=[];
+ for(let n=1;n<=24;n++){
+  const id='a1-'+String(n).padStart(2,'0'),item=originalA1SpokenTransfer(id);
+  if(!item||item.context.length<100||item.selfCheck.length<105)issues.push('Incomplete independent speech task '+id);
+ }
+ if(Object.keys(ORIGINAL_A1_SPOKEN_TRANSFER).length!==24)issues.push('Incorrect independent task inventory');
+ return issues;
+}
+
 export function originalA1SoundContrasts(id:string):readonly OriginalA1SoundContrast[]{
  return ORIGINAL_A1_SOUND_CONTRASTS[id]??[];
 }
