@@ -22,7 +22,9 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  const status=el('p','Playback has not started.','u7-speech-status');status.setAttribute('role','status');
  const controls=el('div',undefined,'u7-audio-actions');
  let activeSpeech:SpeechSynthesisUtterance|null=null;
- const supported='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
+ // A present but unavailable or blocked device API cannot be used for playback.
+ const supported=typeof window.speechSynthesis?.speak==='function'&&
+  typeof window.SpeechSynthesisUtterance==='function';
  const stop=()=>{
   if(activeSpeech&&supported){
    const previous=activeSpeech;activeSpeech=null;
