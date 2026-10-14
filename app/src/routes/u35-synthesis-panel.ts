@@ -4,6 +4,7 @@ import {
 } from '../core/unified/u35-synthesis.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u35-synthesis-panel.css';
+import {appendOriginalU36Longform} from './u36-longform-panel.ts';
 
 interface Options{
  readonly signal:AbortSignal;
@@ -84,7 +85,8 @@ export function appendOriginalU35Synthesis(host:HTMLElement,id:string,opts:Optio
  const exits=el('section','','u35-exits');
  exits.append(el('h4','Continue in the existing original learning system'));
  const status=el('p','','u35-status');status.setAttribute('role','status');
- body.append(header,stages,documents,comparisons,practice,genreArea,exits,status);
+ const u36Host=el('div','','u36-integration');
+ body.append(header,stages,documents,comparisons,practice,genreArea,u36Host,exits,status);
  let activeStage=0,activePair=0,activeCheck=0,activeGenre='service',disposed=false;
  const drafts=new Map<string,Response>();
  const comparisonDrafts=new Map<string,[string,string,string]>();
@@ -96,10 +98,17 @@ export function appendOriginalU35Synthesis(host:HTMLElement,id:string,opts:Optio
   if(disposed)return;
   const written=[...drafts.values(),...genreNotes.values()].flatMap(x=>[x.first,x.second]);
   for(const pair of comparisonDrafts.values())written.push(...pair);
-  const has=written.some(text=>text.trim().length>0);
+  const has=written.some(text=>text.trim().length>0)||
+   !!u36Host.querySelector<HTMLElement>('.u36-longform[data-has-private-draft="true"]');
   root.dataset.hasPrivateDraft=String(has);
   opts.onPrivateChange?.(has);
  };
+ const stopU36=appendOriginalU36Longform(u36Host,id,{
+  signal:opts.signal,
+  onPrivateChange:()=>notify(),
+  onOpenSurface:opts.onOpenSurface,
+  onNativeReview:opts.onNativeReview
+ });
  const witnessCard=(locator:string)=>{
   const w=source.witnesses.find(w=>w.locator===locator);if(!w)return null;
   const card=el('article','','u35-evidence-card');
@@ -318,6 +327,7 @@ export function appendOriginalU35Synthesis(host:HTMLElement,id:string,opts:Optio
  const cleanup=()=>{
   if(disposed)return;disposed=true;
   opts.signal.removeEventListener('abort',cleanup);
+  stopU36();
   drafts.clear();comparisonDrafts.clear();keyed.clear();genreNotes.clear();root.remove();
  };
  opts.signal.addEventListener('abort',cleanup,{once:true});
