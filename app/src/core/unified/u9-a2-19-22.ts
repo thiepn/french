@@ -39,7 +39,9 @@ const authored:A1AuthoredSpec[]=[
  ['fill','Je vais ___ acheter demain. (some)','en','En precedes the infinitive acheter in this construction.',[],'en infinitive'],
  ['reading','How often does the client go to the market?','chaque samedi','The client says j’y vais chaque samedi.', ['tous les jours','chaque samedi','le mercredi'],'comprehension'],
  ['choice','For “I talked to Marie”, which pronoun is appropriate?','lui','A person after parler à requires indirect lui, not place y.', ['y','en','lui'],'person versus place'],
- ['fill','Nous ___ sommes restés deux heures. (there)','y','Y replaces an earlier named place in nous y sommes restés.',[],'y placement']
+ ['fill','Nous ___ sommes restés deux heures. (there)','y','Y replaces an earlier named place in nous y sommes restés.',[],'y placement'],
+ ["choice","Someone asks: Tu vas à la bibliothèque ? Choose the short answer that refers to that place.","Oui, j’y vais.","Y replaces the destination introduced by à; en would normally replace a de phrase.",["Oui, j’en vais.","Oui, j’y vais.","Oui, je le vais."],"place pronoun"],
+ ["fill","You want two apples. Complete: Oui, j’___ voudrais deux.","en","En replaces the previously mentioned item or de expression while the quantity deux remains.",[],"quantity pronoun"]
  ],
  writing:['Write a six-line market and transport exchange that avoids repeating two food nouns and one place.', ['Use en with a quantity at least once.','Use y for a destination once.','Keep the correct pronoun placement with both a finite verb and an infinitive.'],'Je vais au marché chaque semaine. J’y vais en tram. Je voudrais des pommes et j’en prends quatre. Vous avez du fromage ? Oui, j’en veux. Demain, je vais y retourner.']
 },

@@ -19,7 +19,9 @@ const authored:A1AuthoredSpec[]=[
  ['fill','Nous avons plus ___ temps que vous.','de','Quantities use plus de before the noun temps.',[],'quantity comparison'],
  ['reading','What drawback does the first apartment have?','il est plus cher','The first apartment is larger but more expensive.',['il est trop sombre','il est plus cher','il est loin du parc'],'comprehension'],
  ['choice','Choose the feminine form of “better.”','meilleure','Meilleure agrees with a feminine singular noun.',['meilleurs','meilleure','mieux'],'agreement'],
- ['fill','Le bus est ___ cher que le taxi. (less)','moins','Moins ... que expresses a lower degree.',[],'comparison']
+ ['fill','Le bus est ___ cher que le taxi. (less)','moins','Moins ... que expresses a lower degree.',[],'comparison'],
+ ["choice","A colleague has improved how she explains ideas. Which sentence uses an adverb rather than an adjective?","Elle explique mieux son idée.","Mieux modifies expliquer. Meilleure agrees with a noun and cannot directly modify the verb.",["Elle explique meilleure son idée.","Elle explique mieux son idée.","Elle explique meilleur son idée."],"mieux versus meilleur"],
+ ["fill","Two rooms are equally comfortable. Complete: Ces chambres sont aussi confortables ___ les autres.","que","The equality comparison is aussi + adjective + que; confortables agrees with chambres.",[],"comparison of equality"]
  ],
  writing:['Compare two apartments or transport choices and recommend one in six connected sentences.', ['Use plus, moins and aussi ... que with appropriate adjectives.','Explain one advantage and one drawback.','Use meilleur or mieux in the appropriate grammatical role.'],'Le premier appartement est plus grand que le second. Il est aussi plus cher. Le second est aussi lumineux. Il est moins loin de la gare. Son rapport qualité-prix est meilleur. Je préfère le second parce qu’il est plus pratique.']
 },
