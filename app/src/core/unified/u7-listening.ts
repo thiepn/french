@@ -267,3 +267,52 @@ export function validateOriginalA1SoundContrasts():readonly string[]{
  if(Object.keys(ORIGINAL_A1_SOUND_CONTRASTS).length!==24)errors.push('Expected 24 original A1 sound-contrast lesson records');
  return errors;
 }
+
+/** Independent original A1 situational speech preparation; no input capture or academic grade. */
+export interface OriginalA1ConversationTransfer{
+ readonly context:string;
+ readonly task:string;
+ readonly check:string;
+ readonly relevantTurnIndex:number;
+}
+const A1_CONVERSATION_TRANSFERS:Readonly<Record<string,OriginalA1ConversationTransfer>>=Object.freeze({
+ "a1-01":{"context":"A newcomer at your community club asks you to introduce yourself before the activity starts.","task":"Greet them formally, say your own name and close the conversation; then do it for a friend with a different greeting.","check":"Check the difference between bonjour and salut, and say je m’appelle with proper elision rather than copying Malik’s name.","relevantTurnIndex":0},
+ "a1-02":{"context":"At a language exchange, two classmates ask what you and your friends are studying this year.","task":"Give three original French lines about yourself, a friend and the group using je suis, il est and nous sommes.","check":"Say the subjects clearly; do not invent another learner’s job and do not confuse sommes with êtes.","relevantTurnIndex":3},
+ "a1-03":{"context":"A classmate forgot their notebook and borrows supplies during a morning course.","task":"Ask for a notebook and pen, identify whose book is on the table and specify what you need for class.","check":"Choose un/une/les by noun and number; objects found in a bag are not automatically yours.","relevantTurnIndex":3},
+ "a1-04":{"context":"During a family dinner, someone introduces a sibling and asks about everyone’s ages.","task":"Say your age with avoir, ask for a sibling’s age, then give one hypothetical family age in a new setting.","check":"Listen for quinze versus dix and use avoir X ans, not être. Avoid guessing an age never said.","relevantTurnIndex":3},
+ "a1-05":{"context":"Your work schedule changes, and your friend wants to know when you can take French classes.","task":"Contrast study time and work time, use one je and one nous form, then ask about your friend’s availability.","check":"The written -ent may be silent; keep the speaker explicit and distinguish audible -ons and -ez endings.","relevantTurnIndex":1},
+ "a1-06":{"context":"You are visiting a city museum and need details from an employee you have not met.","task":"Ask where the entrance is, whether the museum is open and how much a ticket costs in formal French.","check":"Use est-ce que and question words with sensible word order, without assuming an unquoted ticket price.","relevantTurnIndex":4},
+ "a1-07":{"context":"A friend offers you coffee and sugar, but you would prefer tea without either of them.","task":"Decline coffee, explain your preference and request tea politely in three independent sentences.","check":"Keep pas to express negation even if spoken ne is dropped; check the articles after aimer and avoir.","relevantTurnIndex":3},
+ "a1-08":{"context":"You are describing a bicycle to a friend who cannot see its colour or condition.","task":"Describe a masculine and feminine component, compare their sizes and finish by asking whether the description is clear.","check":"Match gender in adjective endings and check audible final consonants rather than adding an extra final vowel.","relevantTurnIndex":1},
+ "a1-09":{"context":"A visitor is standing near a park and wants directions to a pharmacy in another street.","task":"Give three hypothetical directions using a starting point, a turn and a relative location; request confirmation.","check":"Use au, du and à la accurately; never pretend to know the actual location of a real pharmacy.","relevantTurnIndex":3},
+ "a1-10":{"context":"Your friend finishes work at fifteen hours and wants to meet at a gallery before closing.","task":"Propose a specific later meeting time and clear place, then ask your friend to confirm the arrangement.","check":"Distinguish a proposal from acceptance and say the time clearly, without inventing a reply.","relevantTurnIndex":2},
+ "a1-11":{"context":"An earlier morning bus forces you to change how you get ready before your French lesson.","task":"Explain three morning actions, including washing and dressing, and say when you leave for the bus.","check":"Listen for m’ before vowel-initial verbs and me before consonants in careful speech; keep reflexive meaning.","relevantTurnIndex":3},
+ "a1-12":{"context":"You cannot attend Saturday’s concert, but you are available for a different activity on Sunday.","task":"Decline, explain why, suggest Sunday and ask whether the new idea suits the other person.","check":"Build futur proche with an infinitive and remember that your proposal is not automatically accepted.","relevantTurnIndex":3},
+ "a1-13":{"context":"A café has run out of soup, but the waiter offers eggs and vegetables at lunch.","task":"Ask what remains available, order some food and water and politely ask whether bread is available.","check":"Use du/de la/de l’/des according to each item and do not declare an unconfirmed dish available.","relevantTurnIndex":2},
+ "a1-14":{"context":"In a clothes shop, a blue jacket and a black bag are displayed with different prices.","task":"Ask separately about both items, politely query the payment method and repeat the prices in context.","check":"Distinguish deux euros with /z/ liaison from vingt euros with /t/; do not assign a jacket price to a bag.","relevantTurnIndex":4},
+ "a1-15":{"context":"At a weekend street market, you are preparing an order for a large family meal.","task":"Order two kilos of pears, three eggs and a bottle of water, then ask the seller for the as-yet-unknown total.","check":"Use quantity + de/d’ and the right articles; trois œufs allows liaison, but the total was not supplied.","relevantTurnIndex":3},
+ "a1-16":{"context":"A restaurant can seat you at a counter, but your group of three needs a quiet table.","task":"Ask if a table for three is available, ask about a meat-free dish and order water only if offered.","check":"Use je voudrais and formal vous; never assert that the daily special is vegetarian without asking.","relevantTurnIndex":3},
+ "a1-17":{"context":"Your morning outdoor trip is threatened by rain and you are speaking to a friend about alternatives.","task":"Explain the weather, decline an outdoor activity and suggest one clear indoor alternative.","check":"Distinguish pleut and peut; avoid treating a proposed museum visit as a confirmed ticket reservation.","relevantTurnIndex":4},
+ "a1-18":{"context":"You tour an apartment with two bedrooms but have not received the full listing information.","task":"Describe the known rooms, ask if there is a balcony and request the unannounced rent.","check":"Use il y a and suitable place words; a balcony question is not proof the apartment has one.","relevantTurnIndex":4},
+ "a1-19":{"context":"A delayed tram leaves you unsure where to transfer before travelling to the railway station.","task":"Ask for line and transfer information, repeat the answer in your own words and request the next arrival.","check":"Contrast polite prenez with je prends, and never invent a stop or timetable the agent has not given.","relevantTurnIndex":3},
+ "a1-20":{"context":"At hotel reception, you need to check in under a companion’s family name.","task":"Explain the reservation, respond about your ID and ask if the room is actually ready.","check":"Practise vous and the liaison in un hôtel; a reservation does not by itself prove the room is ready.","relevantTurnIndex":4},
+ "a1-21":{"context":"In a shared apartment, your friend cannot find two keys and one train ticket.","task":"Say what you saw, ask where both items might be and use le versus les with the right referents.","check":"Track the most recent noun when choosing a pronoun: the same le need not always mean billet.","relevantTurnIndex":2},
+ "a1-22":{"context":"A friend invites you to lunch on Sunday, but you work that afternoon instead.","task":"Decline politely and suggest Monday at noon, then ask for an answer before marking anything confirmed.","check":"Preserve negative pas even in casual speech and keep proposed time separate from mutual agreement.","relevantTurnIndex":4},
+ "a1-23":{"context":"At the post office, an employee says the price of a service too quickly for you to hear.","task":"Ask for slower repetition, say the amount you think was quoted and check it before paying.","check":"Deux euros is a cost, not evidence that two stamps were bought. A request to repeat is not comprehension.","relevantTurnIndex":4},
+ "a1-24":{"context":"A late bus changes your plan, so you visit the bakery before finding a new connection.","task":"Ask about the next bus, request bread and water, then ask for the unquoted total price.","check":"Connect three polite service exchanges, but never fabricate an unknown departure or purchase amount.","relevantTurnIndex":4}
+});
+export function originalA1ConversationTransfer(id:string):OriginalA1ConversationTransfer|null{
+ return A1_CONVERSATION_TRANSFERS[id]??null;
+}
+export function validateOriginalA1ConversationTransfers():readonly string[]{
+ const issues:string[]=[];
+ if(Object.keys(A1_CONVERSATION_TRANSFERS).length!==24)issues.push('Twenty-four original A1 transfer situations required');
+ for(let i=1;i<=24;i++){
+  const id='a1-'+String(i).padStart(2,'0');
+  const v=originalA1ConversationTransfer(id);
+  if(!v||v.context.length<60||v.task.length<65||v.check.length<75||
+   !Number.isInteger(v.relevantTurnIndex)||v.relevantTurnIndex<0||v.relevantTurnIndex>4)
+   issues.push(id+' source-owned speech situation incomplete');
+ }
+ return issues;
+}
