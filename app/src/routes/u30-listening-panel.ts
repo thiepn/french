@@ -23,8 +23,9 @@ function action(label:string,handler:()=>void):HTMLButtonElement{
 }
 /** All U30 responses are disposable in-page study interactions, not SRS grades. */
 export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:Options):()=>void{
- const lesson=originalU30Listening(id);
- if(!lesson)return()=>{};
+ const foundLesson=originalU30Listening(id);
+ if(!foundLesson)return()=>{};
+ const lesson=foundLesson;
  const source=getOriginalMaterial(id);
  if(!source)return()=>{};
  const wrapper=el('section','','u30-listening');

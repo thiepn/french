@@ -38,8 +38,9 @@ function checkExit(root:HTMLElement):boolean{
 }
 /** Source-driven oral rehearsal. No microphone, speech grading, learner-store writes or fake achievements. */
 export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:JourneyOptions):()=>void{
- const journey=originalU31OralJourney(lessonId);
- if(!journey)return()=>{};
+ const foundJourney=originalU31OralJourney(lessonId);
+ if(!foundJourney)return()=>{};
+ const journey=foundJourney;
  const root=el('section','','u31-oral');
  root.setAttribute('aria-label','Independent original French oral production and repair');
  root.dataset.hasPrivateDraft='false';
