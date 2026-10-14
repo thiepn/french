@@ -74,47 +74,47 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Leïla",
         "Dans le premier acte, la narratrice affirme qu’elle savait où était la lettre; ensuite, elle avoue qu’elle n’en avait aperçu que l’enveloppe.",
-        "The narrator first claims certainty but later admits seeing only the envelope."
+        "In the first act, the narrator claims that she knew where the letter was; later, she admits that she had only glimpsed the envelope."
       ],
       [
         "Oscar",
         "Ce changement ne signifie pas automatiquement qu’elle ment: elle peut reconstruire son souvenir après coup.",
-        "The inconsistency need not prove deliberate deceit."
+        "That change does not automatically mean that she is lying: she may be reconstructing her memory after the event."
       ],
       [
         "Leïla",
         "Notre traduction anglaise supprime pourtant « il me semblait », qui exprimait une hésitation dans l’original.",
-        "The English version removed a hesitation marker."
+        "Yet our English translation omits 'it seemed to me', which expressed hesitation in the original."
       ],
       [
         "Oscar",
         "La formule « I knew » ferme la question, alors que « I thought I knew » conserve la mémoire incertaine.",
-        "The choice of tense changes the narrator's stance."
+        "The phrase 'I knew' closes the question, whereas 'I thought I knew' preserves the uncertainty of the memory."
       ],
       [
         "Leïla",
         "Une didascalie prévoit une pause avant l’aveu, mais le metteur en scène propose une réponse immédiatement agressive.",
-        "The written pause differs from an aggressive staging proposal."
+        "A stage direction calls for a pause before the confession, but the director proposes an immediately aggressive response."
       ],
       [
         "Oscar",
         "Nous pouvons expliquer ce parti pris sans prétendre qu’il était la seule lecture autorisée par le manuscrit.",
-        "Staging needs attribution, not false uniqueness."
+        "We can explain that artistic choice without pretending that it was the only reading authorized by the manuscript."
       ],
       [
         "Leïla",
         "Le cahier de répétition porte deux versions; aucun document ne prouve laquelle l’autrice aurait préférée.",
-        "The rehearsal notebook preserves both alternatives."
+        "The rehearsal notebook contains two versions; no document proves which one the author would have preferred."
       ],
       [
         "Oscar",
         "Je proposerai une traduction qui distingue observation directe et déduction, puis deux lectures de la pause.",
-        "I'll preserve observation and inference separately."
+        "I will propose a translation that distinguishes direct observation from deduction, and then two readings of the pause."
       ],
       [
         "Leïla",
         "Dans notre commentaire, nous traiterons la contradiction comme une invitation à argumenter, pas comme un défaut à effacer.",
-        "The contradiction is a critical interpretation opportunity."
+        "In our commentary, we will treat the contradiction as an invitation to argue, not as a flaw to erase."
       ]
     ],
     "paragraphs": [
@@ -333,47 +333,47 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Anaïs",
         "Une affiche affirme que la place centrale est cinq degrés plus chaude que tout le quartier, d’après deux capteurs.",
-        "The poster generalizes two sensor readings."
+        "A poster claims that the central square is five degrees hotter than the whole neighbourhood, based on two sensors."
       ],
       [
         "Karim",
         "Le premier relevé vient d’une surface au soleil à midi, le second d’un emplacement ombragé tôt le matin.",
-        "The sensors were read in different conditions."
+        "The first reading comes from a sunlit surface at noon, the second from a shaded location early in the morning."
       ],
       [
         "Anaïs",
         "La différence observée existe sur les relevés, mais elle ne démontre pas à elle seule une différence stable entre les lieux.",
-        "The numbers are real but not comparable enough for a stable claim."
+        "The observed difference appears in the readings, but by itself it does not demonstrate a stable difference between the locations."
       ],
       [
         "Karim",
         "Des habitants souhaitent des bancs ombragés, d’autres préfèrent protéger l’espace ouvert pour les marchés.",
-        "Residents have different space uses."
+        "Some residents want shaded benches; others prefer to preserve the open space for markets."
       ],
       [
         "Anaïs",
         "Un projet de plantation pourrait aider à terme, cependant les coûts d’entretien ne figurent pas encore au budget.",
-        "The proposed trees lack maintenance costing."
+        "A planting project might help in time; however, maintenance costs have not yet been included in the budget."
       ],
       [
         "Karim",
         "Nous devrions présenter les observations, puis mesurer à des heures comparables avant de choisir un emplacement.",
-        "Comparable data can inform choices."
+        "We should present the observations, then measure at comparable times before choosing a location."
       ],
       [
         "Anaïs",
         "L’absence de preuve complète ne signifie pas qu’aucune personne ne souffre de la chaleur sur cette place.",
-        "Limited data needn't dismiss lived discomfort."
+        "The lack of complete proof does not mean that nobody suffers from the heat in this square."
       ],
       [
         "Karim",
         "Un aménagement pilote réversible pourrait être discuté avec les usagers, si ses contraintes sont vérifiées.",
-        "A reversible pilot could be considered."
+        "A reversible pilot scheme could be discussed with users, provided its constraints are checked."
       ],
       [
         "Anaïs",
         "Je réviserai le rapport pour séparer chiffres, témoignages et décisions non encore prises.",
-        "I'll distinguish measurements, preferences and proposals."
+        "I will revise the report to distinguish figures, testimonies and decisions not yet taken."
       ]
     ],
     "paragraphs": [
@@ -592,47 +592,47 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Dalia",
         "Ma grand-mère racontait que la famille avait traversé la frontière un dimanche, mais le carnet de son frère mentionne un lundi.",
-        "Grandmother recalled Sunday; an uncle's notebook says Monday."
+        "My grandmother used to say that the family had crossed the border on a Sunday, but her brother's notebook mentions a Monday."
       ],
       [
         "Paul",
         "Une différence de jour ne prouve pas que l’un des deux voulait tromper ses proches.",
-        "A date conflict doesn't imply deception."
+        "A difference of one day does not prove that either of them wanted to deceive their relatives."
       ],
       [
         "Dalia",
         "Dans mon brouillon, j’ai écrit « ils sont partis dimanche » comme un fait vérifié, sans nommer la personne qui le disait.",
-        "The draft turns a memory into an established fact."
+        "In my draft, I wrote 'they left on Sunday' as a verified fact, without naming the person who said it."
       ],
       [
         "Paul",
         "Tu pourrais écrire « selon ma grand-mère » et présenter ensuite le carnet comme une autre source.",
-        "Attribute both versions."
+        "You could write 'according to my grandmother' and then present the notebook as another source."
       ],
       [
         "Dalia",
         "Le passage comporte aussi un temps du passé qui fait croire que le déménagement a eu lieu avant la préparation.",
-        "The tense order incorrectly moves the relocation before planning."
+        "The passage also uses a past tense that makes it seem as though the move took place before the preparations."
       ],
       [
         "Paul",
         "Il faut distinguer la décision, les démarches et le voyage lui-même, même si les documents ne donnent pas chaque heure.",
-        "Separate decision and journey sequence."
+        "We need to distinguish the decision, the arrangements and the journey itself, even if the documents do not give every hour."
       ],
       [
         "Dalia",
         "Je ne veux pas effacer la voix de ma grand-mère en privilégiant automatiquement le carnet écrit.",
-        "Written evidence isn't always the only meaningful perspective."
+        "I don't want to erase my grandmother's voice by automatically favouring the written notebook."
       ],
       [
         "Paul",
         "Son souvenir conserve un sens familial, tandis que la date précise doit rester accompagnée d’une réserve.",
-        "Memory has significance despite dating uncertainty."
+        "Her memory retains a family significance, while the precise date must remain qualified."
       ],
       [
         "Dalia",
         "Je préparerai deux paragraphes qui rendent les voix audibles sans inventer une chronologie complète.",
-        "I'll revise for attributed plural voices."
+        "I will prepare two paragraphs that let both voices be heard without inventing a complete chronology."
       ]
     ],
     "paragraphs": [

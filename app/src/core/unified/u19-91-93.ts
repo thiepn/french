@@ -74,47 +74,47 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
       [
         "Nora",
         "Le collectif veut partager la réserve d’eau de pluie également, mais certaines plantes sont jeunes et d’autres supportent mieux les périodes sèches.",
-        "Equal shares may not reflect plant needs."
+        "The collective wants to divide the rainwater reserve equally, but some plants are young and others cope better with dry periods."
       ],
       [
         "Yacine",
         "Le relevé de lundi donne quatre cents litres, pourtant il a plu depuis et personne n’a contrôlé le volume actuel.",
-        "The Monday figure may no longer reflect current supply."
+        "Monday's reading shows four hundred litres, yet it has rained since then and nobody has checked the current volume."
       ],
       [
         "Nora",
         "Une affiche annonce déjà dix litres par parcelle; cela semble précis, mais aucun vote n’a encore confirmé cette règle.",
-        "A specific allowance appears without formal adoption."
+        "A notice already announces ten litres per plot; that sounds precise, but no vote has yet approved this rule."
       ],
       [
         "Yacine",
         "Je comprends l’envie d’éviter les conflits, cependant une quantité identique n’est pas toujours une répartition équitable.",
-        "Consistency and fairness needn't mean identical quantities."
+        "I understand the wish to avoid conflict; however, an identical quantity does not always make for a fair allocation."
       ],
       [
         "Nora",
         "Les bénévoles qui viennent rarement craignent aussi que leur parcelle soit oubliée dans une décision prise pendant leur absence.",
-        "Infrequent volunteers worry about representation."
+        "The volunteers who rarely come are also worried that their plots might be overlooked in a decision made while they are absent."
       ],
       [
         "Yacine",
         "Consultons les personnes concernées et distinguons les données vérifiées, les besoins décrits et les préférences personnelles.",
-        "Consult everyone and separate facts, needs, preferences."
+        "Let's consult the people concerned and distinguish verified data, stated needs and personal preferences."
       ],
       [
         "Nora",
         "Si nous obtenons un relevé fiable, nous pourrons proposer une période d’essai avec des critères explicites.",
-        "A verified reading could support a trial."
+        "If we obtain a reliable reading, we can propose a trial period with explicit criteria."
       ],
       [
         "Yacine",
         "Et si les résultats sont mauvais, le groupe doit pouvoir revoir l’accord sans accuser ceux qui avaient exprimé des réserves.",
-        "The agreement should be revisable without blame."
+        "And if the results are poor, the group must be able to revise the agreement without blaming those who had expressed reservations."
       ],
       [
         "Nora",
         "Je rédigerai donc un compte rendu qui explique les compromis plutôt qu’une fausse décision déjà définitive.",
-        "I'll draft a balanced report, not invent a vote."
+        "So I will write a report explaining the compromises rather than pretending that a final decision has already been made."
       ]
     ],
     "readingTitle": "Compte rendu du jardin : répartir une ressource sans cacher les différences",
@@ -334,47 +334,47 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
       [
         "Samira",
         "Notre annonce promet un atelier ouvert tous les samedis, mais le tableau d’équipe ne contient que deux créneaux confirmés pour le mois.",
-        "The publicity promises Saturdays despite only two confirmed shifts."
+        "Our announcement promises a workshop open every Saturday, but the team schedule contains only two confirmed time slots for the month."
       ],
       [
         "Loïc",
         "Plusieurs personnes ont indiqué « disponibilité flexible », ce qui ne signifie pas qu’elles acceptent automatiquement chaque samedi.",
-        "Flexible interest is not commitment to every shift."
+        "Several people wrote 'flexible availability', which does not mean that they automatically agree to every Saturday."
       ],
       [
         "Samira",
         "Certains visiteurs planifient leur déplacement plusieurs jours avant; une promesse trop large pourrait leur faire perdre du temps.",
-        "A vague promise affects real visitor plans."
+        "Some visitors plan their journey several days in advance; a promise that is too broad could waste their time."
       ],
       [
         "Loïc",
         "Je reconnais que nous voulions encourager l’inscription, mais la communication doit suivre les engagements réellement acceptés.",
-        "We were attracting interest, yet need accurate commitments."
+        "I acknowledge that we wanted to encourage sign-ups, but our communications must reflect commitments that have actually been accepted."
       ],
       [
         "Samira",
         "Une bénévole préfère aider ponctuellement et craint qu’on lui reproche un refus si nous l’avons déjà inscrite sans demander.",
-        "A volunteer fears being scheduled without consent."
+        "One volunteer prefers to help occasionally and worries that she will be blamed for declining if we have already put her on the rota without asking."
       ],
       [
         "Loïc",
         "Nous pouvons proposer une liste de remplaçants volontaires et fixer une date limite de confirmation pour chaque semaine.",
-        "Use opt-in backups and weekly deadlines."
+        "We can offer a list of willing substitutes and set a confirmation deadline for each week."
       ],
       [
         "Samira",
         "Je mettrai d’abord les deux dates garanties dans l’annonce et laisserai les autres samedis en attente.",
-        "Advertise only two confirmed dates."
+        "First, I'll put the two guaranteed dates in the announcement and leave the other Saturdays pending."
       ],
       [
         "Loïc",
         "Si de nouvelles personnes confirment, nous actualiserons immédiatement les horaires publics.",
-        "Update only after commitments arrive."
+        "If more people confirm, we will immediately update the public schedule."
       ],
       [
         "Samira",
         "Et dans le compte rendu, je préciserai que « flexible » décrit une préférence et non une obligation permanente.",
-        "I'll clarify the meaning of flexible availability."
+        "And in the report, I'll make it clear that 'flexible' describes a preference, not a permanent obligation."
       ]
     ],
     "readingTitle": "Courriel associatif : « flexible » n’est pas synonyme de « toujours disponible »",
@@ -594,47 +594,47 @@ const SOURCE:readonly U19OriginalSourceStory[]=[
       [
         "Éva",
         "Dans le roman, Adrien accuse Louise d’avoir rompu leur promesse, mais une lettre retrouvée montre qu’il ne connaissait peut-être pas toutes ses raisons.",
-        "Adrien accuses Louise, but a recovered letter offers missing context."
+        "In the novel, Adrien accuses Louise of breaking their promise, but a recovered letter shows that he may not have known all her reasons."
       ],
       [
         "Basile",
         "La lettre est datée d’avant leur dispute, mais nous ignorons quand elle a été envoyée et si Adrien l’a réellement reçue.",
-        "Date and receipt are separate facts."
+        "The letter is dated before their argument, but we do not know when it was sent or whether Adrien actually received it."
       ],
       [
         "Éva",
         "Louise écrit qu’elle avait demandé un délai parce que sa famille traversait une période difficile.",
-        "Louise says she requested time due to family circumstances."
+        "Louise writes that she had asked for more time because her family was going through a difficult period."
       ],
       [
         "Basile",
         "Adrien semble avoir cru qu’elle refusait définitivement; sa colère est compréhensible, sans prouver que cette croyance était juste.",
-        "His anger can make sense without making the belief true."
+        "Adrien seems to have believed that she was refusing for good; his anger is understandable, without that proving his belief was correct."
       ],
       [
         "Éva",
         "Le récit contient aussi une page manquante entre les deux lettres, et certains lecteurs remplissent ce vide avec leurs préférences.",
-        "Readers fill a missing page with assumptions."
+        "The story also has a missing page between the two letters, and some readers fill that gap with their own preferences."
       ],
       [
         "Basile",
         "Nous devrions distinguer ce que chaque personnage dit, ce que le lecteur sait et ce que le manuscrit ne permet pas de décider.",
-        "Separate voices, knowledge and structural gaps."
+        "We should distinguish what each character says, what the reader knows and what the manuscript does not allow us to decide."
       ],
       [
         "Éva",
         "Je défendrais l’idée que la faute est partagée, mais pas forcément dans des proportions identiques.",
-        "Responsibility could be shared unevenly."
+        "I would argue that both share responsibility, but not necessarily in equal proportions."
       ],
       [
         "Basile",
         "Je préfère réserver mon jugement : sans preuve de réception, l’accusation d’Adrien reste fragile, et Louise ne s’explique qu’après coup.",
-        "I would suspend judgment without proof of receipt."
+        "I would rather reserve judgment: without proof of receipt, Adrien's accusation remains weak, and Louise explains herself only after the fact."
       ],
       [
         "Éva",
         "Notre commentaire pourra présenter ces deux lectures, puis examiner comment le silence entre les pages modifie l’émotion du lecteur.",
-        "We can analyze how narrative gaps shape response."
+        "Our commentary can present these two readings and then examine how the silence between the pages changes the reader's feelings."
       ]
     ],
     "readingTitle": "Analyse d’un roman par lettres : le silence entre deux pages",
