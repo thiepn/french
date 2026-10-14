@@ -1,4 +1,5 @@
 import {ORIGINAL_FRENCH_U22_COURSE} from './u22-course.ts';
+import {ORIGINAL_TRANSFER_SCENARIOS} from './u13-course.ts';
 import {
  ORIGINAL_U22_CONNECTED_READINGS,u22OriginalEvidence,listeningQuestionsForU22,
  originalOralResponseU22,u22ProductionChoices
@@ -29,6 +30,9 @@ export interface OriginalCatalogEntry {
  readonly listening:boolean;
  readonly writing:boolean;
  readonly sourceComparison:boolean;
+ /** Source-authored U13 grammar transition, distinct from integrated-task CEFR. */
+ readonly foundationBand?:'A1→A2'|'A2→B1'|'B1 integrated';
+ readonly grammarRefreshers?:readonly string[];
 }
 export interface OriginalBrowseFilters {
  readonly query?:string;
@@ -50,11 +54,26 @@ export type OriginalMaterial=Readonly<{
  writingChoices:ReturnType<typeof u22ProductionChoices>;
 }>;
 
+const u13Bands=new Map(ORIGINAL_TRANSFER_SCENARIOS.map(s=>[s.unit.id,s.level] as const));
+/** Topic-grounded optional original grammar lessons, not authored prerequisites. */
+const U13_GRAMMAR_REFRESHERS:Readonly<Record<string,readonly string[]>>=Object.freeze({
+ 'transfer-01':['a1-13','a1-06'],
+ 'transfer-02':['a1-12','a1-06'],
+ 'transfer-03':['a1-13'],
+ 'transfer-04':['a1-12','a2-01'],
+ 'transfer-05':['a2-15','b1-03'],
+ 'transfer-06':['b1-04'],
+ 'transfer-07':['a2-06','b1-08'],
+ 'transfer-08':['a2-20','a1-12'],
+ 'transfer-09':['b1-07'],
+ 'transfer-10':['b1-02']
+});
 function levelOf(id:string):OriginalLevel {
  if(id.startsWith('a1-'))return 'A1';
  if(id.startsWith('a2-'))return 'A2';
  if(id.startsWith('b1-'))return 'B1';
  const n=Number(id.slice('transfer-'.length));
+ // U13 is a cumulative B1 reader/production task even with A1/A2 grammar.
  return n<=15?'B1':n<=90?'B1+':'Early B2';
 }
 function normalize(value:string):string {
@@ -90,12 +109,16 @@ for(const unit of ORIGINAL_FRENCH_U22_COURSE){
   id:unit.id,order:unit.order,title:unit.title,goal:unit.goal,
   level:levelOf(unit.id),qualifiedId:unit.source.qualifiedId,
   sourceRevision:unit.source.sourceRevision,prerequisites:unit.prerequisites,
+  ...(u13Bands.has(unit.id)?{foundationBand:u13Bands.get(unit.id)}:{}),
+  ...(U13_GRAMMAR_REFRESHERS[unit.id]?{grammarRefreshers:Object.freeze(
+    U13_GRAMMAR_REFRESHERS[unit.id].filter(id=>lessons.has(id))
+  )}:{}),
   reading:!!reading,listening:unit.dialogue.length>0,writing:!!unit.writing?.prompt,
   sourceComparison:!!evidence?.sources.length
  });
  entries.push(entry);
  searchText.set(unit.id,normalize([
-  unit.id,unit.title,unit.goal,entry.level,reading?.title??'',
+  unit.id,unit.title,unit.goal,entry.level,entry.foundationBand??'',reading?.title??'',
   ...unit.grammar.map(item=>item.heading),
   ...unit.vocabulary.flatMap(item=>[item.french,item.english])
  ].join(' ')));

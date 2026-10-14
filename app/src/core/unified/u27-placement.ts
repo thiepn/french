@@ -145,6 +145,17 @@ export function summarizeOriginalPlacement(questions:readonly PlacementQuestion[
    ' questions were skipped. This short, nonstandardized self-check is not a placement exam, verified CEFR result or mastery record.'
  };
 }
+/** Show foundation grammar separately from demanding B1 cumulative source tasks. */
+export function originalPlacementGrammarRefreshers(id:string):readonly PlacementEntry[]{
+ const entry=getOriginalCatalogEntry(id);
+ if(!entry?.grammarRefreshers?.length)return [];
+ return entry.grammarRefreshers.flatMap(sourceId=>{
+  const lesson=getOriginalCatalogEntry(sourceId);if(!lesson)return [];
+  return [{id:lesson.id,title:lesson.title,level:lesson.level,qualifiedId:lesson.qualifiedId,
+   reason:'Optional earlier '+lesson.level+' grammar refresher for the B1 integrated task. Not an academic prerequisite or CEFR grade.',
+   kind:'foundation' as const}];
+ });
+}
 export function originalPlacementPrerequisites(id:string,max=3):readonly PlacementEntry[]{
  const result:PlacementEntry[]=[];let current=getOriginalCatalogEntry(id);
  const visited=new Set<string>([id]);
@@ -181,6 +192,7 @@ export function originalPlacementEntries(
  if(weak){
   add(weak.anchorId,'Review the original source of an unanswered, uncertain or nonmatching practice response.', 'anchor');
   for(const p of originalPlacementPrerequisites(weak.anchorId,2))add(p.id,p.reason,'foundation');
+  for(const p of originalPlacementGrammarRefreshers(weak.anchorId))add(p.id,p.reason,'foundation');
  }
  const path=ORIGINAL_PATHWAYS.find(x=>x.level===level);
  if(path?.firstId)add(path.firstId,'Begin the first original unit in your chosen authored level. No test is required.','anchor');

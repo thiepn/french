@@ -81,7 +81,7 @@ export function validateTransferScenarios(scenarios:readonly TransferScenario[])
   if(u.vocabulary.length!==12||u.dialogue.length!==5||u.tasks.length!==10||
    u.writing.criteria.length<3||u.writing.model.length<170)errors.push(id+' authentic breadth');
   const kinds=new Set(u.tasks.map(t=>t.type));
-  for(const kind of ['fill','choice','reading','order'])if(!kinds.has(kind))errors.push(id+' '+kind);
+  for(const kind of ['fill','choice','reading','order'] as const)if(!kinds.has(kind))errors.push(id+' '+kind);
   for(const t of u.tasks){
    if(t.explanation.length<30||!t.focus)errors.push(t.id+' explanation');
    if((t.type==='choice'||t.type==='reading')&&(t.options.length!==3||!t.options.includes(t.answer)))
