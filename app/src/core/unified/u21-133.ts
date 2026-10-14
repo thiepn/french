@@ -247,11 +247,11 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Alix annonce une projection après avoir reçu une bande-annonce à traduire. Sven rappelle que le courriel de la réalisatrice ne concerne que le teaser. Une demande de licence pour le film entier reste sans réponse du distributeur. Les organisateurs découvrent aussi une traduction trop directe d’une plaisanterie ironique. Ils souhaitent revoir le sous-titre, corriger le programme et vérifier les autorisations propres à chaque usage. La séance ne peut pas être annoncée comme confirmée simplement parce que le film intéresse le festival."
       ],
       "sources": [
-        "Draft a source-specific provisional programme notice.",
+        "Draft a source-specific provisional programme notice. In a different context, a local music festival has permission to translate a teaser clip but not to stream the full performance. Draft a two-sentence public announcement that avoids promising a stream, then explain why an ironic lyric should not be rendered as a literal accusation.",
         "Ce court-métrage figure parmi les œuvres envisagées pour notre festival. Une demande de projection publique a été envoyée au distributeur, mais nous n’avons pas encore reçu l’autorisation nécessaire. Le courriel de la réalisatrice concerne uniquement le sous-titrage de la bande-annonce et ne permet pas de déduire une permission pour le film intégral. La traduction d’une réplique ironique est également en cours de révision. Nous annoncerons une date définitive après confirmation des droits et vérifierons séparément toute diffusion publique du teaser. Merci de consulter le programme actualisé avant de prévoir votre venue."
       ],
       "debate": [
-        "Defend the value of provisional programming while acknowledging the need for public certainty.",
+        "Defend the value of provisional programming while acknowledging the need for public certainty. Answer an audience member who bought travel tickets: explain what is genuinely confirmed, which rights are pending and how you would communicate any change.",
         "Un festival doit communiquer tôt pour attirer des spectateurs et faire découvrir des œuvres nouvelles. Je comprends qu’Alix souhaite annoncer un court-métrage prometteur dès qu’elle reçoit une bande-annonce. Toutefois, travailler sur un teaser ne signifie pas que sa projection publique est autorisée. Une traduction trop directe peut aussi modifier l’attente des visiteurs. Je recommande un programme clairement provisoire, une demande de licence au distributeur et une révision des sous-titres. Si les droits ne sont pas accordés, l’équipe pourra modifier la sélection sans donner l’impression qu’une séance confirmée a été annulée arbitrairement."
       ]
     },
