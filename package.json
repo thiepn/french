@@ -53,7 +53,8 @@
     "test:vnext:u41": "node scripts/test-vnext-u41.mts",
     "test:vnext:u42": "node scripts/test-vnext-u42.mts",
     "test:vnext:u43": "node scripts/test-vnext-u43.mts",
-    "test:vnext:u44": "node scripts/test-vnext-u44.mts"
+    "test:vnext:u44": "node scripts/test-vnext-u44.mts",
+    "test:vnext:u45": "node scripts/test-vnext-u45.mts"
   },
   "devDependencies": {
     "typescript": "7.0.2",
