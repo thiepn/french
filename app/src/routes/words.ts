@@ -1,6 +1,7 @@
 import type { RouteContext } from '../core/types';
 import { loadContentManifest } from '../core/content/manifest';
-import { loadVocabularySearchIndex,loadVocabularyWord,type VocabularySearchRow } from '../core/content/loader';
+import { loadVocabularySearchIndex,loadVocabularyWord,findVocabularyReference,type VocabularySearchRow } from '../core/content/loader';
+import {takeU40CanonicalWord} from '../core/unified/u40-lexical-bridge';
 
 function fold(value:string):string{
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').trim();
@@ -34,6 +35,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const descriptor=manifest.indexes?.vocabulary;
   if(!descriptor){status.textContent='Vocabulary search index is unavailable.';return;}
 
+  const incomingCanonicalId=takeU40CanonicalWord();
   let requestId=0;
   let worker:Worker|null=null;
   let fallbackRows:VocabularySearchRow[]|null=null;
@@ -123,6 +125,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     worker?.terminate();worker=null;
     status.textContent='Using local search fallback.';
     await fallback('',++requestId);
+  }
+
+  if(incomingCanonicalId){
+    try{
+      const row=await findVocabularyReference(incomingCanonicalId,signal);
+      if(row&&!signal.aborted){
+        input.value=row.word;
+        render([row]);
+        await openDetail(row);
+      }else if(!signal.aborted)status.textContent='Original lesson word is not present in the current canonical corpus.';
+    }catch(error){
+      if(!signal.aborted)status.textContent='Unable to resolve the source-linked canonical word.';
+      console.error('Original vocabulary handoff failed',error);
+    }
   }
 
   input.addEventListener('input',()=>{

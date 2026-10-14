@@ -56,6 +56,7 @@ function speakFrench(text:string):void{
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';window.speechSynthesis.speak(utterance);
 }
 function sessionLabel(session:StudySessionStateV1):string{
+  if(session.mode==='custom')return'Original lesson words · native due/new';
   if(session.mode==='learn')return'New-card learning';
   if(session.mode==='today')return"Today's session";
   return'Review';
