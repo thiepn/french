@@ -3,6 +3,8 @@ import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts'
 import {ORIGINAL_U22_CONNECTED_READINGS,u22ProductionChoices} from '../app/src/core/unified/u22-material.ts';
 import {ORIGINAL_B1_READINGS,validateOriginalB1Readings} from '../app/src/core/unified/u10-readings.ts';
 import {validateU22OriginalCourse} from '../app/src/core/unified/u22-course.ts';
+import {ORIGINAL_B1_UNITS} from '../app/src/core/unified/u10-course.ts';
+import {listeningQuestionsForOriginalCourse,validateB1Listening} from '../app/src/core/unified/u10-listening.ts';
 
 const lessons=ORIGINAL_FRENCH_U22_COURSE;
 assert.equal(lessons.length,244,'Keep 94 original lessons and 150 historical transfers');
@@ -57,6 +59,17 @@ for(const [index,reading] of ORIGINAL_B1_READINGS.entries()){
   'At least one cross-context comprehension request per text');
  frenchWords+=words;deepChecks++;
 }
+assert.deepEqual(validateB1Listening(),[],'Preserve original keyed listening contracts');
+let deeperListening=0;
+for(const unit of ORIGINAL_B1_UNITS){
+ const items=listeningQuestionsForOriginalCourse(unit);
+ assert.equal(items.length,2,'Keep two original listening questions per B1 lesson');
+ const revised=items.filter(item=>item.prompt.length>=72&&item.explanation.length>=90);
+ assert.equal(revised.length,1,'One genuine listening inference from each authored dialogue');
+ for(const item of items)assert.ok(item.options.includes(item.answer),'Listening answer key remains original');
+ deeperListening+=revised.length;
+}
+assert.equal(deeperListening,14);
 for(const id of ['transfer-121','transfer-123','transfer-128','transfer-133','transfer-135']){
  const material=u22ProductionChoices(id);
  assert.ok(material,'Unchanged canonical advanced production source '+id);
@@ -68,6 +81,6 @@ console.log(JSON.stringify({
  schema:'thiepn-french-u43-source-quality',status:'PASS',
  originalLessons:lessons.length,originalConnectedReadings:ORIGINAL_U22_CONNECTED_READINGS.length,
  sourceReviewedTasks:reviewed.length,authoredIncorrectOptionReasons:detailedDistractors,
- longerB1Readings:deepChecks,b1FrenchWords:frenchWords,earlyB2IndependentCases:5,
+ longerB1Readings:deepChecks,b1FrenchWords:frenchWords,earlyB2IndependentCases:5,sourceLinkedListeningInferences:deeperListening,
  nativeReviewWrites:false,cefrCertification:false
 }));

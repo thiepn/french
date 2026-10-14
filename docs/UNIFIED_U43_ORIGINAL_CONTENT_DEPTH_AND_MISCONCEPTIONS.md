@@ -21,3 +21,6 @@ U42 exact-head P37H/G/runtime failed TypeScript with **68 inherited diagnostics*
 
 ## Next U44
 Original A1 sound discrimination and pronunciation/phonology practice using genuine contrastive written/spoken instruction, transparent device TTS limitations and no fake audio recording grades; edit original content and actual learner navigation rather than adding another studio.
+
+### Original B1 listening comprehension improvement
+The existing `u10-listening.ts` catalog now has 14 edited original questions, one per B1 lesson, emphasizing directly heard facts, unsupported inference, practical next actions and what remains unconfirmed. Each explanation is more specific about alternatives; historic listening question identities `b1-xx-listen-1/2`, correct option keys, native Course/Listen rendering and device TTS provenance remain intact. No new audio recordings or spoken-language grades are claimed. The focused U43 source fixture now asserts these 14 source-driven listening items.
