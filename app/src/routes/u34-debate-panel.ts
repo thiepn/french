@@ -26,8 +26,9 @@ function initialState():DraftState{return {first:'',independent:'',snapshot:'',r
  * U33/U32/U31 oral workspace. All draft state stays within this component.
  */
 export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:Options):()=>void{
- const source=originalU34Debate(id);
- if(!source)return()=>{};
+ const foundSource=originalU34Debate(id);
+ if(!foundSource)return()=>{};
+ const source=foundSource;
  const root=el('section','','u34-debate');root.dataset.hasPrivateDraft='false';
  root.setAttribute('aria-label','Autonomous source-critical French debate and cross-genre work');
  const detail=el('details','','u34-disclosure');
@@ -168,7 +169,7 @@ export function appendOriginalDebateJourney(host:HTMLElement,id:string,options:O
  function drawTurns(focus=false){
   const turn=source.turns[selectedTurn];turnPane.replaceChildren();turnNav.replaceChildren();
   source.turns.forEach((item,i)=>{
-   const b=button((i+1)+'. '+item.move,()=>{selectedTurn=i;support=0;showIndependent=false;drawTurns(true);});
+   const b=button((i+1)+'. '+item.move,()=>{selectedTurn=i;support=0;drawTurns(true);});
    if(i===selectedTurn)b.setAttribute('aria-current','step');
    turnNav.append(b);
   });

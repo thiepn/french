@@ -57,7 +57,8 @@ function choicesFor(source:U33Journey){
 export function appendOriginalEditorialJourney(
  host:HTMLElement,id:string,options:Options
 ):()=>void{
- const source=originalU33Editorial(id);if(!source)return()=>{};
+ const foundSource=originalU33Editorial(id);if(!foundSource)return()=>{};
+ const source=foundSource;
  const root=el('section','','u33-editorial');
  root.dataset.hasPrivateDraft='false';
  root.setAttribute('aria-label','Independent editorial exposition and original evidence synthesis');
