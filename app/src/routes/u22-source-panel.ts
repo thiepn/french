@@ -13,6 +13,7 @@ import {appendOriginalReadingJourney} from './u29-reading-panel';
 import {appendOriginalListeningJourney} from './u30-listening-panel';
 import {appendOriginalOralJourney} from './u31-oral-panel';
 import './u22-source-panel.css';
+import './unified-u39.css';
 
 type Mode='read'|'listen'|'write';
 type Material=NonNullable<ReturnType<typeof getOriginalMaterial>>;
@@ -213,9 +214,20 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
    }));
   }
   stage.append(actions);
-  if(mode==='read'){
-   renderRead(stage,s);
-   appendOriginalReadingJourney(stage,s.unit.id,{
+  if(mode==='read')renderRead(stage,s);
+  else if(mode==='listen')renderListen(stage,s,signal);
+  else renderWrite(stage,s,drafts);
+  // Original reading/listening/writing stays immediately usable. The U29–U38
+  // supplementary chain is mounted only after the learner explicitly opens it.
+  const sourceDetails=el('details','','u39-material-extensions');
+  sourceDetails.append(el('summary','Optional source analysis and comprehension practice'));
+  const sourceHost=el('div','','u39-material-extensions-body');
+  sourceDetails.append(sourceHost);stage.append(sourceDetails);
+  let sourceMounted=false;
+  sourceDetails.addEventListener('toggle',()=>{
+   if(!sourceDetails.open||sourceMounted||signal.aborted||!sourceDetails.isConnected)return;
+   sourceMounted=true;
+   if(mode==='read')appendOriginalReadingJourney(sourceHost,s.unit.id,{
     mode:'read',signal,
     onOpenCourse:id=>{
      if(!safeLeave())return;
@@ -227,9 +239,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
     },
     onNativeReview:()=>{if(safeLeave())navigate('review');}
    });
-  }else if(mode==='listen'){
-   renderListen(stage,s,signal);
-   stopU30=appendOriginalListeningJourney(stage,s.unit.id,{
+   if(mode==='listen')stopU30=appendOriginalListeningJourney(sourceHost,s.unit.id,{
     mode:'listen',signal,
     onOpenSurface:(surface,id)=>{
      if(!safeLeave())return;
@@ -237,28 +247,37 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
     },
     onNativeReview:()=>{if(safeLeave())navigate('review');}
    });
-  }else renderWrite(stage,s,drafts);
-  stopU31=appendOriginalOralJourney(stage,s.unit.id,{
-   mode,signal,parentHandlesDraftExit:true,
-   onOpenSurface:(surface,id)=>{
-    if(!safeLeave())return;
-    if(handoffOriginalLesson(surface,id,surface==='course'?'listen':undefined))navigate(surface);
-   },
-   onNativeReview:()=>{if(safeLeave())navigate('review');}
   });
-  appendU26GrammarPractice(stage,s.unit.id,mode);
-  appendOriginalVocabularyJourney(stage,s.unit.id,{
-   mode,signal,
-   onNativeReview:()=>{if(safeLeave())navigate('review');},
-   onNativeLearn:()=>{if(safeLeave())navigate('learn');},
-   onOpenCourse:id=>{
-    if(!safeLeave())return;
-    if(handoffOriginalLesson('course',id,'words'))navigate('course');
-   },
-   onOpenSurface:(surface,id)=>{
-    if(!safeLeave())return;
-    if(handoffOriginalLesson(surface,id))navigate(surface);
-   }
+  const languageDetails=el('details','','u39-material-extensions');
+  languageDetails.append(el('summary','Optional advanced speaking, vocabulary and grammar tools'));
+  const languageHost=el('div','','u39-material-extensions-body');
+  languageDetails.append(languageHost);stage.append(languageDetails);
+  let languageMounted=false;
+  languageDetails.addEventListener('toggle',()=>{
+   if(!languageDetails.open||languageMounted||signal.aborted||!languageDetails.isConnected)return;
+   languageMounted=true;
+   stopU31=appendOriginalOralJourney(languageHost,s.unit.id,{
+    mode,signal,parentHandlesDraftExit:true,
+    onOpenSurface:(surface,id)=>{
+     if(!safeLeave())return;
+     if(handoffOriginalLesson(surface,id,surface==='course'?'listen':undefined))navigate(surface);
+    },
+    onNativeReview:()=>{if(safeLeave())navigate('review');}
+   });
+   appendU26GrammarPractice(languageHost,s.unit.id,mode);
+   appendOriginalVocabularyJourney(languageHost,s.unit.id,{
+    mode,signal,
+    onNativeReview:()=>{if(safeLeave())navigate('review');},
+    onNativeLearn:()=>{if(safeLeave())navigate('learn');},
+    onOpenCourse:id=>{
+     if(!safeLeave())return;
+     if(handoffOriginalLesson('course',id,'words'))navigate('course');
+    },
+    onOpenSurface:(surface,id)=>{
+     if(!safeLeave())return;
+     if(handoffOriginalLesson(surface,id))navigate(surface);
+    }
+   });
   });
  }
  query.addEventListener('input',()=>{

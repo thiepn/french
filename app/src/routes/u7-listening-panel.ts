@@ -120,9 +120,20 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    reveal.setAttribute('aria-expanded',String(!model.hidden));
   });
   reveal.setAttribute('aria-expanded','false');
-  practice.append(reveal,model);host.append(practice);
+  practice.append(reveal,model);
+   const optionalSpeaking=el('details',undefined,'u39-context-tools');
+   optionalSpeaking.append(el('summary','Optional original spoken-response preparation'),practice);
+   host.append(optionalSpeaking);
  }
- stopU30=appendOriginalListeningJourney(host,unit.id,{signal,mode:'course'});
- appendU26GrammarPractice(host,unit.id,'listen');
+ const extension=el('details',undefined,'u39-context-tools');
+ const extras=el('div',undefined,'u39-context-content');
+ extension.append(el('summary','Optional deeper listening interpretation and grammar'),extras);
+ host.append(extension);let mounted=false;
+ extension.addEventListener('toggle',()=>{
+  if(!extension.open||mounted||signal.aborted||!extension.isConnected)return;
+  mounted=true;
+  stopU30=appendOriginalListeningJourney(extras,unit.id,{signal,mode:'course'});
+  appendU26GrammarPractice(extras,unit.id,'listen');
+ });
  return cleanup;
 }

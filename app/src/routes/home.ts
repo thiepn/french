@@ -130,7 +130,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }
 
     if(remaining>0)focus.append(node('p','An unfinished session takes priority over starting a new one.','home-note'));
-    side.replaceChildren(node('h2','Other ways to practise'));
+    // Original Course is a real teaching sequence, separate from due SRS.
+    const courseChoice=node('button','Continue an original French lesson →','secondary-action compact-action');
+    courseChoice.type='button';courseChoice.addEventListener('click',()=>navigate('course'));
+    focus.append(courseChoice,node('p','Course verifies any saved position before offering Resume. Original exercises are ungraded.','home-note'));
+    side.replaceChildren(node('h2','Your original course and other practice'));
     const list=node('div','','home-option-list');
     for(const action of actions.slice(1,5)){
       const control=node('button','','home-option');control.type='button';
@@ -154,16 +158,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
             '. Course will verify its source and let you resume or discard it. Writing and answer text were not saved.','home-note'));
         const resume=node('button','Review saved Course position','secondary-action compact-action');
         resume.type='button';resume.addEventListener('click',()=>navigate('course'));
-        summary.append(resume);side.append(summary);hasCourseReturn=true;
+        summary.append(resume);side.insertBefore(summary,list);hasCourseReturn=true;
       }
     }
     if(!hasCourseReturn){
       const original=node('section','','home-original-return');
       original.append(node('h3','Original French Course'),
        node('p','Choose an A1–early-B2 pathway or explore original lessons. This is separate from graded native Review.','home-note'));
-      const explore=node('button','Explore original Course','secondary-action compact-action');
+      const explore=node('button','Start with an original lesson','secondary-action compact-action');
       explore.type='button';explore.addEventListener('click',()=>navigate('course'));
-      original.append(explore);side.append(original);
+      original.append(explore);side.insertBefore(original,list);
     }
     footer.replaceChildren();
     const metrics=node('div','','home-facts');

@@ -1,0 +1,22 @@
+/* U39 integrates canonical original lessons without creating another learning studio. */
+.u39-course-actions{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:1rem 0 .5rem}
+.u39-course-actions button{min-height:44px;max-width:100%;white-space:normal}
+.u39-course-status{font-size:.88rem;color:var(--muted,inherit);line-height:1.6;margin:.4rem 0 1.15rem}
+.u39-lesson-guidance{margin:.8rem 0 1rem;padding:.7rem .9rem;border-left:3px solid var(--accent,#52728c);background:var(--surface,transparent)}
+.u39-lesson-guidance p{margin:.15rem 0;line-height:1.6}
+.u39-context-tools,.u39-material-extensions{border:1px solid var(--line,#9ba3ac);margin:.85rem 0;min-width:0}
+.u39-context-tools>summary,.u39-material-extensions>summary{cursor:pointer;font-weight:600;padding:.75rem .9rem;line-height:1.55;min-height:44px}
+.u39-context-tools[open]>summary,.u39-material-extensions[open]>summary{border-bottom:1px solid var(--line,#9ba3ac)}
+.u39-context-content,.u39-material-extensions-body{min-width:0;padding:.7rem .85rem;display:grid;gap:.85rem}
+.u25-activities.u39-secondary-tools{margin:.85rem 0}
+.u25-activities.u39-secondary-tools>summary{font-weight:600;cursor:pointer;min-height:44px;padding:.6rem}
+.u39-course-actions button:focus-visible,.u39-context-tools>summary:focus-visible,
+.u39-material-extensions>summary:focus-visible{outline:2px solid var(--accent,#235486);outline-offset:3px}
+@media(max-width:620px){
+ .u39-course-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+ .u39-course-actions button{width:100%}
+ .u39-context-content,.u39-material-extensions-body{padding:.65rem}
+}
+@media(prefers-reduced-motion:reduce){
+ .u39-course-actions *,.u39-context-tools *,.u39-material-extensions *{transition:none!important;animation:none!important}
+}

@@ -83,7 +83,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    openedGroups.clear();visible=60;
    open(id,'words',undefined,true);
   });
-  const activities=el('section',undefined,'u25-activities');
+  const activities=el('details',undefined,'u25-activities u39-secondary-tools');
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Filterable original French course lesson index');
@@ -190,7 +190,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     cards.append(card);
    }
    pathways.append(cards);
-   activities.replaceChildren(el('h3','Available next activities'));
+   activities.replaceChildren(el('summary','More source-linked activities for this lesson'));
    const choices=el('div',undefined,'u25-activity-list');
    for(const next of originalNextActions(current.id).filter(action=>action.key!=='understand')){
     const card=button(next.title,()=>{
@@ -349,14 +349,30 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const row=el('div',undefined,'u6-stage-footer');
    if(previous)row.append(button('← '+previous[1],()=>open(current.id,previous[0],undefined,true)));
    if(next)row.append(button(next[1]+' →',()=>open(current.id,next[0],undefined,true),'primary-action compact-action'));
-   else row.append(button('Next original lesson →',()=>{
-    const candidate=lessons[current.order];
-    if(candidate)open(candidate.id,'understand',undefined,true);
-    else open(lessons[0].id,'understand',undefined,true);
-   },'primary-action compact-action'));
+   else {
+    const candidate=neighboringOriginalLessons(current.id).next;
+    if(candidate)row.append(button('Continue to '+candidate.title+' →',()=>
+     open(candidate.id,'understand',undefined,true),'primary-action compact-action'));
+    else row.append(el('p','Final authored unit reached. This is not an official CEFR completion or mastery award.','u6-small'),
+     button('Browse other lessons',()=>{
+      discovery.open=true;indexDetails.open=true;search.focus({preventScroll:true});
+     },'primary-action compact-action'));
+    row.append(button('Practice native Review',()=>navigateSafely('review')));
+   }
    return row;
   }
-  function renderUnderstand(unit:A1Unit,container:HTMLElement){
+  function optionalGrammar(container:HTMLElement,id:string,mode:'course'|'write'){
+    const details=el('details',undefined,'u39-context-tools');
+    details.append(el('summary','Optional contextual grammar repair exercises'));
+    const body=el('div',undefined,'u39-context-content');
+    details.append(body);let mounted=false;
+    details.addEventListener('toggle',()=>{
+     if(!details.open||mounted||signal.aborted||!details.isConnected)return;
+     mounted=true;appendU26GrammarPractice(body,id,mode);
+    });
+    container.append(details);
+   }
+   function renderUnderstand(unit:A1Unit,container:HTMLElement){
    container.append(el('p','Read each rule before trying the exercises. Examples and corrections are original teaching content.','u6-small'));
    for(const grammar of unit.grammar){
     const block=el('section',undefined,'u6-grammar-block');
@@ -410,17 +426,31 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     toggle.setAttribute('aria-expanded','false');
     row.append(name,fr,toggle,english);container.append(row);
    }
-   if(unit.id.startsWith('b1-')||unit.id.startsWith('transfer-'))appendOriginalB1Reading(container,unit);
-   appendOriginalReadingJourney(container,unit.id,{
-    mode:'course',signal,
-    onOpenCourse:id=>open(id,'words',undefined,true),
-    onOpenSurface:(surface,linkedId)=>{
-     if(!allowExit())return;
-     if(handoffOriginalLesson(surface,linkedId))navigate(surface);
-    },
-    onNativeReview:()=>navigateSafely('review')
+   const entry=getOriginalCatalogEntry(unit.id);
+   const supplementary=el('details',undefined,'u39-context-tools');
+   supplementary.append(el('summary','Optional connected reading and source analysis'));
+   const advanced=el('div',undefined,'u39-context-content');
+   supplementary.append(advanced);
+   let mounted=false;
+   supplementary.addEventListener('toggle',()=>{
+    if(!supplementary.open||mounted||signal.aborted||!supplementary.isConnected)return;
+    mounted=true;
+    if(unit.id.startsWith('b1-')||unit.id.startsWith('transfer-'))appendOriginalB1Reading(advanced,unit);
+    appendOriginalReadingJourney(advanced,unit.id,{
+     mode:'course',signal,
+     onOpenCourse:id=>open(id,'words',undefined,true),
+     onOpenSurface:(surface,linkedId)=>{
+      if(!allowExit())return;
+      if(handoffOriginalLesson(surface,linkedId))navigate(surface);
+     },
+     onNativeReview:()=>navigateSafely('review')
+    });
    });
-   container.append(el('p','Next, try listening to the original dialogue without revealing the translations.','u6-small'));
+   container.append(supplementary);
+   if(entry?.reading)container.append(button('Continue this lesson in native Read →',()=>{
+    if(allowExit()&&handoffOriginalLesson('read',unit.id))navigate('read');
+   },'primary-action compact-action'));
+   container.append(el('p','Next, listen to the original dialogue without revealing the translations.','u6-small'));
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
@@ -611,7 +641,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(signal.aborted)return;
    article.replaceChildren();
    const head=el('header',undefined,'u6-unit-header');
-   head.append(el('p',(getOriginalCatalogEntry(current.id)?.level??'Original')+' · LESSON +(current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3))+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
+   const lessonKind=current.id.startsWith('transfer-')?'TRANSFER SCENARIO':'LESSON';
+   const lessonNumber=current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3);
+   head.append(el('p',(getOriginalCatalogEntry(current.id)?.level??'Original')+
+    ' · '+lessonKind+' '+lessonNumber+' · ABOUT '+current.minutes+' MINUTES','eyebrow'),
     el('h3',current.title),el('p',current.goal));
    const pre=el('p',current.prerequisites.length?
     'Suggested foundation: '+(getOriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
@@ -656,30 +689,56 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     stageNav.append(tab);
    }
    article.append(stageNav);
+   const lessonGuide=el('section',undefined,'u39-lesson-guidance');
+   lessonGuide.setAttribute('aria-label','Current original lesson step');
+   const at=STAGES.findIndex(([id])=>id===stage);
+   const descriptions:Record<Stage,string>={
+    understand:'Learn the original grammar and inspect its worked correction.',
+    words:'Explore vocabulary in this source lesson; scheduled word reviews stay in native Review.',
+    dialogue:'Read the original exchange and reveal translation only when needed.',
+    listen:'Use optional device TTS, then answer actual comprehension questions.',
+    practice:'Answer the original questions independently before revealing the key.',
+    write:'Compose a French response and compare it yourself with an authored example.'
+   };
+   lessonGuide.append(el('p','STEP '+(at+1)+' OF '+STAGES.length+' · '+STAGES[at][1],'eyebrow'),
+    el('p',descriptions[stage],'u6-small'));
+   article.append(lessonGuide);
    const content=el('div',undefined,'u6-stage-body');content.dataset.u6Stage=stage;
    switch(stage){
-    case 'understand':renderUnderstand(current,content);appendU26GrammarPractice(content,current.id,'course');break;
+    case 'understand':renderUnderstand(current,content);optionalGrammar(content,current.id,'course');break;
     case 'words':renderWords(current,content);break;
     case 'dialogue':renderDialogue(current,content);break;
     case 'listen':{
      const stopEarlier=mountA1Listening(content,current,signal);
-     const stopOral=appendOriginalOralJourney(content,current.id,{
-      mode:'course',signal,parentHandlesDraftExit:true,
-      onOpenSurface:(surface,id)=>{
-       if(!allowExit())return;
-       if(surface==='course')open(id,'listen',undefined,true);
-       else if(handoffOriginalLesson(surface,id))navigate(surface);
-      },
-      onNativeReview:()=>navigateSafely('review')
+     let stopOral:()=>void=()=>{},oralMounted=false;
+     const extra=el('details',undefined,'u39-context-tools');
+     extra.append(el('summary','Optional speaking, debate and advanced source practice'));
+     const oralHost=el('div',undefined,'u39-context-content');extra.append(oralHost);
+     extra.addEventListener('toggle',()=>{
+      if(!extra.open||oralMounted||signal.aborted||!extra.isConnected)return;
+      oralMounted=true;
+      stopOral=appendOriginalOralJourney(oralHost,current.id,{
+       mode:'course',signal,parentHandlesDraftExit:true,
+       onOpenSurface:(surface,id)=>{
+        if(!allowExit())return;
+        if(surface==='course')open(id,'listen',undefined,true);
+        else if(handoffOriginalLesson(surface,id))navigate(surface);
+       },
+       onNativeReview:()=>navigateSafely('review')
+      });
      });
+     content.append(extra,button('Continue in native Listen →',()=>{
+      if(allowExit()&&handoffOriginalLesson('listen',current.id))navigate('listen');
+     },'primary-action compact-action'));
      stopAudio=()=>{stopEarlier();stopOral();};
      break;
     }
-    case 'practice':renderPractice(current,content);appendU26GrammarPractice(content,current.id,'course');break;
-    case 'write':renderWrite(current,content);appendU26GrammarPractice(content,current.id,'write');break;
+    case 'practice':renderPractice(current,content);optionalGrammar(content,current.id,'course');break;
+    case 'write':renderWrite(current,content);optionalGrammar(content,current.id,'write');break;
    }
    content.append(stepNavigation(stage));article.append(content);
-   const trace=el('p','Source: '+current.source.qualifiedId+' · original-owned; learning activity is local only.','u6-provenance');
+   const trace=el('p','Source: '+current.source.qualifiedId+
+    ' · original-owned. Course exercise results are temporary, not native FSRS/CEFR grades.','u6-provenance');
    article.append(trace);
   }
   function open(id:string,next:Stage,resumeIndex?:number,focus=false){

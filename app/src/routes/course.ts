@@ -3,12 +3,19 @@ import {COURSE_SESSIONS,findCourseSession} from '../core/unified/catalog';
 import {SOURCES} from '../core/unified/source';
 import {preflightLegacyJson,type LegacySource} from '../core/unified/preflight';
 import './unified.css';
+import './unified-u39.css';
 
 export function mount({main,signal,navigate}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page">
     <p class="eyebrow">French curriculum · original teaching</p><h1>Course</h1>
-    <p class="lede">Start or continue an original lesson, choose an A1–early-B2 pathway, or discover authored reading, listening and writing. Scheduled study remains in native Learn and Review.</p>
-    <div class="unified-alert" role="note">Original Course practice is ungraded. It cannot change native FSRS, SRS, CEFR or Account progress.</div>
+    <p class="lede">One original lesson at a time: understand the grammar, learn its vocabulary, read, listen, recall, and write. Continue your source-verified lesson position when available.</p>
+    <div class="unified-alert" role="note">Course exercises are formative, not FSRS or CEFR grades. Only native Learn and Review schedule vocabulary.</div>
+    <div class="u39-course-actions" role="group" aria-label="Original lesson and native review">
+      <button class="primary-action" type="button" data-course-continue disabled>Loading the original lessons…</button>
+      <button class="secondary-action" type="button" data-course-review>Open scheduled Review</button>
+      <button class="secondary-action" type="button" data-course-new>Learn new vocabulary</button>
+    </div>
+    <p class="u39-course-status" data-course-status role="status">Preparing original teaching materials…</p>
     <section data-u6-a1 aria-label="Original A1 through early B2 full lesson Course"></section>
     <details class="u25-supplementary" data-u25-supplementary>
       <summary>Other original teaching, source positions and export preflight</summary>
@@ -90,11 +97,34 @@ export function mount({main,signal,navigate}:RouteContext):void {
     }finally{fileInput.value='';}
   });
   main.querySelector('[data-links]')?.addEventListener('click',()=>navigate('links'));
+  const continueButton=main.querySelector<HTMLButtonElement>('[data-course-continue]');
+  const courseStatus=main.querySelector<HTMLElement>('[data-course-status]');
   const fullCourse=main.querySelector<HTMLElement>('[data-u6-a1]');
-  if(fullCourse)void import('./u6-a1-panel').then(module=>{
-    if(!signal.aborted)void module.mountA1FullCourse(fullCourse,navigate,signal);
+  main.querySelector('[data-course-review]')?.addEventListener('click',()=>navigate('review'));
+  main.querySelector('[data-course-new]')?.addEventListener('click',()=>navigate('learn'));
+  continueButton?.addEventListener('click',()=>{
+    if(signal.aborted||!fullCourse)return;
+    // Delegate to U24's source-verified Continue/Resume button. No new checkpoint writer.
+    const original=fullCourse.querySelector<HTMLButtonElement>('.u25-hero .primary-action');
+    if(original)original.click();
+    else courseStatus!.textContent='Original lessons have not finished opening.';
+  });
+  if(fullCourse)void import('./u6-a1-panel').then(async module=>{
+    if(signal.aborted)return;
+    await module.mountA1FullCourse(fullCourse,navigate,signal);
+    if(signal.aborted)return;
+    const ready=!!fullCourse.querySelector('.u6-lesson-content');
+    if(continueButton){continueButton.disabled=!ready;continueButton.textContent=ready?
+      'Start or continue original lesson →':'Original Course unavailable';}
+    if(courseStatus)courseStatus.textContent=ready?
+      'Your original lesson is ready. Continuing validates a saved source position; no mastery is inferred.':
+      'Original Course could not open. Native Learn and Review remain available.';
   }).catch(error=>{
-    if(!signal.aborted){fullCourse.textContent='Original A1 lessons unavailable. Native Learn remains available.';console.error(error);}
+    if(signal.aborted)return;
+    if(fullCourse)fullCourse.textContent='Original lessons unavailable. Native Learn and Review remain available.';
+    if(continueButton){continueButton.disabled=true;continueButton.textContent='Original Course unavailable';}
+    if(courseStatus)courseStatus.textContent='Could not load original Course. Use native Learn or Review.';
+    console.error(error);
   });
   const studio=main.querySelector<HTMLElement>('[data-u2-studio]');
   const extra=main.querySelector<HTMLDetailsElement>('[data-u25-supplementary]');
