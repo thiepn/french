@@ -9,6 +9,8 @@ export interface A1Vocabulary {readonly french:string;readonly english:string;re
 export interface A1Task {
  readonly id:string;readonly type:A1TaskType;readonly prompt:string;
  readonly answer:string;readonly options:readonly string[];readonly explanation:string;readonly focus:string;
+ /** Source-authored misconception explanations, keyed by exact wrong option text. */
+ readonly misconceptionFeedback?:Readonly<Record<string,string>>;
 }
 export interface A1Unit{
  readonly id:string;readonly order:number;readonly title:string;readonly goal:string;
@@ -25,7 +27,7 @@ export interface A1AuthoredSpec{
  grammar:[string,string,[string,string][],[string,string,string]][];
  vocabulary:[string,string,string][];
  dialogue:[string,string,string][];
- tasks:[A1TaskType,string,string,string,string[],string][];
+ tasks:[A1TaskType,string,string,string,string[],string,Record<string,string>?][];
  writing:[string,string[],string];
 }
 export function authorA1Unit(spec:A1AuthoredSpec,order:number):A1Unit{
@@ -40,9 +42,10 @@ export function authorA1Unit(spec:A1AuthoredSpec,order:number):A1Unit{
   }))),
   vocabulary:Object.freeze(spec.vocabulary.map(([french,english,context])=>Object.freeze({french,english,context}))),
   dialogue:Object.freeze(spec.dialogue.map(([speaker,fr,en])=>Object.freeze({speaker,fr,en}))),
-  tasks:Object.freeze(spec.tasks.map(([type,prompt,answer,explanation,options,focus],i)=>Object.freeze({
+  tasks:Object.freeze(spec.tasks.map(([type,prompt,answer,explanation,options,focus,wrongOptions],i)=>Object.freeze({
    id:spec.id+'-task-'+String(i+1).padStart(2,'0'),type,prompt,answer,explanation,
-   options:Object.freeze([...options]),focus
+   options:Object.freeze([...options]),focus,
+   ...(wrongOptions?{misconceptionFeedback:Object.freeze({...wrongOptions})}:{})
   }))),
   writing:Object.freeze({prompt:spec.writing[0],criteria:Object.freeze([...spec.writing[1]]),model:spec.writing[2]})
  });

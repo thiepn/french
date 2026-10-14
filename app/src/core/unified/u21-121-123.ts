@@ -247,11 +247,11 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Leïla découvre que le texte de la pièce exprime une hésitation à propos d’une lettre, alors que la traduction anglaise devient catégorique. Oscar distingue ce que la narratrice a réellement aperçu de ce qu’elle affirme savoir. Un cahier de répétition contient deux variantes, un silence et une réaction rapide, mais ne révèle pas la préférence de l’autrice. Les traducteurs veulent conserver « il me semblait » et expliquer les effets des différentes interprétations. Leur décision vise à préserver l’ambiguïté plutôt qu’à annoncer une culpabilité qui n’est pas démontrée."
       ],
       "sources": [
-        "Write a comparative translator’s note defending a precise revision.",
+        "Write a comparative translator’s note defending a precise revision. After the model, independently translate an unrelated everyday claim: a friend thought she recognised a classmate but only saw a familiar coat. Write two English versions with different degrees of certainty and explain which better preserves the French hesitation.",
         "Le manuscrit présente la formule « il me semblait » et précise que la narratrice avait aperçu seulement une enveloppe. La traduction provisoire « I knew where it was » transforme cette impression en connaissance affirmée. De plus, les notes de répétition proposent deux rythmes de réponse, sans que l’autrice en ait approuvé un. Nous préférons donc une formulation anglaise qui conserve le doute et une note distinguant traduction et mise en scène. Ce choix n’impose pas une interprétation morale unique; il permet de justifier les hypothèses du public à partir des indices effectivement écrits."
       ],
       "debate": [
-        "Defend ambiguity in literary translation against the wish for immediate clarity.",
+        "Defend ambiguity in literary translation against the wish for immediate clarity. Address a director who wants the actor to sound certain: distinguish a defensible artistic interpretation from the words and pause actually attested in the script.",
         "Je pense qu’une traduction théâtrale doit préserver l’incertitude lorsqu’elle participe à la construction du personnage. Une version simple et affirmative peut aider le public à comprendre rapidement l’intrigue, et cette préoccupation est légitime. Pourtant, retirer « il me semblait » déforme ici la relation entre le souvenir et la connaissance. Le jeu des acteurs pourra accentuer une lecture sans la transformer en intention certaine de l’autrice. Je recommande une traduction nuancée et une présentation honnête des variantes de répétition. Si l’on souhaite rendre la scène plus accessible, on peut travailler sur le rythme plutôt que supprimer une information essentielle au sens."
       ]
     },
@@ -767,11 +767,11 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Dalia écrit un récit sur le départ de sa famille. Sa grand-mère se souvient d’un dimanche, alors que le carnet d’un autre proche mentionne un lundi. Paul insiste sur le fait que cette divergence ne démontre pas une intention de tromper. Le premier brouillon présente pourtant le dimanche comme une date certaine et inverse plusieurs étapes du voyage par ses temps verbaux. Dalia souhaite réviser le texte pour attribuer les souvenirs, conserver l’émotion du témoignage et signaler la chronologie incertaine. Elle ne choisira pas automatiquement une source sans justification."
       ],
       "sources": [
-        "Compose a balanced memoir paragraph from two differing family accounts.",
+        "Compose a balanced memoir paragraph from two differing family accounts. Transfer to a new family setting: an aunt remembers a birthday photo as taken in winter, while an undated letter mentions spring. Compose three French sentences marking each source and explaining what remains unknown, without declaring either relative dishonest.",
         "Selon ma grand-mère, la famille est partie un dimanche. Elle évoquait particulièrement le repas qui avait précédé le voyage. Un carnet tenu par son frère mentionne toutefois un départ le lundi. Ces deux sources ne permettent pas de reconstruire chaque étape avec certitude : le souvenir oral souligne l’expérience vécue, tandis que la note écrite indique un jour sans détailler les préparatifs. Je conserve les deux versions pour montrer comment un événement commun a été transmis différemment. Les formulations du récit distinguent la décision de partir, les préparatifs antérieurs et le déplacement effectif."
       ],
       "debate": [
-        "Defend preserving family voices while maintaining exact historical attribution.",
+        "Defend preserving family voices while maintaining exact historical attribution. Respond respectfully to a relative who believes the written record always overrides memory; explain what each kind of source can and cannot establish.",
         "Je crois qu’un récit de vie doit rester attentif aux souvenirs de ceux qui ont vécu les événements. La voix de la grand-mère apporte une dimension affective qu’une date dans un carnet ne pourrait pas remplacer. Pourtant, ce témoignage a été recueilli bien plus tard et contredit le jour mentionné dans une note écrite. Certains éditeurs voudraient choisir automatiquement le document matériel, mais ce serait oublier que la chronologie précise n’est pas la seule valeur du récit. Je recommande de nommer les deux sources, de conserver leur différence et de réviser les temps verbaux pour clarifier ce qui précède le voyage."
       ]
     },

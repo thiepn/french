@@ -18,7 +18,7 @@ const authored:A1AuthoredSpec[]=[
  ['order','Arrange: pleuvoir / va / Il / demain','Il va pleuvoir demain','The impersonal subject il precedes va + infinitive.',['demain','pleuvoir','Il','va'],'word order'],
  ['fill','Nous n’___ pas sortir. (aller)','allons','Negation surrounds the conjugated nous allons.',[],'negation'],
  ['reading','What place do the friends propose visiting?','le musée','The friends propose a museum at noon.',['le marché','le musée','la piscine'],'comprehension'],
- ['choice','How do you say “the weather is hot”?','Il fait chaud.','Il fait chaud is the impersonal weather pattern.',['Je suis chaud.','Il fait chaud.','Il a chaud.'],'weather'],
+ ['choice','How do you say “the weather is hot”?','Il fait chaud.','Il fait chaud is the impersonal weather pattern.',['Je suis chaud.','Il fait chaud.','Il a chaud.'],'weather',{"Je suis chaud.":"That describes the speaker rather than the weather, and can have a very different colloquial meaning.","Il a chaud.":"That means he feels hot; impersonal il fait describes weather."}],
  ['fill','Il y a du ___ aujourd’hui.','vent','Du vent means some wind in a weather report.',[],'partitive']
  ],
  writing:['Write a short weather message about tomorrow and revise your plan because of rain.', ['Use two correct weather expressions.','Make a plan with aller plus an infinitive.','Use negation for one cancelled activity.'],'Demain, il va pleuvoir le matin. Nous n’allons pas marcher. Nous allons visiter le musée.']
@@ -33,7 +33,7 @@ const authored:A1AuthoredSpec[]=[
  dialogue:[['Noémie','Tu habites dans une maison ?','Do you live in a house?'],['Rayan','Non, j’habite dans un petit appartement.','No, I live in a small apartment.'],['Noémie','Il y a combien de chambres ?','How many bedrooms are there?'],['Rayan','Il y a deux chambres et un grand salon.','There are two bedrooms and a big living room.'],['Noémie','Tu as un balcon ?','Do you have a balcony?']],
  tasks:[
  ['fill','Il y ___ deux chambres.','a','Il y a does not change with a plural noun.',[],'existence'],
- ['choice','Choose the negative of il y a un jardin.','Il n’y a pas de jardin.','After negated existence, the noun is normally introduced by de.',['Il ne y a pas un jardin.','Il n’y a pas de jardin.','Il y a ne pas de jardin.'],'negation'],
+ ['choice','Choose the negative of il y a un jardin.','Il n’y a pas de jardin.','After negated existence, the noun is normally introduced by de.',['Il ne y a pas un jardin.','Il n’y a pas de jardin.','Il y a ne pas de jardin.'],'negation',{"Il ne y a pas un jardin.":"Ne elides to n’ before the vowel sound; a neutral negative of un jardin uses de jardin.","Il y a ne pas de jardin.":"In the written negative il n’y a pas, ne is shortened to n’ and pas follows the conjugated verb a; the word order here is wrong."}],
  ['reading','Where does Rayan live?','dans un appartement','Rayan says he lives in a small apartment.',['dans une maison','dans un appartement','à l’hôtel'],'comprehension'],
  ['fill','Le canapé est ___ le salon.','dans','Dans marks an object located inside a room.',[],'location'],
  ['choice','What means “at my place”?','chez moi','Chez moi is the idiomatic expression for at my home.',['à côté de','chez moi','sous moi'],'location'],
@@ -55,7 +55,7 @@ const authored:A1AuthoredSpec[]=[
  dialogue:[['Voyageuse','Excusez-moi, ce tram va à la gare ?','Excuse me, does this tram go to the station?'],['Agent','Non, prenez la ligne quatre.','No, take line four.'],['Voyageuse','Je change où ?','Where do I transfer?'],['Agent','Changez à République. Le prochain tram arrive dans cinq minutes.','Transfer at République. The next tram arrives in five minutes.'],['Voyageuse','Merci ! Je vais prendre la ligne quatre.','Thank you! I will take line four.']],
  tasks:[
  ['fill','Je ___ le bus tous les jours. (prendre)','prends','The je form of prendre is prends.',[],'prendre'],
- ['choice','Which means the vehicle is late?','Le bus est en retard.','Être en retard is the standard construction.',['Le bus va tard.','Le bus est en retard.','Le bus a retardé toujours.'],'transport'],
+ ['choice','Which means the vehicle is late?','Le bus est en retard.','Être en retard is the standard construction.',['Le bus va tard.','Le bus est en retard.','Le bus a retardé toujours.'],'transport',{"Le bus va tard.":"Tard describes when something happens; saying that a vehicle is late requires the set expression être en retard, not va tard.","Le bus a retardé toujours.":"Use être en retard for current lateness, rather than this unidiomatic past construction."}],
  ['reading','Which line does the traveler need?','la ligne quatre','The agent says prenez la ligne quatre.',['la ligne deux','la ligne trois','la ligne quatre'],'comprehension'],
  ['fill','Nous ___ le tram à huit heures. (prendre)','prenons','The nous form of prendre is prenons.',[],'prendre'],
  ['choice','What is a quai at a station?','platform','A quai is a platform for boarding.',['ticket','platform','departure time'],'vocabulary'],
@@ -80,7 +80,7 @@ const authored:A1AuthoredSpec[]=[
  ['choice','Choose the phrase used to state a booking name.','au nom de','Au nom de introduces the reservation name.',['sous la gare','au nom de','près du train'],'travel'],
  ['reading','What document does the receptionist ask for?','le passeport','The receptionist asks vous avez votre passeport ?',['le billet','le passeport','le permis'],'comprehension'],
  ['fill','Je ne trouve ___ mon billet.','pas','Ne and pas surround the conjugated trouve.',[],'negation'],
- ['choice','Which request is polite?','Vous pouvez m’aider, s’il vous plaît ?','Vous with please is a suitable polite request.',['Tu aides maintenant !','Vous pouvez m’aider, s’il vous plaît ?','Pourquoi moi ?'],'register'],
+ ['choice','Which request is polite?','Vous pouvez m’aider, s’il vous plaît ?','Vous with please is a suitable polite request.',['Tu aides maintenant !','Vous pouvez m’aider, s’il vous plaît ?','Pourquoi moi ?'],'register',{"Tu aides maintenant !":"This is a familiar imperative demand, not a courteous request to an unfamiliar receptionist.","Pourquoi moi ?":"This asks for an explanation of why the speaker is involved. It gives the receptionist no request for help and is not a polite assistance formula."}],
  ['order','Arrange: mon passeport / Voici','Voici mon passeport','Voici precedes the object being presented.',['mon passeport','Voici'],'word order'],
  ['fill','Est-ce ___ la chambre est prête ?','que','Use est-ce que before a complete statement.',[],'questions'],
  ['reading','On which floor is the room?','au deuxième étage','The receptionist specifies the second floor.',['au premier étage','au troisième étage','au deuxième étage'],'comprehension'],
