@@ -47,3 +47,26 @@
 .u44-sound-guidance{max-width:72ch}
 .u44-original-sounds button:focus-visible,.u44-original-sounds summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:540px){.u44-original-sounds{padding:.6rem}.u44-original-sound-case .u7-audio-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.u44-original-sound-case .u7-audio-actions button{min-width:0}}
+
+/* U46 — original A1 evidence, optional self-check, and meaningful mobile reflow. */
+.u46-question-evidence{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center}
+.u46-question-evidence button{min-height:44px;flex:0 1 auto;max-width:100%}
+.u46-question-lines{border-inline-start:2px solid var(--accent);padding:.45rem .8rem;line-height:1.6;overflow-wrap:anywhere}
+.u46-question-lines[hidden],.u46-transfer-checks[hidden],.u46-listening-reveal[hidden]{display:none}
+.u46-question-lines p{margin:.35rem 0}
+.u46-listening-reveal{font-size:.89rem;line-height:1.65;padding:.45rem 0}
+.u46-listening-reveal>summary{cursor:pointer;min-height:44px;display:list-item;font-weight:600}
+.u46-listening-reveal>p{margin:.35rem 0;max-width:72ch}
+.u46-independent-speech{border-top:1px solid var(--line);padding:.95rem 0 .25rem;display:grid;gap:.55rem}
+.u46-independent-speech h5{font-size:1rem;margin:0}
+.u46-transfer-prompt,.u46-transfer-checks{margin:0;max-width:70ch;line-height:1.65;overflow-wrap:anywhere}
+.u46-independent-speech button{justify-self:start;min-height:44px}
+.u46-transfer-checks{padding:.6rem .85rem;border-inline-start:2px solid var(--accent)}
+.u46-independent-speech button:focus-visible,.u46-listening-reveal>summary:focus-visible,
+.u46-question-evidence button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){
+ .u46-question-evidence{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .u46-question-evidence button{width:100%;min-width:0;white-space:normal;line-height:1.35}
+ .u46-independent-speech button{max-width:100%;white-space:normal}
+}
+@media(max-width:350px){.u46-question-evidence{grid-template-columns:minmax(0,1fr)}}

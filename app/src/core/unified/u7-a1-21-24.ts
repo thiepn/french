@@ -33,7 +33,7 @@ const authored:A1AuthoredSpec[]=[
  tasks:[
  ['fill','Vous ___ venir samedi ? (want)','voulez','Vouloir with vous is voulez.',[],'vouloir'],
  ['choice','Which reply is a polite acceptance?','Avec plaisir !','Avec plaisir is a friendly, polite way to accept.',['Non, jamais.','Avec plaisir !','Je ne peux pas.'],'register'],
- ['reading','Which day do the friends finally arrange?','lundi','Hugo suggests Monday and Farah accepts.',['vendredi','samedi','lundi'],'comprehension'],
+ ['reading','Which alternative day do Hugo and Farah discuss after Sunday is impossible?','lundi','Hugo proposes Monday; Farah welcomes the idea and asks about noon, which Hugo has not yet explicitly confirmed.',['vendredi','samedi','lundi'],'comprehension'],
  ['fill','Je ne peux ___ dimanche.','pas','A polite decline uses ne … pas.',[],'negation'],
  ['choice','Choose the correct nous form of pouvoir.','pouvons','Nous pouvons is the present tense of pouvoir.',['pouvez','pouvons','peuvent'],'pouvoir'],
  ['order','Arrange: peux / Je / venir / samedi','Je peux venir samedi','A conjugated pouvoir takes an infinitive after it.',['samedi','venir','Je','peux'],'word order'],

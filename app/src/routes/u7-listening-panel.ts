@@ -1,5 +1,5 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
-import {listeningDialogueText,originalA1SoundContrasts} from '../core/unified/u7-listening';
+import {listeningDialogueText,originalA1SoundContrasts,originalA1SpokenTransfer,originalA1ListeningEvidence} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -89,14 +89,16 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  const soundContrasts=originalA1SoundContrasts(unit.id);
  if(soundContrasts.length){
   const section=el('details',undefined,'u44-original-sounds');
-  const summary=el('summary','French sound focus · '+soundContrasts.length+' original A1 contrasts (ungraded)');
+  const summary=el('summary','French sound focus · '+soundContrasts.length+' comparisons + independent speaking (ungraded)');
   section.append(summary,
-   el('p','Optional listening and spoken self-correction in this original lesson. Hear A and B before revealing the French spellings. The installed device TTS is synthetic and may render liaison, homophones or vowel quality inaccurately; no automatic recognition, microphone recording, pronunciation grade or FSRS event is created.','u7-listening-notice'));
+   el('p','Choose listen-first or reveal the written examples first. Device TTS is optional and may render liaison, schwa, homophones or vowels inaccurately. IPA shows a reference target, not a measurement of this device. No automatic recognition, recording, pronunciation grade or FSRS event is created.','u7-listening-notice'));
   soundContrasts.forEach((contrast,index)=>{
    const panel=el('section',undefined,'u44-original-sound-case');
    panel.setAttribute('aria-label','Pronunciation contrast '+(index+1)+': '+contrast.focus);
    panel.append(el('h5',(index+1)+'. '+contrast.focus),
     el('p',contrast.selfCheck,'u44-sound-prompt'));
+   if(contrast.hearingLimit==='homophone')panel.append(
+    el('p','Homophones: the focus words normally sound the same. Do not guess spelling from sound alone; compare the written sentence and meaning.','u7-listening-notice'));
    const actions=el('div',undefined,'u7-audio-actions');
    const playA=action('Hear A',()=>play(.85,contrast.a.french));
    const playB=action('Hear B',()=>play(.85,contrast.b.french));
@@ -118,6 +120,22 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    reveal.setAttribute('aria-expanded','false');
    panel.append(reveal,answer);section.append(panel);
   });
+  const transfer=originalA1SpokenTransfer(unit.id);
+  if(transfer){
+   const practice=el('section',undefined,'u46-independent-speech');
+   practice.setAttribute('aria-label','Independent spoken transfer for '+unit.id);
+   practice.append(el('h5','Apply it in another situation'),
+    el('p',transfer.context,'u46-transfer-prompt'),
+    el('p','Say your own answer aloud before viewing the checklist. This is voluntary self-practice, not speech recognition or a recorded result.','u6-small'));
+   const checks=el('p',transfer.selfCheck,'u46-transfer-checks');checks.hidden=true;
+   const showChecks=action('Show self-check guidance',()=>{
+    checks.hidden=!checks.hidden;
+    showChecks.textContent=checks.hidden?'Show self-check guidance':'Hide self-check guidance';
+    showChecks.setAttribute('aria-expanded',String(!checks.hidden));
+   });
+   showChecks.setAttribute('aria-expanded','false');
+   practice.append(showChecks,checks);section.append(practice);
+  }
   host.append(section);
  }
 
@@ -148,9 +166,35 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    const correct=checkPracticeAnswer(select.value,question.answer);
    const repair=question.misconceptionFeedback?.[select.value];
    result.textContent=correct?'Correct. '+question.explanation:
-    'Not yet. '+(repair??'Listen again or reveal the original French transcript.')+' '+question.explanation;
+    'Not yet. '+(repair??'Replay the source exchange or read the transcript, then choose again.')+
+    ' You can retry before revealing the complete explanation.';
+   explanation.hidden=correct;
   });
-  form.append(label,submit,result);host.append(form);
+  const evidence=originalA1ListeningEvidence(unit,question.id);
+  if(evidence.length){
+   const help=el('div',undefined,'u46-question-evidence');
+   const replay=action('Replay source exchange',()=>play(.85,evidence.map(line=>line.fr).join(' ')));
+   replay.disabled=!supported;
+   const supporting=el('div',undefined,'u46-question-lines');supporting.hidden=true;
+   supporting.setAttribute('aria-label','Original source dialogue turns for '+question.id);
+   for(const line of evidence){
+    const turn=el('p',line.speaker+': '+line.fr);turn.lang='fr';
+    supporting.append(turn);
+   }
+   const show=action('Read source exchange',()=>{
+    supporting.hidden=!supporting.hidden;
+    show.setAttribute('aria-expanded',String(!supporting.hidden));
+    show.textContent=supporting.hidden?'Read source exchange':'Hide source exchange';
+   });
+   show.setAttribute('aria-expanded','false');
+   help.append(replay,show);
+   form.append(label,help,supporting);
+  }else form.append(label);
+  const explanation=el('details',undefined,'u46-listening-reveal');
+  explanation.hidden=true;
+  explanation.append(el('summary','Reveal explanation after attempting'),
+   el('p',question.explanation));
+  form.append(submit,result,explanation);host.append(form);
  });
  const oral=getOriginalMaterial(unit.id)?.oral;
  if(oral){
