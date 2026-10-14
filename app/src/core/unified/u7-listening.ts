@@ -2,6 +2,7 @@ import type {A1Unit} from './u6-a1-model.ts';
 export interface A1ListeningQuestion{
  readonly id:string;readonly prompt:string;readonly answer:string;
  readonly options:readonly string[];readonly explanation:string;
+ readonly misconceptionFeedback?:Readonly<Record<string,string>>;
 }
 type Q=readonly [string,string,readonly string[],string];
 const QUESTIONS:Readonly<Record<string,readonly [Q,Q]>>={
@@ -54,6 +55,23 @@ const QUESTIONS:Readonly<Record<string,readonly [Q,Q]>>={
   ['What two things does the merchant offer?','du pain et une bouteille d’eau',['du lait et du riz','du pain et une bouteille d’eau','du fromage et du thé'],'The merchant offers bread and a bottle of water.']
  ]
 };
+type Bonus=readonly [string,string,readonly string[],string,Readonly<Record<string,string>>];
+/** Additional original U6 dialogue inference — existing listen-1 semantics stay unchanged. */
+const ORIGINAL_A1_DIALOGUE_FOLLOWUPS:Readonly<Record<string,Bonus>>=Object.freeze({
+ "a1-01":["How does Malik introduce himself after Inès says her name?","Moi, c’est Malik.",["Moi, c’est Malik.","Je suis professeur ici.","Je cherche un travail."],"Malik says Moi, c’est Malik. This informal introduction is not Inès's greeting or a description of his job.",{"Je suis professeur ici.":"The dialogue says nothing about Malik being a teacher; this is a different statement from a later lesson.","Je cherche un travail.":"This is neither Malik's name nor an introduction in this conversation; look for Moi, c’est."}],
+ "a1-02":["What does Aya say about herself and her friends being students?","nous sommes tous étudiants",["nous sommes tous étudiants","nous sommes professeurs","je suis seule étudiante"],"Aya says Oui, nous sommes tous étudiants, including herself and her friends; Nora later says she is a teacher.",{"nous sommes professeurs":"Aya uses étudiants, not professeurs. The later professor is Nora, the other speaker.","je suis seule étudiante":"Tous means everyone in the group, not that Aya is the only student."}],
+ "a1-03":["Which object does Sami say is for his course rather than specifically for school?","le cahier",["le cahier","le livre","la table"],"Sami attributes the notebook, le cahier, to his course, while Lucie asks whether the book, le livre, is for school.",{"le livre":"The dialogue links le livre with the school question, not Sami's phrase pour mon cours.","la table":"The table is a location for pens, not the object described as pour mon cours."}],
+ "a1-04":["How old is Léo’s sister, rather than his brother?","quinze ans",["quinze ans","dix ans","vingt ans"],"Léo says ma sœur a quinze ans and mon frère a dix ans; the two ages refer to different relatives.",{"dix ans":"Dix ans belongs to Léo’s brother; listen for ma sœur before the number.","vingt ans":"No relative is described as twenty years old; avoid inferring a number not spoken."}],
+ "a1-05":["When does Mehdi work, as distinct from when he studies?","le soir",["le matin","le soir","le samedi"],"Mehdi says he studies in the morning and works in the evening: étudie le matin, travaille le soir.",{"le matin":"Le matin refers to the study activity, not the work verb travaille.","le samedi":"Saturday never appears in Mehdi's response; it is not a stated schedule."}],
+ "a1-06":["Which practical question does Zoé ask that the agent has not yet answered?","combien coûte la carte ?",["combien coûte la carte ?","où est la bibliothèque ?","est-ce qu’elle est ouverte ?"],"The agent gives a location and confirms opening hours, but the excerpt ends before any card price is stated.",{"où est la bibliothèque ?":"The agent has already answered the location question: near the station.","est-ce qu’elle est ouverte ?":"The agent replies yes and gives a closing time; only the card price remains unanswered."}],
+ "a1-07":["What does Lina have at home instead of sugar?","du miel",["du miel","du sucre","du café"],"Lina says she does not have sugar but has honey: je n’ai pas de sucre, mais j’ai du miel.",{"du sucre":"She explicitly negates possession of sugar; the positive noun after mais is miel.","du café":"She says she does not like coffee, not that coffee is her alternative sweetener."}],
+ "a1-08":["Which colour does Louis give for the door, not the table?","bleue",["bleue","verte","rouge"],"Louis says la porte est bleue; later he describes a grande table verte in the living room.",{"verte":"Verte describes the table rather than the door; track the noun each adjective modifies.","rouge":"Red is not a colour used for the door in the spoken exchange."}],
+ "a1-09":["After the square, where is the museum in relation to the park?","devant le parc",["devant le parc","derrière la gare","dans la rue"],"The resident confirms the left turn and then says le musée est devant le parc, à droite.",{"derrière la gare":"The resident refers to the park, not a location behind the station.","dans la rue":"The dialogue provides a specific relation devant le parc; this vague answer loses the direction."}],
+ "a1-10":["What precise time do Élise and Karim agree to meet after his work finishes?","quinze heures et demie",["quinze heures et demie","quinze heures","dix-huit heures"],"Karim works until fifteen hours; Élise suggests fifteen thirty, and he agrees to meet in front of the library.",{"quinze heures":"This is the end of Karim's workday, not the agreed meeting time.","dix-huit heures":"No speaker proposes eighteen hours; listen for et demie after quinze heures."}],
+ "a1-11":["Which routine action does Hugo say happens after washing, before taking the bus?","je m’habille",["je m’habille","je me couche","je me lève"],"Hugo lists je me lave, je m’habille et je prends le bus, in that order.",{"je me couche":"Going to bed is not part of the morning sequence Hugo gives.","je me lève":"Getting up is mentioned earlier, but the question asks for the action between washing and catching the bus."}],
+ "a1-12":["Why does Noé decline Éva’s original Saturday cinema invitation?","il va travailler",["il va travailler","il va étudier","il est malade"],"After Éva asks est-ce que tu vas travailler ?, Noé answers oui, je vais travailler and suggests Sunday.",{"il va étudier":"Éva asks about work; Noé confirms working, not studying.","il est malade":"No illness is mentioned; his obstacle is work on Saturday."}]
+});
+
 export function listeningQuestions(unit:A1Unit):readonly A1ListeningQuestion[]{
  const authored=QUESTIONS[unit.id];
  if(authored)return authored.map(([prompt,answer,options,explanation],i)=>Object.freeze({
@@ -61,12 +79,22 @@ export function listeningQuestions(unit:A1Unit):readonly A1ListeningQuestion[]{
  }));
  // U6 units remain usable with an original, already authored reading-comprehension task.
  const reading=unit.tasks.find(task=>task.type==='reading');
- return reading?[{id:unit.id+'-listen-1',prompt:reading.prompt,answer:reading.answer,
-  options:reading.options,explanation:reading.explanation}]:[];
+ if(!reading)return [];
+ const original={id:unit.id+'-listen-1',prompt:reading.prompt,answer:reading.answer,
+  options:reading.options,explanation:reading.explanation};
+ const bonus=ORIGINAL_A1_DIALOGUE_FOLLOWUPS[unit.id];
+ if(!bonus)return [original];
+ const [prompt,answer,options,explanation,misconceptionFeedback]=bonus;
+ return [original,Object.freeze({
+  id:unit.id+'-listen-2',prompt,answer,
+  options:Object.freeze([...options]),explanation,
+  misconceptionFeedback:Object.freeze({...misconceptionFeedback})
+ })];
 }
 export function validateListeningCatalog(units:readonly A1Unit[]):readonly string[]{
  const issues:string[]=[];
  if(Object.keys(QUESTIONS).length!==12)issues.push('12 original U7 listening sets required');
+ if(Object.keys(ORIGINAL_A1_DIALOGUE_FOLLOWUPS).length!==12)issues.push('12 original U6 A1 listening followups required');
  for(const unit of units){
   const items=listeningQuestions(unit);
   if(items.length<(unit.order>12?2:1))issues.push('Missing listening questions '+unit.id);
