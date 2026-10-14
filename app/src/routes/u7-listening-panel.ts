@@ -145,9 +145,10 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   form.addEventListener('submit',event=>{
    event.preventDefault();
    if(!select.value){result.textContent='Choose a response first.';return;}
-   result.textContent=checkPracticeAnswer(select.value,question.answer)?
-    'Correct. '+question.explanation:
-    'Not yet. Listen again or reveal the French transcript. '+question.explanation;
+   const correct=checkPracticeAnswer(select.value,question.answer);
+   const repair=question.misconceptionFeedback?.[select.value];
+   result.textContent=correct?'Correct. '+question.explanation:
+    'Not yet. '+(repair??'Listen again or reveal the original French transcript.')+' '+question.explanation;
   });
   form.append(label,submit,result);host.append(form);
  });
