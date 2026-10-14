@@ -17,7 +17,7 @@ test('Progress is a real evidence workspace',async({page})=>{
 test('Home ranks real learning actions and avoids static placeholder recommendations',async({page})=>{
   await page.goto('/#home');
   await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Other ways to practise'})).toBeVisible({timeout:30_000});
+  await expect(page.getByRole('heading',{name:'Your original course and other practice'})).toBeVisible({timeout:30_000});
   await expect(page.locator('.home-start')).toBeVisible();
   await expect(page.getByText(/Recommendations use stored learning activity/)).toBeVisible();
 });
