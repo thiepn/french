@@ -540,7 +540,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      help.replaceChildren();
     }else{
      errors.add(task.focus);mistakes.set(unit.id,errors);
-     result.textContent='Not yet. '+task.explanation+' Revisit the '+task.focus+' point, then try again.';
+     const authoredMistake=task.misconceptionFeedback?.[value];
+     result.textContent=authoredMistake?
+      'Not yet. '+authoredMistake+' '+task.explanation+' Try again.':
+      'Not yet. '+task.explanation+' Revisit the '+task.focus+' point, then try again.';
      help.replaceChildren(button('Review lesson explanation',()=>open(unit.id,'understand')));
     }
     // Refresh counters and side navigation without removing typed answer or feedback.
