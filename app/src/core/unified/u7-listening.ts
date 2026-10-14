@@ -197,8 +197,8 @@ export const ORIGINAL_A1_SOUND_CONTRASTS:Readonly<Record<string,readonly Origina
  "a1-12":[
   {"focus":"on + a liaison","a":{"french":"On a du temps.","meaning":"We have time.","reading":"on a /ɔ̃n‿a/"},"b":{"french":"On va partir.","meaning":"We are going to leave.","reading":"on va /ɔ̃ va/"},"guidance":"On often links /n/ before vowel-initial a, but not before the v of va. The base vowel in on remains nasal.","selfCheck":"Hear the connected n in on a without adding it to on va, then use both in a natural conversation about tomorrow."},
   {"focus":"on y vs on vient","a":{"french":"On y va demain.","meaning":"We are going there tomorrow.","reading":"on y /ɔ̃n‿i/"},"b":{"french":"On vient demain.","meaning":"We are coming tomorrow.","reading":"on vient /ɔ̃ vjɛ̃/"},"guidance":"Y begins with a vowel sound, allowing liaison /n/ after on; vient begins with a consonant. The two expressions also give different travel directions.","selfCheck":"Compare the linking n and distinguish going there from coming."}
- ]
-, "a1-13":[
+ ],
+ "a1-13":[
   {"focus":"food: du vs de l’","a":{"french":"Je voudrais du pain.","meaning":"I would like some bread.","reading":"du /dy/"},"b":{"french":"Je voudrais de l’eau.","meaning":"I would like some water.","reading":"de l’eau /də lo/"},"guidance":"Du is one partitive form and de l’ precedes a vowel-initial noun. Pronounce the linked vowel smoothly, but do not mistake French rounded /y/ in du for English /uː/.","selfCheck":"Hear the order change from bread to water and explain how the article changes; repeat a fresh food request."},
   {"focus":"eggs: plural liaison","a":{"french":"Nous avons des œufs.","meaning":"We have some eggs.","reading":"des œufs /dez‿ø/"},"b":{"french":"Nous avons des tomates.","meaning":"We have some tomatoes.","reading":"des tomates /de tɔmat/"},"guidance":"The plural determiner des has a linking /z/ before the vowel-initial œufs, not before consonant-initial tomates. The words refer to different foods; only the consonant boundary is the sound focus.","selfCheck":"Listen for /z/ between des and œufs; make a new supermarket sentence with a vowel-initial food."}
  ],
