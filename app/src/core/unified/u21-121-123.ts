@@ -611,7 +611,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       ],
       [
         "Dalia",
-        "Le passage comporte aussi un temps du passé qui fait croire que le déménagement a eu lieu avant la préparation.",
+        "Le passage emploie aussi un temps du passé qui laisse croire que le déménagement a eu lieu avant la préparation.",
         "The passage also uses a past tense that makes it seem as though the move took place before the preparations."
       ],
       [

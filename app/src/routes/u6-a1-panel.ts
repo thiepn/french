@@ -431,14 +431,23 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    });
   }
   function renderDialogue(unit:A1Unit,container:HTMLElement){
-   container.append(el('p','Read the complete exchange first. Reveal translations only when needed, then return to the French without them.','u6-small'));
+   const translated=new Set([
+    'transfer-91','transfer-92','transfer-93','transfer-106','transfer-107','transfer-108',
+    'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150'
+   ]);
+   const teachingSummary=unit.id.startsWith('transfer-')&&!translated.has(unit.id);
+   const showText=teachingSummary?'Show English study note':'Show translation';
+   const hideText=teachingSummary?'Hide English study note':'Hide translation';
+   container.append(el('p',teachingSummary?
+    'Read the complete French exchange first. These English study notes can summarize or explain rather than translate the wording. Do not quote them as a line-by-line translation.':
+    'Read the complete French exchange first. Reveal translations only when needed, then return to the French without them.','u6-small'));
    for(const line of unit.dialogue){
     const row=el('div',undefined,'u6-dialogue-turn');
     const name=el('strong',line.speaker),fr=el('p',line.fr);
     fr.lang='fr';const english=el('p',line.en,'u6-gloss');english.hidden=true;
-    const toggle=button('Show translation',()=>{
+    const toggle=button(showText,()=>{
      english.hidden=!english.hidden;
-     toggle.textContent=english.hidden?'Show translation':'Hide translation';
+     toggle.textContent=english.hidden?showText:hideText;
      toggle.setAttribute('aria-expanded',String(!english.hidden));
     });
     toggle.setAttribute('aria-expanded','false');
@@ -468,7 +477,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(entry?.reading)container.append(button('Continue this lesson in native Read →',()=>{
     if(allowExit()&&handoffOriginalLesson('read',unit.id))navigate('read');
    },'primary-action compact-action'));
-   container.append(el('p','Next, listen to the original dialogue without revealing the translations.','u6-small'));
+   container.append(el('p','Next, listen to the original French dialogue without revealing the English support.','u6-small'));
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
@@ -713,7 +722,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const descriptions:Record<Stage,string>={
     understand:'Learn the original grammar and inspect its worked correction.',
     words:'Explore vocabulary in this source lesson; scheduled word reviews stay in native Review.',
-    dialogue:'Read the original exchange and reveal translation only when needed.',
+    dialogue:'Read the original exchange first. Reveal English translations or explanatory notes only when needed.',
     listen:'Use optional device TTS, then answer actual comprehension questions.',
     practice:'Answer the original questions independently before revealing the key.',
     write:'Compose a French response and compare it yourself with an authored example.'

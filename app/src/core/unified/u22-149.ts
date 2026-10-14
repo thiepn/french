@@ -98,8 +98,8 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       ],
       [
         "Aïcha",
-        "La proposition a-t-elle déjà obtenu les vingt mille euros prévus?",
-        "Has the proposal already been allocated the planned twenty thousand euros?"
+        "Les vingt mille euros prévus ont-ils déjà été accordés à ce projet ?",
+        "Have the planned twenty thousand euros already been awarded to this project?"
       ],
       [
         "Samira",

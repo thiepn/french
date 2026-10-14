@@ -98,7 +98,7 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       ],
       [
         "Hugo",
-        "La présence d’une rampe ne dit pas si toutes les portes et tous les paliers conviennent à chaque personne.",
+        "La présence d’une rampe ne permet pas de savoir si toutes les portes et tous les paliers conviennent à chaque personne.",
         "The presence of a ramp does not tell us whether all the doors and landings suit every person."
       ],
       [
@@ -628,8 +628,8 @@ const SOURCE:readonly U20OriginalSourceStory[]=[
       ],
       [
         "Mathis",
-        "Nous pouvons proposer un essai local et recueillir plusieurs types de retours, sans promettre une amélioration déjà démontrée.",
-        "We can propose a local trial and gather several types of feedback, without promising an improvement that has already been demonstrated."
+        "Nous pouvons proposer un essai local et recueillir plusieurs types de retours, sans présenter cette amélioration comme déjà démontrée.",
+        "We can propose a local trial and gather several types of feedback without presenting the improvement as already proven."
       ],
       [
         "Solène",

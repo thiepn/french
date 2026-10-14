@@ -88,7 +88,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       ],
       [
         "Lina",
-        "Peut-on donc écrire que la prévision était fausse partout?",
+        "Peut-on donc écrire que la prévision était fausse partout ?",
         "So can we write that the forecast was wrong everywhere?"
       ],
       [
