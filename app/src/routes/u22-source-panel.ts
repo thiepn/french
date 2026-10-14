@@ -89,11 +89,20 @@ function renderListen(host:HTMLElement,s:Material,signal:AbortSignal){
 function renderWrite(host:HTMLElement,s:Material,drafts:Map<string,string>){
  host.append(el('h3','Independent original French writing'),el('p','Drafts remain in this page only. Authored examples are not automatic semantic grading; no SRS, CEFR or Account writes.','u22-source-note'));
  const expanded=s.writingChoices;
+ // Partially authored revision fields inherit only from this same original lesson.
+ const canonical=s.unit.writing;
  const modes:{label:string;prompt:string;criteria:readonly string[];model:string}[]=expanded?
-  [{label:'Listening response',...expanded.fromListening},
-   {label:'Source comparison',...expanded.fromSources},
-   {label:'Debate response',...expanded.fromDebate}]:
-  [{label:'Original writing',...s.unit.writing}];
+  [{label:'Listening response',prompt:expanded.fromListening?.prompt??canonical.prompt,
+    criteria:expanded.fromListening?.criteria??canonical.criteria,
+    model:expanded.fromListening?.model??canonical.model},
+   {label:'Source comparison',prompt:expanded.fromSources?.prompt??canonical.prompt,
+    criteria:expanded.fromSources?.criteria??canonical.criteria,
+    model:expanded.fromSources?.model??canonical.model},
+   {label:'Debate response',prompt:expanded.fromDebate?.prompt??canonical.prompt,
+    criteria:expanded.fromDebate?.criteria??canonical.criteria,
+    model:expanded.fromDebate?.model??canonical.model}]:
+  [{label:'Original writing',prompt:canonical.prompt,
+    criteria:canonical.criteria,model:canonical.model}];
  const bar=el('div','','u22-source-controls'),content=el('div','','u22-source-write');
  let active=0;
  const buttons=modes.map(({label},i)=>{const b=button(label,()=>{active=i;draw();});bar.append(b);return b;});

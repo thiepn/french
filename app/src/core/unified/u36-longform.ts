@@ -234,7 +234,7 @@ const choose=(seed:string,choices:readonly string[]):readonly string[]=>{
 };
 const locatorKeys=(...locators:string[])=>Object.freeze([...new Set(locators)]);
 function pairsOf(base:U35Journey):readonly U36SourcePair[]{
- return Object.freeze(base.pairs.map(pair=>({
+ return Object.freeze(base.pairs.map((pair):U36SourcePair=>({
   id:'u36:'+pair.id,first:pair.first,second:pair.second,
   label:pair.relation==='independent-written-records'?'separately-attributed-records':
    pair.relation==='cross-medium'?'cross-media':'same-dialogue',
