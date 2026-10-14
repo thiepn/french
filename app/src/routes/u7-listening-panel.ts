@@ -1,5 +1,5 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
-import {listeningDialogueText,originalA1SoundContrasts} from '../core/unified/u7-listening';
+import {listeningDialogueText,originalA1SoundContrasts,originalA1ConversationTransfer} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -125,6 +125,41 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    reveal.setAttribute('aria-expanded','false');
    panel.append(reveal,answer);section.append(panel);
   });
+  const transfer=originalA1ConversationTransfer(unit.id);
+  if(transfer){
+   const practice=el('section',undefined,'u46-original-speech-transfer');
+   practice.setAttribute('aria-label','Independent everyday French conversation practice');
+   practice.append(el('h5','Try it in another situation'),
+    el('p',transfer.context,'u46-transfer-context'),
+    el('p',transfer.task,'u46-transfer-task'),
+    el('p','Prepare your own two or three sentences, then say them aloud. No answer text is captured, stored or automatically graded. You may use the original dialogue as a model, but change the people, place or decision to fit this new situation.','u6-small'));
+   const turn=unit.dialogue[transfer.relevantTurnIndex];
+   if(turn){
+    const actions=el('div',undefined,'u7-audio-actions');
+    const speak=action('Hear one original turn (device TTS)',()=>play(.85,turn.fr));
+    if(!supported)speak.disabled=true;
+    const originalText=el('p',turn.speaker+': '+turn.fr,'u46-transfer-source');
+    originalText.lang='fr';originalText.hidden=true;
+    const read=action('Read the original turn instead',()=>{
+     originalText.hidden=!originalText.hidden;
+     read.textContent=originalText.hidden?'Read the original turn instead':'Hide the original turn';
+     read.setAttribute('aria-expanded',String(!originalText.hidden));
+    });
+    read.setAttribute('aria-expanded','false');
+    actions.append(speak,read);
+    practice.append(actions,originalText);
+   }
+   const reflection=el('p',transfer.check,'u46-transfer-check');
+   reflection.hidden=true;
+   const reveal=action('Show independent self-check',()=>{
+    reflection.hidden=!reflection.hidden;
+    reveal.textContent=reflection.hidden?'Show independent self-check':'Hide independent self-check';
+    reveal.setAttribute('aria-expanded',String(!reflection.hidden));
+   });
+   reveal.setAttribute('aria-expanded','false');
+   practice.append(reveal,reflection);
+   section.append(practice);
+  }
   host.append(section);
  }
 
