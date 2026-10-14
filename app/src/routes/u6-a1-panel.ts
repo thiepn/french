@@ -18,7 +18,7 @@ import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {inspectDraftStructure} from '../core/unified/u3-writing';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
 import {createOriginalPlacementPanel} from './u27-placement-panel';
-import {originalPlacementPrerequisites} from '../core/unified/u27-placement.ts';
+import {originalPlacementPrerequisites,originalPlacementGrammarRefreshers} from '../core/unified/u27-placement.ts';
 import {appendOriginalVocabularyJourney,createOriginalVocabularyDiscovery} from './u28-vocabulary-panel';
 import {appendOriginalReadingJourney} from './u29-reading-panel';
 import type {A1Task,A1Unit} from '../core/unified/u6-a1-model';
@@ -677,6 +677,24 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     'Suggested foundation: '+(getOriginalUnit(current.prerequisites[0])?.title??current.prerequisites[0])+'. The lesson is not locked.':
     'Start here: no prior lesson is required.','u6-small');
    head.append(pre);
+   const entryLevel=getOriginalCatalogEntry(current.id);
+   if(entryLevel?.foundationBand){
+    head.append(el('p','B1 integrated reading and response · grammar focus: '+
+     entryLevel.foundationBand+'. Earlier grammar forms are review, not a CEFR proficiency result.','u6-small'));
+   }
+   const refreshers=originalPlacementGrammarRefreshers(current.id);
+   if(refreshers.length){
+    const details=el('details',undefined,'u27-foundations');
+    details.append(el('summary','Optional earlier grammar refreshers ('+refreshers.length+')'),
+     el('p','Topic-linked original lessons; these are not mandatory authorial prerequisites or proof of prior mastery.','u6-small'));
+    const targets=el('div',undefined,'u27-foundation-list');
+    for(const item of refreshers){
+     const go=button(item.level+' · '+item.title,()=>open(item.id,'understand',undefined,true));
+     go.title='Original source '+item.qualifiedId+'; opening does not imply any CEFR result.';
+     targets.append(go);
+    }
+    details.append(targets);head.append(details);
+   }
    const foundations=originalPlacementPrerequisites(current.id,3);
    if(foundations.length){
     const details=el('details',undefined,'u27-foundations');

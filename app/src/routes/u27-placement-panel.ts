@@ -116,7 +116,9 @@ export function createOriginalPlacementPanel({signal,onOpenCourse,onOpenSurface,
   const list=node('div','','u27-entry-list');
   for(const entry of entries){
    const card=node('article','','u27-entry-card');
-   card.append(node('p',entry.level+' · '+entry.kind.toUpperCase(),'u27-eyebrow'),
+   const band=getOriginalCatalogEntry(entry.id)?.foundationBand;
+   card.append(node('p',entry.level+' · '+entry.kind.toUpperCase()+
+      (band?' · grammar '+band:''),'u27-eyebrow'),
     node('h5',entry.title),
     node('p',entry.reason,'u27-context'),
     node('p','Original source: '+entry.qualifiedId,'u27-source-id'));

@@ -200,7 +200,8 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         "Use partitive and quantity articles correctly.",
         "Attribute the conditional price to the market poster.",
         "Explain why one kilogram does not get the discount."
-      ],
+      ,
+        "Independent transfer: imagine a cinema ticket offer with a minimum of two tickets. Write the question you would ask to confirm whether the displayed price applies to one ticket; do not invent an answer."],
       "Au marché, j’ai vu une affiche proposant des pommes à deux euros le kilo. J’ai demandé au vendeur si ce prix s’appliquait à mon achat. Il m’a expliqué que la réduction concernait seulement les personnes qui achetaient deux kilos. Comme je voulais un seul kilo, j’ai payé trois euros pour mes pommes. J’ai aussi acheté du pain et demandé un reçu. À l’avenir, je regarderai les conditions de quantité avant de choisir une promotion."
     ],
     "oral": {
@@ -518,7 +519,8 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         "Use futur proche or futur simple appropriately.",
         "Ask a direct question about the unconfirmed detail.",
         "Offer one concrete contribution without assuming the change is final."
-      ],
+      ,
+        "Independent transfer: a classmate proposes moving a study meeting to a different day. Distinguish your agreement to the proposal from the classmate’s final confirmation and request the precise place."],
       "Bonjour, merci pour ton invitation de samedi. Nous pouvons venir à treize heures si cet horaire te convient mieux. Nous allons préparer notre trajet et Noah apportera un gâteau. Pourrais-tu confirmer définitivement l’heure et nous envoyer l’adresse complète ? Nous préférons attendre ta réponse avant de prévenir le reste de la famille. À bientôt, Emma."
     ],
     "oral": {
@@ -836,7 +838,8 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         "Identify the product and receipt, without unnecessary private information.",
         "Use a polite conditional request.",
         "Differentiate the proposed stock check from an approved exchange."
-      ],
+      ,
+        "Independent transfer: a pair of headphones stopped working. Write a short question about inspection or exchange, but do not assume the shop has accepted a return or that a particular legal remedy applies."],
       "Bonjour, je vous écris au sujet d’une veste achetée hier, dont je possède le reçu. La taille M ne me convient pas et j’aimerais connaître les possibilités d’échange. Lors de ma visite, un vendeur m’a expliqué que la taille souhaitée n’était pas disponible immédiatement et qu’un contrôle du stock était nécessaire. Pourriez-vous me préciser si cette vérification a été effectuée et quelles options sont possibles ? Je comprends qu’aucun échange n’est encore confirmé. Merci pour votre réponse."
     ],
     "oral": {
@@ -1154,7 +1157,8 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         "Use past tense for the announcement and future for the next update.",
         "Attribute the timetable and station announcement separately.",
         "Do not promise a precise arrival time without verification."
-      ],
+      ,
+        "Independent transfer: a bus route changes while a friend is waiting at the stop. Report the published timetable, the newly announced disruption and the next information you still need."],
       "Bonjour, nous sommes à la gare pour notre trajet prévu ce matin. Notre billet indiquait un départ à huit heures dix et une correspondance à huit heures quarante. Pendant que nous attendions, une annonce a signalé un retard estimé à vingt minutes pour le premier train. Nous ne savons pas encore si la correspondance sera maintenue. Un agent doit vérifier les possibilités. Dès que nous aurons une réponse, nous vous informerons de notre nouveau trajet. Pour l’instant, notre heure d’arrivée reste incertaine."
     ],
     "oral": {
@@ -1472,7 +1476,8 @@ const CONTENT:readonly TransferAuthoredSpec[]=[
         "Use two accurate comparison structures.",
         "Identify the missing charges for studio B.",
         "State a conditional recommendation and a specific verification question."
-      ],
+      ,
+        "Independent transfer: compare two bicycles where only one listing includes maintenance costs. Say which cost is known, which is missing, and what question precedes a recommendation."],
       "J’ai comparé deux annonces de studios pour une étudiante. Le studio A est moins cher et les charges mensuelles sont indiquées, mais son trajet vers l’université serait plus long. Le studio B coûte davantage et se trouve apparemment plus près du campus. En revanche, son annonce ne précise pas les charges supplémentaires. Il serait donc impossible de connaître immédiatement le coût total du logement B. Je demanderais d’abord ces frais et les conditions de location, puis je visiterais les deux studios. Si le budget le permet, le deuxième pourrait mieux convenir à une personne qui se rend chaque jour à l’université."
     ],
     "oral": {

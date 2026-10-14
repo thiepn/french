@@ -36,7 +36,7 @@ export interface OriginalNextAction {
 const PATH_DESCRIPTIONS:Readonly<Record<OriginalLevel,readonly [string,string]>>={
  A1:['A1 · Foundations','Sentence basics, high-frequency vocabulary and everyday exchanges.'],
  A2:['A2 · Independence','Narratives, practical decisions and connected everyday communication.'],
- B1:['B1 · Connected expression','Reading, explaining evidence and producing longer responses.'],
+ B1:['B1 · Connected expression','Reading, explaining evidence and producing longer responses. U13 revisits A1/A2 grammar in B1-level integrated source tasks.'],
  'B1+':['B1+ · Independent transfer','Apply familiar French in new contexts, arguments and documents.'],
  'Early B2':['Early B2 · Critical communication','Extended narratives, comparing sources and conditional decisions.']
 };

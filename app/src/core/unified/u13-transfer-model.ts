@@ -22,7 +22,7 @@ export interface TransferAuthoredSpec{
  writing:[string,string[],string];oral:{prompt:string;plan:[string,string,string];model:string};
 }
 export interface TransferScenario{
- readonly unit:A1Unit;readonly level:string;readonly reading:B1Reading;
+ readonly unit:A1Unit;readonly level:TransferAuthoredSpec['level'];readonly reading:B1Reading;
  readonly evidence:readonly TransferEvidence[];readonly crossQuestions:readonly TransferQuestion[];
  readonly listening:readonly A1ListeningQuestion[];
  readonly oral:Readonly<{prompt:string;plan:readonly string[];model:string}>;
@@ -81,7 +81,7 @@ export function validateTransferScenarios(scenarios:readonly TransferScenario[])
   if(u.vocabulary.length!==12||u.dialogue.length!==5||u.tasks.length!==10||
    u.writing.criteria.length<3||u.writing.model.length<170)errors.push(id+' authentic breadth');
   const kinds=new Set(u.tasks.map(t=>t.type));
-  for(const kind of ['fill','choice','reading','order'])if(!kinds.has(kind))errors.push(id+' '+kind);
+  for(const kind of ['fill','choice','reading','order'] as const)if(!kinds.has(kind))errors.push(id+' '+kind);
   for(const t of u.tasks){
    if(t.explanation.length<30||!t.focus)errors.push(t.id+' explanation');
    if((t.type==='choice'||t.type==='reading')&&(t.options.length!==3||!t.options.includes(t.answer)))

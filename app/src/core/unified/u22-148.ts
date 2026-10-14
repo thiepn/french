@@ -164,14 +164,14 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "le prospectus",
         "le journal technique",
         "les deux documents",
-        "The promotional leaflet makes an unqualified reliability claim that the dated error log contradicts."
+        "The leaflet makes an unqualified promise of reliable captions; the dated log records an omitted ne ... pas, two swapped names and delayed display. A claim and a documented observation must not be treated as equivalent."
       ],
       [
         "Which source documents the lost negation?",
         "le journal daté",
         "le prospectus",
         "aucun document",
-        "The technical incident log records the missing two-part negation and other observed errors."
+        "The dated incident log names the missing ne ... pas construction. Losing only informal spoken ne would not necessarily reverse meaning; the source case explicitly omits both parts and produces Je signerai instead of Je ne signerai pas."
       ]
     ],
     "listen": [
@@ -247,7 +247,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "Nina rappelle que l'affiche promet des sous-titres fiables, mais Malik a repéré une négation manquante dans la scène finale. Élodie explique qu'une spectatrice a compris le contraire du dialogue réel. Le cahier du mardi mentionne aussi deux noms inversés et un retard. Il serait prématuré d'affirmer que tout est corrigé: l'équipe comparera les versions avec les acteurs, vérifiera les improvisations et expliquera les limites au public avant la prochaine représentation."
       ],
       "sources": [
-        "Draft a correction notice which attributes the leaflet and technical log separately and preserves uncertainty.",
+        "Draft a short public correction for a theatre visitor, attributing the promotional leaflet and dated incident log separately. Identify which checks remain open, and distinguish in-room caption permission from unapproved online publication. After comparing with the model, independently adapt the notice for a visitor who missed the previous performance.",
         "Le prospectus du théâtre annonce un sous-titrage intégralement fidèle; toutefois, le journal technique du mardi décrit une négation supprimée, des noms inversés et un affichage tardif. La représentation du mercredi contient également des improvisations qui ne figurent pas dans le scénario approuvé. La troupe devrait remplacer sa garantie générale par une description vérifiable du contrôle humain. Elle peut projeter la version autorisée en salle, mais une mise en ligne exige une permission distincte et une validation complémentaire."
       ],
       "debate": [
