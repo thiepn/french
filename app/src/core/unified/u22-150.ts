@@ -74,47 +74,47 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Lina",
         "Le site annonce jusqu'à soixante météores par heure pendant la nuit.",
-        "Lina cites the forecast upper bound."
+        "The website forecasts up to sixty meteors per hour during the night."
       ],
       [
         "Hugo",
         "Ce chiffre suppose un ciel sombre, dégagé et une longue observation.",
-        "Hugo explains the forecast conditions."
+        "That figure assumes a dark, clear sky and a long observation period."
       ],
       [
         "Maya",
         "Notre équipe n'a compté que neuf météores en trente minutes jeudi.",
-        "Maya reports a local limited observation."
+        "Our team counted only nine meteors in thirty minutes on Thursday."
       ],
       [
         "Lina",
         "Peut-on donc écrire que la prévision était fausse partout?",
-        "Lina asks about the scope of that inference."
+        "So can we write that the forecast was wrong everywhere?"
       ],
       [
         "Hugo",
         "Non, des nuages ont couvert notre site pendant une partie du relevé.",
-        "Hugo explains an observation limitation."
+        "No, clouds covered our site during part of the observation."
       ],
       [
         "Maya",
         "L'autre groupe dit en avoir vu quinze, mais il a observé quarante-cinq minutes.",
-        "Maya contrasts incompatible observation intervals."
+        "The other group says it saw fifteen, but it observed for forty-five minutes."
       ],
       [
         "Lina",
         "Il faudrait aussi indiquer l'heure, le lieu, l'horizon et l'éclairage.",
-        "Lina requests comparable metadata."
+        "We should also record the time, place, horizon and lighting."
       ],
       [
         "Hugo",
         "Nous pourrions refaire des sessions de quinze minutes, en signalant les interruptions.",
-        "Hugo proposes a reproducible protocol."
+        "We could run fifteen-minute sessions again, noting any interruptions."
       ],
       [
         "Maya",
         "Le bilan distinguera la prévision générale, nos chiffres locaux et ce qui reste inconnu.",
-        "Maya proposes a carefully attributed synthesis."
+        "The report will distinguish the general forecast, our local figures and what remains unknown."
       ]
     ],
     "readingTitle": "Un ciel promis, deux carnets de nuit",

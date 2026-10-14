@@ -74,52 +74,52 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       [
         "Nina",
         "Le programme promet des sous-titres fiables dès ce soir.",
-        "Nina says the program promises reliable captions from tonight."
+        "The programme promises reliable captions starting this evening."
       ],
       [
         "Malik",
-        "Pourtant, la transcription automatique a supprimé « ne » dans la scène finale.",
-        "Malik says the automatic transcript dropped the negation in the final scene."
+        "Pourtant, la transcription automatique a supprimé « ne ... pas » dans une réplique de la scène finale.",
+        "Yet the automatic transcript removed 'ne ... pas' from a line in the final scene."
       ],
       [
         "Élodie",
         "La spectatrice a donc compris que le personnage acceptait le marché.",
-        "Élodie explains how this changed the audience member's interpretation."
+        "The audience member therefore understood that the character was accepting the deal."
       ],
       [
         "Nina",
         "Le texte approuvé dit clairement qu'il refuse; je vais comparer les versions.",
-        "Nina commits to comparing the script versions."
+        "The approved script clearly says that he refuses; I'm going to compare the versions."
       ],
       [
         "Malik",
         "Le journal du mardi mentionne aussi deux noms inversés et un long retard.",
-        "Malik reports two swapped names and a substantial timing delay."
+        "Tuesday's log also mentions two swapped names and a long delay."
       ],
       [
         "Élodie",
         "Les acteurs ont improvisé mercredi: le scénario ne suffit pas à décrire la représentation.",
-        "Élodie distinguishes the rehearsal script from actual performance."
+        "The actors improvised on Wednesday: the script alone does not fully describe the performance."
       ],
       [
         "Nina",
         "Alors, enregistrons une répétition avec accord et corrigeons seulement ce qui est attesté.",
-        "Nina proposes a consent-based verification workflow."
+        "Then let's record a rehearsal with consent and correct only what we can verify."
       ],
       [
         "Malik",
         "L'accord existant permet l'affichage en salle, pas la publication des sous-titres en ligne.",
-        "Malik distinguishes on-site permission from online distribution."
+        "The existing agreement allows captions to be displayed in the theatre, not published online."
       ],
       [
         "Élodie",
         "Présentons une version contrôlée ce soir et annonçons honnêtement les limites restantes.",
-        "Élodie recommends conditional release and a clear limitations notice."
+        "Let's present a checked version tonight and state the remaining limitations honestly."
       ]
     ],
     "readingTitle": "Une négation perdue sur l'écran",
     "paragraphs": [
-      "Dans un théâtre associatif, une troupe prépare une représentation avec sous-titres projetés au-dessus de la scène. L'affiche promet un accès intégral au dialogue, alors que l'équipe utilise encore une transcription automatique créée à partir d'une seule répétition. Lors d'un essai public, une spectatrice remarque une erreur décisive: la phrase « Je ne signerai pas » apparaît sans la négation. Le personnage semble alors accepter un contrat qu'il refuse réellement. La responsable, Nina, comprend qu'une erreur grammaticale apparemment minime peut modifier le conflit de toute la pièce. Elle refuse de considérer le nombre de lignes transcrites comme une preuve de fidélité.",
+      "Dans un théâtre associatif, une troupe prépare une représentation avec sous-titres projetés au-dessus de la scène. L'affiche promet un accès intégral au dialogue, alors que l'équipe utilise encore une transcription automatique créée à partir d'une seule répétition. Lors d'un essai public, une spectatrice remarque une erreur décisive: la phrase « Je ne signerai pas » apparaît sous la forme « Je signerai », sans les deux éléments de la négation. Le personnage semble alors accepter un contrat qu'il refuse réellement. La responsable, Nina, comprend qu'une erreur grammaticale apparemment minime peut modifier le conflit de toute la pièce. Elle refuse de considérer le nombre de lignes transcrites comme une preuve de fidélité.",
       "Le cahier technique du mardi recense deux noms de personnages inversés et des répliques affichées trop tard pour être associées aux bons gestes. L'équipe confronte chaque ligne avec le scénario approuvé, mais Malik rappelle que les acteurs ont improvisé certaines réponses lors de la représentation du mercredi. Le texte écrit et la captation d'une répétition ne sont donc pas des sources interchangeables. Élodie propose une nouvelle vérification avec les interprètes et des spectateurs concernés. On pourra raccourcir une phrase pour améliorer la lisibilité seulement si sa négation, son intention et son attribution restent intactes. Les erreurs corrigées seront inscrites dans une liste datée.",
       "Un autre désaccord concerne la diffusion: la troupe a obtenu une permission de projeter les sous-titres dans la salle, mais rien n'autorise encore leur publication sur le site du théâtre. Nina décide d'utiliser ce soir une version revue par des personnes identifiées, en prévenant le public que des ajustements demeurent possibles. Une répétition consentie permettra ensuite de comparer les improvisations et le rythme réel. L'équipe demandera séparément les droits nécessaires avant toute publication numérique. L'accessibilité ne consiste pas seulement à afficher du texte: elle exige de préserver le sens, la chronologie et les conditions d'utilisation."
     ],
@@ -132,7 +132,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       {
         "label": "Dated caption rehearsal incident log",
         "type": "minutes",
-        "french": "Mardi: négation « ne » absente dans la scène du contrat; noms de deux rôles inversés; délai d'affichage observé. Mercredi: improvisations non représentées dans le scénario approuvé. Autorisation actuelle limitée à la projection en salle; contrôles et droits supplémentaires à obtenir."
+        "french": "Mardi: négation « ne ... pas » absente dans la scène du contrat; noms de deux rôles inversés; délai d'affichage observé. Mercredi: improvisations non représentées dans le scénario approuvé. Autorisation actuelle limitée à la projection en salle; contrôles et droits supplémentaires à obtenir."
       }
     ],
     "reading": [
@@ -141,7 +141,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "la négation supprimée",
         "un décor absent",
         "une scène raccourcie",
-        "The missing ne makes a refusal appear as agreement; it is a meaning-changing captioning error."
+        "The missing ne ... pas turns a refusal into apparent agreement; both parts of the negative construction were lost."
       ],
       [
         "Why is the approved script insufficient alone?",
@@ -171,7 +171,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
         "le journal daté",
         "le prospectus",
         "aucun document",
-        "The technical incident log specifically records the missing ne and other observed errors."
+        "The technical incident log records the missing two-part negation and other observed errors."
       ]
     ],
     "listen": [
@@ -184,10 +184,10 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
       ],
       [
         "What disappeared in the final scene?",
-        "la négation « ne »",
+        "la négation « ne ... pas »",
         "le nom du théâtre",
         "le décor principal",
-        "Malik identifies the missing French negation as the source of the reversed meaning."
+        "Malik identifies the lost ne ... pas construction as the source of the reversed meaning."
       ],
       [
         "Who noticed the misunderstanding?",
