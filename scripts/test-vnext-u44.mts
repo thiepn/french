@@ -64,10 +64,10 @@ for(const [i,unit] of A1_FULL_UNITS.entries()){
  extraListening++;
 }
 assert.equal(contrasts,24);assert.equal(extraListening,12);assert.equal(wrongChoices,24);
-assert.equal(A1_COMPLETE_UNITS.reduce((sum,u)=>sum+listeningQuestions(u).length,0),48);
+assert.equal(A1_COMPLETE_UNITS.reduce((sum,u)=>sum+listeningQuestions(u).length,0),60);
 for(const unit of A1_COMPLETE_UNITS.slice(12)){
- assert.equal(listeningQuestions(unit).length,2);
- assert.deepEqual(originalA1SoundContrasts(unit.id),[],'No fabricated later-A1 qualification');
+ assert.equal(listeningQuestions(unit).length,3,'U45 appends a third question, retaining U44 lessons and IDs');
+ assert.equal(originalA1SoundContrasts(unit.id).length,2,'U45 extends the same source-owned phonology catalog');
 }
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const ui=readFileSync(resolve(root,'app/src/routes/u7-listening-panel.ts'),'utf8');
