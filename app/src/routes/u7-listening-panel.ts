@@ -166,7 +166,9 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    const correct=checkPracticeAnswer(select.value,question.answer);
    const repair=question.misconceptionFeedback?.[select.value];
    result.textContent=correct?'Correct. '+question.explanation:
-    'Not yet. '+(repair??'Listen again or reveal the original French transcript.')+' '+question.explanation;
+    'Not yet. '+(repair??'Replay the source exchange or read the transcript, then choose again.')+
+    ' You can retry before revealing the complete explanation.';
+   explanation.hidden=correct;
   });
   const evidence=originalA1ListeningEvidence(unit,question.id);
   if(evidence.length){
@@ -186,9 +188,13 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    });
    show.setAttribute('aria-expanded','false');
    help.append(replay,show);
-   form.append(help,supporting);
-  }
-  form.append(label,submit,result);host.append(form);
+   form.append(label,help,supporting);
+  }else form.append(label);
+  const explanation=el('details',undefined,'u46-listening-reveal');
+  explanation.hidden=true;
+  explanation.append(el('summary','Reveal explanation after attempting'),
+   el('p',question.explanation));
+  form.append(submit,result,explanation);host.append(form);
  });
  const oral=getOriginalMaterial(unit.id)?.oral;
  if(oral){
