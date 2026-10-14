@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-121",
     "title": "Community theatre translation: a narrator who retracts her certainty",
+    "readingTitle": "Une lettre et deux degrés de certitude",
     "goal": "Interpret unreliable theatrical narration and defend translation choices that retain uncertainty and irony.",
     "grammarKeys": [
       "pluperfect",
@@ -262,6 +263,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-122",
     "title": "Municipal heat-island debate: mismatched sensors and equitable cooling plans",
+    "readingTitle": "Deux capteurs ne racontent pas toute la place",
     "goal": "Synthesize unequal temperature measurements, residents' lived experiences and conditional public-space improvements.",
     "grammarKeys": [
       "compare",
@@ -521,6 +523,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-123",
     "title": "Cross-border family memoir: reported voices, tense shifts and editorial responsibility",
+    "readingTitle": "Deux dates pour un même départ",
     "goal": "Revise autobiographical prose to distinguish personal recollection, hearsay and documented relocation dates.",
     "grammarKeys": [
       "report",

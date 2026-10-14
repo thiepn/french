@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-135",
     "title": "Early-B2 integrated capstone: design a multilingual neighborhood debate forum",
+    "readingTitle": "Organiser un débat de quartier en plusieurs langues",
     "goal": "Synthesize confirmed staffing, source rights, language access, consultation versus binding decisions, and independent revision.",
     "grammarKeys": [
       "condition",

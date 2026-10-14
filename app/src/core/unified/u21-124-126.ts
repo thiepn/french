@@ -3,6 +3,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-124",
     "title": "Neighborhood cooperative grocery: price stability versus supplier uncertainty",
+    "readingTitle": "Une épicerie coopérative face aux prix incertains",
     "goal": "Debate stable-price promises using supplier quotes, variable delivery costs and transparent member decisions.",
     "grammarKeys": [
       "condition",
@@ -262,6 +263,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-125",
     "title": "Contested museum audio guide: colonial-era label and modern interpretive voices",
+    "readingTitle": "À qui appartient le récit du musée ?",
     "goal": "Compare a historical inventory label with contemporary contextual interpretation without presenting either as an exhaustive story.",
     "grammarKeys": [
       "relative",
@@ -521,6 +523,7 @@ const SOURCE:readonly U21OriginalSourceStory[]=[
   {
     "id": "transfer-126",
     "title": "Citizen science bird migration: sightings, duplicate reports and seasonality",
+    "readingTitle": "Compter les oiseaux sans compter deux fois",
     "goal": "Develop a defensible migration bulletin from dated sightings with duplicate and seasonal sampling limits.",
     "grammarKeys": [
       "condition",
