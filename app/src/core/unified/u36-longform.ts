@@ -261,9 +261,9 @@ export function originalU36Longform(id:string):U36Journey|null{
   audience,guidingQuestions:questions,
   editorExample:caseTeaching?
     kind==='redline'?caseTeaching.responsibleFrench:
-    kind==='evidence'?'« Selon les paroles originales, '+caseTeaching.limit+' »':
-    kind==='counterargument'?'« Cette question est compréhensible. Toutefois, '+caseTeaching.diagnostic+' »':
-    kind==='longform'?'« Les documents indiquent des éléments utiles, mais '+caseTeaching.limit+' »':
+    kind==='evidence'?'« Selon la source, il faut distinguer les propos rapportés de mon interprétation. »':
+    kind==='counterargument'?'« Cette objection est compréhensible. Pourtant, le document ne suffit pas à confirmer cette conclusion. »':
+    kind==='longform'?caseTeaching.responsibleFrench:
     '« Pourriez-vous confirmer les éléments qui restent à vérifier ? »':
     '« Selon le document original, une conclusion exige de distinguer les faits et les hypothèses. »',
   sourceLocators:witnessLocators,
@@ -273,10 +273,10 @@ export function originalU36Longform(id:string):U36Journey|null{
  const genreAssignments:U36GenreAssignment[]=GENRES.map(([genre,title,audience,purpose,constraints])=>({
   genre,title,audience,purpose,constraints,sourceLocators:witnessLocators,
   shortModel:caseTeaching?genre==='correspondence'?
-    '« Bonjour, je vous écris pour demander une confirmation. '+caseTeaching.responsibleFrench+' »':
-   genre==='report'?'« Le dossier exige de distinguer les données de leur interprétation. '+caseTeaching.responsibleFrench+' »':
-   genre==='briefing'?'« Voici ce que la source permet de conclure. '+caseTeaching.responsibleFrench+' »':
-   '« Une analyse responsable préserve les faits et leurs limites. '+caseTeaching.responsibleFrench+' »':
+    '« Bonjour, je vous écris pour demander une confirmation. » '+caseTeaching.responsibleFrench:
+   genre==='report'?'« Le dossier exige de distinguer les données de leur interprétation. » '+caseTeaching.responsibleFrench:
+   genre==='briefing'?'« Voici ce que la source permet de conclure. » '+caseTeaching.responsibleFrench:
+   '« Une analyse responsable préserve les faits et leurs limites. » '+caseTeaching.responsibleFrench:
    '« Selon la source citée, certains faits sont établis, mais d’autres points doivent être confirmés. »'
  }));
  const decisions:U36Decision[]=[];

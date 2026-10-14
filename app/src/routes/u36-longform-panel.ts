@@ -105,7 +105,6 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
  const ledgerWork=new Map<string,EvidenceNote>();
  const pairsWork=new Map<string,PairNote>();
  const choices=new Map<string,string>();
- const selfReported=new Set<string>();
  const support=new Map<string,number>();
  const hasPrivate=()=>{
   const writing=[...stagesWork.values(),...genreWork.values()].some(v=>
@@ -224,7 +223,7 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
  };
 
  /** Staged, genuinely editable first and independent second versions with source-owned excerpts. */
- const writingPanel=(key:string,defaultAudience:U36Audience,store:Map<any,Work>,
+ const writingPanel=<K extends string>(key:K,defaultAudience:U36Audience,store:Map<K,Work>,
   container:HTMLElement,supportContent:HTMLElement,sourceLocators:readonly string[])=>{
   const value=store.get(key)??{
    draft:'',independent:'',captured:'',audience:defaultAudience
@@ -412,7 +411,7 @@ export function appendOriginalU36Longform(host:HTMLElement,id:string,options:Opt
   if(disposed)return;disposed=true;
   options.signal.removeEventListener('abort',cleanup);
   stagesWork.clear();genreWork.clear();ledgerWork.clear();
-  pairsWork.clear();choices.clear();support.clear();selfReported.clear();
+  pairsWork.clear();choices.clear();support.clear();
   root.remove();
  };
  options.signal.addEventListener('abort',cleanup,{once:true});
