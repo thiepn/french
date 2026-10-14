@@ -83,7 +83,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    openedGroups.clear();visible=60;
    open(id,'words',undefined,true);
   });
-  const activities=el('section',undefined,'u25-activities');
+  const activities=el('details',undefined,'u25-activities u39-secondary-tools');
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Filterable original French course lesson index');
@@ -190,7 +190,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     cards.append(card);
    }
    pathways.append(cards);
-   activities.replaceChildren(el('h3','Available next activities'));
+   activities.replaceChildren(el('summary','More source-linked activities for this lesson'));
    const choices=el('div',undefined,'u25-activity-list');
    for(const next of originalNextActions(current.id).filter(action=>action.key!=='understand')){
     const card=button(next.title,()=>{
@@ -361,7 +361,18 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    }
    return row;
   }
-  function renderUnderstand(unit:A1Unit,container:HTMLElement){
+  function optionalGrammar(container:HTMLElement,id:string,mode:'course'|'write'){
+    const details=el('details',undefined,'u39-context-tools');
+    details.append(el('summary','Optional contextual grammar repair exercises'));
+    const body=el('div',undefined,'u39-context-content');
+    details.append(body);let mounted=false;
+    details.addEventListener('toggle',()=>{
+     if(!details.open||mounted||signal.aborted||!details.isConnected)return;
+     mounted=true;appendU26GrammarPractice(body,id,mode);
+    });
+    container.append(details);
+   }
+   function renderUnderstand(unit:A1Unit,container:HTMLElement){
    container.append(el('p','Read each rule before trying the exercises. Examples and corrections are original teaching content.','u6-small'));
    for(const grammar of unit.grammar){
     const block=el('section',undefined,'u6-grammar-block');
@@ -422,7 +433,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    supplementary.append(advanced);
    let mounted=false;
    supplementary.addEventListener('toggle',()=>{
-    if(!supplementary.open||mounted||signal.aborted)return;
+    if(!supplementary.open||mounted||signal.aborted||!supplementary.isConnected)return;
     mounted=true;
     if(unit.id.startsWith('b1-')||unit.id.startsWith('transfer-'))appendOriginalB1Reading(advanced,unit);
     appendOriginalReadingJourney(advanced,unit.id,{
@@ -694,7 +705,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.append(lessonGuide);
    const content=el('div',undefined,'u6-stage-body');content.dataset.u6Stage=stage;
    switch(stage){
-    case 'understand':renderUnderstand(current,content);appendU26GrammarPractice(content,current.id,'course');break;
+    case 'understand':renderUnderstand(current,content);optionalGrammar(content,current.id,'course');break;
     case 'words':renderWords(current,content);break;
     case 'dialogue':renderDialogue(current,content);break;
     case 'listen':{
@@ -704,7 +715,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      extra.append(el('summary','Optional speaking, debate and advanced source practice'));
      const oralHost=el('div',undefined,'u39-context-content');extra.append(oralHost);
      extra.addEventListener('toggle',()=>{
-      if(!extra.open||oralMounted||signal.aborted)return;
+      if(!extra.open||oralMounted||signal.aborted||!extra.isConnected)return;
       oralMounted=true;
       stopOral=appendOriginalOralJourney(oralHost,current.id,{
        mode:'course',signal,parentHandlesDraftExit:true,
@@ -722,8 +733,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      stopAudio=()=>{stopEarlier();stopOral();};
      break;
     }
-    case 'practice':renderPractice(current,content);appendU26GrammarPractice(content,current.id,'course');break;
-    case 'write':renderWrite(current,content);appendU26GrammarPractice(content,current.id,'write');break;
+    case 'practice':renderPractice(current,content);optionalGrammar(content,current.id,'course');break;
+    case 'write':renderWrite(current,content);optionalGrammar(content,current.id,'write');break;
    }
    content.append(stepNavigation(stage));article.append(content);
    const trace=el('p','Source: '+current.source.qualifiedId+

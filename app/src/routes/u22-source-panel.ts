@@ -13,6 +13,7 @@ import {appendOriginalReadingJourney} from './u29-reading-panel';
 import {appendOriginalListeningJourney} from './u30-listening-panel';
 import {appendOriginalOralJourney} from './u31-oral-panel';
 import './u22-source-panel.css';
+import './unified-u39.css';
 
 type Mode='read'|'listen'|'write';
 type Material=NonNullable<ReturnType<typeof getOriginalMaterial>>;
@@ -224,7 +225,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   sourceDetails.append(sourceHost);stage.append(sourceDetails);
   let sourceMounted=false;
   sourceDetails.addEventListener('toggle',()=>{
-   if(!sourceDetails.open||sourceMounted||signal.aborted)return;
+   if(!sourceDetails.open||sourceMounted||signal.aborted||!sourceDetails.isConnected)return;
    sourceMounted=true;
    if(mode==='read')appendOriginalReadingJourney(sourceHost,s.unit.id,{
     mode:'read',signal,
@@ -253,7 +254,7 @@ export function createOriginalMaterialPanel(mode:Mode,signal:AbortSignal,navigat
   languageDetails.append(languageHost);stage.append(languageDetails);
   let languageMounted=false;
   languageDetails.addEventListener('toggle',()=>{
-   if(!languageDetails.open||languageMounted||signal.aborted)return;
+   if(!languageDetails.open||languageMounted||signal.aborted||!languageDetails.isConnected)return;
    languageMounted=true;
    stopU31=appendOriginalOralJourney(languageHost,s.unit.id,{
     mode,signal,parentHandlesDraftExit:true,
