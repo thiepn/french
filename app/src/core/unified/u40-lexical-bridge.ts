@@ -1,5 +1,5 @@
-import {loadVocabularySearchIndex,type VocabularySearchRow} from '../content/loader';
-import {originalVocabularyForUnit,type OriginalLexeme} from './u28-vocabulary';
+import type {VocabularySearchRow} from '../content/loader';
+import {originalVocabularyForUnit,type OriginalLexeme} from './u28-vocabulary.ts';
 
 /** A read-only source-to-canonical lookup, never a new note or sense namespace. */
 export interface U40Link{
@@ -76,6 +76,7 @@ export function crosswalkOriginalVocabulary(
   });
 }
 export async function resolveU40LessonLinks(lessonId:string,signal?:AbortSignal):Promise<U40LessonLinks>{
+  const {loadVocabularySearchIndex}=await import('../content/loader');
   const index=await loadVocabularySearchIndex(signal);
   return crosswalkOriginalVocabulary(lessonId,index.rows);
 }
