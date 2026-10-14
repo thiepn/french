@@ -4,6 +4,7 @@ import {
 } from '../core/unified/u37-communication.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u37-communication-panel.css';
+import {appendOriginalU38Independence} from './u38-independence-panel.ts';
 
 interface Options{
  readonly signal:AbortSignal;
@@ -62,7 +63,8 @@ export function appendOriginalU37Communication(host:HTMLElement,id:string,option
  const exit=el('section','','u37-exit');
  exit.append(el('h4','Return to original learning'));
  const live=el('p','','u37-status');live.setAttribute('role','status');
- body.append(intro,sourceArea,journey,sourceChecks,handoffs,exit,live);
+ const u38Host=el('div','','u38-integration');
+ body.append(intro,sourceArea,journey,sourceChecks,handoffs,u38Host,exit,live);
  const work=new Map<string,Work>(),transferWork=new Map<string,Work>();
  const answered=new Map<string,string>();
  const reported=new Set<string>();
@@ -70,13 +72,20 @@ export function appendOriginalU37Communication(host:HTMLElement,id:string,option
  let current=0,decisionIndex=0,modeIndex=0,disposed=false;
  const textExists=()=>{
   const stored=[...work.values(),...transferWork.values()];
-  return stored.some(s=>!!s.first.trim()||!!s.second.trim());
+  return stored.some(s=>!!s.first.trim()||!!s.second.trim())||
+   !!u38Host.querySelector<HTMLElement>('.u38-independence[data-has-private-draft="true"]');
  };
  const notify=()=>{
   if(disposed)return;
   const yes=textExists();root.dataset.hasPrivateDraft=String(yes);
   options.onPrivateChange?.(yes);
  };
+ const stopU38=appendOriginalU38Independence(u38Host,id,{
+  signal:options.signal,
+  onPrivateChange:()=>notify(),
+  onOpenSurface:options.onOpenSurface,
+  onNativeReview:options.onNativeReview
+ });
  const witnessCard=(locator:string)=>{
   const witness=scene.sourceWitnesses.find(x=>x.locator===locator);if(!witness)return null;
   const card=el('article','','u37-witness');
@@ -296,6 +305,7 @@ export function appendOriginalU37Communication(host:HTMLElement,id:string,option
  const cleanup=()=>{
   if(disposed)return;disposed=true;
   options.signal.removeEventListener('abort',cleanup);
+  stopU38();
   work.clear();transferWork.clear();answered.clear();reported.clear();helpLevels.clear();root.remove();
  };
  options.signal.addEventListener('abort',cleanup,{once:true});
