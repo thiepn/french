@@ -22,7 +22,7 @@ export interface TransferAuthoredSpec{
  writing:[string,string[],string];oral:{prompt:string;plan:[string,string,string];model:string};
 }
 export interface TransferScenario{
- readonly unit:A1Unit;readonly level:string;readonly reading:B1Reading;
+ readonly unit:A1Unit;readonly level:TransferAuthoredSpec['level'];readonly reading:B1Reading;
  readonly evidence:readonly TransferEvidence[];readonly crossQuestions:readonly TransferQuestion[];
  readonly listening:readonly A1ListeningQuestion[];
  readonly oral:Readonly<{prompt:string;plan:readonly string[];model:string}>;
