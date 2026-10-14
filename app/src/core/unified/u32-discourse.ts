@@ -379,7 +379,7 @@ function lessonWitnesses(id:string,qualifiedId:string,revision:string):U32Witnes
   locator:id+':document:'+i,kind:'document' as const,
   label:'Original independent '+record.type+' · '+record.label,
   french:record.french,index:i,qualifiedSourceId:qualifiedId,sourceRevision:revision
- }));
+ })));
  return result;
 }
 function decision(id:string,type:U32Decision['type'],prompt:string,answer:string,
