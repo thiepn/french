@@ -32,3 +32,18 @@
 .u12-speaking-prep button{min-height:44px}
 .u12-speaking-prep button:focus-visible{outline:2px solid var(--accent, currentColor);outline-offset:3px}
 @media(max-width:570px){.u12-speaking-prep .u12-speaking-model{padding:.7rem}}
+
+/* U44: native original A1 sound comparison inside Listen, never a second studio. */
+.u44-original-sounds{margin:.85rem 0 1.2rem;border:1px solid var(--line);border-radius:.35rem;padding:.7rem .8rem}
+.u44-original-sounds>summary{font-weight:650;cursor:pointer;line-height:1.5;padding:.2rem 0;min-height:44px;display:list-item}
+.u44-original-sound-case{border-top:1px solid var(--line);padding:1rem 0 .85rem}
+.u44-original-sound-case h5{font-size:1rem;margin:0 0 .5rem;line-height:1.45}
+.u44-original-sound-case .u7-audio-actions{margin:.65rem 0}
+.u44-original-sound-case .u7-audio-actions button{flex:1 1 130px}
+.u44-sound-prompt{line-height:1.6;margin:.4rem 0;max-width:67ch}
+.u44-sound-explanation{border-inline-start:2px solid var(--accent);margin:.8rem 0 0;padding:.7rem .8rem;line-height:1.6;overflow-wrap:anywhere}
+.u44-sound-explanation[hidden]{display:none}
+.u44-sound-explanation p{margin:.3rem 0}
+.u44-sound-guidance{max-width:72ch}
+.u44-original-sounds button:focus-visible,.u44-original-sounds summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){.u44-original-sounds{padding:.6rem}.u44-original-sound-case .u7-audio-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.u44-original-sound-case .u7-audio-actions button{min-width:0}}
