@@ -1,6 +1,6 @@
 import {
  originalU38Independence,assessU38AuthoredChoice,
- type U38Role,type U38Artifact,type U38Turn
+ type U38Role,type U38Artifact
 } from '../core/unified/u38-independence.ts';
 import type {U37Register} from '../core/unified/u37-communication.ts';
 import type {OriginalSurface} from '../core/unified/u23-registry.ts';
