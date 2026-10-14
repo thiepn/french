@@ -30,7 +30,8 @@ for(const [i,unit] of ORIGINAL_B1_UNITS.entries()){
  assert.equal(unit.source.sourceRevision,SOURCES.original.revision);
  assert.equal(unit.source.qualifiedId,'fru1:original@'+SOURCES.original.revision+':session:u10-'+id);
  assert.equal(unit.vocabulary.length,12);assert.equal(unit.grammar.length,2);assert.ok(unit.dialogue.length>=5);
- assert.equal(unit.tasks.length,10);assert.ok(unit.writing.criteria.length>=3&&unit.writing.model.length>=125);
+ assert.equal(unit.tasks.length,["b1-01","b1-02","b1-07","b1-08"].includes(unit.id)?12:10);
+  for(const [index,task] of unit.tasks.slice(0,10).entries())assert.equal(task.id,unit.id+'-task-'+String(index+1).padStart(2,'0'),'Historical exercise IDs remain unchanged');assert.ok(unit.writing.criteria.length>=3&&unit.writing.model.length>=125);
  for(const grammarItem of unit.grammar)assert.ok(grammarItem.explanation.length>=125&&
   grammarItem.examples.length>=2&&grammarItem.correction[2].length>=6);
  const kinds=new Set<string>();
@@ -58,14 +59,14 @@ for(const [i,unit] of ORIGINAL_B1_UNITS.entries()){
  recall+=unit.tasks.length;readingWords+=wc;readingChecks+=reading.questions.length;listeningChecks+=audio.length;
 }
 assert.equal(vocabulary,168);assert.equal(grammar,28);assert.equal(dialogue,70);
-assert.equal(recall,140);assert.equal(readingChecks,28);assert.equal(listeningChecks,28);
+assert.equal(recall,148);assert.equal(readingChecks,28);assert.equal(listeningChecks,28);
 assert.ok(readingWords>=1500);
 assert.equal(getOriginalCourseUnit('b1-14')?.title,'B1 capstone: explain, read, infer and argue');
 assert.equal(getOriginalCourseUnit('a2-28')?.title,'A2 practical capstone: independent decisions');
 assert.equal(getOriginalCourseUnit('invalid'),null);
 assert.equal(suggestedOriginalCourseUnit(new Set(FULL_ORIGINAL_FRENCH_COURSE.map(u=>u.id)))?.id,'b1-01');
 assert.equal(suggestedOriginalCourseUnit(new Set(ORIGINAL_A1_A2_B1_COURSE.map(u=>u.id))),null);
-assert.equal(originalCoursePracticeStatus(ORIGINAL_B1_UNITS[0].id,new Map())?.remaining,10);
+assert.equal(originalCoursePracticeStatus(ORIGINAL_B1_UNITS[0].id,new Map())?.remaining,12);
 assert.equal(originalCoursePracticeStatus('invalid',new Map()),null);
 console.log(JSON.stringify({schema:'thiepn-french-u10-original-b1',status:'PASS',
  totalOriginalFullLessons:66,newB1Lessons:14,grammar,vocabulary,dialogue,recall,

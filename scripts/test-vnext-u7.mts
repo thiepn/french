@@ -28,7 +28,8 @@ for(const [i,unit] of A1_COMPLETE_UNITS.entries()){
  assert.ok(!allIds.has(unit.id));allIds.add(unit.id);
  assert.equal(unit.vocabulary.length,12);
  assert.equal(unit.dialogue.length,5);
- assert.equal(unit.tasks.length,10);
+ assert.equal(unit.tasks.length,["a1-06","a1-07"].includes(unit.id)?12:10);
+  for(const [index,task] of unit.tasks.slice(0,10).entries())assert.equal(task.id,unit.id+'-task-'+String(index+1).padStart(2,'0'),'Historical exercise IDs remain unchanged');
  assert.ok(unit.grammar.length>=2);
  assert.ok(unit.grammar.every(g=>g.explanation.length>=100&&g.examples.length>=2&&
   g.correction.every(text=>text.trim().length>0)));
@@ -62,7 +63,7 @@ for(const [i,unit] of A1_COMPLETE_UNITS.entries()){
 }
 assert.equal(vocabulary,288);
 assert.equal(turns,120);
-assert.equal(tasks,240);
+assert.equal(tasks,244);
 assert.equal(listening,36);
 assert.ok(grammar>=49);
 assert.equal(getA1CompleteUnit('a1-24')?.title,'A1 capstone — a day in France');
