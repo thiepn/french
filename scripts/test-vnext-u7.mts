@@ -51,7 +51,7 @@ for(const [i,unit] of A1_COMPLETE_UNITS.entries()){
  }
  assert.deepEqual([...['choice','fill','reading','order'].filter(t=>!kinds.has(t))],[]);
  const questions=listeningQuestions(unit);
- assert.equal(questions.length,order<=12?1:2);
+ assert.equal(questions.length,2,'U44 preserves listen-1 and adds one dialogue-grounded U6 listen-2');
  assert.equal(listeningDialogueText(unit),unit.dialogue.map(d=>d.fr).join(' '));
  for(const q of questions){
   assert.ok(q.prompt&&q.explanation.length>=20&&q.options.length>=3);
@@ -64,7 +64,7 @@ for(const [i,unit] of A1_COMPLETE_UNITS.entries()){
 assert.equal(vocabulary,288);
 assert.equal(turns,120);
 assert.equal(tasks,244);
-assert.equal(listening,36);
+assert.equal(listening,48);
 assert.ok(grammar>=49);
 assert.equal(getA1CompleteUnit('a1-24')?.title,'A1 capstone — a day in France');
 assert.equal(getA1CompleteUnit('not-found'),null);

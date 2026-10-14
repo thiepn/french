@@ -1,5 +1,5 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
-import {listeningDialogueText} from '../core/unified/u7-listening';
+import {listeningDialogueText,originalA1SoundContrasts} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -21,15 +21,20 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   el('p','Optional browser/device text-to-speech (TTS), not human-recorded audio. French voices, quality, accent and availability vary by device. No microphone, recording, transcription or pronunciation grade.','u7-listening-notice'));
  const status=el('p','Playback has not started.','u7-speech-status');status.setAttribute('role','status');
  const controls=el('div',undefined,'u7-audio-actions');
- let playing=false;
+ let activeSpeech:SpeechSynthesisUtterance|null=null;
  const supported='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
  const stop=()=>{
-  if(playing&&supported){window.speechSynthesis.cancel();playing=false;}
+  if(activeSpeech&&supported){
+   const previous=activeSpeech;activeSpeech=null;
+   previous.onend=null;previous.onerror=null;
+   window.speechSynthesis.cancel();
+  }
  };
  let stopU30:()=>void=()=>{};
  const cleanup=()=>{stop();stopU30();signal.removeEventListener('abort',cleanup);};
  signal.addEventListener('abort',cleanup,{once:true});
  const play=(rate:number,text:string=listeningDialogueText(unit))=>{
+  if(signal.aborted||!host.isConnected)return;
   if(!supported){status.textContent='Speech synthesis is unavailable. The transcript can be read instead.';return;}
   stop();
   const synth=window.speechSynthesis;
@@ -43,15 +48,23 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   const speech=new SpeechSynthesisUtterance(text);
   speech.lang='fr-FR';speech.rate=rate;speech.pitch=1;
   if(french)speech.voice=french;
-  playing=true;
-  speech.onend=()=>{playing=false;if(!signal.aborted&&host.isConnected)status.textContent='Playback finished. Try the listening questions without the transcript.';};
-  speech.onerror=()=>{playing=false;if(!signal.aborted&&host.isConnected)status.textContent='Device playback could not complete. The written transcript is still available.';};
+  activeSpeech=speech;
+  speech.onend=()=>{
+   if(activeSpeech!==speech)return;
+   activeSpeech=null;
+   if(!signal.aborted&&host.isConnected)status.textContent='Playback finished. Compare the original French speech with the transcript if needed.';
+  };
+  speech.onerror=()=>{
+   if(activeSpeech!==speech)return;
+   activeSpeech=null;
+   if(!signal.aborted&&host.isConnected)status.textContent='Device playback could not complete. The written transcript is still available.';
+  };
   try{
    synth.speak(speech);
    status.textContent=french?'Playing synthesized French using '+french.name+'.':
     'French TTS requested. The device did not expose a voice inventory, so speech quality cannot be verified.';
   }catch{
-   playing=false;status.textContent='TTS playback failed. Use the transcript instead.';
+   activeSpeech=null;status.textContent='TTS playback failed. Use the transcript instead.';
   }
  };
  const normal=action('Play TTS dialogue',()=>play(1));
@@ -72,6 +85,42 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
  if(!supported)repeat.disabled=true;
  lineControls.append(lineLabel,repeat);
  controls.append(normal,slow,halt);host.append(controls,lineControls,status);
+
+ const soundContrasts=originalA1SoundContrasts(unit.id);
+ if(soundContrasts.length){
+  const section=el('details',undefined,'u44-original-sounds');
+  const summary=el('summary','French sound focus · '+soundContrasts.length+' original A1 contrasts (ungraded)');
+  section.append(summary,
+   el('p','Optional listening and spoken self-correction in this original lesson. Hear A and B before revealing the French spellings. The installed device TTS is synthetic and may render liaison, homophones or vowel quality inaccurately; no automatic recognition, microphone recording, pronunciation grade or FSRS event is created.','u7-listening-notice'));
+  soundContrasts.forEach((contrast,index)=>{
+   const panel=el('section',undefined,'u44-original-sound-case');
+   panel.setAttribute('aria-label','Pronunciation contrast '+(index+1)+': '+contrast.focus);
+   panel.append(el('h5',(index+1)+'. '+contrast.focus),
+    el('p',contrast.selfCheck,'u44-sound-prompt'));
+   const actions=el('div',undefined,'u7-audio-actions');
+   const playA=action('Hear A',()=>play(.85,contrast.a.french));
+   const playB=action('Hear B',()=>play(.85,contrast.b.french));
+   if(!supported){playA.disabled=true;playB.disabled=true;}
+   actions.append(playA,playB);
+   panel.append(actions);
+   const answer=el('div',undefined,'u44-sound-explanation');answer.hidden=true;
+   for(const [letter,sample] of [['A',contrast.a],['B',contrast.b]] as const){
+    const expression=el('p',letter+' · '+sample.french);expression.lang='fr';
+    const english=el('p',sample.meaning+' · target: '+sample.reading,'u6-small');
+    answer.append(expression,english);
+   }
+   answer.append(el('p',contrast.guidance,'u44-sound-guidance'));
+   const reveal=action('Reveal written forms and sound explanation',()=>{
+    answer.hidden=!answer.hidden;
+    reveal.textContent=answer.hidden?'Reveal written forms and sound explanation':'Hide written forms and explanation';
+    reveal.setAttribute('aria-expanded',String(!answer.hidden));
+   });
+   reveal.setAttribute('aria-expanded','false');
+   panel.append(reveal,answer);section.append(panel);
+  });
+  host.append(section);
+ }
+
  const transcript=el('div',undefined,'u7-listening-transcript');
  transcript.hidden=true;transcript.setAttribute('aria-label','Original French transcript');
  for(const line of unit.dialogue){
@@ -96,9 +145,10 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
   form.addEventListener('submit',event=>{
    event.preventDefault();
    if(!select.value){result.textContent='Choose a response first.';return;}
-   result.textContent=checkPracticeAnswer(select.value,question.answer)?
-    'Correct. '+question.explanation:
-    'Not yet. Listen again or reveal the French transcript. '+question.explanation;
+   const correct=checkPracticeAnswer(select.value,question.answer);
+   const repair=question.misconceptionFeedback?.[select.value];
+   result.textContent=correct?'Correct. '+question.explanation:
+    'Not yet. '+(repair??'Listen again or reveal the original French transcript.')+' '+question.explanation;
   });
   form.append(label,submit,result);host.append(form);
  });
