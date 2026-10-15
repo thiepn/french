@@ -193,7 +193,7 @@ export async function createTodayStudySession(now=Date.now()):Promise<StudySessi
 export async function createSelectedVocabularySession(
   noteIds:readonly string[],now=Date.now()
 ):Promise<{kind:'created'|'resume'|'empty';due:number;fresh:number;matched:number}>{
-  const ids=[...new Set(noteIds.filter(id=>typeof id==='string'&&id.length>0&&id.length<=180))].slice(0,100);
+  const ids=[...new Set(noteIds.filter(id=>typeof id==='string'&&id.length>0&&id.length<=180))].slice(0,3000);
   const active=await readActiveStudySession(now);
   if(active&&active.cursor<active.queueIds.length)
     return{kind:'resume',due:0,fresh:0,matched:ids.length};
