@@ -5,7 +5,7 @@ export interface UserVocabularyInput {
   exampleFr?:string;
   exampleEn?:string;
 }
-export interface UserVocabularyCard extends UserVocabularyInput { id:string; }
+export interface UserVocabularyCard extends UserVocabularyInput { id:string; theme?:string; }
 function record(value:unknown):Record<string,unknown>{
   return value!==null&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};
 }
@@ -30,7 +30,7 @@ export function listUserVocabularyCards(value:unknown):UserVocabularyCard[]{
       const fr=field(row.fr??row.word,120),en=field(row.en??row.meaning,200);
       if(!fr||!en)continue;
       results.push({id,fr,en,exampleFr:field(row.exampleFr??row.example??'',400),
-        exampleEn:field(row.exampleEn??row.exampleTranslation??'',400)});
+        exampleEn:field(row.exampleEn??row.exampleTranslation??'',400),theme:field(row.theme??'',80)});
     }catch{continue;}
   }
   return results.sort((a,b)=>a.fr.localeCompare(b.fr,'fr')||a.id.localeCompare(b.id));

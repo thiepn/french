@@ -125,3 +125,34 @@ export async function mutatePrivateDeck(
   return newId;
  }finally{db.close();}
 }
+
+/** Multi-card metadata edit in the existing private owner store. No SRS/grade/event writes. */
+export async function bulkSetUserVocabularyTheme(noteIds:readonly string[],theme:string):Promise<number>{
+ const cleaned=theme.normalize('NFC').trim().replace(/\s+/g,' ');
+ if(cleaned.length>80||/[\u0000-\u001f\u007f]/.test(cleaned))throw Error('INVALID_THEME');
+ const ids=[...new Set(noteIds)];
+ if(!ids.length||ids.length>120||ids.some(id=>!id||id.length>180))throw Error('INVALID_BULK_SELECTION');
+ const db=await openFrenchDatabase();
+ try{
+  await new Promise<void>((resolve,reject)=>{
+   const tx=db.transaction('user-content','readwrite');
+   const owner=tx.objectStore('user-content'),request=owner.get('content-v1');
+   request.onsuccess=()=>{
+    try{
+     const state=content(request.result);
+     if(ids.some(id=>!Object.prototype.hasOwnProperty.call(state.userCards,id)))throw Error('BULK_NON_USER_CARD');
+     for(const id of ids){
+      const row=object(state.userCards[id]);
+      state.userCards[id]={...row,theme:cleaned};
+     }
+     owner.put(state,'content-v1');
+    }catch(error){reject(error);tx.abort();}
+   };
+   request.onerror=()=>reject(request.error??Error('Cannot read card content'));
+   tx.oncomplete=()=>resolve();
+   tx.onerror=()=>reject(tx.error??Error('Bulk edit failed'));
+   tx.onabort=()=>reject(tx.error??Error('Bulk edit aborted'));
+  });
+  return ids.length;
+ }finally{db.close();}
+}

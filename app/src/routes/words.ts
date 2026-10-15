@@ -3,8 +3,8 @@ import type { RouteContext } from '../core/types';
 import { loadContentManifest } from '../core/content/manifest';
 import { loadVocabularySearchIndex,loadVocabularyWord,findVocabularyReference,type VocabularySearchRow } from '../core/content/loader';
 import {takeU40CanonicalWord} from '../core/unified/u40-lexical-bridge';
-import {listUserVocabulary,saveUserVocabularyCard,listPrivateDecks,mutatePrivateDeck} from '../core/learner/user-vocabulary';
-import type {NativePrivateDeck} from '../core/learner/private-decks';
+import {listUserVocabulary,saveUserVocabularyCard,listPrivateDecks,mutatePrivateDeck,bulkSetUserVocabularyTheme} from '../core/learner/user-vocabulary';
+import type {PrivateDeckView} from '../core/learner/private-decks';
 import {createSelectedVocabularySession} from '../core/learner/study-session-builder';
 import type {UserVocabularyCard} from '../core/learner/user-vocabulary-model';
 
@@ -67,6 +67,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       <button type="button" class="secondary-action compact-action" data-deck-study>Study this deck</button>
       <button type="button" class="secondary-action compact-action" data-deck-rename>Rename deck</button>
       <button type="button" class="secondary-action compact-action" data-deck-delete>Delete deck</button>
+      <label class="word-theme-bulk">Theme for selected private cards
+        <input data-bulk-theme maxlength="80" placeholder="Home, travel, daily life"></label>
+      <button type="button" class="secondary-action compact-action" data-bulk-theme-save>Apply theme to selected</button>
     </div>
     <p data-selection-status class="inline-status" role="status">Select personal words to organize them.</p>
     <div data-card-list class="word-custom-list"></div>`;
@@ -88,9 +91,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const renameDeck=custom.querySelector<HTMLButtonElement>('[data-deck-rename]')!;
   const deleteDeck=custom.querySelector<HTMLButtonElement>('[data-deck-delete]')!;
   const selectionStatus=custom.querySelector<HTMLElement>('[data-selection-status]')!;
+  const bulkTheme=custom.querySelector<HTMLInputElement>('[data-bulk-theme]')!;
+  const bulkThemeSave=custom.querySelector<HTMLButtonElement>('[data-bulk-theme-save]')!;
   let editingId:string|undefined;
   let personal:UserVocabularyCard[]=[];
-  let decks:NativePrivateDeck[]=[];
+  let decks:PrivateDeckView[]=[];
+  let catalogById=new Map<string,VocabularySearchRow>();
   const selected=new Set<string>();
   let deletingDeck=false;
   let deckBusy=false;
@@ -98,7 +104,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const refreshDeckControls=()=>{
     const previous=deckFilter.value;
     deckFilter.replaceChildren(new Option('All my words',''));
-    for(const deck of decks)deckFilter.add(new Option(deck.title+' ('+deck.noteIds.length+')',deck.id));
+    for(const deck of decks)deckFilter.add(new Option(deck.title+' ('+deck.noteIds.length+')'+
+      (deck.kind==='p35'?' · Recovered P35':''),deck.id));
     deckFilter.value=decks.some(deck=>deck.id===previous)?previous:'';
     const hasDeck=Boolean(activeDeck());
     for(const control of [add,remove,studyDeck,renameDeck,deleteDeck])control.disabled=!hasDeck;
@@ -117,7 +124,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const toAdd=[...selected];
     try{
       if((action==='add'||action==='remove')&&!toAdd.length){
-        selectionStatus.textContent='Choose one or more personal words first.';return;
+        selectionStatus.textContent='Choose one or more words first.';return;
       }
       if(action==='delete'&&!deletingDeck){
         deletingDeck=true;deleteDeck.textContent='Confirm delete deck';
@@ -154,8 +161,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   };
   const visibleCards=()=>{
     const query=fold(cardFilter.value);
-    const deck=activeDeck(),allowed=deck?new Set(deck.noteIds):null;
-    return personal.filter(row=>(!allowed||allowed.has(row.id))&&fold(row.fr+' '+row.en).includes(query)).slice(0,120);
+    const deck=activeDeck();
+    const userById=new Map(personal.map(row=>[row.id,row]));
+    const rows=deck?deck.noteIds.map(id=>{
+      const personalRow=userById.get(id);
+      if(personalRow)return {...personalRow,kind:'user' as const};
+      const catalog=catalogById.get(id);
+      if(catalog)return{id,fr:catalog.word,en:catalog.meaning,kind:'corpus' as const};
+      return{id,fr:'Source unavailable',en:id,kind:'unresolved' as const};
+    }):personal.map(row=>({...row,kind:'user' as const}));
+    return rows.filter(row=>fold(row.fr+' '+row.en).includes(query)).slice(0,120);
   };
   const showPersonal=()=>{
     cardList.replaceChildren();
@@ -177,11 +192,14 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       });
       const label=document.createElement('span');
       const name=document.createElement('strong');name.textContent=row.fr;
-      const meaning=document.createElement('span');meaning.textContent=' · '+row.en;
+      const meaning=document.createElement('span');meaning.textContent=' · '+row.en+
+        (row.kind==='corpus'?' · Original corpus':row.kind==='unresolved'?' · Unresolved P35 ID':
+          'theme' in row&&row.theme?' · '+row.theme:'');
       label.append(name,meaning);
       const edit=document.createElement('button');edit.type='button';
       edit.className='secondary-action compact-action';edit.textContent='Edit';
       edit.addEventListener('click',()=>fill(row));
+      if(row.kind!=='user')edit.hidden=true;
       item.append(checkbox,label,edit);cardList.append(item);
     }
   };
@@ -209,9 +227,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   remove.addEventListener('click',()=>void deckMutation('remove'));
   studyDeck.addEventListener('click',()=>{
     const deck=activeDeck();if(!deck||studyDeck.disabled)return;
-    const owned=new Set(personal.map(row=>row.id));
-    const ids=deck.noteIds.filter(id=>owned.has(id)).slice(0,100);
-    if(!ids.length){selectionStatus.textContent='This deck has no available personal words.';return;}
+    const owned=new Set([...personal.map(row=>row.id),...catalogById.keys()]);
+    const ids=deck.noteIds.filter(id=>owned.has(id));
+    if(!ids.length){selectionStatus.textContent='This deck has no resolved, study-ready source words.';return;}
     studyDeck.disabled=true;
     void (async()=>{
       try{
@@ -221,6 +239,24 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         navigate('review');
       }catch(error){selectionStatus.textContent='Unable to start this deck session.';console.error(error);}
       finally{studyDeck.disabled=false;}
+    })();
+  });
+  bulkThemeSave.addEventListener('click',()=>{
+    const owned=new Set(personal.map(row=>row.id));
+    const ids=[...selected].filter(id=>owned.has(id));
+    if(ids.length!==selected.size||!ids.length){
+      selectionStatus.textContent='Bulk theme editing requires selected private cards only.';return;
+    }
+    bulkThemeSave.disabled=true;
+    void(async()=>{
+      try{
+        const changed=await bulkSetUserVocabularyTheme(ids,bulkTheme.value);
+        await reloadPersonal();
+        if(!signal.aborted)selectionStatus.textContent=changed+' private cards updated · original corpus and SRS scores untouched.';
+      }catch(error){
+        if(!signal.aborted)selectionStatus.textContent='Theme edit was not saved; check the selection or theme.';
+        console.error('Bulk private theme edit failed',error);
+      }finally{bulkThemeSave.disabled=false;}
     })();
   });
   cancelEdit.addEventListener('click',reset);
@@ -265,6 +301,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   const manifest=await loadContentManifest(signal);
   const descriptor=manifest.indexes?.vocabulary;
+  // Canonical source IDs for recovered P35 deck visibility, never rewritten on display.
+  try{
+    const index=await loadVocabularySearchIndex(signal);
+    if(!signal.aborted){catalogById=new Map(index.rows.map(row=>[row.id,row]));showPersonal();}
+  }catch(error){console.warn('Original corpus mapping unavailable; recovered deck IDs are retained.',error);}
   if(!descriptor){status.textContent='Vocabulary search index is unavailable.';return;}
 
   const incomingCanonicalId=takeU40CanonicalWord();
@@ -308,6 +349,25 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         })();
       });
       detail.append(study,studyStatus);
+      const addToDeck=document.createElement('button');
+      addToDeck.type='button';addToDeck.className='secondary-action compact-action word-context-action';
+      addToDeck.textContent='Add this word to selected deck';
+      addToDeck.addEventListener('click',()=>{
+        const target=activeDeck();
+        if(!target){studyStatus.textContent='Choose a deck under My words before adding this source word.';return;}
+        addToDeck.disabled=true;studyStatus.textContent='Adding canonical source word to '+target.title+'…';
+        void(async()=>{
+          try{
+            await mutatePrivateDeck('add',target.id,undefined,[word.id]);
+            await refreshDecks();showPersonal();
+            if(!signal.aborted)studyStatus.textContent='Canonical word added to '+target.title+'.';
+          }catch(error){
+            if(!signal.aborted)studyStatus.textContent='Source word could not be added to this deck.';
+            console.error('Canonical source membership update failed',error);
+          }finally{addToDeck.disabled=false;}
+        })();
+      });
+      detail.append(addToDeck);
 
       if(example?.text){
         const block=document.createElement('blockquote');block.className='word-example';

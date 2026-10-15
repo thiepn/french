@@ -16,3 +16,6 @@
 .word-custom-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.7rem 0}
 .word-select-checkbox{height:20px;width:20px;flex:none;accent-color:currentColor}
 @media(max-width:600px){.word-deck-toolbar{grid-template-columns:1fr}.word-custom-actions button{min-height:44px}}
+
+.word-theme-bulk{display:grid;gap:.35rem;max-width:19rem;min-width:0;font-weight:600}
+.word-theme-bulk input{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--line,#9da4aa);padding:.55rem;background:var(--surface,#fff);color:inherit}
