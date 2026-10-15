@@ -137,11 +137,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     for(const recommendation of rankSourceMissionContinuity(originalSource)){
       const mission=P35_P18_MISSIONS.find(row=>row.id===recommendation.id)!;
       const locked=recommendation.locked;
-      const control=button(mission.title+' · '+recommendation.practised+'/3 original graphs revisited','secondary-action compact-action');
+      const control=button(mission.title+' · 3 original source graphs','secondary-action compact-action');
       control.disabled=!canStartOriginal()||locked;
       control.onclick=()=>void commitOriginal(()=>startSourceMission(originalSource,mission.id,Date.now()),
         'Source mission started; response text is not retained.');
       missionList.append(control);
+      if(!locked)missionList.append(item('p',recommendation.practised+' of 3 original scenario goals previously revisited.','muted-copy'));
       if(recommendation.missing.length&&!locked)
         missionList.append(item('p','Source practice to revisit: '+recommendation.missing.join(' · ')+
         '. Recommendation is based on original task history, not CEFR proficiency.','muted-copy'));
