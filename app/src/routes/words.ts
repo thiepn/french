@@ -1,3 +1,4 @@
+import './words.css';
 import type { RouteContext } from '../core/types';
 import { loadContentManifest } from '../core/content/manifest';
 import { loadVocabularySearchIndex,loadVocabularyWord,findVocabularyReference,type VocabularySearchRow } from '../core/content/loader';
