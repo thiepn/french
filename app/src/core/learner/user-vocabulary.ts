@@ -68,7 +68,7 @@ export async function mutatePrivateDeck(
  id?:string,title?:string,selected:readonly string[]=[]
 ):Promise<string>{
  if((mode==='create'||mode==='rename')&&title===undefined)throw Error('DECK_TITLE_REQUIRED');
- const cleanTitle=title===undefined?'':privateDeckTitle(title);
+ const cleanTitle=mode==='create'||mode==='rename'?privateDeckTitle(title??''):'';
  const cleanIds=[...new Set(selected.filter(v=>typeof v==='string'&&v.length>0&&v.length<=180))].slice(0,2000);
  const newId=mode==='create'?'deck:vnext:'+crypto.randomUUID():id??'';
  if(!newId.startsWith('deck:vnext:'))throw Error('INVALID_NATIVE_DECK');
