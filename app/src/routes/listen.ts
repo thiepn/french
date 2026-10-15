@@ -184,7 +184,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const independent=!textOnly&&result.correct&&support===0&&plays===1&&rate>=1&&!transcriptUsed&&!translationUsed;
       if(independent)firstListen++;
       input.disabled=true;for(const button of form.querySelectorAll<HTMLButtonElement>('button'))button.disabled=true;
-      feedback.hidden=false;feedback.textContent=(textOnly?'Written-source practice only (no audio started; no listening evidence). ':'')+result.label+' · '+prompt.text+' — '+prompt.translation;
+      feedback.hidden=false;feedback.textContent=(textOnly?'Written-source practice only (no audio started; no listening evidence). ':'')+(textOnly&&result.correct?'Exact written match (not dictation)':result.label)+' · '+prompt.text+' — '+prompt.translation;
       next.hidden=false;
       const row=index.rows.find(item=>item.id===prompt.word.id);
       if(textOnly){
