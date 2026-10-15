@@ -120,8 +120,10 @@ test('U49 bulk selection adds and removes owned words from native deck without c
  const original=await ownState(page);
  await page.locator('[data-deck-title]').fill('Things at home');
  await page.locator('[data-deck-create]').click();
+ await expect(page.locator('[data-deck-filter]')).toHaveValue(/^deck:vnext:/);
  const id=await page.locator('[data-deck-filter]').inputValue();
  await page.locator('[data-deck-filter]').selectOption('');
+ await expect(page.locator('.word-custom-item')).toHaveCount(2);
  await page.locator('[data-card-select]').click();
  await expect(page.locator('.word-select-checkbox:checked')).toHaveCount(2);
  await page.locator('[data-deck-filter]').selectOption(id);

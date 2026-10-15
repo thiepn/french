@@ -93,6 +93,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let decks:NativePrivateDeck[]=[];
   const selected=new Set<string>();
   let deletingDeck=false;
+  let deckBusy=false;
   const activeDeck=()=>decks.find(deck=>deck.id===deckFilter.value);
   const refreshDeckControls=()=>{
     const previous=deckFilter.value;
@@ -109,6 +110,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     refreshDeckControls();
   };
   const deckMutation=async(action:'create'|'rename'|'delete'|'add'|'remove')=>{
+    if(deckBusy)return;
     const current=activeDeck();
     const id=current?.id;
     if(action!=='create'&&!id)return;
@@ -122,6 +124,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         selectionStatus.textContent='Confirm deck deletion. Cards and SRS history will remain intact.';
         return;
       }
+      deckBusy=true;
+      createDeck.disabled=true;choose.disabled=true;deckFilter.disabled=true;
       const newId=await mutatePrivateDeck(action,id,deckTitle.value,toAdd);
       await refreshDecks();
       if(action==='create')deckFilter.value=newId;
@@ -132,6 +136,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }catch(error){
       selectionStatus.textContent='Deck was not changed. Check the title or try again.';
       console.error('Native private deck update failed',error);
+    }finally{
+      deckBusy=false;createDeck.disabled=false;choose.disabled=false;deckFilter.disabled=false;
     }
   };
   const fill=(row:UserVocabularyCard)=>{
