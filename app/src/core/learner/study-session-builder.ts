@@ -190,14 +190,13 @@ export async function createTodayStudySession(now=Date.now()):Promise<StudySessi
  * Uses existing FSRS records, daily limits, pacing and the existing undo/resume writer.
  * Does not treat original keyed practice as a graded native attempt.
  */
-export async function createU40LessonVocabularySession(
-  lessonId:string,now=Date.now()
+export async function createSelectedVocabularySession(
+  noteIds:readonly string[],now=Date.now()
 ):Promise<{kind:'created'|'resume'|'empty';due:number;fresh:number;matched:number}>{
+  const ids=[...new Set(noteIds.filter(id=>typeof id==='string'&&id.length>0&&id.length<=180))].slice(0,100);
   const active=await readActiveStudySession(now);
   if(active&&active.cursor<active.queueIds.length)
-    return{kind:'resume',due:0,fresh:0,matched:0};
-  const links=await resolveU40LessonLinks(lessonId);
-  const ids=[...new Set(links.links.flatMap(link=>link.native?[link.native.id]:[]))];
+    return{kind:'resume',due:0,fresh:0,matched:ids.length};
   if(!ids.length)return{kind:'empty',due:0,fresh:0,matched:0};
   const learner=await ensureCanonicalLearnerState();
   const prefs=sessionPreferences(learner);
@@ -224,16 +223,25 @@ export async function createU40LessonVocabularySession(
   const maxSize=prefs.size>0?prefs.size:50;
   const dueIds=due.slice(0,maxSize);
   const newQueued=newIds.slice(0,Math.max(0,maxSize-dueIds.length));
-  if(!dueIds.length&&!newQueued.length)return{kind:'empty',due:0,fresh:0,matched:links.matched};
+  if(!dueIds.length&&!newQueued.length)return{kind:'empty',due:0,fresh:0,matched:ids.length};
   // Check again before touching native learner state: never replace unsent work.
   const newer=await readActiveStudySession(now);
   if(newer&&newer.cursor<newer.queueIds.length)
-    return{kind:'resume',due:0,fresh:0,matched:links.matched};
+    return{kind:'resume',due:0,fresh:0,matched:ids.length};
   const fresh=await ensureNewRecognitionRecords(newQueued);
   const queue=spaceWholeQueue(
     mixTodayQueue(dueIds,fresh.map(record=>record.id),prefs.mix),prefs.siblingSpacing
   );
   const session=createStudySession(queue,{mode:'custom',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
   await writeActiveStudySession(session);
-  return{kind:'created',due:dueIds.length,fresh:fresh.length,matched:links.matched};
+  return{kind:'created',due:dueIds.length,fresh:fresh.length,matched:ids.length};
+}
+
+/** Source-qualified U40 vocabulary uses the same native study session as private user cards. */
+export async function createU40LessonVocabularySession(
+  lessonId:string,now=Date.now()
+):Promise<{kind:'created'|'resume'|'empty';due:number;fresh:number;matched:number}>{
+  const links=await resolveU40LessonLinks(lessonId);
+  const ids=links.links.flatMap(link=>link.native?[link.native.id]:[]);
+  return createSelectedVocabularySession(ids,now);
 }

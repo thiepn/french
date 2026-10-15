@@ -2,6 +2,9 @@ import type { RouteContext } from '../core/types';
 import { loadContentManifest } from '../core/content/manifest';
 import { loadVocabularySearchIndex,loadVocabularyWord,findVocabularyReference,type VocabularySearchRow } from '../core/content/loader';
 import {takeU40CanonicalWord} from '../core/unified/u40-lexical-bridge';
+import {listUserVocabulary,saveUserVocabularyCard} from '../core/learner/user-vocabulary';
+import {createSelectedVocabularySession} from '../core/learner/study-session-builder';
+import type {UserVocabularyCard} from '../core/learner/user-vocabulary-model';
 
 function fold(value:string):string{
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').trim();
@@ -30,6 +33,116 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const results=main.querySelector<HTMLElement>('[data-results]');
   const detail=main.querySelector<HTMLElement>('[data-detail]');
   if(!input||!status||!results||!detail)return;
+
+  // Private custom cards reuse canonical user-content and native Study; no parallel deck store.
+  const custom=document.createElement('section');
+  custom.className='word-custom-panel';
+  custom.setAttribute('aria-label','My French vocabulary');
+  custom.innerHTML=`<h2>My words</h2>
+    <p class="muted-copy">Your own vocabulary stays in your existing private French data. Practice uses the same scheduled Review and daily limits; no card is graded when saved.</p>
+    <form data-card-form class="word-custom-form">
+      <label>French word or expression<input name="fr" maxlength="120" required autocomplete="off"></label>
+      <label>English meaning<input name="en" maxlength="200" required autocomplete="off"></label>
+      <label>French example (optional)<input name="exampleFr" maxlength="400" autocomplete="off"></label>
+      <label>Example meaning (optional)<input name="exampleEn" maxlength="400" autocomplete="off"></label>
+      <div class="word-custom-actions">
+       <button type="submit" class="primary-action compact-action" data-card-save>Save my word</button>
+       <button type="button" class="secondary-action compact-action" data-card-cancel hidden>Cancel edit</button>
+       <button type="button" class="secondary-action compact-action" data-card-study>Study my words</button>
+      </div>
+    </form>
+    <p class="inline-status" data-card-status role="status">Loading your words…</p>
+    <label>Find one of my words<input type="search" data-card-filter placeholder="Filter personal vocabulary"></label>
+    <div data-card-list class="word-custom-list"></div>`;
+  main.querySelector('.words-page')?.append(custom);
+  const cardForm=custom.querySelector<HTMLFormElement>('[data-card-form]')!;
+  const cardStatus=custom.querySelector<HTMLElement>('[data-card-status]')!;
+  const cardList=custom.querySelector<HTMLElement>('[data-card-list]')!;
+  const cardFilter=custom.querySelector<HTMLInputElement>('[data-card-filter]')!;
+  const cancelEdit=custom.querySelector<HTMLButtonElement>('[data-card-cancel]')!;
+  const saveButton=custom.querySelector<HTMLButtonElement>('[data-card-save]')!;
+  const studyButton=custom.querySelector<HTMLButtonElement>('[data-card-study]')!;
+  let editingId:string|undefined;
+  let personal:UserVocabularyCard[]=[];
+  const fill=(row:UserVocabularyCard)=>{
+    editingId=row.id;
+    for(const key of ['fr','en','exampleFr','exampleEn'] as const){
+      (cardForm.elements.namedItem(key) as HTMLInputElement).value=row[key]??'';
+    }
+    saveButton.textContent='Save changes';cancelEdit.hidden=false;
+    (cardForm.elements.namedItem('fr') as HTMLInputElement).focus();
+  };
+  const reset=()=>{
+    editingId=undefined;cardForm.reset();
+    saveButton.textContent='Save my word';cancelEdit.hidden=true;
+  };
+  const showPersonal=()=>{
+    cardList.replaceChildren();
+    const query=fold(cardFilter.value);
+    const selected=personal.filter(row=>fold(row.fr+' '+row.en).includes(query)).slice(0,120);
+    if(!selected.length){
+      const empty=document.createElement('p');
+      empty.textContent=personal.length?'No matching personal vocabulary.':'No personal cards yet. Add your first word above.';
+      cardList.append(empty);return;
+    }
+    for(const row of selected){
+      const item=document.createElement('div');item.className='word-custom-item';
+      const label=document.createElement('span');
+      const name=document.createElement('strong');name.textContent=row.fr;
+      const meaning=document.createElement('span');meaning.textContent=' · '+row.en;
+      label.append(name,meaning);
+      const edit=document.createElement('button');edit.type='button';
+      edit.className='secondary-action compact-action';edit.textContent='Edit';
+      edit.addEventListener('click',()=>fill(row));
+      item.append(label,edit);cardList.append(item);
+    }
+  };
+  const reloadPersonal=async()=>{
+    personal=await listUserVocabulary();
+    if(signal.aborted)return;
+    cardStatus.textContent=personal.length+' private words in your native French learner record.';
+    showPersonal();
+  };
+  cardFilter.addEventListener('input',showPersonal);
+  cancelEdit.addEventListener('click',reset);
+  cardForm.addEventListener('submit',event=>{
+    event.preventDefault();
+    if(saveButton.disabled)return;
+    const get=(name:string)=>(cardForm.elements.namedItem(name) as HTMLInputElement).value;
+    saveButton.disabled=true;
+    cardStatus.textContent='Saving to your private vocabulary…';
+    void (async()=>{
+      try{
+        await saveUserVocabularyCard({fr:get('fr'),en:get('en'),
+          exampleFr:get('exampleFr'),exampleEn:get('exampleEn')},editingId);
+        reset();await reloadPersonal();
+        if(!signal.aborted)cardStatus.textContent='Word saved. Your current review session and historical scores were not changed.';
+      }catch(error){
+        if(!signal.aborted)cardStatus.textContent='Word not saved. Check that French and English are filled in and try again.';
+        console.error('Private user vocabulary save failed',error);
+      }finally{saveButton.disabled=false;}
+    })();
+  });
+  studyButton.addEventListener('click',()=>{
+    if(studyButton.disabled)return;
+    studyButton.disabled=true;
+    void (async()=>{
+      try{
+        // Read the owner store again to avoid launching deleted/stale IDs from another tab.
+        const current=await listUserVocabulary();
+        if(!current.length){cardStatus.textContent='Add a personal word first.';return;}
+        const session=await createSelectedVocabularySession(current.map(row=>row.id));
+        if(signal.aborted)return;
+        if(session.kind==='empty'){cardStatus.textContent='No personal words are due or eligible under today’s limits.';return;}
+        navigate('review'); // Existing unfinished work resumes; never overwritten.
+      }catch(error){
+        if(!signal.aborted)cardStatus.textContent='Could not open the native vocabulary session.';
+        console.error('Private vocabulary session failed',error);
+      }finally{studyButton.disabled=false;}
+    })();
+  });
+  try{await reloadPersonal();}
+  catch(error){if(!signal.aborted)cardStatus.textContent='Personal vocabulary could not be read.';console.error(error);}
 
   const manifest=await loadContentManifest(signal);
   const descriptor=manifest.indexes?.vocabulary;
