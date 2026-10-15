@@ -129,8 +129,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const recent=originalSource.history[0];
       const graph=getP35SourceScenario(recent.scenarioId);
       originalDeck.append(item('p','Recent original graph: '+(graph?.title??recent.scenarioId)+
-        ' · '+recent.independent+'/'+recent.turns+' unsupported matches · '+
+        ' · '+recent.independent+'/'+recent.turns+' original rule-matched independent turns · '+
         (recent.complete?'source objectives covered':'source goals incomplete')+'. This is rehearsed practice only.','muted-copy'));
+      if(graph&&graph.level!=='B2'){
+        const repeatOriginal=button('Replay recent original dialogue · next partner wording','secondary-action compact-action');
+        repeatOriginal.disabled=!canStartOriginal()||
+          ['A1','A2','B1'].indexOf(graph.level)>['A1','A2','B1'].indexOf(originalSource.maxLevel);
+        repeatOriginal.onclick=()=>void commitOriginal(()=>
+          startSourceGraph(originalSource,graph.id,Date.now()),
+          'Source-owned partner wording advances on repetition. No CEFR or FSRS score was created.');
+        originalDeck.append(repeatOriginal);
+      }
     }
     originalDeck.append(item('h3','Source P18 missions'));
     const missionList=item('div','','source-graph-list');
@@ -495,6 +504,13 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     partner.append(item('p','Original P35 dialogue partner','conversation-speaker'),
       item('blockquote',sourcePrompt(active),'conversation-prompt'));
     const goal=item('p',node.hint??'Reply using appropriate French.','conversation-goal');
+    const achieved=graph.requiredGoals.filter(id=>active.goals.includes(id));
+    const remaining=graph.requiredGoals.filter(id=>!active.goals.includes(id));
+    const sourceGoals=item('p',achieved.length+'/'+graph.requiredGoals.length+
+      ' original source objectives evidenced by matched dialogue rules'+
+      (remaining.length?' · remaining: '+remaining.join(', '):' · all observed')+
+      '. Rule matching cannot certify independent conversational meaning.','muted-copy');
+    banner.append(sourceGoals);
     const form=item('form','','conversation-compose');
     const field=item('textarea','','conversation-input');field.rows=3;field.maxLength=650;
     field.autocomplete='off';field.setAttribute('aria-label','Reply to original source graph in French');
