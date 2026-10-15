@@ -65,3 +65,10 @@
 .word-custom-item{display:flex;gap:.75rem;align-items:center;justify-content:space-between;padding:.5rem .25rem;border-bottom:1px solid var(--line,#9da4aa)}
 .word-custom-item>span{overflow-wrap:anywhere;min-width:0}
 @media(max-width:600px){.word-custom-form{grid-template-columns:1fr}.word-custom-panel{padding:1rem}.word-custom-actions button{min-height:44px}}
+
+.word-deck-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:.7rem;margin:.8rem 0}
+.word-deck-toolbar label{display:grid;gap:.35rem;min-width:0}
+.word-deck-toolbar input,.word-deck-toolbar select{width:100%;box-sizing:border-box;min-height:44px;padding:.6rem;border:1px solid var(--line,#9da4aa);border-radius:.4rem;background:var(--surface,#fff);color:inherit}
+.word-custom-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:.7rem 0}
+.word-select-checkbox{height:20px;width:20px;flex:none;accent-color:currentColor}
+@media(max-width:600px){.word-deck-toolbar{grid-template-columns:1fr}.word-custom-actions button{min-height:44px}}

@@ -2,7 +2,8 @@ import type { RouteContext } from '../core/types';
 import { loadContentManifest } from '../core/content/manifest';
 import { loadVocabularySearchIndex,loadVocabularyWord,findVocabularyReference,type VocabularySearchRow } from '../core/content/loader';
 import {takeU40CanonicalWord} from '../core/unified/u40-lexical-bridge';
-import {listUserVocabulary,saveUserVocabularyCard} from '../core/learner/user-vocabulary';
+import {listUserVocabulary,saveUserVocabularyCard,listPrivateDecks,mutatePrivateDeck} from '../core/learner/user-vocabulary';
+import type {NativePrivateDeck} from '../core/learner/private-decks';
 import {createSelectedVocabularySession} from '../core/learner/study-session-builder';
 import type {UserVocabularyCard} from '../core/learner/user-vocabulary-model';
 
@@ -52,7 +53,21 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       </div>
     </form>
     <p class="inline-status" data-card-status role="status">Loading your words…</p>
-    <label>Find one of my words<input type="search" data-card-filter placeholder="Filter personal vocabulary"></label>
+    <div class="word-deck-toolbar">
+      <label>Find one of my words<input type="search" data-card-filter placeholder="Filter personal vocabulary"></label>
+      <label>Show cards<select data-deck-filter><option value="">All my words</option></select></label>
+      <label>New deck name<input data-deck-title maxlength="64" placeholder="Everyday expressions"></label>
+      <button type="button" class="secondary-action compact-action" data-deck-create>Create deck</button>
+    </div>
+    <div class="word-custom-actions" role="group" aria-label="Selected vocabulary actions">
+      <button type="button" class="secondary-action compact-action" data-card-select>Choose visible cards</button>
+      <button type="button" class="secondary-action compact-action" data-card-add>Add selected to deck</button>
+      <button type="button" class="secondary-action compact-action" data-card-remove>Remove selected from deck</button>
+      <button type="button" class="secondary-action compact-action" data-deck-study>Study this deck</button>
+      <button type="button" class="secondary-action compact-action" data-deck-rename>Rename deck</button>
+      <button type="button" class="secondary-action compact-action" data-deck-delete>Delete deck</button>
+    </div>
+    <p data-selection-status class="inline-status" role="status">Select personal words to organize them.</p>
     <div data-card-list class="word-custom-list"></div>`;
   main.querySelector('.words-page')?.append(custom);
   const cardForm=custom.querySelector<HTMLFormElement>('[data-card-form]')!;
@@ -62,8 +77,62 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const cancelEdit=custom.querySelector<HTMLButtonElement>('[data-card-cancel]')!;
   const saveButton=custom.querySelector<HTMLButtonElement>('[data-card-save]')!;
   const studyButton=custom.querySelector<HTMLButtonElement>('[data-card-study]')!;
+  const deckFilter=custom.querySelector<HTMLSelectElement>('[data-deck-filter]')!;
+  const deckTitle=custom.querySelector<HTMLInputElement>('[data-deck-title]')!;
+  const choose=custom.querySelector<HTMLButtonElement>('[data-card-select]')!;
+  const add=custom.querySelector<HTMLButtonElement>('[data-card-add]')!;
+  const remove=custom.querySelector<HTMLButtonElement>('[data-card-remove]')!;
+  const studyDeck=custom.querySelector<HTMLButtonElement>('[data-deck-study]')!;
+  const createDeck=custom.querySelector<HTMLButtonElement>('[data-deck-create]')!;
+  const renameDeck=custom.querySelector<HTMLButtonElement>('[data-deck-rename]')!;
+  const deleteDeck=custom.querySelector<HTMLButtonElement>('[data-deck-delete]')!;
+  const selectionStatus=custom.querySelector<HTMLElement>('[data-selection-status]')!;
   let editingId:string|undefined;
   let personal:UserVocabularyCard[]=[];
+  let decks:NativePrivateDeck[]=[];
+  const selected=new Set<string>();
+  let deletingDeck=false;
+  const activeDeck=()=>decks.find(deck=>deck.id===deckFilter.value);
+  const refreshDeckControls=()=>{
+    const previous=deckFilter.value;
+    deckFilter.replaceChildren(new Option('All my words',''));
+    for(const deck of decks)deckFilter.add(new Option(deck.title+' ('+deck.noteIds.length+')',deck.id));
+    deckFilter.value=decks.some(deck=>deck.id===previous)?previous:'';
+    const hasDeck=Boolean(activeDeck());
+    for(const control of [add,remove,studyDeck,renameDeck,deleteDeck])control.disabled=!hasDeck;
+    selectionStatus.textContent=selected.size+' selected · '+decks.length+' private decks. Deck deletion never deletes vocabulary or review history.';
+  };
+  const refreshDecks=async()=>{
+    decks=await listPrivateDecks();
+    if(signal.aborted)return;
+    refreshDeckControls();
+  };
+  const deckMutation=async(action:'create'|'rename'|'delete'|'add'|'remove')=>{
+    const current=activeDeck();
+    const id=current?.id;
+    if(action!=='create'&&!id)return;
+    const toAdd=[...selected];
+    try{
+      if((action==='add'||action==='remove')&&!toAdd.length){
+        selectionStatus.textContent='Choose one or more personal words first.';return;
+      }
+      if(action==='delete'&&!deletingDeck){
+        deletingDeck=true;deleteDeck.textContent='Confirm delete deck';
+        selectionStatus.textContent='Confirm deck deletion. Cards and SRS history will remain intact.';
+        return;
+      }
+      const newId=await mutatePrivateDeck(action,id,deckTitle.value,toAdd);
+      await refreshDecks();
+      if(action==='create')deckFilter.value=newId;
+      if(action==='rename'||action==='create')deckTitle.value='';
+      selected.clear();deletingDeck=false;deleteDeck.textContent='Delete deck';
+      showPersonal();refreshDeckControls();
+      selectionStatus.textContent='Deck updated · card records, learner scores and active study sessions unchanged.';
+    }catch(error){
+      selectionStatus.textContent='Deck was not changed. Check the title or try again.';
+      console.error('Native private deck update failed',error);
+    }
+  };
   const fill=(row:UserVocabularyCard)=>{
     editingId=row.id;
     for(const key of ['fr','en','exampleFr','exampleEn'] as const){
@@ -76,17 +145,29 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     editingId=undefined;cardForm.reset();
     saveButton.textContent='Save my word';cancelEdit.hidden=true;
   };
+  const visibleCards=()=>{
+    const query=fold(cardFilter.value);
+    const deck=activeDeck(),allowed=deck?new Set(deck.noteIds):null;
+    return personal.filter(row=>(!allowed||allowed.has(row.id))&&fold(row.fr+' '+row.en).includes(query)).slice(0,120);
+  };
   const showPersonal=()=>{
     cardList.replaceChildren();
-    const query=fold(cardFilter.value);
-    const selected=personal.filter(row=>fold(row.fr+' '+row.en).includes(query)).slice(0,120);
-    if(!selected.length){
+    const displayed=visibleCards();
+    if(!displayed.length){
       const empty=document.createElement('p');
       empty.textContent=personal.length?'No matching personal vocabulary.':'No personal cards yet. Add your first word above.';
       cardList.append(empty);return;
     }
-    for(const row of selected){
+    for(const row of displayed){
       const item=document.createElement('div');item.className='word-custom-item';
+      const checkbox=document.createElement('input');
+      checkbox.type='checkbox';checkbox.className='word-select-checkbox';
+      checkbox.setAttribute('aria-label','Select '+row.fr);
+      checkbox.checked=selected.has(row.id);
+      checkbox.addEventListener('change',()=>{
+        if(checkbox.checked)selected.add(row.id);else selected.delete(row.id);
+        selectionStatus.textContent=selected.size+' selected';
+      });
       const label=document.createElement('span');
       const name=document.createElement('strong');name.textContent=row.fr;
       const meaning=document.createElement('span');meaning.textContent=' · '+row.en;
@@ -94,16 +175,47 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const edit=document.createElement('button');edit.type='button';
       edit.className='secondary-action compact-action';edit.textContent='Edit';
       edit.addEventListener('click',()=>fill(row));
-      item.append(label,edit);cardList.append(item);
+      item.append(checkbox,label,edit);cardList.append(item);
     }
   };
   const reloadPersonal=async()=>{
     personal=await listUserVocabulary();
     if(signal.aborted)return;
+    await refreshDecks();
     cardStatus.textContent=personal.length+' private words in your native French learner record.';
     showPersonal();
   };
   cardFilter.addEventListener('input',showPersonal);
+  deckFilter.addEventListener('change',()=>{
+    deletingDeck=false;deleteDeck.textContent='Delete deck';selected.clear();showPersonal();refreshDeckControls();
+  });
+  choose.addEventListener('click',()=>{
+    const visible=visibleCards();
+    const all=visible.length>0&&visible.every(row=>selected.has(row.id));
+    for(const row of visible)if(all)selected.delete(row.id);else selected.add(row.id);
+    showPersonal();selectionStatus.textContent=selected.size+' selected';
+  });
+  createDeck.addEventListener('click',()=>void deckMutation('create'));
+  renameDeck.addEventListener('click',()=>void deckMutation('rename'));
+  deleteDeck.addEventListener('click',()=>void deckMutation('delete'));
+  add.addEventListener('click',()=>void deckMutation('add'));
+  remove.addEventListener('click',()=>void deckMutation('remove'));
+  studyDeck.addEventListener('click',()=>{
+    const deck=activeDeck();if(!deck||studyDeck.disabled)return;
+    const owned=new Set(personal.map(row=>row.id));
+    const ids=deck.noteIds.filter(id=>owned.has(id)).slice(0,100);
+    if(!ids.length){selectionStatus.textContent='This deck has no available personal words.';return;}
+    studyDeck.disabled=true;
+    void (async()=>{
+      try{
+        const answer=await createSelectedVocabularySession(ids);
+        if(signal.aborted)return;
+        if(answer.kind==='empty'){selectionStatus.textContent='No due or eligible new cards in this deck today.';return;}
+        navigate('review');
+      }catch(error){selectionStatus.textContent='Unable to start this deck session.';console.error(error);}
+      finally{studyDeck.disabled=false;}
+    })();
+  });
   cancelEdit.addEventListener('click',reset);
   cardForm.addEventListener('submit',event=>{
     event.preventDefault();
