@@ -54,6 +54,7 @@ test('U48 native Listen allows written fallback without fabricated listening evi
  await expect(page.getByRole('button',{name:'Play model'})).toBeVisible({timeout:45_000});
  await expect(page.getByRole('button',{name:'Play model'})).toBeDisabled();
  await expect(page.getByRole('button',{name:'Slow model'})).toBeDisabled();
+ await page.getByRole('button',{name:'Spoken transfer'}).click();
  await expect(page.getByRole('button',{name:'Reveal target'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Retry'})).toBeVisible();
 });
