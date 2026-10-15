@@ -1,0 +1,29 @@
+name: French F1 focused learner qualification
+on:
+  push:
+    branches:
+      - fix/unified-u47-typescript-release-blockers
+    paths:
+      - 'app/src/core/unified/u7-listening.ts'
+      - 'app/src/routes/u7-listening-panel.ts'
+      - 'scripts/test-vnext-u46.mts'
+      - '.github/workflows/ecosystem-f1.yml'
+permissions:
+  contents: read
+jobs:
+  french-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install existing TS/Vite dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Original A1 listening and changed-context source tests
+        run: npm run test:vnext:u46
+      - name: Typecheck original learner routes
+        run: npm run typecheck:vnext
+      - name: Build original vNext app
+        run: npm run build:vnext

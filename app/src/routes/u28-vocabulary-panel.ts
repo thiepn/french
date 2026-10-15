@@ -34,6 +34,7 @@ function contextLine(host:HTMLElement,original:string,caption:string){
 export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:OriginalVocabularyJourneyOptions):void{
  const entry=getOriginalCatalogEntry(id),words=originalVocabularyForUnit(id);
  if(!entry||!words.length)return;
+ const availableEntry=entry;
  const wrapper=el('section','','u28-vocabulary');
  wrapper.setAttribute('aria-label','Original source-qualified vocabulary journey');
  const disclosure=el('details','','u28-disclosure');
@@ -266,7 +267,7 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
    if(phase===value){b.classList.add('is-current');b.setAttribute('aria-current','step');}
    tabs.append(b);
   }
-  status.textContent='Expression '+item.order+'/'+words.length+' · '+entry.level+
+  status.textContent='Expression '+item.order+'/'+words.length+' · '+availableEntry.level+
    ' · '+keyedMatches.size+' authored keys matched in this page visit (not a native score).';
   if(phase==='discover')renderDiscover(item);
   else if(phase==='retrieve')renderRetrieve(item);

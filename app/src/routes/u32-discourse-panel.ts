@@ -39,8 +39,9 @@ const TYPE:Readonly<Record<U32Witness['kind'],string>>={
 export function appendOriginalDiscourseJourney(
  host:HTMLElement,lessonId:string,options:Options
 ):()=>void{
- const source=originalU32Discourse(lessonId);
- if(!source)return()=>{};
+ const foundSource=originalU32Discourse(lessonId);
+ if(!foundSource)return()=>{};
+ const source=foundSource;
  const root=el('section','','u32-discourse');
  root.setAttribute('aria-label','Advanced original French discourse and multi-context transfer');
  root.dataset.hasPrivateDraft='false';
@@ -155,7 +156,7 @@ export function appendOriginalDiscourseJourney(
   const docs=source.witnesses.filter(w=>w.kind==='document');
   const readings=source.witnesses.filter(w=>w.kind==='reading');
   const dialogue=source.witnesses.filter(w=>w.kind==='dialogue');
-  const choices:readonly [string,U32Witness,U32Witness][]=[];
+  const choices:[string,U32Witness,U32Witness][]=[];
   const candidates:[string,U32Witness,U32Witness][]=[];
   if(docs.length>=2)candidates.push(['Two independently attributed written records',docs[0],docs[1]]);
   if(readings.length&&dialogue.length)candidates.push(['Connected written reading versus original dialogue turn',readings[0],dialogue[0]]);

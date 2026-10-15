@@ -1,4 +1,17 @@
 import { test,expect } from '@playwright/test';
+/**
+ * U25 deliberately moved legacy U1–U5 reference/practice below the original
+ * 244-lesson Course, in a closed disclosure that mounts U2 lazily on opening.
+ * Exercise the real visible path, not hidden DOM or a forced open attribute.
+ */
+async function openSupplementaryCourse(page){
+ await page.goto('/#course');
+ const more=page.locator('[data-u25-supplementary]');
+ await expect(more.locator('summary')).toBeVisible();
+ await more.locator('summary').click();
+ await expect(more).toHaveAttribute('open','');
+}
+
 
 async function readActiveSession(page){
   return page.evaluate(async()=>new Promise((resolve,reject)=>{
@@ -218,7 +231,7 @@ test('B7 original source mission keyboard launch and reload resume on actual bro
 
 
 test('U1 60-session course exposes rights-gated source references and local preflight',async({page})=>{
-  await page.goto('/#course');
+  await openSupplementaryCourse(page);
   await expect(page.getByRole('heading',{name:'Course',exact:true})).toBeVisible();
   await expect(page.locator('.unified-session')).toHaveCount(60);
   await page.getByLabel('Select course session').selectOption('60');
@@ -238,7 +251,7 @@ test('U1 60-session course exposes rights-gated source references and local pref
 });
 
 test('U1 lazy Grammar guides check recall without entering native progress',async({page})=>{
-  await page.goto('/#course');
+  await openSupplementaryCourse(page);
   await page.getByRole('button',{name:'Open Grammar'}).click();
   await expect(page).toHaveURL(/#grammar$/);
   await expect(page.getByRole('heading',{name:'Grammar',exact:true})).toBeVisible();
@@ -249,13 +262,13 @@ test('U1 lazy Grammar guides check recall without entering native progress',asyn
   await page.locator('[data-level]').selectOption('A2');
   await expect(page.locator('[data-guide]')).toHaveCount(2);
   await expect(page.locator('[data-lesson]')).toContainText('Original U1 guide');
-  await page.getByRole('button',{name:'Browse 60-session course'}).click();
+  await page.getByRole('button',{name:'Open original Course'}).click();
   await expect(page).toHaveURL(/#course$/);
 });
 
 
 test('U2 original course makes contextual dialogues, recalls and next lessons accessible',async({page})=>{
-  await page.goto('/#course');
+  await openSupplementaryCourse(page);
   const studio=page.locator('[data-u2-studio]');
   await expect(studio.getByRole('heading',{name:'Original guided lessons'})).toBeVisible();
   await expect(studio.locator('[data-u2-id]')).toHaveCount(20); // U2's 12 preserved + 8 original U3 lessons
@@ -280,6 +293,7 @@ test('U2 original course makes contextual dialogues, recalls and next lessons ac
   await expect(challenge.getByRole('status')).toContainText('Correct');
   await page.locator('[data-u2-grammar]').getByRole('button',{name:'What happened yesterday'}).click();
   await expect(page).toHaveURL(/#course$/);
+  await page.locator('[data-u25-supplementary] > summary').click();
   await expect(page.locator('.u2-lesson-heading')).toContainText('What happened yesterday');
 });
 
@@ -307,7 +321,7 @@ test('U2 lexical mapping requires explicit evidence and exports non-authoritativ
 
 
 test('U3 guided prerequisites, themed path, writing prompts and original grammar navigation',async({page})=>{
-  await page.goto('/#course');
+  await openSupplementaryCourse(page);
   const studio=page.locator('[data-u2-studio]');
   await expect(studio.getByRole('heading',{name:'Original guided lessons'})).toBeVisible();
   await expect(studio.locator('[data-u2-id]')).toHaveCount(20);
@@ -365,7 +379,7 @@ test('U3 exported lexical review reload is strictly inspected then only kept as 
 
 
 test('U4 guided journey navigation, targeted error repair and keyboard passage',async({page})=>{
- await page.goto('/#course');
+ await openSupplementaryCourse(page);
  const studio=page.locator('[data-u2-studio]');
  const journey=studio.locator('.u4-journeys');
  await expect(journey.getByRole('heading',{name:'Guided journeys'})).toBeVisible();
@@ -395,7 +409,7 @@ test('U4 guided journey navigation, targeted error repair and keyboard passage',
  await expect(studio.locator('[data-u2-id="cafe"]')).toBeFocused();
 });
 test('U4 optional checkpoint explicit export and replay are local, bounded and deny forged claims',async({page})=>{
- await page.goto('/#course');
+ await openSupplementaryCourse(page);
  const studio=page.locator('[data-u2-studio]');
  const journey=studio.locator('.u4-journeys');
  await expect(journey).toBeVisible();
@@ -428,7 +442,7 @@ test('U4 optional checkpoint explicit export and replay are local, bounded and d
 
 
 test('U5 integrated original reading, speaking and writing missions adapt recommendations',async({page})=>{
- await page.goto('/#course');
+ await openSupplementaryCourse(page);
  const panel=page.locator('.u5-workspace');
  await expect(panel.getByRole('heading',{name:'Integrated practice mission'})).toBeVisible();
  await expect(panel.locator('[data-mission-step]')).toHaveCount(4);
@@ -463,7 +477,7 @@ test('U5 integrated original reading, speaking and writing missions adapt recomm
 });
 
 test('U5 explicit mission handoff replays self-ratings only and blocks forged claims',async({page})=>{
- await page.goto('/#course');
+ await openSupplementaryCourse(page);
  const panel=page.locator('.u5-workspace');
  await expect(panel.locator('[data-mission-stage]')).toContainText('Read an order');
  await panel.getByRole('combobox',{name:'Reading response'}).selectOption('un thé');
