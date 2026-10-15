@@ -72,3 +72,71 @@ test('U49 original corpus word opens native selected-word review without making 
  const state=await ownState(page);
  expect(Object.keys(state.content?.userCards??{}).filter(id=>id.startsWith('user:vnext:'))).toHaveLength(0);
 });
+
+test('U49 deck ownership, filtering, renaming and deletion never erase cards or study history',async({page})=>{
+ await page.goto('/#words');
+ const form=page.locator('[data-card-form]');
+ await expect(form).toBeVisible({timeout:45_000});
+ await form.locator('[name="fr"]').fill('le jardin');
+ await form.locator('[name="en"]').fill('garden');
+ await form.getByRole('button',{name:'Save my word'}).click();
+ await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+ const before=await ownState(page);
+ const ids=Object.keys(before.content.userCards).filter(id=>id.startsWith('user:vnext:'));
+ expect(ids).toHaveLength(1);
+ await page.locator('[data-deck-title]').fill('Daily French');
+ await page.locator('[data-deck-create]').click();
+ await expect(page.locator('[data-deck-filter]')).toHaveValue(/deck:vnext:/);
+ const deckId=await page.locator('[data-deck-filter]').inputValue();
+ await page.reload();
+ await expect(page.locator('[data-deck-filter] option[value="'+deckId+'"]')).toHaveCount(1,{timeout:45_000});
+ const state=await ownState(page);
+ expect(state.content.customDecks[deckId].title).toBe('Daily French');
+ expect(state.content.customDecks[deckId].noteIds).toEqual([]);
+ await page.locator('[data-deck-filter]').selectOption(deckId);
+ await page.locator('[data-deck-title]').fill('Everyday life');
+ await page.locator('[data-deck-rename]').click();
+ await expect(page.locator('[data-deck-filter] option[value="'+deckId+'"]')).toContainText('Everyday life');
+ await page.locator('[data-deck-delete]').click();
+ await expect(page.locator('[data-deck-delete]')).toHaveText('Confirm delete deck');
+ await page.locator('[data-deck-delete]').click();
+ await expect(page.locator('[data-deck-filter] option[value="'+deckId+'"]')).toHaveCount(0);
+ const after=await ownState(page);
+ expect(after.content.customDecks[deckId]).toBeUndefined();
+ expect(after.content.userCards[ids[0]].fr).toBe('le jardin');
+ expect(after.srs.some(row=>row.noteId===ids[0])).toBe(true);
+});
+
+test('U49 bulk selection adds and removes owned words from native deck without changing SRS',async({page})=>{
+ await page.goto('/#words');
+ const form=page.locator('[data-card-form]');
+ await expect(form).toBeVisible({timeout:45_000});
+ for(const [fr,en] of [['la chaise','chair'],['la porte','door']]){
+  await form.locator('[name="fr"]').fill(fr);
+  await form.locator('[name="en"]').fill(en);
+  await form.getByRole('button',{name:'Save my word'}).click();
+  await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+ }
+ const original=await ownState(page);
+ await page.locator('[data-deck-title]').fill('Things at home');
+ await page.locator('[data-deck-create]').click();
+ const id=await page.locator('[data-deck-filter]').inputValue();
+ await page.locator('[data-deck-filter]').selectOption('');
+ await page.locator('[data-card-select]').click();
+ await expect(page.locator('.word-select-checkbox:checked')).toHaveCount(2);
+ await page.locator('[data-deck-filter]').selectOption(id);
+ await page.locator('[data-card-add]').click();
+ await expect(page.locator('[data-card-list] .word-custom-item')).toHaveCount(2);
+ let persisted=await ownState(page);
+ expect(persisted.content.customDecks[id].noteIds).toHaveLength(2);
+ expect(persisted.srs.length).toBe(original.srs.length);
+ await page.reload();
+ await page.locator('[data-deck-filter]').selectOption(id);
+ await expect(page.locator('[data-card-list] .word-custom-item')).toHaveCount(2);
+ await page.locator('[data-card-select]').click(); // Select both in deck
+ await page.locator('[data-card-remove]').click();
+ await expect(page.locator('[data-card-list] .word-custom-item')).toHaveCount(0);
+ persisted=await ownState(page);
+ expect(persisted.content.customDecks[id].noteIds).toHaveLength(0);
+ expect(persisted.srs.length).toBe(original.srs.length);
+});

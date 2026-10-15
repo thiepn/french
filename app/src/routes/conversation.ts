@@ -14,6 +14,7 @@ import {P35_P18_MISSIONS} from '../core/conversation/source-parity';
 import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,cancelSourceGraph,
  sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
 import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
+import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
@@ -133,14 +134,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }
     originalDeck.append(item('h3','Source P18 missions'));
     const missionList=item('div','','source-graph-list');
-    for(const mission of P35_P18_MISSIONS){
-      const source=mission.scenarios.map(id=>getP35SourceScenario(id));
-      const locked=source.some(g=>!g||['A1','A2','B1'].indexOf(g.level)>['A1','A2','B1'].indexOf(originalSource.maxLevel));
-      const control=button(mission.title+' · 3 original source graphs','secondary-action compact-action');
+    for(const recommendation of rankSourceMissionContinuity(originalSource)){
+      const mission=P35_P18_MISSIONS.find(row=>row.id===recommendation.id)!;
+      const locked=recommendation.locked;
+      const control=button(mission.title+' · '+recommendation.practised+'/3 original graphs revisited','secondary-action compact-action');
       control.disabled=!canStartOriginal()||locked;
       control.onclick=()=>void commitOriginal(()=>startSourceMission(originalSource,mission.id,Date.now()),
         'Source mission started; response text is not retained.');
       missionList.append(control);
+      if(recommendation.missing.length&&!locked)
+        missionList.append(item('p','Source practice to revisit: '+recommendation.missing.join(' · ')+
+        '. Recommendation is based on original task history, not CEFR proficiency.','muted-copy'));
     }
     originalDeck.append(missionList,item('h3','Pinned original source scenarios'));
     const sourceList=item('div','','source-graph-list');

@@ -187,7 +187,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   };
   cardFilter.addEventListener('input',showPersonal);
   deckFilter.addEventListener('change',()=>{
-    deletingDeck=false;deleteDeck.textContent='Delete deck';selected.clear();showPersonal();refreshDeckControls();
+    deletingDeck=false;deleteDeck.textContent='Delete deck';showPersonal();refreshDeckControls();
   });
   choose.addEventListener('click',()=>{
     const visible=visibleCards();

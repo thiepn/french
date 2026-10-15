@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {emptySourceGraphState} from '../app/src/core/conversation/p35-runtime.ts';
+import {rankSourceMissionContinuity} from '../app/src/core/conversation/source-mission-continuity.ts';
+const state=emptySourceGraphState();
+const locked=rankSourceMissionContinuity(state);
+assert.equal(locked.length,5);
+assert.ok(locked.some(x=>x.locked),'The A1 ceiling must block higher-level original missions');
+assert.ok(locked.some(x=>!x.locked),'At least one A1 source mission is available');
+const expanded=rankSourceMissionContinuity({...state,maxLevel:'B1'});
+assert.ok(expanded.every(x=>!x.locked));
+assert.equal(expanded.reduce((count,x)=>count+x.practised,0),0);
+assert.ok(expanded.every(x=>x.missing.length===3));
+console.log('Source mission continuity advisories preserve original goals and readiness ceilings.');
