@@ -142,3 +142,83 @@ test('U49 bulk selection adds and removes owned words from native deck without c
  expect(persisted.content.customDecks[id].noteIds).toHaveLength(0);
  expect(persisted.srs.length).toBe(original.srs.length);
 });
+
+test('U49 source-proven P35 deck recovers original IDs, handles missing source, preserves legacy writes and learns canonical corpus',async({page})=>{
+ await page.goto('/#words');
+ const form=page.locator('[data-card-form]');
+ await expect(form).toBeVisible({timeout:45_000});
+ await form.locator('[name="fr"]').fill('la bibliothèque');
+ await form.locator('[name="en"]').fill('library');
+ await form.getByRole('button',{name:'Save my word'}).click();
+ await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+ const before=await ownState(page);
+ const personalId=Object.keys(before.content.userCards).find(x=>x.startsWith('user:vnext:'));
+ expect(personalId).toBeTruthy();
+ const legacyId='deck-p35-owned-fixture';
+ await page.evaluate(async({legacyId,personalId})=>{
+  await new Promise((resolve,reject)=>{
+   const request=indexedDB.open('thiepn-french-vnext');
+   request.onerror=()=>reject(request.error);
+   request.onsuccess=()=>{
+    const db=request.result,tx=db.transaction('user-content','readwrite');
+    const store=tx.objectStore('user-content'),req=store.get('content-v1');
+    req.onsuccess=()=>{const current=req.result;current.customDecks[legacyId]={
+      name:'P35 original list',cardIds:[personalId,'starter:bonjour'],createdAt:1700000000000
+    };store.put(current,'content-v1');};
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  });
+ },{legacyId,personalId});
+ await page.reload();
+ await expect(page.locator('[data-deck-filter] option[value="'+legacyId+'"]')).toContainText('Recovered P35',{timeout:45_000});
+ await page.locator('[data-deck-filter]').selectOption(legacyId);
+ await expect(page.locator('.word-custom-item')).toHaveCount(2);
+ await expect(page.locator('.word-custom-item').filter({hasText:'starter:bonjour'})).toContainText('Unresolved P35 ID');
+ await page.locator('[data-deck-title]').fill('Original travel');
+ await page.locator('[data-deck-rename]').click();
+ await expect(page.locator('[data-deck-filter] option[value="'+legacyId+'"]')).toContainText('Original travel');
+ const renamed=await ownState(page);
+ expect(renamed.content.customDecks[legacyId].name).toBe('Original travel');
+ expect(renamed.content.customDecks[legacyId].cardIds).toEqual([personalId,'starter:bonjour']);
+ expect(renamed.srs).toEqual(before.srs);
+ const search=page.getByRole('searchbox',{name:'Search French or English'});
+ await search.fill('bonjour');
+ await page.locator('.word-result').filter({hasText:/bonjour/i}).first().click();
+ await expect(page.locator('.word-detail h2')).toContainText(/bonjour/i);
+ await page.getByRole('button',{name:'Add this word to selected deck'}).click();
+ await expect(page.locator('.word-detail [role="status"]')).toContainText('Canonical word added');
+ const added=await ownState(page);
+ const ids=added.content.customDecks[legacyId].cardIds;
+ expect(ids.length).toBe(3);
+ expect(ids.slice(0,2)).toEqual([personalId,'starter:bonjour']);
+ expect(ids[2]).not.toBe('starter:bonjour');
+ await expect(page.locator('.word-custom-item')).toHaveCount(3);
+ await page.getByRole('button',{name:'Study this deck'}).click();
+ await expect(page).toHaveURL(/#review$/,{timeout:45_000});
+ await expect(page.locator('.review-card')).toBeVisible({timeout:30_000});
+});
+
+test('U49 bulk private theme edits existing cards without changing canonical SRS history',async({page})=>{
+ await page.goto('/#words');
+ const form=page.locator('[data-card-form]');
+ await expect(form).toBeVisible({timeout:45_000});
+ for(const [fr,en] of [['un arbre','tree'],['une fenêtre','window']]){
+  await form.locator('[name="fr"]').fill(fr);await form.locator('[name="en"]').fill(en);
+  await form.getByRole('button',{name:'Save my word'}).click();
+  await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+ }
+ const before=await ownState(page);
+ await page.getByRole('button',{name:'Choose visible cards'}).click();
+ await expect(page.locator('.word-select-checkbox:checked')).toHaveCount(2);
+ await page.locator('[data-bulk-theme]').fill('Home life');
+ await page.getByRole('button',{name:'Apply theme to selected'}).click();
+ await expect(page.locator('[data-selection-status]')).toContainText('2 private cards updated');
+ const after=await ownState(page);
+ expect(after.srs).toEqual(before.srs);
+ for(const id of Object.keys(after.content.userCards)){
+  expect(after.content.userCards[id].theme).toBe('Home life');
+ }
+ await page.reload();
+ await expect(page.locator('.word-custom-item').filter({hasText:'Home life'})).toHaveCount(2,{timeout:45_000});
+});
