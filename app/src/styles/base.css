@@ -29,3 +29,27 @@
 .open-world-reader .reader-layout{margin:1rem 0}
 .open-world-reader .reader-bar{margin-bottom:1.5rem}
 @media(max-width:600px){.open-world-controls{display:grid;grid-template-columns:1fr}.open-world-controls>*{min-height:44px}}
+
+/* U48 native voice controls: a missing or pending audio interface must never
+   resemble a working primary action. This changes presentation only. */
+.listen-contextual [data-play]:disabled,
+.speak-workspace [data-model]:disabled,
+.speak-workspace [data-slow]:disabled,
+.speak-workspace [data-record]:disabled{
+  opacity:.62;
+  cursor:not-allowed;
+  color:var(--muted);
+  background:var(--surface);
+  border:1px dashed var(--line);
+}
+.listen-contextual :is([data-play],[data-transcript],[data-answer],[data-form] button):focus-visible,
+.speak-workspace :is([data-model],[data-slow],[data-record],[data-recognize],[data-reveal],[data-self]):focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
+@media(max-width:540px){
+ .listen-contextual .audio-toolbar{display:flex;flex-wrap:wrap;gap:.6rem}
+ .listen-contextual .audio-toolbar>*{min-width:0}
+ .listen-contextual .support-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+ .listen-contextual .support-actions button{min-height:44px;flex:1 1 145px}
+}
