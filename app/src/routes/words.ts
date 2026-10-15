@@ -198,8 +198,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       label.append(name,meaning);
       const edit=document.createElement('button');edit.type='button';
       edit.className='secondary-action compact-action';edit.textContent='Edit';
-      edit.addEventListener('click',()=>fill(row));
-      if(row.kind!=='user')edit.hidden=true;
+      if(row.kind==='user')edit.addEventListener('click',()=>fill(row));
+      else edit.hidden=true;
       item.append(checkbox,label,edit);cardList.append(item);
     }
   };
