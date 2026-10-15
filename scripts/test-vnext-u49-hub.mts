@@ -3,11 +3,12 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {newRecognitionRecord} from '../app/src/core/learner/repository.ts';
+// Pure projection test: do not import IndexedDB repository into direct Node TS tests.
 import {prepareFrenchHubReadModelInput} from '../app/src/core/account/hub-read-model-input.ts';
 const t=new Date('2026-10-15T12:00:00').getTime();
-const due={...newRecognitionRecord('private-uid-xyz'),status:'learned' as const,dueAt:t-2000};
-const fresh=newRecognitionRecord('user:private-term');
+const base=(noteId:string)=>({noteId,status:'new' as const,suspended:false,buriedUntil:0,dueAt:0});
+const due={...base('private-uid-xyz'),status:'learned' as const,dueAt:t-2000};
+const fresh=base('user:private-term');
 const inactive={...due,noteId:'suspended-private',suspended:true};
 const event={t,eventId:'private-review-abc',noteId:'private-uid-xyz',practice:'review',
  recognizedText:'PRIVATE_SPOKEN_ANSWER',targetText:'PRIVATE_SOURCE_TEXT'} as any;
