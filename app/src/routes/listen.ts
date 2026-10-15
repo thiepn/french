@@ -3,6 +3,7 @@ import {createOriginalMaterialPanel} from './u22-source-panel';
 import { loadStableReadingPack,loadVocabularySearchIndex,loadVocabularyWord,type ReadingItem,type VocabularyWord,type VocabularySearchRow } from '../core/content/loader';
 import { readRecentReviewEvents,recordPracticeEvidence } from '../core/learner/repository';
 import { levenshtein } from '../core/learner/grader';
+import { createFrenchPlayback } from './french-playback';
 
 type Mode='comprehensible'|'intensive'|'targeted';
 type Prompt={word:VocabularyWord;text:string;translation:string;repair:boolean;readingId?:string;readingTitle?:string;segmentIndex?:number;theme?:string};
@@ -29,14 +30,6 @@ function cues(text:string):string[]{
   if(/\b(un|des|les|mes|tes|ses|nos|vos|aux|en)\s+[aeiouhàâéèêëîïôùûü]/i.test(text))result.push('possible liaison environment');
   return result;
 }
-function say(text:string,rate:number):boolean{
-  if(!('speechSynthesis' in window))return false;
-  window.speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';utterance.rate=rate;
-  const voices=window.speechSynthesis.getVoices().filter(voice=>voice.lang.toLowerCase().startsWith('fr'));
-  if(voices[0])utterance.voice=voices[0];
-  window.speechSynthesis.speak(utterance);return true;
-}
 function uniqueIds(values:string[],limit:number):string[]{
   const seen=new Set<string>(),result:string[]=[];
   for(const id of values){if(id&&!seen.has(id)){seen.add(id);result.push(id);if(result.length>=limit)break;}}
@@ -62,6 +55,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const host=main.querySelector<HTMLElement>('[data-practice]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!host||!status)return;
+  const speech=createFrenchPlayback(signal);
 
   const pairedReadingId=sessionStorage.getItem('french-vnext-listen-reading')??'';
   const returnReadingId=sessionStorage.getItem('french-vnext-listen-return-reading')??'';
@@ -99,10 +93,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   let mode:Mode=paired?'intensive':'comprehensible';
   let queue=[...prompts.slice(0,10)];
-  let cursor=0,correct=0,attempted=0,firstListen=0;
+  let cursor=0,correct=0,attempted=0,firstListen=0,textChecks=0;
   const modeButtons=[...main.querySelectorAll<HTMLButtonElement>('[data-mode]')];
   const reset=(next:Mode)=>{
-    mode=next;cursor=0;correct=0;attempted=0;firstListen=0;
+    speech.cancel();mode=next;cursor=0;correct=0;attempted=0;firstListen=0;textChecks=0;
     const targeted=[...prompts].sort((a,b)=>{
       const af=failures.indexOf(a.word.id),bf=failures.indexOf(b.word.id);
       return (af<0?999:af)-(bf<0?999:bf);
@@ -122,10 +116,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
 
   const render=()=>{
+    speech.cancel();
     if(cursor>=queue.length){
       host.innerHTML='<article class="practice-card practice-done"><h2>Listening set complete</h2><p data-summary></p><button class="secondary-action compact-action" data-restart type="button">Practice again</button></article>';
       const summary=host.querySelector<HTMLElement>('[data-summary]');
-      if(summary)summary.textContent=correct+' / '+attempted+' accurate · '+firstListen+' independent first-listen successes.';
+      if(summary)summary.textContent=correct+' / '+attempted+' accurate device-started attempts · '+firstListen+' independent first listens · '+textChecks+' written-only checks (not listening evidence).';
       host.querySelector<HTMLButtonElement>('[data-restart]')?.addEventListener('click',()=>reset(mode));
       status.textContent='Contextual listening evidence saved · scheduled SRS unchanged.';return;
     }
@@ -151,6 +146,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const feedback=host.querySelector<HTMLElement>('[data-feedback]');
     const next=host.querySelector<HTMLButtonElement>('[data-next]');
     const updateSupport=()=>{if(supportNode)supportNode.textContent=supportLabel(support);};
+    if(play&&!speech.supported){play.disabled=true;play.title='Device audio unavailable; reveal transcript for written-source practice.';}
     updateSupport();
     if(cuePanel){
       cuePanel.textContent=mode==='intensive'&&cueList.length?'Connected-speech cues: '+cueList.join(' · '):'';
@@ -158,8 +154,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }
     rateSelect?.addEventListener('change',()=>{rate=Number(rateSelect.value)||1;if(rate<1)support=Math.max(support,1);updateSupport();});
     play?.addEventListener('click',()=>{
-      plays++;if(plays>1)support=Math.max(support,1);if(rate<1)support=Math.max(support,1);updateSupport();
-      if(!say(prompt.text,rate))status.textContent='Speech synthesis is unavailable in this browser.';
+      if(rate<1)support=Math.max(support,1);
+      updateSupport();
+      const requested=speech.play(prompt.text,rate,()=>{
+        if(signal.aborted||!host.isConnected)return;
+        plays++;
+        if(plays>1)support=Math.max(support,1);
+        updateSupport();
+        status.textContent='Device speech started. Actual French voice accuracy and audibility are not verified.';
+      },()=>{if(!signal.aborted&&host.isConnected)status.textContent='Device playback failed. Reveal transcript for written-source practice.';});
+      status.textContent=requested?'Device speech requested. If playback does not start, reveal transcript.':
+        'Device synthesis unavailable. Reveal transcript for written-source practice.';
     });
     transcript?.addEventListener('click',()=>{
       transcriptUsed=true;support=Math.max(support,2);updateSupport();transcript.disabled=true;if(translation)translation.disabled=false;
@@ -171,16 +176,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     });
     form?.addEventListener('submit',async event=>{
       event.preventDefault();if(answered||!input||!feedback||!next)return;
-      if(plays===0){status.textContent='Play the audio at least once before checking.';return;}
+      if(plays===0&&!transcriptUsed){status.textContent='Device speech has not started. Play audio or reveal transcript for ungraded, written-only practice.';return;}
       answered=true;const result=gradeSentence(input.value,prompt.text);
-      attempted++;if(result.correct)correct++;
-      const independent=result.correct&&support===0&&plays===1&&rate>=1&&!transcriptUsed&&!translationUsed;
+      const textOnly=plays===0;
+      if(textOnly)textChecks++;
+      else{attempted++;if(result.correct)correct++;}
+      const independent=!textOnly&&result.correct&&support===0&&plays===1&&rate>=1&&!transcriptUsed&&!translationUsed;
       if(independent)firstListen++;
       input.disabled=true;for(const button of form.querySelectorAll<HTMLButtonElement>('button'))button.disabled=true;
-      feedback.hidden=false;feedback.textContent=result.label+' · '+prompt.text+' — '+prompt.translation;
+      feedback.hidden=false;feedback.textContent=(textOnly?'Written-source practice only (no audio started; no listening evidence). ':'')+result.label+' · '+prompt.text+' — '+prompt.translation;
       next.hidden=false;
       const row=index.rows.find(item=>item.id===prompt.word.id);
-      try{
+      if(textOnly){
+        status.textContent='Written-source response reviewed locally; no listening evidence or FSRS grade was saved.';
+      }else try{
         await recordPracticeEvidence({
           noteId:prompt.word.id,skill:'listening',direction:'audio-fr',
           typed:true,typedQuality:result.quality,correct:result.correct,responseMs:Math.round(performance.now()-started),
@@ -205,5 +214,5 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     ?prompts.length+' aligned segments ready from “'+paired.title+'” · no external audio request.'
     :prompts.length+' contextual prompts ready · no external audio request.';
   render();
-  signal.addEventListener('abort',()=>{if('speechSynthesis' in window)window.speechSynthesis.cancel();},{once:true});
+  signal.addEventListener('abort',()=>{speech.cancel();},{once:true});
 }
