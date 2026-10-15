@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {dirname,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {newRecognitionRecord} from '../app/src/core/learner/repository.ts';
+import {prepareFrenchHubReadModelInput} from '../app/src/core/account/hub-read-model-input.ts';
+const t=new Date('2026-10-15T12:00:00').getTime();
+const due={...newRecognitionRecord('private-uid-xyz'),status:'learned' as const,dueAt:t-2000};
+const fresh=newRecognitionRecord('user:private-term');
+const inactive={...due,noteId:'suspended-private',suspended:true};
+const event={t,eventId:'private-review-abc',noteId:'private-uid-xyz',practice:'review',
+ recognizedText:'PRIVATE_SPOKEN_ANSWER',targetText:'PRIVATE_SOURCE_TEXT'} as any;
+const learner={studyDays:[new Date(t).toLocaleDateString('sv-SE')],profile:{privateName:'secret'},featureState:{privateDocuments:'PRIVATE_FILE'}} as any;
+const input=prepareFrenchHubReadModelInput(learner,[due,fresh,inactive],[event],t);
+assert.equal(input.workload.dueItems,1);
+assert.equal(input.workload.newItems,1);
+assert.equal(input.proficiency.claim,'none');
+const result=JSON.stringify(input);
+for(const privateValue of ['private-uid-xyz','private-review-abc','PRIVATE_SPOKEN_ANSWER','PRIVATE_SOURCE_TEXT','PRIVATE_FILE','suspended-private','user:private-term'])
+ assert.ok(!result.includes(privateValue),'No private content or source IDs in P8 input');
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const ctx:any={};
+runInNewContext(readFileSync(resolve(root,'vendor/thiepn-languages-read-model.js'),'utf8'),ctx);
+const api=ctx.THIEPN_LANGUAGE_READ_MODEL;
+assert.ok(api);
+const model=api.createLanguageReadModel(input);
+assert.equal(api.validateLanguageReadModel(model).ok,true);
+assert.equal(model.source.authority,'consumer');
+console.log('P8 French candidate input passes original vendored read-model and privacy contract, no publication.');

@@ -56,7 +56,7 @@
     "test:vnext:u44": "node scripts/test-vnext-u44.mts",
     "test:vnext:u45": "node scripts/test-vnext-u45.mts",
     "test:vnext:u46": "node scripts/test-vnext-u46.mts",
-    "test:vnext:u49": "node scripts/test-vnext-u49.mts && node scripts/test-vnext-u49-decks.mts && node scripts/test-vnext-u49-missions.mts"
+    "test:vnext:u49": "node scripts/test-vnext-u49.mts && node scripts/test-vnext-u49-decks.mts && node scripts/test-vnext-u49-missions.mts && node scripts/test-vnext-u49-hub.mts"
   },
   "devDependencies": {
     "typescript": "7.0.2",
