@@ -56,7 +56,7 @@ test('U48 native Listen allows written fallback without fabricated listening evi
  await expect(page.getByRole('button',{name:'Slow model'})).toBeDisabled();
  await page.getByRole('button',{name:'Spoken transfer'}).click();
  await expect(page.getByRole('button',{name:'Reveal target'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Retry'})).toBeVisible();
+ await expect(page.locator('.speak-card [data-self="retry"]')).toBeVisible();
 });
 
 test('U48 late microphone permission resolves safely after original Speak mode switches',async({page})=>{
