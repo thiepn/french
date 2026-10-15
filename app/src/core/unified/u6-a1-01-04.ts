@@ -65,7 +65,7 @@ const authored:A1AuthoredSpec[]=[
  ['choice','Which is a feminine noun phrase?','une fenêtre','Fenêtre is feminine; use une.',['un cahier','une fenêtre','un sac'],'gender'],
  ['fill','J’ai ___ stylo bleu.','un','Stylo is masculine singular and is introduced with un.',[],'indefinite']
  ],
- writing:['Describe four objects on a desk using both definite and indefinite articles.', ['Use un/une to introduce at least two objects.','Use le/la/les to refer to familiar objects.','Check each noun’s gender and plural.'],'Il y a un livre et une table. Le livre est bleu. Les stylos sont sur la table.']
+ writing:['Describe four objects on a table using both definite and indefinite articles.', ['Use un/une to introduce at least two objects.','Use le/la/les to refer to familiar objects.','Check each noun’s gender and plural.'],'Il y a un livre, un cahier, un stylo et un sac sur la table. Le livre est bleu. Le cahier est rouge. Le stylo et le sac sont noirs.']
 },
 {
  id:'a1-04',title:'Having things and giving your age',goal:'Conjugate avoir and express possessions, age and common sensations.',grammarIds:['avoir'],

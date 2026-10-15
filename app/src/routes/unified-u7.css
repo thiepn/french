@@ -49,8 +49,8 @@
 @media(max-width:540px){.u44-original-sounds{padding:.6rem}.u44-original-sound-case .u7-audio-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.u44-original-sound-case .u7-audio-actions button{min-width:0}}
 
 /* U46: source-local A1 repair and independent speaking, inside the original Listen view. */
-.u46-original-speech-transfer{margin:1.1rem 0 0;border-top:2px solid var(--line);padding:1rem 0 .3rem}
-.u46-original-speech-transfer h5{font-size:1rem;line-height:1.5;margin:0 0 .5rem}
+.u46-original-speech-transfer{margin:1.1rem 0;padding:clamp(.85rem,2vw,1.2rem);border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface);border-radius:.2rem;min-width:0}
+.u46-original-speech-transfer :is(h4,h5){font-size:1.08rem;line-height:1.5;margin:0 0 .5rem}
 .u46-transfer-context,.u46-transfer-task,.u46-transfer-check{max-width:70ch;line-height:1.65;margin:.5rem 0}
 .u46-transfer-task{font-weight:550}
 .u46-transfer-source,.u46-listen-source-turn{max-width:70ch;overflow-wrap:anywhere;border-inline-start:2px solid var(--accent);padding:.55rem .7rem;margin:.6rem 0}

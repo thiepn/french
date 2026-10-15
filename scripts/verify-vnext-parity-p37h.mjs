@@ -213,7 +213,11 @@ need(longitudinalCss,'.longitudinal-row summary:focus-visible','D3 accessible tr
 
 for(const token of ['readAllSrsRecords','loadVocabularySearchIndex','Vocabulary coverage','Skill health','CEFR coverage','Review pressure','Weakest vocabulary','What to do next','productionGap','weaknessScore','retrievability'])need(progress,token,'Progress intelligence '+token);
 for(const token of ['replaceCanonicalLearnerSettings','dailyNewLimit','desiredRetention','strictArticles','Export backup','Restore selected backup','mandatory safety backup'])need(settings,token,'Settings '+token);
-for(const token of ['loadVocabularySearchIndex','Play audio','speechSynthesis','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true'])need(listen,token,'Listen evidence '+token);
+for(const token of ['loadVocabularySearchIndex','Play audio','createFrenchPlayback','Comprehensible','Intensive','Targeted','Reveal transcript','Reveal translation','firstListen','supportLevel','contextual-listening','cursor+4','repair:true','textOnly','if(textOnly)'])need(listen,token,'Listen evidence '+token);
+const speechAdapter=await readFile(new URL('../app/src/routes/french-playback.ts',import.meta.url),'utf8');
+for(const token of ['typeof synth?.speak','typeof window.SpeechSynthesisUtterance','utterance.onstart','utterance.onerror',"signal.addEventListener('abort',cancel"]){
+  need(speechAdapter,token,'U48 original device-speech lifecycle '+token);
+}
 for(const token of ['webkitSpeechRecognition','Pronunciation','Shadowing','Spoken recall','Spoken transfer','Start recording','MediaRecorder','getUserMedia','Check recognition','Manual judgment','never an accent','recordPracticeEvidence','spoken-','loadStableSentenceExercises','diagnoseSentence','Slow model','paceRatio','french-vnext-speak-reading'])need(speak,token,'Speak evidence '+token);
 for(const token of ['loadStableReadingPack','Extensive','Intensive','Targeted','Save discovery','Finish reading','reading-context','replaceCanonicalFeatureState','french-vnext-listen-reading','french-vnext-read-open'])need(read,token,'Reading workspace '+token);
 for(const token of ['READING_SOURCE_FILE','reading-stable-p35','thiepn-french-reading-pack-v1','stable-readings.json'])need(contentBuilder,token,'reading content '+token);

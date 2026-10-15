@@ -7,6 +7,7 @@ import {
 import { diagnoseSentence,type SentenceDiagnosis } from '../core/content/sentence-diagnosis';
 import { readRecentReviewEvents,recordPracticeEvidence } from '../core/learner/repository';
 import { levenshtein } from '../core/learner/grader';
+import { createFrenchPlayback } from './french-playback';
 
 type Mode='pronunciation'|'shadowing'|'recall'|'transfer';
 type RecognitionLike={
@@ -40,14 +41,6 @@ function diagnosisVerdict(result:SentenceDiagnosis):string{
 function recognitionCtor():RecognitionCtor|undefined{
   const w=window as unknown as {SpeechRecognition?:RecognitionCtor;webkitSpeechRecognition?:RecognitionCtor};
   return w.SpeechRecognition??w.webkitSpeechRecognition;
-}
-function say(text:string,rate=.85):boolean{
-  if(!('speechSynthesis' in window))return false;
-  window.speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';utterance.rate=rate;
-  const voices=window.speechSynthesis.getVoices().filter(voice=>voice.lang.toLowerCase().startsWith('fr'));
-  if(voices[0])utterance.voice=voices[0];
-  window.speechSynthesis.speak(utterance);return true;
 }
 function unique(values:string[],limit:number):string[]{
   const result:string[]=[],seen=new Set<string>();for(const value of values){if(value&&!seen.has(value)){seen.add(value);result.push(value);if(result.length>=limit)break;}}return result;
@@ -96,6 +89,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const host=main.querySelector<HTMLElement>('[data-practice]');
   const status=main.querySelector<HTMLElement>('[data-status]');
   if(!host||!status)return;
+  const speech=createFrenchPlayback(signal);
 
   const selectedNote=sessionStorage.getItem('french-vnext-speak-note')??'';
   const selectedReading=sessionStorage.getItem('french-vnext-speak-reading')??'';
@@ -144,7 +138,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const Recognition=recognitionCtor();
   let mode:Mode=paired?'shadowing':selectedNote?'pronunciation':'pronunciation',cursor=0;
   let recognition:RecognitionLike|null=null,stream:MediaStream|null=null,recorder:MediaRecorder|null=null,audioUrl='',chunks:Blob[]=[];
-  let recordingDurationMs=0,recordingStartedAt=0;
+  let recordingDurationMs=0,recordingStartedAt=0,renderGeneration=0;
   const revokeAudio=()=>{if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}};
   const stopStream=()=>{recorder=null;for(const track of stream?.getTracks()??[])track.stop();stream=null;chunks=[];};
   const discardRecording=()=>{try{if(recorder){recorder.ondataavailable=null;recorder.onstop=null;if(recorder.state==='recording')recorder.stop();}}catch{}revokeAudio();stopStream();recordingDurationMs=0;recordingStartedAt=0;};
@@ -163,6 +157,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   for(const button of modeButtons){button.classList.toggle('is-active',button.dataset.mode===mode);button.addEventListener('click',()=>setMode(button.dataset.mode as Mode));}
 
   const render=()=>{
+    const generation=++renderGeneration;
+    speech.cancel();
     recognition?.stop();recognition=null;discardRecording();
     const tasks=tasksFor(mode);
     if(!tasks.length){host.innerHTML='<article class="practice-card"><h2>No prompts for this mode yet</h2><p class="muted-copy">Choose another speaking mode.</p></article>';return;}
@@ -198,12 +194,22 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(mode==='pronunciation'&&reveal)reveal.hidden=true;
     if(cuePanel&&cues.length){cuePanel.hidden=false;cuePanel.textContent='Connected-speech cues: '+cues.join(' · ');}
     if(!Recognition&&recognize){recognize.disabled=true;recognize.textContent='Recognition unavailable';}
+    if(!speech.supported){
+      if(model){model.disabled=true;model.title='Device French TTS unavailable. Read the written target.';}
+      if(slow){slow.disabled=true;slow.title='Device French TTS unavailable. Read the written target.';}
+      if(feedback)feedback.textContent='Device speech unavailable. Use the original written target, manual practice and local recording if permitted.';
+    }
 
     const playModel=(rate:number)=>{
       lastModelRate=rate;
       if(mode==='recall'||mode==='transfer')support=Math.max(support,rate<.8?2:1);
       else if(rate<.8)support=Math.max(support,2);
-      if(!say(target,rate))status.textContent='Speech synthesis is unavailable in this browser.';
+      const requested=speech.play(target,rate,()=>{
+        if(!signal.aborted&&generation===renderGeneration)
+          status.textContent='Device French TTS started; acoustic accuracy is unverified.';
+      },()=>{if(!signal.aborted&&generation===renderGeneration)status.textContent='Device speech failed. Use the written target and manual judgment.';});
+      status.textContent=requested?'Device French TTS requested; actual playback is not yet confirmed.':
+        'Device TTS unavailable. Use the written target and manual judgment.';
     };
     model?.addEventListener('click',()=>playModel(.88));
     slow?.addEventListener('click',()=>playModel(.68));
@@ -216,12 +222,19 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       }
       try{
         discardRecording();
-        stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        if(signal.aborted){for(const track of stream.getTracks())track.stop();stream=null;return;}
+        record.disabled=true;
+        record.textContent='Requesting microphone…';
+        const requestedStream=await navigator.mediaDevices.getUserMedia({audio:true});
+        if(signal.aborted||generation!==renderGeneration||!host.isConnected){
+          for(const track of requestedStream.getTracks())track.stop();
+          return;
+        }
+        stream=requestedStream;record.disabled=false;
         chunks=[];recorder=new MediaRecorder(stream);recordingStartedAt=performance.now();
         const activeRecorder=recorder;
         recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
         recorder.onstop=()=>{
+          if(signal.aborted||generation!==renderGeneration)return;
           recordingDurationMs=Math.max(0,Math.round(performance.now()-recordingStartedAt));
           const mime=activeRecorder.mimeType||'audio/webm',blob=new Blob(chunks,{type:mime});
           revokeAudio();audioUrl=URL.createObjectURL(blob);
@@ -234,17 +247,21 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         recorder.start();record.textContent='Stop recording';
         if(feedback)feedback.textContent='Recording locally… nothing is uploaded or written to backup.';
       }catch(error){
-        stopStream();record.textContent='Start recording';
-        if(feedback)feedback.textContent='Microphone recording was unavailable or permission was denied.';
+        stopStream();
+        if(!signal.aborted&&generation===renderGeneration){record.disabled=false;record.textContent='Start recording';}
+        if(feedback&&generation===renderGeneration)feedback.textContent='Microphone recording was unavailable or permission was denied.';
         console.warn('French temporary recording unavailable',error);
       }
     });
 
     recognize?.addEventListener('click',()=>{
       if(!Recognition)return;
-      recognition?.stop();recognition=new Recognition();recognition.lang='fr-FR';recognition.interimResults=false;recognition.maxAlternatives=1;
+      recognition?.stop();
+      const activeRecognition=new Recognition();
+      recognition=activeRecognition;recognition.lang='fr-FR';recognition.interimResults=false;recognition.maxAlternatives=1;
       recognize.disabled=true;recognize.textContent='Listening…';
       recognition.onresult=(event:any)=>{
+        if(signal.aborted||generation!==renderGeneration||recognition!==activeRecognition)return;
         recognized=String(event?.results?.[0]?.[0]?.transcript??'').trim();
         recognitionConfidence=Number(event?.results?.[0]?.[0]?.confidence)||0;
         if(task.exercise){
@@ -256,9 +273,18 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
           if(feedback)feedback.textContent='Heard: “'+recognized+'” · '+recognitionVerdict(recognitionScore);
         }
       };
-      recognition.onerror=()=>{if(feedback)feedback.textContent='Recognition failed. This creates no learner failure; use playback and manual judgment.';};
-      recognition.onend=()=>{recognize.disabled=false;recognize.textContent='Check recognition';recognition=null;};
-      recognition.start();
+      recognition.onerror=()=>{if(!signal.aborted&&generation===renderGeneration&&recognition===activeRecognition&&feedback)
+        feedback.textContent='Recognition failed. This creates no learner failure; use playback and manual judgment.';};
+      recognition.onend=()=>{
+        if(signal.aborted||generation!==renderGeneration||recognition!==activeRecognition)return;
+        recognize.disabled=false;recognize.textContent='Check recognition';recognition=null;
+      };
+      try{activeRecognition.start();}
+      catch{
+        if(recognition===activeRecognition)recognition=null;
+        recognize.disabled=false;recognize.textContent='Check recognition';
+        if(feedback)feedback.textContent='Speech recognition could not start. Use recording and manual judgment.';
+      }
     });
 
     const saveAssessment=async(judgment:string)=>{
@@ -285,5 +311,5 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   status.textContent=(Recognition?'Recognition available · ':'Recognition optional/unavailable · ')+(paired?'context paired from '+paired.title+' · ':'')+'recordings remain temporary and local.';
   render();
-  signal.addEventListener('abort',()=>{recognition?.stop();discardRecording();if('speechSynthesis' in window)window.speechSynthesis.cancel();},{once:true});
+  signal.addEventListener('abort',()=>{recognition?.stop();discardRecording();speech.cancel();},{once:true});
 }

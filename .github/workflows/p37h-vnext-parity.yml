@@ -72,8 +72,8 @@ jobs:
         env:
           P37H_BASE_URL: http://127.0.0.1:4175
         run: npx playwright test --config tests/playwright.p37h.config.mjs --project="${{ matrix.project }}"
-      - name: Preserve failure evidence
-        if: failure()
+      - name: Preserve real browser screenshots and failure evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: french-p37h-${{ matrix.project }}-${{ github.sha }}

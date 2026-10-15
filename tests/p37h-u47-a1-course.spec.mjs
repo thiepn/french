@@ -17,7 +17,7 @@ test('U47 A1 source-grounded listening repairs, independent transfer, keyboard a
  const sounds=page.locator('.u44-original-sounds');
  await sounds.locator('summary').click();
  await expect(sounds.locator('.u44-original-sound-case')).toHaveCount(2);
- await expect(sounds.locator('.u46-original-speech-transfer')).toContainText('Try it in another situation');
+ await expect(page.locator('.u46-original-speech-transfer')).toContainText('Try it in another situation');
  const first=sounds.locator('.u44-original-sound-case').first();
  await expect(first.locator('.u44-sound-explanation')).toBeHidden();
  await first.getByRole('button',{name:'Show / hide French text and sound guidance'}).click();
