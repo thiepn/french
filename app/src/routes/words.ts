@@ -166,6 +166,30 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       if(word.ipa){const ipa=document.createElement('p');ipa.className='word-ipa';ipa.textContent=word.ipa;detail.append(ipa);}
       const meaning=document.createElement('p');meaning.className='word-meaning';meaning.textContent=word.meaning;detail.append(meaning);
       const meta=document.createElement('p');meta.className='word-meta';meta.textContent=[word.level,word.pos].filter(Boolean).join(' · ');detail.append(meta);
+      const study=document.createElement('button');
+      study.type='button';study.className='primary-action compact-action word-context-action';
+      study.textContent='Study this word';
+      const studyStatus=document.createElement('p');studyStatus.className='inline-status';studyStatus.setAttribute('role','status');
+      study.addEventListener('click',()=>{
+        if(study.disabled)return;
+        study.disabled=true;studyStatus.textContent='Checking your native review session…';
+        void (async()=>{
+          try{
+            const outcome=await createSelectedVocabularySession([String(word.id)]);
+            if(signal.aborted)return;
+            if(outcome.kind==='empty'){
+              studyStatus.textContent='This word has no due or new activity eligible under today’s limits.';
+              return;
+            }
+            navigate('review');
+          }catch(error){
+            if(!signal.aborted)studyStatus.textContent='Unable to open this native study session.';
+            console.error('Word-to-study handoff failed',error);
+          }finally{study.disabled=false;}
+        })();
+      });
+      detail.append(study,studyStatus);
+
       if(example?.text){
         const block=document.createElement('blockquote');block.className='word-example';
         const fr=document.createElement('p');fr.textContent=example.text;block.append(fr);
