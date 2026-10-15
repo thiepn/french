@@ -1,5 +1,5 @@
 import type {A1Unit} from '../core/unified/u6-a1-model';
-import {listeningDialogueText,originalA1SoundContrasts,originalA1ConversationTransfer} from '../core/unified/u7-listening';
+import {listeningDialogueText,originalA1SoundContrasts,originalA1ConversationTransfer,originalA1ConversationRepair} from '../core/unified/u7-listening';
 import {getOriginalMaterial} from '../core/unified/u23-registry';
 import {checkPracticeAnswer} from '../core/unified/u2-grammar';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -160,6 +160,18 @@ export function mountA1Listening(host:HTMLElement,unit:A1Unit,signal:AbortSignal
    });
    reveal.setAttribute('aria-expanded','false');
    practice.append(reveal,reflection);
+   const repair=originalA1ConversationRepair(unit.id);
+   if(repair){
+    const change=el('details',undefined,'u46-original-repair');
+    change.append(el('summary','A second interlocutor misunderstood you · repair the exchange'),
+      el('p',repair.misunderstanding,'u46-transfer-context'),
+      el('p',repair.responseTask,'u46-transfer-task'),
+      el('p','Listen to the original turn again or use its transcript. Then respond independently in French before opening the explanation. This is unscored speaking and listening practice.','u6-small'));
+    const evidence=el('details');
+    evidence.append(el('summary','Compare the intended meaning after speaking'),
+      el('p',repair.evidenceCheck,'u46-transfer-check'));
+    change.append(evidence);practice.append(change);
+   }
    section.append(practice);
   }
   host.append(section);

@@ -310,6 +310,40 @@ const A1_CONVERSATION_TRANSFERS:Readonly<Record<string,OriginalA1ConversationTra
  "a1-23":{"context":"At the post office, an employee says the price of a service too quickly for you to hear.","task":"Ask for slower repetition, say the amount you think was quoted and check it before paying.","check":"Deux euros is a cost, not evidence that two stamps were bought. A request to repeat is not comprehension.","relevantTurnIndex":4},
  "a1-24":{"context":"A late bus changes your plan, so you visit the bakery before finding a new connection.","task":"Ask about the next bus, request bread and water, then ask for the unquoted total price.","check":"Connect three polite service exchanges, but never fabricate an unknown departure or purchase amount.","relevantTurnIndex":4}
 });
+/** Twenty-four source-grounded repair turns: new changed-audience work, no new graded prompt IDs. */
+export interface OriginalA1ConversationRepair{
+ readonly misunderstanding:string;readonly responseTask:string;readonly evidenceCheck:string;
+}
+const A1_CONVERSATION_REPAIRS:Readonly<Record<string,OriginalA1ConversationRepair>>=Object.freeze({
+ "a1-01":{misunderstanding:"a1-01",responseTask:"The visitor repeats your friend's name as if it were your own.",evidenceCheck:"Correct the person's identity politely, then introduce yourself again with a greeting appropriate for someone you have just met."},
+ "a1-02":{misunderstanding:"a1-02",responseTask:"A classmate mistakes your friend's course for the subject you study.",evidenceCheck:"Contrast je and il/elle in a complete reply, then ask the classmate what their group is studying."},
+ "a1-03":{misunderstanding:"a1-03",responseTask:"Someone thinks you are offering your notebook when you were asking to borrow one.",evidenceCheck:"Correct who owns the notebook and ask for the article and object you really need."},
+ "a1-04":{misunderstanding:"a1-04",responseTask:"A guest interprets a question about age as a claim about your sibling.",evidenceCheck:"Clarify whose age is being discussed and ask again without inventing a number."},
+ "a1-05":{misunderstanding:"a1-05",responseTask:"Your partner confuses a group's available study time with your personal working hours.",evidenceCheck:"Repair the speaker and time distinction, then propose a time for confirmation."},
+ "a1-06":{misunderstanding:"a1-06",responseTask:"An employee replies about the admission fee although you asked which entrance is open.",evidenceCheck:"Restate the location question, then ask about the price as a separate unknown."},
+ "a1-07":{misunderstanding:"a1-07",responseTask:"Your friend interprets your refusal of coffee as a refusal of every drink.",evidenceCheck:"Correct what you do not want and politely name what you would like instead."},
+ "a1-08":{misunderstanding:"a1-08",responseTask:"A listener attributes the colour of one bicycle part to a different part.",evidenceCheck:"Identify both nouns and correct the adjective agreement before asking whether the listener understands."},
+ "a1-09":{misunderstanding:"a1-09",responseTask:"A tourist takes your left turn to mean the pharmacy is immediately on the left.",evidenceCheck:"Separate the direction to turn from the destination's relative position, and request confirmation."},
+ "a1-10":{misunderstanding:"a1-10",responseTask:"Your friend tells others the gallery meeting is confirmed although you only suggested it.",evidenceCheck:"State the proposed time and place, and ask for an explicit reply before confirming."},
+ "a1-11":{misunderstanding:"a1-11",responseTask:"Someone assumes you have already left because you described your morning routine.",evidenceCheck:"Distinguish a usual action from today's plan and clarify when you will actually leave."},
+ "a1-12":{misunderstanding:"a1-12",responseTask:"A friend hears your suggested Sunday activity as a promise to attend Saturday's concert.",evidenceCheck:"Decline the original invitation clearly, suggest Sunday and explicitly request confirmation."},
+ "a1-13":{misunderstanding:"a1-13",responseTask:"The server thinks you ordered soup even though you asked what other food is available.",evidenceCheck:"Correct the presumed order, ask what is actually available and only then place a polite request."},
+ "a1-14":{misunderstanding:"a1-14",responseTask:"A cashier applies the jacket's price to the bag without verifying the second item's tag.",evidenceCheck:"Ask for the bag's own price, contrast the items and check the intended payment method."},
+ "a1-15":{misunderstanding:"a1-15",responseTask:"The seller quotes a total before confirming your changed quantities.",evidenceCheck:"Restate the final counts and ask the seller to recalculate without announcing an invented total."},
+ "a1-16":{misunderstanding:"a1-16",responseTask:"The waiter interprets a meat-free request as proof that the daily special is vegetarian.",evidenceCheck:"Ask about actual ingredients and the table situation separately before ordering."},
+ "a1-17":{misunderstanding:"a1-17",responseTask:"Your friend treats a possible indoor visit as an already purchased reservation.",evidenceCheck:"Explain the weather change, propose an indoor alternative and ask whether anyone has booked it."},
+ "a1-18":{misunderstanding:"a1-18",responseTask:"A visitor announces an apartment has a balcony although you only asked about one.",evidenceCheck:"Correct the uncertainty, describe the known rooms and repeat the balcony and rent questions."},
+ "a1-19":{misunderstanding:"a1-19",responseTask:"Another passenger mistakes the route you are asking about for a confirmed transfer.",evidenceCheck:"Ask the agent for the connection and next departure again, and repeat only details actually supplied."},
+ "a1-20":{misunderstanding:"a1-20",responseTask:"The hotel employee thinks your reservation means the room is already ready.",evidenceCheck:"Separate the confirmed booking name from the room-readiness question and request a precise answer."},
+ "a1-21":{misunderstanding:"a1-21",responseTask:"Your flatmate misunderstands le as referring to the keys rather than the ticket.",evidenceCheck:"Name the object explicitly, distinguish singular from plural, and ask where each item was last seen."},
+ "a1-22":{misunderstanding:"a1-22",responseTask:"Your friend tells the group that Monday lunch is settled because you suggested it.",evidenceCheck:"Politely correct the status of Monday, preserve the refusal of Sunday, and ask for an answer."},
+ "a1-23":{misunderstanding:"a1-23",responseTask:"The clerk interprets your request to repeat a price as an agreement to pay it.",evidenceCheck:"Ask for the amount again, repeat what you heard tentatively and confirm before purchasing."},
+ "a1-24":{misunderstanding:"a1-24",responseTask:"Someone assumes you know the next bus time and total bakery price without a reply.",evidenceCheck:"Say which information is still unknown and make two separate polite follow-up questions."}
+});
+export function originalA1ConversationRepair(id:string):OriginalA1ConversationRepair|null{
+ return A1_CONVERSATION_REPAIRS[id]??null;
+}
+
 export function originalA1ConversationTransfer(id:string):OriginalA1ConversationTransfer|null{
  return A1_CONVERSATION_TRANSFERS[id]??null;
 }
@@ -319,6 +353,9 @@ export function validateOriginalA1ConversationTransfers():readonly string[]{
  for(let i=1;i<=24;i++){
   const id='a1-'+String(i).padStart(2,'0');
   const v=originalA1ConversationTransfer(id);
+  const repair=originalA1ConversationRepair(id);
+  if(!repair||repair.misunderstanding.length<55||repair.responseTask.length<75||repair.evidenceCheck.length<55)
+   issues.push(id+' independent misunderstanding repair incomplete');
   if(!v||v.context.length<60||v.task.length<65||v.check.length<75||
    !Number.isInteger(v.relevantTurnIndex)||v.relevantTurnIndex<0||v.relevantTurnIndex>4)
    issues.push(id+' source-owned speech situation incomplete');
