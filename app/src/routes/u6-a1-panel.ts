@@ -744,7 +744,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     understand:'Learn the original grammar and inspect its worked correction.',
     words:'Explore vocabulary in this source lesson; scheduled word reviews stay in native Review.',
     dialogue:'Read the original exchange first. Reveal English translations or explanatory notes only when needed.',
-    listen:'Use optional device TTS, then answer actual comprehension questions.',
+    listen:'Understand this original dialogue, repair answers using exact source turns, then try an independent speaking situation. Device TTS is optional; separate dictation practice is available below.',
     practice:'Answer the original questions independently before revealing the key.',
     write:'Compose a French response and compare it yourself with an authored example.'
    };
@@ -775,9 +775,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
        onNativeReview:()=>navigateSafely('review')
       });
      });
-     content.append(extra,button('Continue in native Listen →',()=>{
+     content.append(extra,button('Open separate dictation practice →',()=>{
       if(allowExit()&&handoffOriginalLesson('listen',current.id))navigate('listen');
-     },'primary-action compact-action'));
+     }));
      stopAudio=()=>{stopEarlier();stopOral();};
      break;
     }
