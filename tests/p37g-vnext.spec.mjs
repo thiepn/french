@@ -262,7 +262,7 @@ test('U1 lazy Grammar guides check recall without entering native progress',asyn
   await page.locator('[data-level]').selectOption('A2');
   await expect(page.locator('[data-guide]')).toHaveCount(2);
   await expect(page.locator('[data-lesson]')).toContainText('Original U1 guide');
-  await page.getByRole('button',{name:'Browse 60-session course'}).click();
+  await page.getByRole('button',{name:'Open original Course'}).click();
   await expect(page).toHaveURL(/#course$/);
 });
 
