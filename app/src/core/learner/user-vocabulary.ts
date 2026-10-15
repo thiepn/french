@@ -80,7 +80,7 @@ export async function mutatePrivateDeck(
    request.onsuccess=()=>{
     try{
      const state=content(request.result);
-     const known=listNativePrivateDecks(state.customDecks);
+     const known=listNativePrivateDecks(state);
      const current=known.find(row=>row.id===newId);
      if(mode!=='create'&&!current)throw Error('DECK_NOT_FOUND');
      if(mode==='create'&&known.length>=100)throw Error('DECK_LIMIT');
