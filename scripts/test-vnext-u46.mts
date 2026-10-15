@@ -20,6 +20,11 @@ for(let i=1;i<=24;i++){
  const repair=originalA1ConversationRepair(id);
  assert.ok(repair?.misunderstanding&&repair?.responseTask&&repair?.evidenceCheck,
   'Source-linked second-context repair '+id);
+ assert.ok(repair.misunderstanding.length>=55,'Real misunderstanding rather than a lesson ID '+id);
+ assert.ok(repair.responseTask.length>=75,'Independent repair exercise, not a title '+id);
+ assert.notEqual(repair.misunderstanding,id);
+ assert.equal(repair.evidenceCheck,originalA1ConversationTransfer(id)?.check,
+  'Repair inherits actual original-source self-check');
 }
 assert.deepEqual(validateOriginalA1ConversationTransfers(),[],'24 learner-owned conversation contexts');
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244,'Original 94 lessons + 150 scenarios unchanged');
