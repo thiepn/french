@@ -34,3 +34,13 @@ const sourceEvidence=sourceFunctionPracticePlan({...state,evidence:[{id:'fixture
   retries:0,independent:true,confidence:1,credit:.5,practiceOnly:true}]});
 assert.equal(sourceEvidence.find(x=>x.id==='request')?.independentRuleMatches,1);
 assert.equal(sourceEvidence.find(x=>x.id==='specify')?.independentRuleMatches,0);
+
+import {createSourceHandoff,matchSourceHandoff} from '../app/src/core/conversation/source-transfer.ts';
+const activeForTransfer={...replay,active:{...replay.active!,support:2 as const}};
+const instruction=createSourceHandoff(activeForTransfer,'write',1700000000500);
+assert.equal(instruction.kind,'write');
+assert.ok(matchSourceHandoff(JSON.stringify(instruction),activeForTransfer,'write',1700000000510));
+assert.equal(matchSourceHandoff(JSON.stringify(instruction),activeForTransfer,'listen',1700000000510),null);
+assert.equal(matchSourceHandoff(JSON.stringify(instruction),activeForTransfer,'write',1700001000000),null);
+assert.equal(matchSourceHandoff(JSON.stringify(instruction),{...activeForTransfer,active:{...activeForTransfer.active!,nodeId:'size'}},'write',1700000000510),null);
+assert.throws(()=>createSourceHandoff(replay,'write',1700000000500),/SUPPORT/);
