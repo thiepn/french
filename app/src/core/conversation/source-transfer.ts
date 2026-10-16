@@ -20,3 +20,26 @@ export function matchSourceHandoff(raw:string|null,state:SourceGraphState,kind:S
  if(kind==='write'?active.support!==2:active.support<1)return null;
  return{kind,scenarioId:active.scenarioId,nodeId:active.nodeId,at:row.at};
 }
+
+/** Explicit, short-lived same-tab draft transfer. The text is never placed in
+ * sessionStorage/IDB/history, published to Hub, or promoted as independent credit.
+ * A reload destroys it. A different graph/node/run cannot consume it.
+ */
+let pendingDraft:{runId:string;scenarioId:string;nodeId:string;text:string;at:number}|null=null;
+export function offerSourceDraft(state:SourceGraphState,text:string,now:number):boolean{
+ const active=state.active,trimmed=text.trim();
+ if(!active||active.support!==2||!trimmed||trimmed.length>650||
+   !Number.isFinite(now)){pendingDraft=null;return false;}
+ pendingDraft={runId:active.runId,scenarioId:active.scenarioId,nodeId:active.nodeId,
+  text:trimmed,at:now};
+ return true;
+}
+export function consumeSourceDraft(state:SourceGraphState,now:number):string|null{
+ const saved=pendingDraft;pendingDraft=null;
+ const active=state.active;
+ if(!saved||!active||active.support!==2||!Number.isFinite(now)||
+    now-saved.at>5*60*1000||saved.at-now>1000||
+    saved.runId!==active.runId||saved.scenarioId!==active.scenarioId||
+    saved.nodeId!==active.nodeId)return null;
+ return saved.text;
+}
