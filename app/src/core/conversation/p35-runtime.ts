@@ -24,9 +24,13 @@ export interface SourceActive{
 export interface SourceMission{
  id:string;index:number;startedAt:number;completed:SourceRun[];
 }
+export interface SourceMissionRun{
+ id:string;missionId:string;at:number;stages:SourceRun[];practiceOnly:true;
+}
 export interface SourceGraphState{
  schema:typeof SOURCE_GRAPH_SCHEMA;active:SourceActive|null;mission:SourceMission|null;
  history:SourceRun[];evidence:SourceEvidence[];maxLevel:'A1'|'A2'|'B1';
+ missionHistory?:SourceMissionRun[];
 }
 const originalFns=new Set<string>(P35_P20_FUNCTIONS.map(x=>x.id));
 const missionById=(id:string)=>P35_P18_MISSIONS.find(x=>x.id===id);
@@ -35,7 +39,7 @@ const clamp=(v:number)=>Math.max(0,Math.min(1,v));
 const obj=(input:unknown):Record<string,unknown>=>input&&typeof input==='object'&&!Array.isArray(input)?input as Record<string,unknown>:{};
 const validLevel=(x:unknown):x is SourceGraphState['maxLevel']=>x==='A1'||x==='A2'||x==='B1';
 export function emptySourceGraphState():SourceGraphState{
- return{schema:SOURCE_GRAPH_SCHEMA,active:null,mission:null,history:[],evidence:[],maxLevel:'A1'};
+ return{schema:SOURCE_GRAPH_SCHEMA,active:null,mission:null,history:[],evidence:[],maxLevel:'A1',missionHistory:[]};
 }
 export function foldSource(value:string):string{
  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr')
@@ -203,7 +207,10 @@ export function respondSourceGraph(state:SourceGraphState,response:string,now:nu
      active:newActive(withHistory,nextGraph,now)},outcome:'finished',
      message:'Source scenario finished. Next mission task '+(index+1)+' of 3; practice evidence only.'};
   }
-  return{state:{...state,active:null,mission:null,history,evidence:newEvidence},
+  const missionRun:SourceMissionRun={id:active.runId+':mission',missionId:mission.id,
+    at:now,stages:completed,practiceOnly:true};
+  const missionHistory=[missionRun,...(state.missionHistory??[])].slice(0,20);
+  return{state:{...state,active:null,mission:null,history,evidence:newEvidence,missionHistory},
    outcome:'finished',message:'Source mission finished: '+completed.filter(x=>x.complete).length+
    '/3 task goals observed. No original P35 release or CEFR certification.'};
  }
@@ -269,6 +276,20 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
    completed:m.completed.map((v:unknown)=>history.find(r=>r.id===obj(v).id))
      .filter((v:SourceRun|undefined):v is SourceRun=>Boolean(v)).slice(0,2)};
  }
- return{schema:SOURCE_GRAPH_SCHEMA,active,mission,history,evidence,
+ const missionHistory:SourceMissionRun[]=[];
+ for(const raw of Array.isArray(input.missionHistory)?input.missionHistory.slice(0,20):[]){
+   const row=obj(raw),definition=typeof row.missionId==='string'&&missionById(row.missionId);
+   if(!definition||row.practiceOnly!==true||typeof row.id!=='string'||!row.id||
+     !Number.isFinite(row.at)||!Array.isArray(row.stages)||row.stages.length!==3)continue;
+   const stages=row.stages.map((rawStage:unknown,index:number)=>{
+     const stage=obj(rawStage);
+     return typeof stage.id==='string'&&history.find(h=>
+       h.id===stage.id&&h.scenarioId===definition.scenarios[index]);
+   });
+   if(stages.some(x=>!x))continue;
+   missionHistory.push({id:row.id.slice(0,130),missionId:definition.id,
+     at:Number(row.at),stages:stages as SourceRun[],practiceOnly:true});
+ }
+ return{schema:SOURCE_GRAPH_SCHEMA,active,mission,history,evidence,missionHistory,
   maxLevel:validLevel(input.maxLevel)?input.maxLevel:'A1'};
 }
