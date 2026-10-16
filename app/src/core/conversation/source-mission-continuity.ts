@@ -13,9 +13,12 @@ export function rankSourceMissionContinuity(state:SourceGraphState){
    .filter(h=>h.scenarioId===scene?.id&&h.complete));
   const practised=finished.filter(rows=>rows.length>0).length;
   const weakest=scenes.flatMap((scene,i)=>finished[i].length?[]:[scene?.title??mission.scenarios[i]]);
+  const completedMissions=(state.missionHistory??[]).filter(row=>row.missionId===mission.id);
   const average=finished.flatMap(x=>x).reduce((sum,run)=>sum+run.meanCredit,0)/
    Math.max(1,finished.flatMap(x=>x).length);
   return {id:mission.id,title:mission.title,locked,practised,total:3,missing:weakest,
+    completedMissionRuns:completedMissions.length,
+    latestMissionGoals:completedMissions[0]?.stages.filter(stage=>stage.complete).length??null,
     observedMeanCredit:Math.round(average*100)/100,
     isActive:state.mission?.id===mission.id};
  }).sort((a,b)=>Number(b.isActive)-Number(a.isActive)||Number(a.locked)-Number(b.locked)||

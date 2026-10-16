@@ -170,7 +170,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       control.onclick=()=>void commitOriginal(()=>startSourceMission(originalSource,mission.id,Date.now()),
         'Source mission started; response text is not retained.');
       missionList.append(control);
-      if(!locked)missionList.append(item('p',recommendation.practised+' of 3 original scenario goals previously revisited.','muted-copy'));
+      if(!locked)missionList.append(item('p',recommendation.practised+
+        ' of 3 original scenario goals previously revisited · '+
+        recommendation.completedMissionRuns+' complete three-stage source mission runs'+
+        (recommendation.latestMissionGoals!==null?
+          ' · last run '+recommendation.latestMissionGoals+'/3 source objectives observed':'')+
+        '. Original practice only.','muted-copy'));
       if(recommendation.missing.length&&!locked)
         missionList.append(item('p','Source practice to revisit: '+recommendation.missing.join(' · ')+
         '. Recommendation is based on original task history, not CEFR proficiency.','muted-copy'));
@@ -188,7 +193,30 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         }
       }
     }
-    originalDeck.append(missionList,item('h3','Pinned original source scenarios'));
+    originalDeck.append(missionList);
+    if(originalSource.missionHistory?.length){
+      const prior=item('section','','source-mission-history');
+      prior.append(item('h3','Completed original P35 mission practice'));
+      for(const result of originalSource.missionHistory.slice(0,8)){
+        const mission=P35_P18_MISSIONS.find(m=>m.id===result.missionId);
+        if(!mission)continue;
+        const row=item('div','','source-mission-history-row');
+        row.append(item('p',mission.title+' · '+result.stages.filter(s=>s.complete).length+
+          '/3 source objectives observed · '+result.stages.reduce((sum,s)=>sum+s.independent,0)+
+          ' independent rule-matched turns · practice only.'));
+        const repeat=button('Replay original mission · '+mission.title,'secondary-action compact-action');
+        repeat.disabled=!canStartOriginal()||mission.scenarios.some(id=>{
+          const graph=getP35SourceScenario(id);
+          return !graph||graph.level==='B2'||
+            ['A1','A2','B1'].indexOf(graph.level)>['A1','A2','B1'].indexOf(originalSource.maxLevel);
+        });
+        repeat.onclick=()=>void commitOriginal(()=>startSourceMission(originalSource,mission.id,Date.now()),
+          'Replay of original mission started; previous source runs remain intact.');
+        row.append(repeat);prior.append(row);
+      }
+      originalDeck.append(prior);
+    }
+    originalDeck.append(item('h3','Pinned original source scenarios'));
     const sourceList=item('div','','source-graph-list');
     for(const graph of P35_SOURCE_SCENARIOS){
       const control=button(graph.level+' · '+graph.title+
