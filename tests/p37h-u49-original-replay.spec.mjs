@@ -125,3 +125,33 @@ test('U49 source mission checkpoint names its three source stages and focused re
  await page.reload();
  await expect(page.locator('.source-mission-steps li')).toHaveCount(3);
 });
+
+test('U49 completed original P18 mission summaries survive reload and can replay the original three stages',async({page})=>{
+ await page.goto('/#conversation');
+ await expect(page.getByRole('heading',{name:'Conversation',exact:true})).toBeVisible({timeout:45_000});
+ await page.evaluate(async()=>{
+  const ids=['bakery-buy','cafe-order','opening-hours'];
+  const stages=ids.map((scenarioId,i)=>({id:'p35-stage-'+i,scenarioId,at:1700000000000+i,
+   variant:0,turns:3,independent:1,assisted:2,repairs:0,manual:2,meanCredit:.1,complete:true}));
+  await new Promise((resolve,reject)=>{
+   const req=indexedDB.open('thiepn-french-vnext');
+   req.onerror=()=>reject(req.error);
+   req.onsuccess=()=>{const db=req.result,tx=db.transaction('meta','readwrite');
+    tx.objectStore('meta').put({schema:'thiepn-french-p35-source-graph-v1',
+      active:null,mission:null,maxLevel:'A1',history:stages,evidence:[],
+      missionHistory:[{id:'p35-source-mission-1',missionId:'daily-errands',at:1700000000003,
+        stages,practiceOnly:true}]},'p35-source-graph-v1');
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  });
+ });
+ await page.reload();
+ await expect(page.locator('.source-mission-history')).toContainText('Morning in town',{timeout:45_000});
+ await expect(page.locator('.source-mission-history')).toContainText('3/3 source objectives observed');
+ await page.getByRole('button',{name:'Replay original mission · Morning in town'}).click();
+ await expect(page.locator('.source-mission-steps li')).toHaveCount(3);
+ await expect(page.locator('.source-graph-deck')).toContainText('Buy something at a bakery');
+ await page.reload();
+ await expect(page.locator('.source-mission-steps li')).toHaveCount(3);
+});

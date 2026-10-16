@@ -44,3 +44,26 @@ assert.equal(matchSourceHandoff(JSON.stringify(instruction),activeForTransfer,'l
 assert.equal(matchSourceHandoff(JSON.stringify(instruction),activeForTransfer,'write',1700001000000),null);
 assert.equal(matchSourceHandoff(JSON.stringify(instruction),{...activeForTransfer,active:{...activeForTransfer.active!,nodeId:'size'}},'write',1700000000510),null);
 assert.throws(()=>createSourceHandoff(replay,'write',1700000000500),/SUPPORT/);
+
+import {respondSourceGraph,safeSourceGraphState,startSourceMission} from '../app/src/core/conversation/p35-runtime.ts';
+import {getP35SourceScenario} from '../app/src/core/conversation/p35-graphs.ts';
+let missionState=startSourceMission(emptySourceGraphState(),'daily-errands',1700000000000);
+for(let step=0;step<25&&missionState.active;step++){
+ const graph=getP35SourceScenario(missionState.active.scenarioId)!;
+ const node=graph.nodes[missionState.active.nodeId]!;
+ const sample=node.rules?.[0]?.sample??'Oui, merci.';
+ const turn=respondSourceGraph(missionState,sample,1700000000100+step);
+ missionState=turn.outcome==='uncertain'?respondSourceGraph(missionState,sample,1700000000100+step,true).state:turn.state;
+}
+assert.equal(missionState.active,null,'Three pinned original P35 stages must finish');
+assert.equal(missionState.missionHistory?.length,1);
+assert.deepEqual(missionState.missionHistory?.[0]?.stages.map(x=>x.scenarioId),
+ ['bakery-buy','cafe-order','opening-hours']);
+assert.equal(missionState.missionHistory?.[0]?.practiceOnly,true);
+const missionRestored=safeSourceGraphState(missionState);
+assert.equal(missionRestored.missionHistory?.length,1);
+assert.equal(missionRestored.history.length,3);
+assert.equal(missionRestored.missionHistory?.[0]?.stages.length,3);
+assert.equal(safeSourceGraphState({...missionState,missionHistory:[{...missionState.missionHistory![0],
+ stages:missionState.missionHistory![0].stages.slice().reverse()}]}).missionHistory?.length,0,
+ 'Original stage provenance cannot be re-ordered or faked');
