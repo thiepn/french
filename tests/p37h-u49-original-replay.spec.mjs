@@ -155,3 +155,88 @@ test('U49 completed original P18 mission summaries survive reload and can replay
  await page.reload();
  await expect(page.locator('.source-mission-steps li')).toHaveCount(3);
 });
+
+test('U49 source repair workbench opens original authored function and hint phrase options never auto-grade',async({page})=>{
+ await page.goto('/#conversation');
+ const workbench=page.locator('.source-practice-review');
+ await expect(workbench.getByRole('heading',{name:'Next original-source practice'})).toBeVisible({timeout:45_000});
+ const source=workbench.getByRole('button',{name:/Practise source function/}).first();
+ await expect(source).toBeEnabled();
+ await source.click();
+ await expect(page.locator('.source-graph-deck')).toContainText('Original P35 deterministic source');
+ await page.getByRole('button',{name:'Show source example'}).click();
+ const authored=page.locator('.source-authored-options');
+ await expect(authored).toContainText('Original P35 authored examples');
+ const use=authored.getByRole('button',{name:/Use authored phrase/}).first();
+ await expect(use).toBeVisible();
+ const text=(await use.textContent()).replace('Use authored phrase · ','').trim();
+ await use.click();
+ await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toHaveValue(text);
+ const before=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction('meta','readonly'),q=tx.objectStore('meta').get('p35-source-graph-v1');
+   tx.oncomplete=()=>{db.close();resolve(q.result);};};
+ }));
+ expect(before.active.support).toBe(2);
+ expect(before.active.turns).toBe(0);
+ await page.reload();
+ await expect(page.locator('.source-authored-options')).toContainText('Original P35 authored examples');
+});
+
+test('U49 ambiguous original source reply is preserved for iterative independent repair',async({page})=>{
+ await page.goto('/#conversation');
+ await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+ const reply=page.getByRole('textbox',{name:'Reply to original source graph in French'});
+ await reply.fill('Je voudrais visiter le musée demain');
+ await page.getByRole('button',{name:'Check source rule'}).click();
+ await expect(reply).toHaveValue('Je voudrais visiter le musée demain');
+ await expect(page.locator('[role=status].conversation-feedback')).toContainText('did not confidently match');
+ await page.getByRole('button',{name:'Ask for clarification'}).click();
+ await expect(reply).toHaveValue('Je voudrais visiter le musée demain');
+ await expect(page.locator('.source-graph-deck')).toContainText('Original P35 deterministic source');
+});
+
+test('U49 explicit source writing draft returns in memory and cannot grant independent evidence',async({page})=>{
+ await page.goto('/#conversation');
+ await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+ const before=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction(['srs','activity'],'readonly');
+   const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+   tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};};
+ }));
+ await page.getByRole('button',{name:'Rehearse this reply in Write'}).click();
+ await expect(page).toHaveURL(/#write$/);
+ const panel=page.getByRole('region',{name:'Original P35 dialogue · draft your reply'});
+ const original='Bonjour, je voudrais un café, s’il vous plaît.';
+ await panel.getByRole('textbox',{name:'Draft reply to original dialogue'}).fill(original);
+ await panel.getByRole('button',{name:'Use this draft in original conversation (supported)'}).click();
+ await expect(page).toHaveURL(/#conversation$/);
+ await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toHaveValue(original);
+ await expect(page.locator('.conversation-assistance')).toContainText('Explicit Write draft restored');
+ const stored=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction(['meta','srs','activity'],'readonly');
+   const m=tx.objectStore('meta').get('p35-source-graph-v1'),
+    s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+   tx.oncomplete=()=>{db.close();resolve({source:m.result,srs:s.result,activity:a.result});};};
+ }));
+ expect(stored.source.active.nodeId).toBe('order');
+ expect(stored.source.active.support).toBe(2);
+ expect(stored.source.active.turns).toBe(0);
+ expect([stored.srs,stored.activity]).toEqual(before);
+ expect(JSON.stringify(stored.source)).not.toContain(original);
+ await page.getByRole('button',{name:'Check source rule'}).click();
+ const after=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction(['meta','srs','activity'],'readonly');
+   const m=tx.objectStore('meta').get('p35-source-graph-v1'),
+    s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+   tx.oncomplete=()=>{db.close();resolve({source:m.result,srs:s.result,activity:a.result});};};
+ }));
+ expect(after.source.active.nodeId).toBe('size');
+ expect(after.source.active.independent).toBe(0);
+ expect([after.srs,after.activity]).toEqual(before);
+ await page.reload();
+ await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toHaveValue('');
+});

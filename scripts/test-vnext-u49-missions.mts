@@ -67,3 +67,34 @@ assert.equal(missionRestored.missionHistory?.[0]?.stages.length,3);
 assert.equal(safeSourceGraphState({...missionState,missionHistory:[{...missionState.missionHistory![0],
  stages:missionState.missionHistory![0].stages.slice().reverse()}]}).missionHistory?.length,0,
  'Original stage provenance cannot be re-ordered or faked');
+
+import {originalRepairTargets,originalMissionRepairStages} from '../app/src/core/conversation/source-practice-review.ts';
+const untried=originalRepairTargets(state,20);
+assert.ok(untried.length>3);
+assert.ok(untried.every(row=>row.reason==='unseen'&&row.independent===0));
+assert.ok(untried.every(row=>Boolean(getP35SourceScenario(row.scenarioId)?.nodes[row.nodeId]?.rules?.some(rule=>rule.func===row.functionId))));
+assert.ok(originalMissionRepairStages(state).some(x=>x.eligible&&x.target?.scenarioId==='bakery-buy'));
+const supportedSource={...state,evidence:[
+ {id:'p35-evidence-support',scenarioId:'cafe-order',nodeId:'order',functionId:'request',
+  variant:0,at:1700000000000,accepted:true,repair:false,manual:false,support:2,
+  retries:0,independent:false,confidence:.71,credit:0,practiceOnly:true as const}
+]};
+const recommended=originalRepairTargets(supportedSource,20);
+assert.equal(recommended[0]?.scenarioId,'cafe-order');
+assert.equal(recommended[0]?.functionId,'request');
+assert.equal(recommended[0]?.reason,'supported');
+assert.equal(recommended[0]?.independent,0);
+const survived=safeSourceGraphState({...missionRestored});
+assert.deepEqual(originalMissionRepairStages(survived).find(x=>x.missionId==='daily-errands')?.stages
+ .map(x=>x.scenarioId).sort(),['bakery-buy','cafe-order','opening-hours']);
+console.log('P35 source-evidence remediation chooses real graph nodes and stage practice only.');
+import {offerSourceDraft,consumeSourceDraft} from '../app/src/core/conversation/source-transfer.ts';
+assert.equal(offerSourceDraft(replay,'Bonjour, un café',1700000000000),false,'No unsupported draft transfer');
+assert.equal(offerSourceDraft(activeForTransfer,'Bonjour, un café',1700000000000),true);
+assert.equal(consumeSourceDraft({...activeForTransfer,active:{...activeForTransfer.active!,nodeId:'size'}},1700000000100),null);
+assert.equal(offerSourceDraft(activeForTransfer,'Bonjour, un thé',1700000000100),true);
+assert.equal(consumeSourceDraft(activeForTransfer,1700000000200),'Bonjour, un thé');
+assert.equal(consumeSourceDraft(activeForTransfer,1700000000200),null,'One-time in-memory draft');
+assert.equal(offerSourceDraft(activeForTransfer,'Bonjour, un thé',1700000000300),true);
+assert.equal(consumeSourceDraft(activeForTransfer,1700000600000),null,'Draft TTL expires');
+console.log('P35 explicit Write-to-Conversation ephemeral draft cannot create native grade or persistent text.');
