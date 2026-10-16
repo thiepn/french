@@ -89,3 +89,14 @@
 .source-running{font-weight:650;overflow-wrap:anywhere}
 @media(max-width:680px){.source-graph-deck{padding:.8rem}.source-graph-list{grid-template-columns:minmax(0,1fr)}}
 @media(pointer:coarse){.source-graph-deck button,.source-graph-deck select{min-height:44px;touch-action:manipulation}}
+
+/* P35 source evidence workbench: visible reasoning without proficiency scoring. */
+.source-practice-review{border-top:1px solid var(--line);padding-top:.8rem;display:grid;gap:.6rem;min-width:0}
+.source-practice-review h3,.source-practice-review p{margin:.15rem 0}
+.source-repair-row{padding:.65rem 0;border-bottom:1px solid var(--line);display:grid;gap:.4rem;min-width:0}
+.source-repair-row button{justify-self:start;max-width:100%;white-space:normal;text-align:left}
+.source-mission-repair summary{font-weight:600;cursor:pointer;padding:.7rem 0}
+.source-authored-options{display:flex;flex-wrap:wrap;gap:.5rem;min-width:0;margin:.7rem 0}
+.source-authored-options p{flex-basis:100%;line-height:1.5}
+.source-authored-options button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere;min-height:44px}
+@media(max-width:550px){.source-authored-options{display:grid;grid-template-columns:minmax(0,1fr)}.source-repair-row button{width:100%}}
