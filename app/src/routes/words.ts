@@ -36,6 +36,28 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const results=main.querySelector<HTMLElement>('[data-results]');
   const detail=main.querySelector<HTMLElement>('[data-detail]');
   if(!input||!status||!results||!detail)return;
+  const corpusToolbar=document.createElement('div');
+  corpusToolbar.className='word-corpus-toolbar';
+  corpusToolbar.innerHTML=`<label>Corpus level<select data-corpus-level><option value="">All levels</option></select></label>
+    <label>Word type<select data-corpus-pos><option value="">All word types</option></select></label>
+    <label>Sort results<select data-corpus-sort><option value="source">Original corpus order</option><option value="az">French A–Z</option></select></label>
+    <button type="button" class="secondary-action compact-action" data-corpus-select>Choose visible source words</button>
+    <button type="button" class="secondary-action compact-action" data-corpus-add>Add selected to my deck</button>
+    <button type="button" class="secondary-action compact-action" data-corpus-study>Study selected words</button>
+    <p data-corpus-selection role="status" class="inline-status">0 source words selected · source IDs and grading preserved.</p>`;
+  main.querySelector('.search-field')?.after(corpusToolbar);
+  const levelFilter=corpusToolbar.querySelector<HTMLSelectElement>('[data-corpus-level]')!;
+  const posFilter=corpusToolbar.querySelector<HTMLSelectElement>('[data-corpus-pos]')!;
+  const sortFilter=corpusToolbar.querySelector<HTMLSelectElement>('[data-corpus-sort]')!;
+  const corpusSelect=corpusToolbar.querySelector<HTMLButtonElement>('[data-corpus-select]')!;
+  const corpusAdd=corpusToolbar.querySelector<HTMLButtonElement>('[data-corpus-add]')!;
+  const corpusStudy=corpusToolbar.querySelector<HTMLButtonElement>('[data-corpus-study]')!;
+  const corpusStatus=corpusToolbar.querySelector<HTMLElement>('[data-corpus-selection]')!;
+  const corpusSelected=new Set<string>();
+  let shownCorpus:VocabularySearchRow[]=[];
+  const updateCorpusStatus=()=>{corpusStatus.textContent=corpusSelected.size+
+    ' source words selected · original IDs, source packs and SRS grades are unchanged.';};
+
 
   // Private custom cards reuse canonical user-content and native Study; no parallel deck store.
   const custom=document.createElement('section');
@@ -319,7 +341,14 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   // Canonical source IDs for recovered P35 deck visibility, never rewritten on display.
   try{
     const index=await loadVocabularySearchIndex(signal);
-    if(!signal.aborted){catalogById=new Map(index.rows.map(row=>[row.id,row]));showPersonal();}
+    if(!signal.aborted){
+      catalogById=new Map(index.rows.map(row=>[row.id,row]));
+      for(const [select,key] of [[levelFilter,'level'],[posFilter,'pos']] as const){
+        const values=[...new Set(index.rows.map(row=>row[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+        for(const v of values)select.add(new Option(v,v));
+      }
+      showPersonal();
+    }
   }catch(error){console.warn('Original corpus mapping unavailable; recovered deck IDs are retained.',error);}
   if(!descriptor){status.textContent='Vocabulary search index is unavailable.';return;}
 
@@ -408,8 +437,23 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   const render=(rows:VocabularySearchRow[])=>{
     results.replaceChildren();
-    if(!rows.length){const empty=document.createElement('p');empty.className='inline-status';empty.textContent='No matching vocabulary.';results.append(empty);return;}
-    for(const row of rows){
+    const filtered=rows.filter(row=>(!levelFilter.value||row.level===levelFilter.value)&&
+      (!posFilter.value||row.pos===posFilter.value));
+    if(sortFilter.value==='az')filtered.sort((a,b)=>a.word.localeCompare(b.word,'fr')||a.id.localeCompare(b.id));
+    shownCorpus=filtered;
+    if(!filtered.length){
+      const empty=document.createElement('p');empty.className='inline-status';
+      empty.textContent='No matching vocabulary within the selected source filters.';results.append(empty);return;
+    }
+    for(const row of filtered){
+      const line=document.createElement('div');line.className='word-corpus-result-row';
+      const checkbox=document.createElement('input');checkbox.type='checkbox';
+      checkbox.className='word-corpus-checkbox';checkbox.setAttribute('aria-label','Select source '+row.word);
+      checkbox.checked=corpusSelected.has(row.id);
+      checkbox.addEventListener('change',()=>{
+        if(checkbox.checked)corpusSelected.add(row.id);else corpusSelected.delete(row.id);
+        updateCorpusStatus();
+      });
       const button=document.createElement('button');button.type='button';button.className='word-result';
       const top=document.createElement('span');top.className='word-result-top';
       const term=document.createElement('strong');term.textContent=row.word;top.append(term);
@@ -417,10 +461,49 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const meaning=document.createElement('span');meaning.className='word-result-meaning';meaning.textContent=row.meaning;
       button.append(top,meaning);
       button.addEventListener('click',()=>void openDetail(row));
-      results.append(button);
+      line.append(checkbox,button);results.append(line);
     }
   };
 
+  const refreshCorpus=()=>search(input.value);
+  for(const filter of [levelFilter,posFilter,sortFilter])filter.addEventListener('change',refreshCorpus);
+  corpusSelect.addEventListener('click',()=>{
+    const all=shownCorpus.length>0&&shownCorpus.every(row=>corpusSelected.has(row.id));
+    for(const row of shownCorpus)if(all)corpusSelected.delete(row.id);else corpusSelected.add(row.id);
+    render(shownCorpus);updateCorpusStatus();
+  });
+  const selectedCanonicalIds=()=>{
+    const known=new Set(catalogById.keys());
+    return [...corpusSelected].filter(id=>known.has(id)).slice(0,120);
+  };
+  corpusAdd.addEventListener('click',()=>{
+    const deck=activeDeck(),ids=selectedCanonicalIds();
+    if(!deck||!ids.length){corpusStatus.textContent='Choose a deck and select source words before adding.';return;}
+    corpusAdd.disabled=true;
+    void(async()=>{
+      try{
+        await mutatePrivateDeck('add',deck.id,undefined,ids);
+        await refreshDecks();showPersonal();
+        corpusSelected.clear();updateCorpusStatus();
+        corpusStatus.textContent=ids.length+' verified corpus IDs added to '+deck.title+'.';
+      }catch(error){corpusStatus.textContent='Source word membership not saved.';console.error(error);}
+      finally{corpusAdd.disabled=false;}
+    })();
+  });
+  corpusStudy.addEventListener('click',()=>{
+    const ids=selectedCanonicalIds();
+    if(!ids.length){corpusStatus.textContent='Select original corpus words to study first.';return;}
+    corpusStudy.disabled=true;
+    void(async()=>{
+      try{
+        const session=await createSelectedVocabularySession(ids);
+        if(signal.aborted)return;
+        if(session.kind==='empty'){corpusStatus.textContent='No selected words due or eligible under your current limits.';return;}
+        navigate('review');
+      }catch(error){corpusStatus.textContent='Native source-word Review unavailable.';console.error(error);}
+      finally{corpusStudy.disabled=false;}
+    })();
+  });
   const fallback=async(query:string,id:number)=>{
     fallbackRows??=(await loadVocabularySearchIndex(signal)).rows;
     if(id!==requestId||signal.aborted)return;
