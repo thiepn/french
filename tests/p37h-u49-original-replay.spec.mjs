@@ -33,3 +33,17 @@ test('U49 original source graph replay rotates authored partner variant and pres
  await page.getByRole('button',{name:'Resume original dialogue'}).click();
  await expect(page.locator('.source-graph-deck')).toContainText('wording variant 2/3');
 });
+
+test('U49 original P20 function practice opens a pinned source graph and never upgrades CEFR',async({page})=>{
+ await page.goto('/#conversation');
+ await expect(page.getByRole('heading',{name:'Conversation',exact:true})).toBeVisible({timeout:45_000});
+ const original=page.locator('.conversation-source-parity');
+ await original.locator('summary').click();
+ const button=original.getByRole('button',{name:/Practise original Request in/}).first();
+ await expect(button).toBeEnabled();
+ await button.click();
+ await expect(page.locator('.source-graph-deck')).toContainText('Original P35 deterministic source',{timeout:30_000});
+ await expect(page.locator('.source-graph-deck')).toContainText('No automatic SRS, CEFR or true oral fluency award');
+ await page.reload();
+ await expect(page.locator('.source-graph-deck')).toContainText('Original P35 deterministic source');
+});

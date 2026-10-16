@@ -174,7 +174,8 @@ test('U49 source-proven P35 deck recovers original IDs, handles missing source, 
  await expect(page.locator('[data-deck-filter] option[value="'+legacyId+'"]')).toContainText('Recovered P35',{timeout:45_000});
  await page.locator('[data-deck-filter]').selectOption(legacyId);
  await expect(page.locator('.word-custom-item')).toHaveCount(2);
- await expect(page.locator('.word-custom-item').filter({hasText:'starter:bonjour'})).toContainText('Unresolved P35 ID');
+ await expect(page.locator('.word-custom-item').filter({hasText:'starter:bonjour'}))
+   .toContainText(/Resolved P35 starter ID|Unresolved P35 ID|Ambiguous P35 ID/);
  await page.locator('[data-deck-title]').fill('Original travel');
  await page.locator('[data-deck-rename]').click();
  await expect(page.locator('[data-deck-filter] option[value="'+legacyId+'"]')).toContainText('Original travel');
@@ -221,4 +222,80 @@ test('U49 bulk private theme edits existing cards without changing canonical SRS
  }
  await page.reload();
  await expect(page.locator('.word-custom-item').filter({hasText:'Home life'})).toHaveCount(2,{timeout:45_000});
+});
+
+test('U49 uniquely resolves source-qualified P35 starter alias without rewriting the legacy stored deck',async({page})=>{
+ await page.goto('/#words');
+ await expect(page.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+ const fixture=await page.evaluate(async()=>{
+  const manifest=await fetch('/content/manifest.json').then(r=>r.json());
+  const index=await fetch(manifest.indexes.vocabulary.path).then(r=>r.json());
+  const count=new Map();
+  for(const row of index.rows){
+   const key=row.word.trim().toLocaleLowerCase('fr');
+   count.set(key,(count.get(key)??0)+1);
+  }
+  const word=index.rows.find(row=>count.get(row.word.trim().toLocaleLowerCase('fr'))===1&&
+   /^[a-zA-ZÀ-ÿ-]{3,40}$/.test(row.word)&&!row.id.startsWith('starter:'));
+  if(!word)throw Error('No unique source row in pinned vocabulary search index');
+  return{storedId:'starter:'+word.word,id:word.id,word:word.word};
+ });
+ const deckId='deck-p35-starter-fixture';
+ await page.evaluate(async({deckId,storedId})=>{
+  await new Promise((resolve,reject)=>{
+   const req=indexedDB.open('thiepn-french-vnext');
+   req.onerror=()=>reject(req.error);
+   req.onsuccess=()=>{
+    const db=req.result,tx=db.transaction('user-content','readwrite');
+    const content=tx.objectStore('user-content'),read=content.get('content-v1');
+    read.onsuccess=()=>{const row=read.result;row.customDecks[deckId]={
+      name:'P35 exact starter match',cardIds:[storedId],createdAt:1700000000000
+    };content.put(row,'content-v1');};
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  });
+ },{deckId,storedId:fixture.storedId});
+ await page.reload();
+ await expect(page.locator('[data-deck-filter] option[value="'+deckId+'"]')).toHaveCount(1,{timeout:45_000});
+ await page.locator('[data-deck-filter]').selectOption(deckId);
+ await expect(page.locator('.word-custom-item')).toContainText('Resolved P35 starter ID');
+ await expect(page.locator('.word-custom-item')).toContainText(fixture.storedId);
+ const persisted=await ownState(page);
+ expect(persisted.content.customDecks[deckId].cardIds).toEqual([fixture.storedId]);
+ await page.getByRole('button',{name:'Study this deck'}).click();
+ await expect(page).toHaveURL(/#review$/,{timeout:45_000});
+ const reviewed=await ownState(page);
+ expect(reviewed.content.customDecks[deckId].cardIds).toEqual([fixture.storedId]);
+ expect(reviewed.srs.some(row=>row.noteId===fixture.id)).toBe(true);
+ expect(reviewed.srs.some(row=>row.noteId===fixture.storedId)).toBe(false);
+});
+
+test('U49 original corpus filters and multi-select add original words to a native deck',async({page})=>{
+ await page.goto('/#words');
+ await expect(page.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+ const search=page.getByRole('searchbox',{name:'Search French or English'});
+ await search.fill('bonjour');
+ const result=page.locator('.word-corpus-result-row').filter({hasText:/bonjour/i}).first();
+ await expect(result).toBeVisible({timeout:45_000});
+ const level=await result.locator('.word-result-top span').textContent();
+ if(level)await page.locator('[data-corpus-level]').selectOption(level);
+ await expect(result).toBeVisible();
+ await result.locator('.word-corpus-checkbox').check();
+ await expect(page.locator('[data-corpus-selection]')).toContainText('1 source words selected');
+ await page.locator('[data-deck-title]').fill('Corpus selection');
+ await page.getByRole('button',{name:'Create deck'}).click();
+ await expect(page.locator('[data-deck-filter]')).toHaveValue(/^deck:vnext:/);
+ const id=await page.locator('[data-deck-filter]').inputValue();
+ await page.getByRole('button',{name:'Add selected to my deck'}).click();
+ await expect(page.locator('[data-corpus-selection]')).toContainText('verified corpus IDs added');
+ const saved=await ownState(page);
+ expect(saved.content.customDecks[id].noteIds).toHaveLength(1);
+ const noteId=saved.content.customDecks[id].noteIds[0];
+ expect(noteId).not.toMatch(/^starter:/);
+ await page.locator('[data-deck-filter]').selectOption(id);
+ await expect(page.locator('.word-custom-item')).toContainText(/bonjour/i);
+ await page.reload();
+ await page.locator('[data-deck-filter]').selectOption(id);
+ await expect(page.locator('.word-custom-item')).toContainText(/bonjour/i);
 });
