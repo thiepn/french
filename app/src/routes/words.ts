@@ -7,6 +7,7 @@ import {listUserVocabulary,saveUserVocabularyCard,listPrivateDecks,mutatePrivate
 import type {PrivateDeckView} from '../core/learner/private-decks';
 import {createSelectedVocabularySession} from '../core/learner/study-session-builder';
 import type {UserVocabularyCard} from '../core/learner/user-vocabulary-model';
+import {resolveP35StarterLinks,eligibleSourceDeckIds} from '../core/learner/p35-starter-links';
 
 function fold(value:string):string{
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').trim();
@@ -97,6 +98,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let personal:UserVocabularyCard[]=[];
   let decks:PrivateDeckView[]=[];
   let catalogById=new Map<string,VocabularySearchRow>();
+  const starterLinks=(ids:readonly string[])=>new Map(
+    resolveP35StarterLinks(ids,[...catalogById.values()]).map(x=>[x.storedId,x]));
   const selected=new Set<string>();
   let deletingDeck=false;
   let deckBusy=false;
@@ -163,12 +166,18 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const query=fold(cardFilter.value);
     const deck=activeDeck();
     const userById=new Map(personal.map(row=>[row.id,row]));
+    const links=starterLinks(deck?.noteIds??[]);
     const rows=deck?deck.noteIds.map(id=>{
       const personalRow=userById.get(id);
       if(personalRow)return {...personalRow,kind:'user' as const};
-      const catalog=catalogById.get(id);
-      if(catalog)return{id,fr:catalog.word,en:catalog.meaning,kind:'corpus' as const};
-      return{id,fr:'Source unavailable',en:id,kind:'unresolved' as const};
+      const link=links.get(id);
+      const canonicalId=link?.status==='unique-starter'?link.resolvedId:id;
+      const catalog=canonicalId?catalogById.get(canonicalId):undefined;
+      if(catalog)return{id,fr:catalog.word,en:catalog.meaning,
+        kind:(link?.status==='unique-starter'?'linked':'corpus') as 'linked'|'corpus',
+        aliasId:link?.status==='unique-starter'?id:undefined};
+      return{id,fr:'Source unavailable',en:id,kind:'unresolved' as const,
+        aliasId:link?.status==='ambiguous'?'ambiguous':undefined};
     }):personal.map(row=>({...row,kind:'user' as const}));
     return rows.filter(row=>fold(row.fr+' '+row.en).includes(query)).slice(0,120);
   };
@@ -193,8 +202,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       const label=document.createElement('span');
       const name=document.createElement('strong');name.textContent=row.fr;
       const meaning=document.createElement('span');meaning.textContent=' · '+row.en+
-        (row.kind==='corpus'?' · Original corpus':row.kind==='unresolved'?' · Unresolved P35 ID':
-          'theme' in row&&row.theme?' · '+row.theme:'');
+        (row.kind==='corpus'?' · Original corpus':
+         row.kind==='linked'?' · Resolved P35 starter ID ('+row.aliasId+')':
+         row.kind==='unresolved'?(row.aliasId==='ambiguous'?' · Ambiguous P35 ID':' · Unresolved P35 ID'):
+         'theme' in row&&row.theme?' · '+row.theme:'');
       label.append(name,meaning);
       const edit=document.createElement('button');edit.type='button';
       edit.className='secondary-action compact-action';edit.textContent='Edit';
@@ -227,8 +238,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   remove.addEventListener('click',()=>void deckMutation('remove'));
   studyDeck.addEventListener('click',()=>{
     const deck=activeDeck();if(!deck||studyDeck.disabled)return;
-    const owned=new Set([...personal.map(row=>row.id),...catalogById.keys()]);
-    const ids=deck.noteIds.filter(id=>owned.has(id));
+    const owned=new Set(personal.map(row=>row.id));
+    const links=eligibleSourceDeckIds(deck.noteIds,[...catalogById.values()],owned);
+    const ids=links.eligibleIds;
+    if(links.aliased||links.unresolved||links.ambiguous)
+      selectionStatus.textContent=links.aliased+' source-qualified starter links; '+
+        links.ambiguous+' ambiguous and '+links.unresolved+' missing IDs preserved.';
     if(!ids.length){selectionStatus.textContent='This deck has no resolved, study-ready source words.';return;}
     studyDeck.disabled=true;
     void (async()=>{
