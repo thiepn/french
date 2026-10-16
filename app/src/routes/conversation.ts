@@ -73,7 +73,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       console.error('Original source companion transfer failed',error);
     }finally{busy=false;}
   };
-  const commitOriginal=async(work:()=>SourceGraphState,message:string)=>{
+  const commitOriginal=async(work:()=>SourceGraphState,message:string,preservedSourceReply?:string)=>{
     if(busy||signal.aborted)return;
     busy=true;
     try{
@@ -82,7 +82,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       sourceNotice=message;
       sourcePaused=false;
       busy=false;
-      render();
+      // Hints and clarification must never erase an unsent learner reply.
+      if(preservedSourceReply!==undefined&&originalSource.active)
+        renderOriginalSource(preservedSourceReply);
+      else render();
     }catch(error){status.textContent='Source practice was not saved. No new step has been credited. '+String(error);}
     finally{busy=false;}
   };
@@ -671,12 +674,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const tools=item('div','','conversation-controls');
     const send=button('Check source rule','primary-action compact-action');send.type='submit';
     const hint=button('Show original hint');hint.onclick=()=>void commitOriginal(()=>
-      sourceSupport(originalSource,1,Date.now()),'Original hint requested. Independent turn credit is reduced.');
+      sourceSupport(originalSource,1,Date.now()),'Original hint requested. Independent turn credit is reduced.',field.value);
     const example=button('Show source example');example.onclick=()=>void commitOriginal(()=>
-      sourceSupport(originalSource,2,Date.now()),'Source phrase revealed; independent credit withheld.');
+      sourceSupport(originalSource,2,Date.now()),'Source phrase revealed; independent credit withheld.',field.value);
     const repeat=button('Ask for clarification');repeat.onclick=()=>void commitOriginal(()=>
       respondSourceGraph(originalSource,'Pardon, pouvez-vous répéter ?',Date.now()).state,
-      node.clarify??'Bien sûr, je reformule la question.');
+      node.clarify??'Bien sûr, je reformule la question.',field.value);
     const manual=button('Continue without evidence');manual.onclick=()=>{
       if(!confirm('Advance along the first pinned graph rule without scorer evidence? This turn will not count as independently matched.'))return;
       void submit(true);

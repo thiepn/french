@@ -5,6 +5,9 @@ import { readRecentReviewEvents,recordPracticeEvidence } from '../core/learner/r
 import { levenshtein } from '../core/learner/grader';
 import { createFrenchPlayback } from './french-playback';
 import {consumeSourceCompanion,sourceCompanionPanel} from './p35-source-companion';
+import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
+import {sourceSupport} from '../core/conversation/p35-runtime';
+import {createSourceHandoff,SOURCE_HANDOFF_KEY} from '../core/conversation/source-transfer';
 import './p35-source-companion.css';
 
 type Mode='comprehensible'|'intensive'|'targeted';
@@ -70,6 +73,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const slow=document.createElement('button');slow.type='button';slow.textContent='Play slowly';
     const reveal=document.createElement('button');reveal.type='button';reveal.textContent='Reveal transcript';
     const back=document.createElement('button');back.type='button';back.textContent='Return to original conversation';
+    const continueWriting=document.createElement('button');
+    continueWriting.type='button';continueWriting.textContent='Continue original conversation in Write';
     const draft=document.createElement('textarea');
     draft.setAttribute('aria-label','Transcribe original partner');draft.placeholder='What did the partner say in French?';
     const check=document.createElement('button');check.type='button';check.textContent='Check original transcription';
@@ -102,7 +107,31 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         ' · '+evaluated.label+' · no new review, listening or CEFR evidence saved.';
     };
     back.onclick=()=>navigate('conversation');
-    actions.append(model,slow,reveal,back);
+    continueWriting.onclick=()=>{
+      if(continueWriting.disabled||signal.aborted)return;
+      continueWriting.disabled=true;
+      void(async()=>{
+        try{
+          // Authoritative P35 active source state, not listening answer/grade.
+          const state=await loadSourceGraphState();
+          const active=state.active;
+          if(!active||active.runId!==sourceCompanion.active.runId||
+            active.scenarioId!==sourceCompanion.graph.id||
+            active.nodeId!==sourceCompanion.active.nodeId)
+            throw Error('SOURCE_DIALOGUE_CHANGED');
+          const now=Date.now();
+          const next=sourceSupport(state,2,now);
+          await persistSourceGraphState(next);
+          if(signal.aborted)return;
+          sessionStorage.setItem(SOURCE_HANDOFF_KEY,JSON.stringify(createSourceHandoff(next,'write',now)));
+          navigate('write');
+        }catch(error){
+          feedback.textContent='Original conversation changed or could not be saved. Return to Conversation to resume.';
+          console.error('Source listening-to-writing handoff failed',error);
+        }finally{continueWriting.disabled=false;}
+      })();
+    };
+    actions.append(model,slow,reveal,continueWriting,back);
     panel.append(scene,actions,draft,check,feedback,transcript);
     host.before(panel);
     if(!speech.supported){model.disabled=true;slow.disabled=true;feedback.textContent='Device speech unavailable; original transcript can still be revealed.';}

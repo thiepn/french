@@ -30,7 +30,7 @@ export function originalRepairTargets(state:SourceGraphState,limit=5):OriginalRe
     if(seen.has(key))continue;seen.add(key);
     const matches=source.filter(e=>e.nodeId===nodeId&&e.functionId===rule.func);
     const independent=matches.filter(isVerifiedIndependent).length;
-    const repairs=matches.filter(e=>e.repair).length;
+    const repairs=source.filter(e=>e.nodeId===nodeId&&e.repair).length;
     const supported=matches.filter(e=>e.accepted&&!isVerifiedIndependent(e)).length;
     const reason:OriginalRepairTarget['reason']=!matches.length?'unseen':
       repairs&&!independent?'repair':supported&&!independent?'supported':'revisit';
