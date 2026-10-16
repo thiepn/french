@@ -15,6 +15,7 @@ import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,can
  sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
 import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
 import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
+import {sourceFunctionPracticePlan} from '../core/conversation/source-function-practice';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
@@ -218,6 +219,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     }
     lesson.append(map);
     const coverage=inspectP35ConversationCoverage();
+    const sourceFunctionRows=new Map(sourceFunctionPracticePlan(originalSource).map(row=>[row.id,row]));
     const original=item('details','','conversation-source-parity');
     original.append(item('summary','Original P35 P20 functions · '+coverage.originalP20Functions+' source definitions'));
     original.append(item('p','Source identity is not a native mastery result: the existing 23 native function scores are separate. P35 also added six B2 functions later.','muted-copy'));
@@ -226,7 +228,25 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       section.append(item('h3',group));
       for(const fn of P35_P20_FUNCTIONS.filter(fn=>fn.group===group)){
         const row=item('p','','conversation-source-function');
-        row.append(item('strong',fn.label),item('span','Source '+fn.id+' · not independently assessed'));
+        const status=sourceFunctionRows.get(fn.id);
+        row.append(item('strong',fn.label),
+          item('span','Source '+fn.id+' · '+(status?.independentRuleMatches??0)+
+            ' original rule-matched independent practice turns across '+
+            (status?.practisedScenes??0)+' scenes · no proficiency certification'));
+        if(status?.nextSceneId){
+          const sceneId=status.nextSceneId;
+          const practice=button('Practise original '+fn.label+' in '+status.nextSceneTitle,
+            'secondary-action compact-action');
+          practice.disabled=!canStartOriginal();
+          practice.onclick=()=>void commitOriginal(()=>
+            startSourceGraph(originalSource,sceneId,Date.now()),
+            'Opened original source dialogue '+sceneId+' for '+fn.label+'. Practice only.');
+          row.append(practice);
+        }else{
+          row.append(item('small',status?.totalSourceScenes?
+            'Source scenario is beyond your selected practice ceiling.':
+            'No original P35 non-B2 graph rule for this function.','muted-copy'));
+        }
         section.append(row);
       }
       original.append(section);

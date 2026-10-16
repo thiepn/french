@@ -21,3 +21,16 @@ assert.equal(replay.active?.variant,1);
 assert.deepEqual(replay.history,older.history);
 assert.equal(replay.active?.turns,0);
 assert.equal(replay.mission,null);
+
+import {sourceFunctionPracticePlan} from '../app/src/core/conversation/source-function-practice.ts';
+const functionPlans=sourceFunctionPracticePlan(state);
+assert.equal(functionPlans.length,25);
+assert.ok(functionPlans.some(x=>x.availableScenes>0&&x.nextSceneId),'Original A1 function practice reachable');
+assert.ok(functionPlans.every(x=>!x.nextSceneId||x.availableScenes>0),'No invented source scenario');
+const originalFunctions=new Set(functionPlans.map(x=>x.id));
+assert.equal(originalFunctions.size,25);
+const sourceEvidence=sourceFunctionPracticePlan({...state,evidence:[{id:'fixture',scenarioId:'cafe-order',nodeId:'order',
+  functionId:'request',variant:0,at:1,accepted:true,repair:false,manual:false,support:0,
+  retries:0,independent:true,confidence:1,credit:.5,practiceOnly:true}]});
+assert.equal(sourceEvidence.find(x=>x.id==='request')?.independentRuleMatches,1);
+assert.equal(sourceEvidence.find(x=>x.id==='specify')?.independentRuleMatches,0);
