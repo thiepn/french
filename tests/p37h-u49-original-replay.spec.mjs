@@ -192,6 +192,7 @@ test('U49 ambiguous original source reply is preserved for iterative independent
  await expect(reply).toHaveValue('Je voudrais visiter le musée demain');
  await expect(page.locator('[role=status].conversation-feedback')).toContainText('did not confidently match');
  await page.getByRole('button',{name:'Ask for clarification'}).click();
+ await expect(page.locator('.conversation-assistance')).toContainText('Source hint');
  await expect(reply).toHaveValue('Je voudrais visiter le musée demain');
  await expect(page.locator('.source-graph-deck')).toContainText('Original P35 deterministic source');
 });
@@ -239,4 +240,45 @@ test('U49 explicit source writing draft returns in memory and cannot grant indep
  expect([after.srs,after.activity]).toEqual(before);
  await page.reload();
  await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toHaveValue('');
+});
+
+test('U49 complete original partner Listen to supported Write to Conversation preserves source turn and private grade authority',async({page})=>{
+ await page.goto('/#conversation');
+ await page.getByRole('button',{name:/A1 · Order at a café · original graph/}).click();
+ const before=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction(['srs','activity'],'readonly');
+   const s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+   tx.oncomplete=()=>{db.close();resolve([s.result,a.result]);};};
+ }));
+ await page.getByRole('button',{name:'Listen to this original partner turn'}).click();
+ await expect(page).toHaveURL(/#listen$/);
+ const listen=page.getByRole('region',{name:'Original P35 dialogue · partner listening'});
+ await listen.getByRole('textbox',{name:'Transcribe original partner'}).fill('Bonjour, qu’est-ce que vous prenez ?');
+ await listen.getByRole('button',{name:'Check original transcription'}).click();
+ await expect(listen.getByRole('status')).toContainText('Written-source only');
+ await listen.getByRole('button',{name:'Continue original conversation in Write'}).click();
+ await expect(page).toHaveURL(/#write$/);
+ const write=page.getByRole('region',{name:'Original P35 dialogue · draft your reply'});
+ await expect(write).toContainText('Order at a café');
+ const draft='Bonjour, je voudrais un thé, s’il vous plaît.';
+ await write.getByRole('textbox',{name:'Draft reply to original dialogue'}).fill(draft);
+ await write.getByRole('button',{name:'Check original dialogue rule'}).click();
+ await expect(write.getByRole('status')).toContainText('Original source pattern recognized');
+ await write.getByRole('button',{name:'Use this draft in original conversation (supported)'}).click();
+ await expect(page).toHaveURL(/#conversation$/);
+ await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toHaveValue(draft);
+ await expect(page.locator('.conversation-assistance')).toContainText('Model support remains active');
+ const current=await page.evaluate(()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onsuccess=()=>{const db=req.result,tx=db.transaction(['meta','srs','activity'],'readonly');
+   const m=tx.objectStore('meta').get('p35-source-graph-v1'),
+    s=tx.objectStore('srs').count(),a=tx.objectStore('activity').count();
+   tx.oncomplete=()=>{db.close();resolve({source:m.result,srs:s.result,activity:a.result});};};
+ }));
+ expect(current.source.active.nodeId).toBe('order');
+ expect(current.source.active.support).toBe(2);
+ expect(current.source.active.independent).toBe(0);
+ expect([current.srs,current.activity]).toEqual(before);
+ expect(JSON.stringify(current.source)).not.toContain(draft);
 });
