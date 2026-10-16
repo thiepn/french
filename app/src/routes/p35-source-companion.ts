@@ -16,7 +16,7 @@ export async function consumeSourceCompanion(kind:SourceHandoff['kind']){
  const graph=getP35SourceScenario(valid.scenarioId);
  const node=graph?.nodes[valid.nodeId];
  if(!graph||!node||node.end)return null;
- return{graph,node,active:state.active as SourceActive,prompt:sourcePrompt(state.active)};
+ return{graph,node,active:state.active as SourceActive,prompt:sourcePrompt(state.active),state};
 }
 export function sourceCompanionPanel(title:string,context:string){
  const section=document.createElement('section');

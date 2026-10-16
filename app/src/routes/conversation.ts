@@ -14,7 +14,8 @@ import {P35_P18_MISSIONS} from '../core/conversation/source-parity';
 import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,cancelSourceGraph,
  sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
 import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
-import {createSourceHandoff,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
+import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
+import {originalRepairTargets,originalMissionRepairStages} from '../core/conversation/source-practice-review';
 import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
 import {sourceFunctionPracticePlan} from '../core/conversation/source-function-practice';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
@@ -43,6 +44,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   host.append(top,status,stage);main.replaceChildren(host);
   let state=await loadConversationState();
   let originalSource=await loadSourceGraphState();
+  // Explicit in-memory Write draft is offered once and never persisted.
+  let returnedSourceDraft=consumeSourceDraft(originalSource,Date.now());
   let sourcePaused=false,sourceNotice='';
   if(signal.aborted)return;
   let busy=false,lastSubmission:{key:string;at:number}|null=null;
@@ -216,7 +219,45 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       }
       originalDeck.append(prior);
     }
-    originalDeck.append(item('h3','Pinned original source scenarios'));
+    const review=item('section','','source-practice-review');
+    review.append(item('h3','Next original-source practice'),
+      item('p','Suggestions use only P35 authored nodes and your local rule-match history. A suggestion is not a proficiency rating.','muted-copy'));
+    for(const target of originalRepairTargets(originalSource,5)){
+      const row=item('div','','source-repair-row');
+      const reason=target.reason==='repair'?'clarification used':
+        target.reason==='supported'?'model or hints used':
+        target.reason==='unseen'?'no stored source-rule attempt':'revisit original rule';
+      row.append(item('p',target.title+' · '+target.functionId+' · '+
+        target.nodeId+' · '+reason+' · '+target.independent+
+        ' independent original-rule matches','muted-copy'));
+      const open=button('Practise source function · '+target.title+' / '+target.functionId,
+        'secondary-action compact-action');
+      open.disabled=!canStartOriginal();
+      open.onclick=()=>void commitOriginal(()=>
+        startSourceGraph(originalSource,target.scenarioId,Date.now()),
+        'Original scenario opened at its authored first node; practise '+target.functionId+
+        ' when it occurs. No function mastery is awarded.');
+      row.append(open);review.append(row);
+    }
+    const missionReview=item('details','','source-mission-repair');
+    missionReview.append(item('summary','Rehearse weaker stages in original P18 missions'));
+    for(const mission of originalMissionRepairStages(originalSource)){
+      if(!mission.eligible||!mission.target)continue;
+      const line=item('div','','source-repair-row');
+      line.append(item('p',mission.title+' · suggested source stage '+(mission.target.index+1)+
+        '/3 · '+mission.target.title+' · '+mission.target.independent+
+        ' independent original-rule matches','muted-copy'));
+      const rehearse=button('Rehearse source mission stage · '+mission.target.title,
+        'secondary-action compact-action');
+      rehearse.disabled=!canStartOriginal();
+      const targetId=mission.target.scenarioId;
+      rehearse.onclick=()=>void commitOriginal(()=>
+        startSourceGraph(originalSource,targetId,Date.now()),
+        'Source mission stage opened for isolated practice; full mission history is preserved.');
+      line.append(rehearse);missionReview.append(line);
+    }
+    review.append(missionReview);
+    originalDeck.append(review,item('h3','Pinned original source scenarios'));
     const sourceList=item('div','','source-graph-list');
     for(const graph of P35_SOURCE_SCENARIOS){
       const control=button(graph.level+' · '+graph.title+
@@ -557,7 +598,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     field.focus({preventScroll:true});
   };
 
-  const renderOriginalSource=()=>{
+  const renderOriginalSource=(preservedText='')=>{
     const active=originalSource.active;
     if(!active){renderHome();return;}
     const graph=getP35SourceScenario(active.scenarioId),node=graph?.nodes[active.nodeId];
@@ -606,9 +647,25 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const field=item('textarea','','conversation-input');field.rows=3;field.maxLength=650;
     field.autocomplete='off';field.setAttribute('aria-label','Reply to original source graph in French');
     field.placeholder='Répondez en français…';
+    const returned=returnedSourceDraft;
+    returnedSourceDraft=null;
+    field.value=preservedText||returned||'';
     const assistance=item('p','','conversation-assistance');
+    if(returned)assistance.append(item('span',
+      'Explicit Write draft restored from same-tab memory only. Model support remains active; this reply cannot earn independent source evidence.'));
     if(active.support>=1)assistance.append(item('span','Source hint · '+(node.hint??'Respond in French.')));
     if(active.support>=2)assistance.append(item('span','Source model · '+(node.phrases?.[0]??'No source example available')));
+    const authored=item('div','','source-authored-options');
+    if(active.support>=2){
+      authored.append(item('p','Original P35 authored examples for this node · supported only. Select to edit; nothing is submitted or graded automatically.','muted-copy'));
+      const samples=[...new Set([...(node.phrases??[]),...(node.rules??[]).map(rule=>rule.sample)]
+        .filter(text=>Boolean(text&&text.trim())))].slice(0,8);
+      for(const sample of samples){
+        const choice=button('Use authored phrase · '+sample,'secondary-action compact-action');
+        choice.onclick=()=>{field.value=sample;field.focus({preventScroll:true});};
+        authored.append(choice);
+      }
+    }
     const localStatus=item('p',sourceNotice,'conversation-feedback');
     localStatus.setAttribute('role','status');localStatus.setAttribute('aria-live','polite');
     const tools=item('div','','conversation-controls');
@@ -650,7 +707,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const outcome=respondSourceGraph(originalSource,reply,Date.now(),manual);
         await saveOriginal(outcome.state);
         sourceNotice=outcome.message;
-        sourcePaused=false;busy=false;render();
+        sourcePaused=false;busy=false;
+        if(outcome.outcome==='uncertain'||outcome.outcome==='repair')renderOriginalSource(reply);
+        else render();
       }catch(error){localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);}
       finally{busy=false;}
     };
@@ -658,7 +717,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     field.addEventListener('keydown',event=>{
       if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();form.requestSubmit();}
     });
-    stage.append(banner,meter,partner,goal,form,companions,assistance,localStatus,actions);
+    stage.append(banner,meter,partner,goal,form,authored,companions,assistance,localStatus,actions);
     field.focus({preventScroll:true});
   };
 

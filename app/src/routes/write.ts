@@ -19,6 +19,7 @@ import {contextScene} from '../core/usage/context';
 import {buildLexicalSignals,linkedNoteIds,type LexicalSignal} from '../core/usage/lexical';
 import {sentenceBridgeSummary,rankedSentenceBridge,sentenceSourceMap} from '../core/writing/bridge';
 import {matchSourceRule} from '../core/conversation/p35-runtime';
+import {offerSourceDraft} from '../core/conversation/source-transfer';
 import {consumeSourceCompanion,sourceCompanionPanel} from './p35-source-companion';
 import './p35-source-companion.css';
 
@@ -78,9 +79,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         (sourceCompanion.node.phrases?.[0]??'No source phrase for this node.')+
         ' · supported rehearsal only.';
     };
+    const carry=control('Use this draft in original conversation (supported)');
+    carry.onclick=()=>{
+      const value=draft.value.trim();
+      if(!value){feedback.textContent='Write your French draft before returning.';return;}
+      if(!offerSourceDraft(sourceCompanion.state,value,Date.now())){
+        feedback.textContent='Source turn changed or model support unavailable; draft not transferred.';return;
+      }
+      // Explicit same-tab memory transfer only: nothing written to IndexedDB,
+      // sessionStorage, activity, SRS, or a second learner record.
+      navigate('conversation');
+    };
     const back=control('Return to original conversation');
     back.onclick=()=>navigate('conversation');
-    actions.append(check,reference,back);
+    actions.append(check,reference,carry,back);
     panel.append(scene,partner,goal,draft,actions,feedback);
     host.insertBefore(panel,switcher);
   }
