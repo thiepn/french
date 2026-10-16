@@ -230,7 +230,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const row=item('p','','conversation-source-function');
         const status=sourceFunctionRows.get(fn.id);
         row.append(item('strong',fn.label),
-          item('span','Source '+fn.id+' · '+(status?.independentRuleMatches??0)+
+          item('span','Source '+fn.id+' · not independently assessed · '+(status?.independentRuleMatches??0)+
             ' original rule-matched independent practice turns across '+
             (status?.practisedScenes??0)+' scenes · no proficiency certification'));
         if(status?.nextSceneId){
