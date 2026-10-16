@@ -512,6 +512,15 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   const search=(query:string)=>{
     const id=++requestId;
+    // Filtering must search all source-qualified rows, not filter only the
+    // worker's first 40 (otherwise relevant original words silently disappear).
+    if((levelFilter.value||posFilter.value)&&catalogById.size){
+      const eligible=[...catalogById.values()].filter(row=>
+        (!levelFilter.value||row.level===levelFilter.value)&&
+        (!posFilter.value||row.pos===posFilter.value));
+      render(localSearch(eligible,query));
+      return;
+    }
     if(worker)worker.postMessage({type:'search',query,limit:40,requestId:id});
     else void fallback(query,id);
   };
