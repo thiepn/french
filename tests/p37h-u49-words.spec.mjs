@@ -359,3 +359,64 @@ test('U50 unfinished Review explicitly preserves a different requested word, dec
  await expect(page.locator('.review-prompt')).toContainText('un cahier',{timeout:30_000});
  expect(await snapshot()).toEqual(before);
 });
+
+test('U51 atomic two-tab corpus study: one winner, no abandoned SRS or overwritten session',async({context,page})=>{
+ const other=await context.newPage();
+ try{
+  for(const [tab,term] of [[page,'bonjour'],[other,'merci']]){
+   await tab.goto('/#words');
+   await expect(tab.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+   const search=tab.getByRole('searchbox',{name:'Search French or English'});
+   await search.fill(term);
+   const row=tab.locator('.word-corpus-result-row').filter({hasText:new RegExp(term,'i')}).first();
+   await expect(row).toBeVisible({timeout:45_000});
+   await row.locator('.word-corpus-checkbox').check();
+   await expect(tab.locator('[data-corpus-selection]')).toContainText('1 source words selected');
+  }
+  // Both tabs share IndexedDB but request different words at the same time.
+  await Promise.all([
+   page.getByRole('button',{name:'Study selected words'}).click(),
+   other.getByRole('button',{name:'Study selected words'}).click()
+  ]);
+  await expect.poll(async()=>{
+   const a=page.url().endsWith('#review'),b=other.url().endsWith('#review');
+   return Number(a)+Number(b);
+  },{timeout:45_000}).toBe(1);
+  const winner=page.url().endsWith('#review')?page:other;
+  const loser=winner===page?other:page;
+  await expect(loser.locator('[data-corpus-selection]')).toContainText('unfinished Review session');
+  const before=await winner.evaluate(()=>new Promise((resolve,reject)=>{
+   const req=indexedDB.open('thiepn-french-vnext');
+   req.onerror=()=>reject(req.error);
+   req.onsuccess=()=>{
+    const db=req.result,tx=db.transaction(['session','srs','activity'],'readonly');
+    const state={session:null,srs:[],activity:[]};
+    tx.objectStore('session').get('active').onsuccess=e=>{state.session=e.target.result;};
+    tx.objectStore('srs').getAll().onsuccess=e=>{state.srs=e.target.result;};
+    tx.objectStore('activity').getAll().onsuccess=e=>{state.activity=e.target.result;};
+    tx.oncomplete=()=>{db.close();resolve(state);};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  }));
+  expect(before.session.queueIds).toHaveLength(1);
+  expect(before.srs.map(row=>row.id)).toEqual(before.session.queueIds);
+  expect(before.activity).toEqual([]);
+  await loser.locator('[data-corpus-selection] + [data-resume-saved-review]').click();
+  await expect(loser).toHaveURL(/#review$/,{timeout:45_000});
+  await expect(loser.locator('.review-card')).toBeVisible({timeout:30_000});
+  const after=await loser.evaluate(()=>new Promise((resolve,reject)=>{
+   const req=indexedDB.open('thiepn-french-vnext');
+   req.onerror=()=>reject(req.error);
+   req.onsuccess=()=>{
+    const db=req.result,tx=db.transaction(['session','srs','activity'],'readonly');
+    const state={session:null,srs:[],activity:[]};
+    tx.objectStore('session').get('active').onsuccess=e=>{state.session=e.target.result;};
+    tx.objectStore('srs').getAll().onsuccess=e=>{state.srs=e.target.result;};
+    tx.objectStore('activity').getAll().onsuccess=e=>{state.activity=e.target.result;};
+    tx.oncomplete=()=>{db.close();resolve(state);};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  }));
+  expect(after).toEqual(before);
+ }finally{await other.close();}
+});

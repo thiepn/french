@@ -47,6 +47,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         status!.textContent=kind==='today'?'Nothing is scheduled for today.':'No unseen vocabulary is available in the current corpus.';
         return;
       }
+      if(session.mode!==(kind==='today'?'today':'learn')){
+        if(status)status.textContent='Another tab started a '+session.mode+' session first. Your requested '+kind+' session was not scheduled; open Review to continue the saved session.';
+        return;
+      }
       navigate('review');
     }catch(error){
       status!.textContent='Could not build this study session.';

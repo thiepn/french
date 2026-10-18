@@ -372,11 +372,58 @@ export async function readActiveStudySession(now=Date.now()):Promise<StudySessio
       request.onsuccess=()=>resolve(request.result);
       request.onerror=()=>reject(request.error??new Error('Could not read active study session.'));
     });
-    const session=normalizeStudySession(raw,now);
-    if(session)return session;
+    // A read must not remove a newly claimed session from a different tab.
+    // Expired data is replaced only inside an atomic session claim.
+    return normalizeStudySession(raw,now);
   }finally{db.close();}
-  await clearActiveStudySession();
-  return null;
+}
+
+/** Serialize competing study starts across tabs; newly introduced SRS records
+ * belong to the winning claim transaction, never a losing speculative builder.
+ */
+export async function claimActiveStudySession(
+  candidate:StudySessionStateV1,
+  proposedNewSkills:readonly CanonicalSrsRecordV1[]=[],
+  now=Date.now()
+):Promise<{kind:'created'|'resume';session:StudySessionStateV1}>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(['session','srs'],'readwrite');
+      const owner=tx.objectStore('session'),srs=tx.objectStore('srs');
+      let outcome:{kind:'created'|'resume';session:StudySessionStateV1}|undefined;
+      const request=owner.get('active');
+      request.onsuccess=()=>{
+        try{
+          const raw=request.result as unknown;
+          const active=normalizeStudySession(raw,now);
+          if(active&&active.cursor<active.queueIds.length){
+            outcome={kind:'resume',session:active};return;
+          }
+          // Preserve unknown source/owner records rather than replacing them.
+          if(raw!==undefined&&!active&&
+             (!raw||typeof raw!=='object'||Array.isArray(raw)||
+              (raw as {schema?:unknown}).schema!=='thiepn-french-study-session-v1'))
+            throw Error('UNKNOWN_SAVED_STUDY_SESSION');
+          outcome={kind:'created',session:candidate};
+          if(!candidate.queueIds.length)return; // No empty session persisted.
+          const queue=new Set(candidate.queueIds);
+          const needed=new Map<string,CanonicalSrsRecordV1>();
+          for(const row of proposedNewSkills)if(queue.has(row.id))needed.set(row.id,row);
+          // Enqueue all requests in this transaction; no await or external lock.
+          for(const row of needed.values()){
+            const lookup=srs.get(row.id);
+            lookup.onsuccess=()=>{if(lookup.result===undefined)srs.put(row,row.id);};
+          }
+          owner.put(candidate,'active');
+        }catch(error){reject(error);tx.abort();}
+      };
+      request.onerror=()=>reject(request.error??Error('Cannot inspect saved session'));
+      tx.oncomplete=()=>outcome?resolve(outcome):reject(Error('Missing claim result'));
+      tx.onerror=()=>reject(tx.error??Error('Session claim failed'));
+      tx.onabort=()=>reject(tx.error??Error('Session claim aborted'));
+    });
+  }finally{db.close();}
 }
 
 export async function writeActiveStudySession(session:StudySessionStateV1):Promise<void>{
