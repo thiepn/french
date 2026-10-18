@@ -837,6 +837,95 @@ test('U60 offline readiness refuses corrupted public packs without modifying P35
   await page.getByRole('button',{name:'Prepare offline essentials'}).click();
   await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
 });
+test('U61 evicted native offline shell is detected and rebuilt without deleting P35 or learner preferences',async({page,context})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('button',{name:'Prepare offline essentials'})).toBeVisible({timeout:30_000});
+  await page.locator('input[name="dailyNewLimit"]').fill('23');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device');
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:30_000});
+  const cache=await page.evaluate(async()=>{
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u61-owned',new Response('P35_RETAINED'));
+    const names=await caches.keys();
+    const native=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!native)throw Error('No original native shell');
+    await caches.delete(native);
+    return native;
+  });
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app is not ready',{timeout:30_000});
+  // Source-verified lessons survive shell eviction; they do not prove restart
+  // can work. The distinct shell status must remain an actionable warning.
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials available',{timeout:30_000});
+  await context.setOffline(true);
+  try{
+    await page.getByRole('button',{name:'Repair offline app'}).click();
+    await expect(page.locator('[data-shell-status]')).toContainText('Connect to the internet',{timeout:30_000});
+    expect(await page.evaluate(async name=>(await caches.keys()).includes(name),cache)).toBe(false);
+  }finally{await context.setOffline(false);}
+  await page.getByRole('button',{name:'Repair offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:45_000});
+  const after=await page.evaluate(async name=>{
+    const shell=await caches.open(name);
+    const p35=await caches.open('french-shell-v35');
+    return{root:Boolean(await shell.match('/')),manifest:Boolean(await shell.match('/content/manifest.json')),
+      p35:await(await p35.match('/u61-owned')).text()};
+  },cache);
+  expect(after).toEqual({root:true,manifest:true,p35:'P35_RETAINED'});
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible({timeout:30_000});
+    await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('23',{timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
+test('U61 detects a tampered installed asset and repairs its original SHA without touching P35',async({page})=>{
+  await page.goto('/#settings');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:30_000});
+  const identity=await page.evaluate(async()=>{
+    const name=(await caches.keys()).find(value=>/^french-vnext-shell-[0-9a-f]{12}$/.test(value));
+    const shell=await caches.open(name);
+    const original=await shell.match('/');
+    const bytes=await original.arrayBuffer();
+    const originalHash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+      .map(value=>value.toString(16).padStart(2,'0')).join('');
+    await shell.put('/',new Response('<html>U61_TAMPERED</html>',{headers:{'content-type':'text/html'}}));
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u61-rollback',new Response('P35_UNCHANGED'));
+    return{name,originalHash};
+  });
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app is not ready',{timeout:30_000});
+  await page.getByRole('button',{name:'Repair offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:45_000});
+  const verified=await page.evaluate(async name=>{
+    const shell=await caches.open(name);
+    const bytes=await(await shell.match('/')).arrayBuffer();
+    const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+      .map(value=>value.toString(16).padStart(2,'0')).join('');
+    const p35=await caches.open('french-shell-v35');
+    return{sha,p35:await(await p35.match('/u61-rollback')).text()};
+  },identity.name);
+  expect(verified).toEqual({sha:identity.originalHash,p35:'P35_UNCHANGED'});
+});
+
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();

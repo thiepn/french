@@ -71,7 +71,7 @@ async function restoreVerifiedShell(){
     recovered.push({path,response});
   }
   const store=await cache();
-  for(const {path,response} of recovered)await store.put(path,response);
+  for(const {path,response} of recovered)await store.put(path,response.clone());
   const manifest=recovered.find(item=>item.path==='/content/manifest.json');
   if(manifest)try{
     await(await caches.open(CONTENT_CACHE)).put(PINNED_MANIFEST,manifest.response.clone());
