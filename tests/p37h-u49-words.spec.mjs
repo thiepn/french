@@ -526,3 +526,37 @@ test('U52 simultaneous skips of an unresolved word advance only once',async({con
   expect(saved.learner.profile).toEqual(existing.learner.profile);
  }finally{await other.close();}
 });
+
+test('U52 completed-tab restart preserves a newer session claimed by another tab',async({context,page})=>{
+ const other=await context.newPage();
+ try{
+  await page.goto('/#words');
+  const form=page.locator('[data-card-form]');
+  await expect(form).toBeVisible({timeout:45_000});
+  await form.locator('[name="fr"]').fill('un livre');
+  await form.locator('[name="en"]').fill('book');
+  await form.getByRole('button',{name:'Save my word'}).click();
+  await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+  await page.getByRole('button',{name:'Study my words'}).click();
+  await expect(page).toHaveURL(/#review$/,{timeout:45_000});
+  await page.getByRole('button',{name:'Show answer'}).click();
+  await page.getByRole('button',{name:'Good',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Check due reviews again'})).toBeVisible({timeout:30_000});
+  // Another tab claims new learner-owned work while this completion screen remains open.
+  await other.goto('/#words');
+  await expect(other.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+  const otherForm=other.locator('[data-card-form]');
+  await otherForm.locator('[name="fr"]').fill('une table');
+  await otherForm.locator('[name="en"]').fill('table');
+  await other.getByRole('button',{name:'Save my word'}).click();
+  await expect(other.locator('[data-card-status]')).toContainText('Word saved');
+  await other.getByRole('button',{name:'Study my words'}).click();
+  await expect(other).toHaveURL(/#review$/,{timeout:45_000});
+  await expect(other.locator('.review-prompt')).toContainText('une table');
+  const before=await studySnapshot(other);
+  expect(before.session.queueIds).toHaveLength(1);
+  await page.getByRole('button',{name:'Check due reviews again'}).click();
+  await expect(page.locator('.review-prompt')).toContainText('une table',{timeout:30_000});
+  expect(await studySnapshot(other)).toEqual(before);
+ }finally{await other.close();}
+});
