@@ -340,6 +340,19 @@ test('a conflict choice cannot restore cloud over local changes made after revie
   expect(api.uploads).toBe(1);
 });
 
+/** An RPC revision can be visible before the first-party device has
+ * persisted its sync baseline. Eviction tests must start AFTER both settle.
+ */
+async function waitForDeviceSyncBaseline(page,api){
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.revision
+  ),{timeout:30_000}).toBe(api.cloud.revision);
+  const info=await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null'));
+  expect(info?.hash).toMatch(/^[0-9a-f]{64}$/);
+  return {revision:api.cloud.revision,uploads:api.uploads};
+}
+
 test('U55 storage eviction with retained Account metadata cannot erase a meaningful cloud revision',async({page,context})=>{
   const api=await interceptProduction(context);
   await seedSession(context);
@@ -351,7 +364,8 @@ test('U55 storage eviction with retained Account metadata cannot erase a meaning
   await expect(page.locator('[data-status]')).toContainText('Saved on this device');
   await page.getByRole('button',{name:'Sync this device'}).click();
   await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
-  expect(api.uploads).toBe(1);
+  const synced=await waitForDeviceSyncBaseline(page,api);
+  expect(synced.uploads).toBe(1);
   expect(api.cloud.state.settings.dailyNewLimit).toBe(31);
   const cloudBackup=structuredClone(api.cloud.state);
 
@@ -378,15 +392,15 @@ test('U55 storage eviction with retained Account metadata cannot erase a meaning
   await expect(page.getByRole('button',{name:'Recover from cloud'})).toBeVisible({timeout:30_000});
   await expect(page.getByText(/local storage may have been cleared/i)).toBeVisible();
   await expect(page.getByRole('button',{name:'Use this device'})).toHaveCount(0);
-  expect(api.cloud.revision).toBe(1);
-  expect(api.uploads).toBe(1);
+  expect(api.cloud.revision).toBe(synced.revision);
+  expect(api.uploads).toBe(synced.uploads);
   expect(api.cloud.state).toEqual(cloudBackup);
 
   page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('button',{name:'Recover from cloud'}).click();
   await expect(page.getByText(/Cloud French progress was restored on this device/i)).toBeVisible({timeout:30_000});
-  expect(api.cloud.revision).toBe(1);
-  expect(api.uploads).toBe(1);
+  expect(api.cloud.revision).toBe(synced.revision);
+  expect(api.uploads).toBe(synced.uploads);
   await page.reload();
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('31',{timeout:30_000});
 });
@@ -400,6 +414,7 @@ test('U55 recovery refuses stale cloud revision without uploading an empty devic
   await expect(page.locator('[data-status]')).toContainText('Saved on this device');
   await page.getByRole('button',{name:'Sync this device'}).click();
   await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  const synced=await waitForDeviceSyncBaseline(page,api);
   await page.evaluate(async()=>{
     await new Promise((resolve,reject)=>{
       const req=indexedDB.open('thiepn-french-vnext');
@@ -418,12 +433,12 @@ test('U55 recovery refuses stale cloud revision without uploading an empty devic
   await page.getByRole('button',{name:'Sync now'}).click();
   await expect(page.getByRole('button',{name:'Recover from cloud'})).toBeVisible({timeout:30_000});
   // A different device updates the cloud after this recovery choice was shown.
-  api.cloud.revision=2;
+  api.cloud.revision=synced.revision+1;
   api.cloud.state.settings.dailyNewLimit=54;
   page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('button',{name:'Recover from cloud'}).click();
   await expect(page.getByRole('button',{name:'Review latest state'})).toBeVisible({timeout:30_000});
   await expect(page.getByText(/cloud changed after you reviewed the conflict/i)).toBeVisible();
-  expect(api.cloud.revision).toBe(2);
-  expect(api.uploads).toBe(1);
+  expect(api.cloud.revision).toBe(synced.revision+1);
+  expect(api.uploads).toBe(synced.uploads);
 });
