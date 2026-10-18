@@ -560,3 +560,129 @@ test('U52 completed-tab restart preserves a newer session claimed by another tab
   expect(await studySnapshot(other)).toEqual(before);
  }finally{await other.close();}
 });
+
+async function u53PortableArchive(page){
+ return page.evaluate(async()=>{
+  const db=await new Promise((resolve,reject)=>{
+   const request=indexedDB.open('thiepn-french-vnext');
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error);
+  });
+  const names=['learner','srs','activity','user-content','session','meta','migration'];
+  const rows={};
+  try{
+   const tx=db.transaction(names,'readonly');
+   const jobs=names.map(async name=>{
+    const store=tx.objectStore(name);
+    const keys=store.getAllKeys(),values=store.getAll();
+    const read=request=>new Promise((resolve,reject)=>{
+     request.onsuccess=()=>resolve(request.result);
+     request.onerror=()=>reject(request.error);
+    });
+    const [allKeys,allValues]=await Promise.all([read(keys),read(values)]);
+    rows[name]=allKeys.map((key,index)=>({key,value:allValues[index]}));
+   });
+   await Promise.all(jobs);
+  }finally{db.close();}
+  const payload={dbName:'thiepn-french-vnext',dbVersion:5,stores:rows};
+  const serialized=JSON.stringify(payload);
+  const checksum=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(serialized))))
+   .map(x=>x.toString(16).padStart(2,'0')).join('');
+  return JSON.stringify({schema:'thiepn-french-vnext-backup-v1',app:'French',
+   createdAt:Date.now(),checksum,payload});
+ });
+}
+
+test('U53 reviewed restore rejects cross-tab changes then safely recovers on explicit re-review',async({context,page})=>{
+ const other=await context.newPage();
+ try{
+  await page.goto('/#words');
+  const form=page.locator('[data-card-form]');
+  await expect(form).toBeVisible({timeout:45_000});
+  await form.locator('[name="fr"]').fill('un bateau');
+  await form.locator('[name="en"]').fill('boat');
+  await form.getByRole('button',{name:'Save my word'}).click();
+  await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+  await page.evaluate(()=>localStorage.setItem('french3000-study-plan-v1','{"targetLevel":"B1","original":true}'));
+  const original=await ownState(page);
+  const archive=await u53PortableArchive(page);
+  await page.goto('/#settings');
+  await expect(page.getByRole('heading',{name:'Data & recovery'})).toBeVisible({timeout:45_000});
+  const select=page.locator('[data-import]');
+  await select.setInputFiles({name:'u53-reviewed.json',mimeType:'application/json',buffer:Buffer.from(archive)});
+  await expect(page.locator('[data-data-status]')).toContainText('Backup validated');
+  await page.locator('[data-confirm-check]').check();
+  await other.goto('/#words');
+  await expect(other.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+  await other.locator('[data-card-form] [name="fr"]').fill('une étoile');
+  await other.locator('[data-card-form] [name="en"]').fill('star');
+  await other.getByRole('button',{name:'Save my word'}).click();
+  await expect(other.locator('[data-card-status]')).toContainText('Word saved');
+  const newer=await ownState(other);
+  expect(Object.keys(newer.content.userCards)).toHaveLength(2);
+  await page.getByRole('button',{name:'Restore selected backup'}).click();
+  await expect(page.locator('[data-data-status]')).toContainText('FRENCH_RESTORE_LOCAL_CHANGED',{timeout:30_000});
+  expect(await ownState(other)).toEqual(newer);
+  // The learner explicitly reviews the same archive again, now seeing newer work.
+  await select.setInputFiles([]);
+  await select.setInputFiles({name:'u53-reviewed.json',mimeType:'application/json',buffer:Buffer.from(archive)});
+  await expect(page.locator('[data-data-status]')).toContainText('Backup validated');
+  await page.locator('[data-confirm-check]').check();
+  await page.getByRole('button',{name:'Restore selected backup'}).click();
+  await expect(page.locator('[data-data-status]')).toContainText('Restore complete',{timeout:30_000});
+  await expect.poll(async()=>Object.keys((await ownState(other)).content.userCards).length,{timeout:30_000}).toBe(1);
+  const recovered=await ownState(other);
+  expect(recovered.content.userCards).toEqual(original.content.userCards);
+  expect(recovered.srs).toEqual(original.srs);
+  expect(recovered.events).toEqual(original.events);
+  expect(await page.evaluate(()=>localStorage.getItem('french3000-study-plan-v1')))
+   .toBe('{"targetLevel":"B1","original":true}');
+ }finally{await other.close();}
+});
+
+test('U53 migrated P35 fallback cannot overwrite already-used native learner data on startup',async({page})=>{
+ await page.goto('/#words');
+ const form=page.locator('[data-card-form]');
+ await expect(form).toBeVisible({timeout:45_000});
+ await form.locator('[name="fr"]').fill('une fleur');
+ await form.locator('[name="en"]').fill('flower');
+ await form.getByRole('button',{name:'Save my word'}).click();
+ await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+ const before=await ownState(page);
+ await page.evaluate(async()=>{
+  const legacy={'p35:legacy::d31:0:recognition':{status:'learned',seen:4,interval:9,due:1700100000000}};
+  localStorage.setItem('french3000-progress-v2',JSON.stringify(legacy));
+  localStorage.setItem('french3000-depth-updated-at','1700000000000');
+  // Simulate a damaged/missing cache summary, without deleting any learner-owned data.
+  await new Promise((resolve,reject)=>{
+   const request=indexedDB.open('thiepn-french-vnext');
+   request.onerror=()=>reject(request.error);
+   request.onsuccess=()=>{
+    const db=request.result,tx=db.transaction('meta','readwrite');
+    tx.objectStore('meta').delete('learner-summary');
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  });
+ });
+ await page.reload();
+ await expect(page.locator('[data-card-form]')).toBeVisible({timeout:45_000});
+ await expect.poll(async()=>page.evaluate(()=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onerror=()=>reject(req.error);
+  req.onsuccess=()=>{
+   const db=req.result,tx=db.transaction('migration','readonly');
+   const get=tx.objectStore('migration').get('legacy-import-v1');
+   get.onsuccess=()=>resolve(get.result?.schema??'');
+   get.onerror=()=>reject(get.error);
+   tx.oncomplete=()=>db.close();
+  };
+ })),{timeout:30_000}).toBe('thiepn-french-legacy-import-v1');
+ const after=await ownState(page);
+ expect(after.content).toEqual(before.content);
+ expect(after.srs).toEqual(before.srs);
+ expect(after.events).toEqual(before.events);
+ expect(after.srs.some(row=>row.noteId==='p35:legacy')).toBe(false);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('french3000-progress-v2'))))
+  .toHaveProperty('p35:legacy::d31:0:recognition');
+});
