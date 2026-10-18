@@ -1,4 +1,4 @@
-import { loadContentManifest,type ContentPackDescriptor } from './manifest';
+import { loadContentManifest,waitForContent,type ContentPackDescriptor } from './manifest';
 import { verifySha256 } from './verify';
 
 export interface VocabularyWord {
@@ -74,16 +74,20 @@ export async function loadContentPack<T=unknown>(id:string,signal?:AbortSignal):
   memory.set(id,value);
   return value;
 }
-export async function loadVocabularySearchIndex(signal?:AbortSignal):Promise<VocabularySearchIndex>{
-  searchIndexPromise??=(async()=>{
-    const manifest=await loadContentManifest(signal);
-    const descriptor=manifest.indexes?.vocabulary;
-    if(!descriptor)throw new Error('Vocabulary search index is unavailable.');
-    const index=await fetchVerifiedJson<VocabularySearchIndex>(descriptor.path,descriptor.sha256,signal);
-    if(index.schema!=='thiepn-french-vocabulary-search-v1'||!Array.isArray(index.rows))throw new Error('Vocabulary search index schema mismatch.');
-    return index;
-  })();
-  return searchIndexPromise;
+export function loadVocabularySearchIndex(signal?:AbortSignal):Promise<VocabularySearchIndex>{
+  if(!searchIndexPromise){
+    const request=(async()=>{
+      const manifest=await loadContentManifest();
+      const descriptor=manifest.indexes?.vocabulary;
+      if(!descriptor)throw new Error('Vocabulary search index is unavailable.');
+      const index=await fetchVerifiedJson<VocabularySearchIndex>(descriptor.path,descriptor.sha256);
+      if(index.schema!=='thiepn-french-vocabulary-search-v1'||!Array.isArray(index.rows))
+        throw new Error('Vocabulary search index schema mismatch.');
+      return index;
+    })();
+    searchIndexPromise=request.catch(error=>{searchIndexPromise=null;throw error;});
+  }
+  return waitForContent(searchIndexPromise,signal);
 }
 export async function findVocabularyReference(id:string,signal?:AbortSignal):Promise<VocabularySearchRow|null>{
   if(!searchMap){

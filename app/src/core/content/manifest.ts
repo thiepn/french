@@ -36,20 +36,39 @@ export interface ContentManifest {
   packs:ContentPackDescriptor[];
 }
 let manifestPromise:Promise<ContentManifest>|null=null;
-export function loadContentManifest(signal?:AbortSignal):Promise<ContentManifest>{
-  manifestPromise??=fetch('/content/manifest.json',{cache:'no-cache',signal}).then(async response=>{
-    if(!response.ok)throw new Error('Content manifest HTTP '+response.status);
-    const retained=response.clone();
-    const payload=await response.json() as ContentManifest;
-    if(payload.schema!=='thiepn-french-content-manifest-v1'||!Array.isArray(payload.packs))
-      throw new Error('Content manifest schema mismatch');
-    // Cache only the public manifest after successful parsing. On first visit
-    // the route may load before the service worker controls the page.
-    if('caches' in globalThis)try{
-      const storage=await caches.open('french-vnext-shell-v1');
-      await storage.put('/content/manifest.json',retained);
-    }catch(error){console.warn('French content manifest offline cache unavailable',error);}
-    return payload;
+
+/** Cache a shared network request without coupling its lifetime to one
+ * navigation's abort signal; an aborted or offline route must not poison
+ * future attempts on another route or after reconnect.
+ */
+export function waitForContent<T>(work:Promise<T>,signal?:AbortSignal):Promise<T>{
+  if(!signal)return work;
+  if(signal.aborted)return Promise.reject(new DOMException('Aborted','AbortError'));
+  return new Promise<T>((resolve,reject)=>{
+    const aborted=()=>reject(new DOMException('Aborted','AbortError'));
+    signal.addEventListener('abort',aborted,{once:true});
+    void work.then(value=>{
+      signal.removeEventListener('abort',aborted);resolve(value);
+    },error=>{
+      signal.removeEventListener('abort',aborted);reject(error);
+    });
   });
-  return manifestPromise;
+}
+export function loadContentManifest(signal?:AbortSignal):Promise<ContentManifest>{
+  if(!manifestPromise){
+    const request=fetch('/content/manifest.json',{cache:'no-cache'}).then(async response=>{
+      if(!response.ok)throw new Error('Content manifest HTTP '+response.status);
+      const retained=response.clone();
+      const payload=await response.json() as ContentManifest;
+      if(payload.schema!=='thiepn-french-content-manifest-v1'||!Array.isArray(payload.packs))
+        throw new Error('Content manifest schema mismatch');
+      if('caches' in globalThis)try{
+        const storage=await caches.open('french-vnext-shell-v1');
+        await storage.put('/content/manifest.json',retained);
+      }catch(error){console.warn('French content manifest offline cache unavailable',error);}
+      return payload;
+    });
+    manifestPromise=request.catch(error=>{manifestPromise=null;throw error;});
+  }
+  return waitForContent(manifestPromise,signal);
 }
