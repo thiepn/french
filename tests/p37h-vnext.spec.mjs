@@ -515,6 +515,78 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
   }finally{await context.setOffline(false);}
 });
 
+
+test('U57 old-tab unversioned cache writes cannot replace SHA-pinned offline vocabulary',async({page,context})=>{
+  await page.goto('/#words');
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const baseline=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifest=await(await store.match('/content/manifest.json')).json();
+    const descriptor=manifest.indexes.vocabulary;
+    const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
+    const response=await store.match(pinned);
+    if(!response)throw Error('Verified index not pinned to its digest');
+    const original=await response.text();
+    await store.put(descriptor.path,new Response('{"schema":"foreign","rows":[{"word":"U57_CORRUPTED"}]}',
+      {headers:{'content-type':'application/json'}}));
+    return{pinned,original,sha:descriptor.sha256};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+    const evidence=await page.evaluate(async pinned=>{
+      const store=await caches.open('french-vnext-content-v1');
+      const bytes=await(await store.match(pinned)).arrayBuffer();
+      const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
+        .map(b=>b.toString(16).padStart(2,'0')).join('');
+      return{actual,containsAttack:JSON.stringify(document.body.textContent).includes('U57_CORRUPTED')};
+    },baseline.pinned);
+    expect(evidence.actual).toBe(baseline.sha);
+    expect(evidence.containsAttack).toBe(false);
+  }finally{await context.setOffline(false);}
+});
+
+test('U57 damaged pinned and legacy corpus caches fail closed, then recover after reconnect',async({page,context})=>{
+  await page.goto('/#words');
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const target=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifest=await(await store.match('/content/manifest.json')).json();
+    const descriptor=manifest.indexes.vocabulary;
+    const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
+    const poison=new Response('{"schema":"thiepn-french-vocabulary-search-v1","rows":[{"word":"U57_CORRUPTED"}]}',
+      {headers:{'content-type':'application/json'}});
+    await store.put(pinned,poison.clone());
+    await store.put(descriptor.path,poison);
+    return{pinned,sha:descriptor.sha256};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Words',exact:true})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-results] .word-result')).toHaveCount(0,{timeout:30_000});
+    const remaining=await page.evaluate(async pinned=>Boolean(
+      await(await caches.open('french-vnext-content-v1')).match(pinned)
+    ),target.pinned);
+    expect(remaining).toBe(false);
+    expect(await page.evaluate(()=>document.body.textContent.includes('U57_CORRUPTED'))).toBe(false);
+  }finally{await context.setOffline(false);}
+  // The rejected shared promise must be replaced on navigation without reload.
+  await page.evaluate(()=>{location.hash='#home';});
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  await page.evaluate(()=>{location.hash='#words';});
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const actual=await page.evaluate(async pinned=>{
+    const response=await(await caches.open('french-vnext-content-v1')).match(pinned);
+    if(!response)return'UNCACHED';
+    const bytes=await response.arrayBuffer();
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
+      .map(b=>b.toString(16).padStart(2,'0')).join('');
+  },target.pinned);
+  expect(actual).toBe(target.sha);
+});
+
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
