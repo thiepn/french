@@ -63,7 +63,7 @@ export function loadContentManifest(signal?:AbortSignal):Promise<ContentManifest
       if(payload.schema!=='thiepn-french-content-manifest-v1'||!Array.isArray(payload.packs))
         throw new Error('Content manifest schema mismatch');
       if('caches' in globalThis)try{
-        const storage=await caches.open('french-vnext-shell-v1');
+        const storage=await caches.open('french-vnext-content-v1');
         await storage.put('/content/manifest.json',retained);
       }catch(error){console.warn('French content manifest offline cache unavailable',error);}
       return payload;

@@ -56,7 +56,7 @@ async function fetchVerifiedJson<T>(path:string,sha256?:string,signal?:AbortSign
   // SHA-256-verified content even before the first SW takes control. No
   // personal French text, SRS, or study-state data is put in Cache Storage.
   if('caches' in globalThis)try{
-    const storage=await caches.open('french-vnext-shell-v1');
+    const storage=await caches.open('french-vnext-content-v1');
     await storage.put(path,cachedCopy);
   }catch(error){console.warn('Verified French content could not be cached for offline use',error);}
   return decoded;

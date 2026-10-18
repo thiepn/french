@@ -342,7 +342,10 @@ test('U54 offline cold-start precaches public manifest without loading any priva
     await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
   }
   const prewarm=await page.evaluate(async()=>{
-    const store=await caches.open('french-vnext-shell-v1');
+    const names=await caches.keys();
+    const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!current)throw Error('Versioned vNext shell was not installed');
+    const store=await caches.open(current);
     const names=(await store.keys()).map(request=>new URL(request.url).pathname);
     return {manifest:names.includes('/content/manifest.json'),
       unrelated:names.filter(path=>path.startsWith('/api/')||path.startsWith('/rest/v1/'))};
@@ -398,7 +401,7 @@ test('U54 P35 legacy cache survives vNext worker update and cannot supply foreig
         legacyPack:await check('/content/packs/p35-legacy-only.json'),
         privateApi:await check('/api/p35-private'),
         originalStillOwned:(await caches.keys()).includes('french-shell-v35'),
-        nativeLeak:(await(await caches.open('french-vnext-shell-v1')).keys())
+        nativeLeak:(await(await caches.open('french-vnext-content-v1')).keys())
           .some(request=>new URL(request.url).pathname==='/api/p35-private')
       };
     });
@@ -420,7 +423,7 @@ test('U54 corpus index retries in the same tab after an offline cache miss',asyn
     await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
   }
   const before=await page.evaluate(async()=>{
-    const store=await caches.open('french-vnext-shell-v1');
+    const store=await caches.open('french-vnext-content-v1');
     return Boolean(await store.match('/content/search/vocabulary-index.json'));
   });
   expect(before).toBe(false); // Full search index remains on-demand.
@@ -437,7 +440,7 @@ test('U54 corpus index retries in the same tab after an offline cache miss',asyn
   await page.evaluate(()=>{location.hash='#words';});
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   expect(await page.evaluate(async()=>Boolean(
-    await(await caches.open('french-vnext-shell-v1')).match('/content/search/vocabulary-index.json')
+    await(await caches.open('french-vnext-content-v1')).match('/content/search/vocabulary-index.json')
   ))).toBe(true);
 });
 
@@ -894,7 +897,7 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
   // The first online Read visit must persist only public, visited content in
   // Cache Storage, even if it happened before the SW acquired control.
   const offlineContent=await page.evaluate(async()=>{
-    const cache=await caches.open('french-vnext-shell-v1');
+    const cache=await caches.open('french-vnext-content-v1');
     const keys=(await cache.keys()).map(request=>new URL(request.url).pathname);
     const storedManifest=await cache.match('/content/manifest.json');
     const manifest=storedManifest?await storedManifest.json():null;
