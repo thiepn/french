@@ -455,6 +455,18 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
     await page.reload();
     await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
   }
+  // The Read shell renders before the verified reading pack is written.
+  // An upgrade test must await the actual SHA-pinned public evidence.
+  await expect.poll(async()=>page.evaluate(async()=>{
+    const content=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await content.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)return false;
+    const manifest=await(await content.match(manifestKey)).json();
+    const descriptor=manifest?.packs.find(pack=>pack.id==='reading-stable-p35');
+    return Boolean(descriptor&&await content.match(
+      descriptor.path+'?verifiedSha256='+descriptor.sha256));
+  }),{timeout:30_000}).toBe(true);
   const original=await page.evaluate(async()=>{
     const names=await caches.keys();
     const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
