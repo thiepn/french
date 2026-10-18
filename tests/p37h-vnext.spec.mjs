@@ -698,6 +698,11 @@ test('U58 offline storage diagnostics show low quota and never delete original c
 
 test('U59 older running build rejects a changed shared manifest and keeps SHA-pinned offline study',async({page,context})=>{
   await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   const saved=await page.evaluate(async()=>{
     const content=await caches.open('french-vnext-content-v1');
@@ -766,6 +771,11 @@ test('U59 wrong-build online manifest is rejected and recovered from matching in
 
 test('U60 on-demand offline essentials prepare five SHA-verified public sources and survive offline reload',async({page,context})=>{
   await page.goto('/#settings');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
   await expect(page.getByRole('button',{name:'Check offline lessons'})).toBeVisible();
   await page.getByRole('button',{name:'Check offline lessons'}).click();
   await expect(page.locator('[data-essentials-status]')).toContainText(/verified public essentials available/,{timeout:30_000});
