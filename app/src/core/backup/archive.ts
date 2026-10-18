@@ -103,19 +103,29 @@ export function validateBackupPayload(value:unknown):BackupPayload{
   for(const name of STORE_NAMES)stores[name]=assertRows((storesRaw as Record<string,unknown>)[name],name);
   return{dbName:DB_NAME,dbVersion:Number(raw.dbVersion)||DB_VERSION,stores};
 }
-export async function restoreBackupPayload(value:unknown):Promise<void>{
+/** Conditional restore compares the reviewed snapshot inside the SAME
+ * read-write transaction as all seven store replacements. A tab that grades,
+ * edits, syncs or claims a session in between makes the restore fail closed.
+ */
+export async function restoreBackupPayload(value:unknown,expectedCurrent:unknown):Promise<void>{
   const payload=validateBackupPayload(value);
+  const expected=validateBackupPayload(expectedCurrent);
   const db=await openFrenchDatabase();
   try{
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction([...STORE_NAMES],'readwrite');
-      for(const name of STORE_NAMES){
-        const store=tx.objectStore(name);store.clear();
-        for(const row of payload.stores[name])store.put(row.value,row.key);
-      }
+      readStores(tx,stores=>{
+        const present={dbName:DB_NAME,dbVersion:DB_VERSION,stores};
+        if(JSON.stringify(present)!==JSON.stringify(expected))
+          throw Error('FRENCH_RESTORE_LOCAL_CHANGED: Local French changed since preview. Review the latest state before restoring.');
+        for(const name of STORE_NAMES){
+          const store=tx.objectStore(name);store.clear();
+          for(const row of payload.stores[name])store.put(row.value,row.key);
+        }
+      },reject);
       tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??new Error('Backup restore failed.'));
-      tx.onabort=()=>reject(tx.error??new Error('Backup restore was aborted.'));
+      tx.onerror=()=>reject(tx.error??Error('Backup restore failed'));
+      tx.onabort=()=>reject(tx.error??Error('Backup restore was aborted'));
     });
   }finally{db.close();}
 }
@@ -146,8 +156,8 @@ export async function inspectBackupArchive(text:string):Promise<BackupInspection
   return{archive,totalRows,rowsByStore,createdAt};
 }
 
-export async function restoreBackupArchive(text:string):Promise<BackupInspection>{
+export async function restoreBackupArchive(text:string,expectedCurrent:BackupPayload):Promise<BackupInspection>{
   const inspection=await inspectBackupArchive(text);
-  await restoreBackupPayload(inspection.archive.payload);
+  await restoreBackupPayload(inspection.archive.payload,expectedCurrent);
   return inspection;
 }
