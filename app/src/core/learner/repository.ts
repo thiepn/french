@@ -439,6 +439,38 @@ export async function writeActiveStudySession(session:StudySessionStateV1):Promi
   }finally{db.close();}
 }
 
+export async function clearCompletedStudySession(expected:StudySessionStateV1,now=Date.now()):Promise<boolean>{
+  if(expected.cursor<expected.queueIds.length)return false;
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise<boolean>((resolve,reject)=>{
+      const tx=db.transaction('session','readwrite');
+      const owner=tx.objectStore('session'),read=owner.get('active');
+      let cleared=false;
+      read.onsuccess=()=>{
+        const current=normalizeStudySession(read.result,now);
+        if(current&&sameSession(current,expected)){owner.delete('active');cleared=true;}
+      };
+      tx.oncomplete=()=>resolve(cleared);
+      tx.onerror=()=>reject(tx.error??Error('Completed session cleanup failed'));
+      tx.onabort=()=>reject(tx.error??Error('Completed session cleanup aborted'));
+    });
+  }finally{db.close();}
+}
+function sameValue(a:unknown,b:unknown):boolean{return JSON.stringify(a)===JSON.stringify(b);}
+function sameSession(a:StudySessionStateV1,b:StudySessionStateV1):boolean{return sameValue(a,b);}
+function sessionConflict():Error{return Error('STUDY_SESSION_CONFLICT');}
+function guardedReads(
+  tx:IDBTransaction,requests:readonly IDBRequest[],write:()=>void,reject:(reason:unknown)=>void
+):void{
+  let pending=requests.length;
+  const fail=(error:unknown)=>{reject(error);try{tx.abort();}catch{/* closed */}};
+  for(const request of requests){
+    request.onsuccess=()=>{if(--pending===0){try{write();}catch(error){fail(error);}}};
+    request.onerror=()=>fail(request.error??Error('Guarded learner read failed'));
+  }
+}
+
 export async function clearActiveStudySession():Promise<void>{
   const db=await openFrenchDatabase();
   try{
@@ -488,11 +520,13 @@ export async function recordStudySessionReview(
   context:ReviewContentContext={},
   timestamp=Date.now(),
   responseMs=0,
-  typedQuality:TypedQuality='none'
+  typedQuality:TypedQuality='none',
+  expectedSession?:StudySessionStateV1
 ):Promise<{next:CanonicalSrsRecordV1;event:CanonicalReviewEventV1;session:StudySessionStateV1}>{
   const learner=await ensureCanonicalLearnerState(timestamp);
   const active=await readActiveStudySession(timestamp);
-  if(!active)throw new Error('Active learner session is unavailable.');
+  if(!active||active.cursor>=active.queueIds.length||active.currentId!==previous.id||
+     (expectedSession&&!sameSession(active,expectedSession)))throw sessionConflict();
 
   const reinforcement=reinforcementAt(active);
   const practiceOnly=Boolean(reinforcement);
@@ -599,11 +633,20 @@ export async function recordStudySessionReview(
         ?['learner','activity','meta','session']
         :['learner','srs','activity','meta','session'];
       const tx=db.transaction(stores,'readwrite');
-      tx.objectStore('learner').put(updatedLearner,'state-v1');
-      if(!practiceOnly)tx.objectStore('srs').put(next,next.id);
-      tx.objectStore('activity').put(event,event.eventId);
-      tx.objectStore('meta').put(summary,'learner-summary');
-      tx.objectStore('session').put(session,'active');
+      const owner=tx.objectStore('session'),state=tx.objectStore('learner'),meta=tx.objectStore('meta');
+      const a=owner.get('active'),b=state.get('state-v1'),c=meta.get('learner-summary');
+      const d=practiceOnly?null:tx.objectStore('srs').get(previous.id);
+      guardedReads(tx,[a,b,c,...(d?[d]:[])],()=>{
+        const stored=normalizeStudySession(a.result,timestamp);
+        if(!stored||!sameSession(stored,active)||!sameValue(b.result,learner)||
+           !sameValue(c.result??{},previousSummary)||
+           (d&&!sameValue(d.result,previous)))throw sessionConflict();
+        state.put(updatedLearner,'state-v1');
+        if(!practiceOnly)tx.objectStore('srs').put(next,next.id);
+        tx.objectStore('activity').put(event,event.eventId);
+        meta.put(summary,'learner-summary');
+        owner.put(session,'active');
+      },reject);
       tx.oncomplete=()=>resolve();
       tx.onerror=()=>reject(tx.error??new Error('Study-session review transaction failed.'));
       tx.onabort=()=>reject(tx.error??new Error('Study-session review transaction was aborted.'));
@@ -612,22 +655,45 @@ export async function recordStudySessionReview(
 
   return{next,event,session};
 }
-export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
+export async function skipStudySessionItem(
+  now=Date.now(),expectedSession?:StudySessionStateV1
+):Promise<StudySessionStateV1|null>{
   const active=await readActiveStudySession(now);
   if(!active)return null;
+  if(active.cursor>=active.queueIds.length||
+     (expectedSession&&!sameSession(active,expectedSession)))throw sessionConflict();
   const stats=cloneSessionStats(active);stats.skipped++;
   const next=advanceSession({...active,stats},now);
-  await writeActiveStudySession(next);
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('session','readwrite'),owner=tx.objectStore('session');
+      const current=owner.get('active');
+      guardedReads(tx,[current],()=>{
+        const stored=normalizeStudySession(current.result,now);
+        if(!stored||!sameSession(stored,active))throw sessionConflict();
+        owner.put(next,'active');
+      },reject);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??Error('Skip transaction failed'));
+      tx.onabort=()=>reject(tx.error??Error('Skip transaction aborted'));
+    });
+  }finally{db.close();}
   return next;
 }
 
-export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySessionStateV1|null>{
+export async function undoLastStudySessionReview(
+  now=Date.now(),expectedSession?:StudySessionStateV1
+):Promise<StudySessionStateV1|null>{
   const active=await readActiveStudySession(now);
   const undo=active?.undo.at(-1);
   if(!active||!undo)return null;
+  if(expectedSession&&!sameSession(active,expectedSession))throw sessionConflict();
 
   const learner=await readCanonicalLearnerState();
   if(!learner)throw new Error('Learner state is unavailable.');
+  const summary=await readMetaValue<unknown>('learner-summary');
+  const latestSrs=await readSrsById(undo.srsId);
 
   const restoredLearner={...learner,studyDays:[...undo.previousStudyDays],profile:{...undo.previousProfile}};
   const restored:StudySessionStateV1={
@@ -646,11 +712,24 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
   try{
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction(['learner','srs','activity','meta','session'],'readwrite');
-      tx.objectStore('learner').put(restoredLearner,'state-v1');
-      tx.objectStore('srs').put(undo.previousRecord,undo.srsId);
-      tx.objectStore('activity').delete(undo.eventId);
-      tx.objectStore('meta').put(undo.previousSummary,'learner-summary');
-      tx.objectStore('session').put(restored,'active');
+      const owner=tx.objectStore('session'),state=tx.objectStore('learner'),
+        srs=tx.objectStore('srs'),events=tx.objectStore('activity'),meta=tx.objectStore('meta');
+      const a=owner.get('active'),b=state.get('state-v1'),c=meta.get('learner-summary'),
+        d=srs.get(undo.srsId),e=events.get(undo.eventId);
+      guardedReads(tx,[a,b,c,d,e],()=>{
+        const current=normalizeStudySession(a.result,now);
+        const review=e.result as CanonicalReviewEventV1|undefined;
+        if(!current||!sameSession(current,active)||!sameValue(b.result,learner)||
+           !sameValue(c.result,summary)||!sameValue(d.result,latestSrs)||
+           !review||review.eventId!==undo.eventId||
+           (!review.practiceOnly&&(d.result as CanonicalSrsRecordV1|undefined)?.lastReviewedAt!==review.t))
+          throw sessionConflict();
+        state.put(restoredLearner,'state-v1');
+        srs.put(undo.previousRecord,undo.srsId);
+        events.delete(undo.eventId);
+        meta.put(undo.previousSummary,'learner-summary');
+        owner.put(restored,'active');
+      },reject);
       tx.oncomplete=()=>resolve();
       tx.onerror=()=>reject(tx.error??new Error('Undo transaction failed.'));
       tx.onabort=()=>reject(tx.error??new Error('Undo transaction was aborted.'));
