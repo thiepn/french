@@ -587,6 +587,91 @@ test('U57 damaged pinned and legacy corpus caches fail closed, then recover afte
   expect(actual).toBe(target.sha);
 });
 
+
+test('U58 active mixed-version tabs preserve all prior native shell caches across worker updates',async({page,context})=>{
+  const older=await context.newPage();
+  try{
+    await page.goto('/#home');
+    await older.goto('/#home');
+    await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+    await expect(older.getByRole('heading',{name:'Continue French'})).toBeVisible();
+    await page.evaluate(async()=>navigator.serviceWorker.ready);
+    if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+      await page.reload();
+      await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+    }
+    const names=await page.evaluate(async()=>{
+      const old=['french-vnext-shell-000000000001','french-vnext-shell-000000000002','french-vnext-shell-000000000003'];
+      for(let i=0;i<old.length;i++){
+        const store=await caches.open(old[i]);
+        await store.put('/assets/u58-prior-'+i+'.js',new Response('PRIOR_BUILD_'+i));
+      }
+      const p35=await caches.open('french-shell-v35');
+      await p35.put('/u58-p35-original',new Response('P35_INTACT'));
+      const verified=await caches.open('french-vnext-content-v1');
+      await verified.put('/u58-verified-public',new Response('VERIFIED_CONTENT'));
+      return old;
+    });
+    await page.evaluate(async()=>{
+      const registration=await navigator.serviceWorker.register('/service-worker.js?u58-mixed-version-protection');
+      await new Promise((resolve,reject)=>{
+        if(registration.active?.scriptURL.includes('u58-mixed-version-protection'))return resolve();
+        const worker=registration.installing??registration.waiting;
+        if(!worker)return reject(Error('No U58 upgrade worker'));
+        worker.addEventListener('statechange',()=>{
+          if(worker.state==='activated')resolve();
+          if(worker.state==='redundant')reject(Error('Upgrade worker was redundant'));
+        });
+      });
+    });
+    await expect.poll(()=>page.evaluate(()=>Boolean(
+      navigator.serviceWorker.controller?.scriptURL.includes('u58-mixed-version-protection')
+    )),{timeout:20_000}).toBe(true);
+    const retained=await page.evaluate(async names=>{
+      const values=[];
+      for(let i=0;i<names.length;i++)
+        values.push(await(await(await caches.open(names[i])).match('/assets/u58-prior-'+i+'.js')).text());
+      const p35=await(await(await caches.open('french-shell-v35')).match('/u58-p35-original')).text();
+      const verified=await(await(await caches.open('french-vnext-content-v1')).match('/u58-verified-public')).text();
+      return{values,p35,verified};
+    },names);
+    expect(retained).toEqual({
+      values:['PRIOR_BUILD_0','PRIOR_BUILD_1','PRIOR_BUILD_2'],
+      p35:'P35_INTACT',verified:'VERIFIED_CONTENT'
+    });
+    await context.setOffline(true);
+    try{
+      // Still-open old tabs can lazily fetch their own previous hashed assets.
+      expect(await older.evaluate(async()=>(
+        await fetch('/assets/u58-prior-0.js')
+      ).text())).toBe('PRIOR_BUILD_0');
+    }finally{await context.setOffline(false);}
+  }finally{await older.close();}
+});
+
+test('U58 offline storage diagnostics show low quota and never delete original caches',async({page})=>{
+  await page.goto('/#home');
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+  const before=await page.evaluate(async()=>{
+    await caches.open('french-shell-v35');
+    await caches.open('french-vnext-content-v1');
+    Object.defineProperty(navigator,'storage',{configurable:true,value:{
+      estimate:async()=>({usage:95_000_000,quota:100_000_000}),
+      persisted:async()=>false,
+      persist:async()=>false
+    }});
+    return await caches.keys();
+  });
+  await page.evaluate(()=>{location.hash='#settings';});
+  await expect(page.getByRole('heading',{name:'Offline storage'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Check offline storage'}).click();
+  await expect(page.locator('[data-offline-status]')).toContainText('95.0 MB of 100.0 MB');
+  await expect(page.locator('[data-offline-status]')).toContainText('Low remaining space');
+  await expect(page.locator('[data-offline-status]')).toContainText('No data was deleted');
+  await page.getByRole('button',{name:'Request persistent storage'}).click();
+  await expect(page.locator('[data-offline-status]')).toContainText('Persistent storage was not granted');
+  expect(await page.evaluate(()=>caches.keys())).toEqual(before);
+});
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
