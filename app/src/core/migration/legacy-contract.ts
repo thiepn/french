@@ -61,7 +61,7 @@ export type JsonObject = Record<string, unknown>;
 
 export interface LegacySnapshotEnvelope {
   schema:'thiepn-french-legacy-import-v1';
-  source:'depth-db'|'local-storage';
+  source:'depth-db'|'local-storage'|'cloud';
   capturedAt:number;
   sourceUpdatedAt:number;
   sourceVersion:string;

@@ -1,0 +1,26 @@
+name: P37H cutover readiness
+
+on:
+  push:
+    branches: ["p37h-cutover-readiness","main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p37h-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  account-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Probe production account contract without writes
+        run: node scripts/probe-vnext-account-backend.mjs

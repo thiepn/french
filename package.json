@@ -3,16 +3,19 @@
   "scripts":{
     "dev:vnext":"vite --config vite.config.ts",
     "content:vnext":"node scripts/build-vnext-content.mjs",
-    "build:vnext":"npm run content:vnext && vite build --config vite.config.ts",
+    "build:vnext":"npm run content:vnext && vite build --config vite.config.ts && node scripts/finalize-vnext-dist.mjs",
     "typecheck:vnext":"tsc -p tsconfig.json --noEmit",
-    "verify:vnext":"node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs && node scripts/verify-vnext-typed-review-p37f.mjs && node scripts/verify-vnext-study-session-p37g.mjs",
+    "verify:vnext":"node scripts/verify-vnext-architecture.mjs && node scripts/verify-vnext-migration-contract.mjs && node scripts/verify-vnext-canonical-learner.mjs && node scripts/verify-vnext-content-pipeline.mjs && node scripts/verify-vnext-functional-p37e.mjs && node scripts/verify-vnext-typed-review-p37f.mjs && node scripts/verify-vnext-study-session-p37g.mjs && node scripts/verify-vnext-cutover-p37h.mjs",
     "test:vnext:scheduler":"node scripts/test-vnext-scheduler.mts",
     "test:vnext:grader":"node scripts/test-vnext-grader.mts",
     "test:vnext:queue":"node scripts/test-vnext-queue.mts",
     "test:vnext:session":"node scripts/test-vnext-session.mts",
     "test:vnext:adaptive":"node scripts/test-vnext-adaptive.mts",
+    "test:vnext:account":"node scripts/test-vnext-account-reconcile.mts",
     "verify:vnext:dist":"node scripts/check-vnext-budget.mjs",
-    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run build:vnext && npm run verify:vnext:dist"
+    "test:vnext:rollback-artifact":"node scripts/prepare-pages-artifact.mjs p35-rollback && node scripts/verify-pages-artifact.mjs p35-rollback",
+    "test:vnext:cutover-artifact":"node scripts/prepare-pages-artifact.mjs vnext && node scripts/verify-pages-artifact.mjs vnext",
+    "qualify:vnext":"npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:account && npm run test:vnext:rollback-artifact && npm run build:vnext && npm run verify:vnext:dist && npm run test:vnext:cutover-artifact"
   },
   "devDependencies":{"typescript":"7.0.2","vite":"8.3.3"}
 }
