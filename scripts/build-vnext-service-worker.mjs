@@ -52,18 +52,13 @@ self.addEventListener('fetch',event=>{
     return;
   }
   const isContent=url.pathname.startsWith('/content/');
-  const isStatic=SHELL_PATHS.has(url.pathname)||url.pathname.startsWith('/assets/');
+  const isStatic=SHELL_PATHS.has(url.pathname);
   if(!isContent&&!isStatic)return; // Never cache Account, API or private reads.
   if(isContent){
-    // Content paths are not content-addressed: check online for new source
-    // revisions, falling back ONLY to this build's visited/preloaded files.
-    event.respondWith(fetch(request).then(response=>{
-      if(ownedResponse(response)){
-        const copy=response.clone();
-        event.waitUntil(cache().then(store=>store.put(request,copy)));
-      }
-      return response;
-    }).catch(async()=>await (await cache()).match(request)||Response.error()));
+    // The verified content loader and manifest parser own cache.put.
+    // Network responses must not poison a previously validated offline pack.
+    event.respondWith(fetch(request).catch(async()=>
+      await (await cache()).match(request)||Response.error()));
     return;
   }
   event.respondWith(cache().then(async store=>{
