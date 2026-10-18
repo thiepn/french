@@ -23,7 +23,16 @@ assert.ok(storage.includes("db.transaction(['user-content','srs'],'readwrite')")
 assert.ok(storage.includes("newRecognitionRecord(id)"));
 assert.ok(storage.includes("state.userCards[id]={...prior,...cleaned}"));
 assert.ok(builder.includes('createSelectedVocabularySession'));
-assert.ok(builder.includes('pacingDecision')&&builder.includes('writeActiveStudySession(session)'));
+assert.ok(builder.includes('pacingDecision')&&builder.includes('claimActiveStudySession(session'));
+assert.ok(builder.includes('claimActiveStudySession(session,[...staged,...fresh]'));
+assert.ok(builder.includes('claimActiveStudySession(session,fresh'));
+assert.ok(!builder.includes('writeActiveStudySession(session)'));
+const repository=read('app/src/core/learner/repository.ts');
+assert.ok(repository.includes("db.transaction(['session','srs'],'readwrite')"));
+assert.ok(repository.includes("if(active&&active.cursor<active.queueIds.length)"));
+assert.ok(repository.includes("if(lookup.result===undefined)srs.put(row,row.id)"));
+assert.ok(!builder.includes('await ensureNewRecognitionRecords('));
+assert.ok(!builder.includes('await ensureSkillRecord('));
 assert.ok(words.includes('Study my words')&&words.includes('createSelectedVocabularySession'));
 assert.ok(words.includes('saveUserVocabularyCard')&&words.includes('navigate(\'review\')'));
 assert.ok(!read('app/src/core/content/review-content.ts').includes('userContentPromise'));
