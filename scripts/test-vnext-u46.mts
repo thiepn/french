@@ -9,12 +9,23 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 import {
  listeningQuestions,validateListeningCatalog,originalA1SoundContrasts,
  validateOriginalA1SoundContrasts,originalA1ConversationTransfer,
- validateOriginalA1ConversationTransfers
+ validateOriginalA1ConversationTransfers,originalA1ConversationRepair
 } from '../app/src/core/unified/u7-listening.ts';
 
 assert.deepEqual(validateCompleteA1Course(),[],'Original A1 lessons unchanged');
 assert.deepEqual(validateListeningCatalog(A1_COMPLETE_UNITS),[],'Keyed listening catalog and source pointers');
 assert.deepEqual(validateOriginalA1SoundContrasts(),[],'48 source-owned sound comparisons');
+for(let i=1;i<=24;i++){
+ const id='a1-'+String(i).padStart(2,'0');
+ const repair=originalA1ConversationRepair(id);
+ assert.ok(repair?.misunderstanding&&repair?.responseTask&&repair?.evidenceCheck,
+  'Source-linked second-context repair '+id);
+ assert.ok(repair.misunderstanding.length>=55,'Real misunderstanding rather than a lesson ID '+id);
+ assert.ok(repair.responseTask.length>=75,'Independent repair exercise, not a title '+id);
+ assert.notEqual(repair.misunderstanding,id);
+ assert.equal(repair.evidenceCheck,originalA1ConversationTransfer(id)?.check,
+  'Repair inherits actual original-source self-check');
+}
 assert.deepEqual(validateOriginalA1ConversationTransfers(),[],'24 learner-owned conversation contexts');
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244,'Original 94 lessons + 150 scenarios unchanged');
 assert.equal(ORIGINAL_U22_CONNECTED_READINGS.length,192,'Keep 192 connected reading authorities');

@@ -310,15 +310,53 @@ const A1_CONVERSATION_TRANSFERS:Readonly<Record<string,OriginalA1ConversationTra
  "a1-23":{"context":"At the post office, an employee says the price of a service too quickly for you to hear.","task":"Ask for slower repetition, say the amount you think was quoted and check it before paying.","check":"Deux euros is a cost, not evidence that two stamps were bought. A request to repeat is not comprehension.","relevantTurnIndex":4},
  "a1-24":{"context":"A late bus changes your plan, so you visit the bakery before finding a new connection.","task":"Ask about the next bus, request bread and water, then ask for the unquoted total price.","check":"Connect three polite service exchanges, but never fabricate an unknown departure or purchase amount.","relevantTurnIndex":4}
 });
+/** Twenty-four source-grounded repair turns: new changed-audience work, no new graded prompt IDs. */
+export interface OriginalA1ConversationRepair{
+ readonly misunderstanding:string;readonly responseTask:string;readonly evidenceCheck:string;
+}
+const A1_CONVERSATION_REPAIRS:Readonly<Record<string,OriginalA1ConversationRepair>>=Object.freeze({
+ "a1-01":{misunderstanding:"The visitor repeats your friend's name as if it were your own.",responseTask:"Correct the person's identity politely, then introduce yourself again with a greeting appropriate for someone you have just met.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-01"].check},
+ "a1-02":{misunderstanding:"A classmate mistakes your friend's course for the subject you study.",responseTask:"Contrast je and il/elle in a complete reply, then ask the classmate what their group is studying.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-02"].check},
+ "a1-03":{misunderstanding:"Someone thinks you are offering your notebook when you were asking to borrow one.",responseTask:"Correct who owns the notebook and ask for the article and object you really need.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-03"].check},
+ "a1-04":{misunderstanding:"A guest interprets a question about age as a claim about your sibling.",responseTask:"Clarify whose age is being discussed and ask again without inventing a number.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-04"].check},
+ "a1-05":{misunderstanding:"Your partner confuses a group's available study time with your personal working hours.",responseTask:"Repair the speaker and time distinction, then propose a time for confirmation.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-05"].check},
+ "a1-06":{misunderstanding:"An employee replies about the admission fee although you asked which entrance is open.",responseTask:"Restate the location question, then ask about the price as a separate unknown.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-06"].check},
+ "a1-07":{misunderstanding:"Your friend interprets your refusal of coffee as a refusal of every drink.",responseTask:"Correct what you do not want and politely name what you would like instead.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-07"].check},
+ "a1-08":{misunderstanding:"A listener attributes the colour of one bicycle part to a different part.",responseTask:"Identify both nouns and correct the adjective agreement before asking whether the listener understands.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-08"].check},
+ "a1-09":{misunderstanding:"A tourist takes your left turn to mean the pharmacy is immediately on the left.",responseTask:"Separate the direction to turn from the destination's relative position, and request confirmation.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-09"].check},
+ "a1-10":{misunderstanding:"Your friend tells others the gallery meeting is confirmed although you only suggested it.",responseTask:"State the proposed time and place, and ask for an explicit reply before confirming.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-10"].check},
+ "a1-11":{misunderstanding:"Someone assumes you have already left because you described your morning routine.",responseTask:"Distinguish a usual action from today's plan and clarify when you will actually leave.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-11"].check},
+ "a1-12":{misunderstanding:"A friend hears your suggested Sunday activity as a promise to attend Saturday's concert.",responseTask:"Decline the original invitation clearly, suggest Sunday and explicitly request confirmation.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-12"].check},
+ "a1-13":{misunderstanding:"The server thinks you ordered soup even though you asked what other food is available.",responseTask:"Correct the presumed order, ask what is actually available and only then place a polite request.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-13"].check},
+ "a1-14":{misunderstanding:"A cashier applies the jacket's price to the bag without verifying the second item's tag.",responseTask:"Ask for the bag's own price, contrast the items and check the intended payment method.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-14"].check},
+ "a1-15":{misunderstanding:"The seller quotes a total before confirming your changed quantities.",responseTask:"Restate the final counts and ask the seller to recalculate without announcing an invented total.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-15"].check},
+ "a1-16":{misunderstanding:"The waiter interprets a meat-free request as proof that the daily special is vegetarian.",responseTask:"Ask about actual ingredients and the table situation separately before ordering.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-16"].check},
+ "a1-17":{misunderstanding:"Your friend treats a possible indoor visit as an already purchased reservation.",responseTask:"Explain the weather change, propose an indoor alternative and ask whether anyone has booked it.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-17"].check},
+ "a1-18":{misunderstanding:"A visitor announces an apartment has a balcony although you only asked about one.",responseTask:"Correct the uncertainty, describe the known rooms and repeat the balcony and rent questions.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-18"].check},
+ "a1-19":{misunderstanding:"Another passenger mistakes the route you are asking about for a confirmed transfer.",responseTask:"Ask the agent for the connection and next departure again, and repeat only details actually supplied.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-19"].check},
+ "a1-20":{misunderstanding:"The hotel employee thinks your reservation means the room is already ready.",responseTask:"Separate the confirmed booking name from the room-readiness question and request a precise answer.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-20"].check},
+ "a1-21":{misunderstanding:"Your flatmate misunderstands le as referring to the keys rather than the ticket.",responseTask:"Name the object explicitly, distinguish singular from plural, and ask where each item was last seen.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-21"].check},
+ "a1-22":{misunderstanding:"Your friend tells the group that Monday lunch is settled because you suggested it.",responseTask:"Politely correct the status of Monday, preserve the refusal of Sunday, and ask for an answer.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-22"].check},
+ "a1-23":{misunderstanding:"The clerk interprets your request to repeat a price as an agreement to pay it.",responseTask:"Ask for the amount again, repeat what you heard tentatively and confirm before purchasing.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-23"].check},
+ "a1-24":{misunderstanding:"Someone assumes you know the next bus time and total bakery price without a reply.",responseTask:"Say which information is still unknown and make two separate polite follow-up questions.",evidenceCheck:A1_CONVERSATION_TRANSFERS["a1-24"].check}
+});
+export function originalA1ConversationRepair(id:string):OriginalA1ConversationRepair|null{
+ return A1_CONVERSATION_REPAIRS[id]??null;
+}
+
 export function originalA1ConversationTransfer(id:string):OriginalA1ConversationTransfer|null{
  return A1_CONVERSATION_TRANSFERS[id]??null;
 }
 export function validateOriginalA1ConversationTransfers():readonly string[]{
  const issues:string[]=[];
  if(Object.keys(A1_CONVERSATION_TRANSFERS).length!==24)issues.push('Twenty-four original A1 transfer situations required');
+ if(Object.keys(A1_CONVERSATION_REPAIRS).length!==24)issues.push('Twenty-four original A1 repair situations required');
  for(let i=1;i<=24;i++){
   const id='a1-'+String(i).padStart(2,'0');
   const v=originalA1ConversationTransfer(id);
+  const repair=originalA1ConversationRepair(id);
+  if(!repair||repair.misunderstanding.length<55||repair.responseTask.length<75||repair.evidenceCheck.length<55)
+   issues.push(id+' independent misunderstanding repair incomplete');
   if(!v||v.context.length<60||v.task.length<65||v.check.length<75||
    !Number.isInteger(v.relevantTurnIndex)||v.relevantTurnIndex<0||v.relevantTurnIndex>4)
    issues.push(id+' source-owned speech situation incomplete');

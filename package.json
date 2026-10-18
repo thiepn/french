@@ -15,7 +15,7 @@
     "test:vnext:session": "node scripts/test-vnext-session.mts",
     "test:vnext:adaptive": "node scripts/test-vnext-adaptive.mts",
     "verify:vnext:dist": "node scripts/check-vnext-budget.mjs",
-    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:mission && npm run test:vnext:b6-source && npm run test:vnext:b7-graph && npm run test:vnext:u1 && npm run test:vnext:u2 && npm run test:vnext:u3 && npm run test:vnext:u4 && npm run test:vnext:u5 && npm run test:vnext:curriculum && npm run test:vnext:variants && npm run test:vnext:writing && npm run test:vnext:sentence-bridge && npm run test:vnext:usage && npm run test:vnext:usage-mastery && npm run test:vnext:context && npm run test:vnext:lexical && npm run test:vnext:orchestrator && npm run test:vnext:evidence-calibration && npm run test:vnext:cefr && npm run test:vnext:longitudinal && npm run test:vnext:p26 && npm run test:vnext:open-world && npm run test:vnext:adaptive-block && npm run test:vnext:migration && npm run test:vnext:p26-runner && npm run test:vnext:u7 && npm run test:vnext:u44 && npm run test:vnext:u45 && npm run test:vnext:u46 && npm run build:vnext && npm run verify:vnext:dist",
+    "qualify:vnext": "npm run typecheck:vnext && npm run verify:vnext && npm run test:vnext:scheduler && npm run test:vnext:grader && npm run test:vnext:queue && npm run test:vnext:session && npm run test:vnext:adaptive && npm run test:vnext:coach && npm run test:vnext:conversation && npm run test:vnext:mission && npm run test:vnext:b6-source && npm run test:vnext:b7-graph && npm run test:vnext:u1 && npm run test:vnext:u2 && npm run test:vnext:u3 && npm run test:vnext:u4 && npm run test:vnext:u5 && npm run test:vnext:curriculum && npm run test:vnext:variants && npm run test:vnext:writing && npm run test:vnext:sentence-bridge && npm run test:vnext:usage && npm run test:vnext:usage-mastery && npm run test:vnext:context && npm run test:vnext:lexical && npm run test:vnext:orchestrator && npm run test:vnext:evidence-calibration && npm run test:vnext:cefr && npm run test:vnext:longitudinal && npm run test:vnext:p26 && npm run test:vnext:open-world && npm run test:vnext:adaptive-block && npm run test:vnext:migration && npm run test:vnext:p26-runner && npm run test:vnext:u7 && npm run test:vnext:u44 && npm run test:vnext:u45 && npm run test:vnext:u46 && npm run test:vnext:u49 && npm run build:vnext && npm run verify:vnext:dist",
     "test:vnext:migration": "node scripts/test-vnext-migration.mts",
     "test:vnext:coach": "node scripts/test-vnext-study-coach.mts",
     "test:vnext:conversation": "node scripts/test-vnext-conversation.mts",
@@ -55,7 +55,8 @@
     "test:vnext:u43": "node scripts/test-vnext-u43.mts",
     "test:vnext:u44": "node scripts/test-vnext-u44.mts",
     "test:vnext:u45": "node scripts/test-vnext-u45.mts",
-    "test:vnext:u46": "node scripts/test-vnext-u46.mts"
+    "test:vnext:u46": "node scripts/test-vnext-u46.mts",
+    "test:vnext:u49": "node scripts/test-vnext-u49.mts && node scripts/test-vnext-u49-decks.mts && node scripts/test-vnext-u49-missions.mts && node scripts/test-vnext-u49-hub.mts && node scripts/test-vnext-u49-starters.mts"
   },
   "devDependencies": {
     "typescript": "7.0.2",

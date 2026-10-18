@@ -1,9 +1,7 @@
 name: P33 spontaneous oral calibration
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -18,6 +18,10 @@ import {rankUsageCandidates,usageAggregate,transferCueVariant,contextCueVariant,
 import {contextScene} from '../core/usage/context';
 import {buildLexicalSignals,linkedNoteIds,type LexicalSignal} from '../core/usage/lexical';
 import {sentenceBridgeSummary,rankedSentenceBridge,sentenceSourceMap} from '../core/writing/bridge';
+import {matchSourceRule} from '../core/conversation/p35-runtime';
+import {offerSourceDraft} from '../core/conversation/source-transfer';
+import {consumeSourceCompanion,sourceCompanionPanel} from './p35-source-companion';
+import './p35-source-companion.css';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,content='',className=''):HTMLElementTagNameMap[K]{
   const e=document.createElement(tag);if(content)e.textContent=content;if(className)e.className=className;return e;
@@ -47,6 +51,51 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     loadStableSentenceExercises(signal),loadWritingState(),loadStableUsageCorpus(signal),loadUsageState()
   ]);
   if(signal.aborted)return;
+  const sourceCompanion=await consumeSourceCompanion('write');
+  if(signal.aborted)return;
+  if(sourceCompanion){
+    const panel=sourceCompanionPanel('Original P35 dialogue · draft your reply',
+      'Your saved dialogue remains at its original node. This optional drafting is supported source practice, not a scored P12 answer, FSRS attempt or independent conversation. Responses are not stored.');
+    const scene=element('p',sourceCompanion.graph.title+' · '+sourceCompanion.graph.goal);
+    const partner=element('blockquote',sourceCompanion.prompt,'conversation-prompt');
+    const goal=element('p',sourceCompanion.node.hint??'Write a reply in French.','write-note');
+    const draft=element('textarea');draft.setAttribute('aria-label','Draft reply to original dialogue');
+    draft.placeholder='Compose a French response for this source dialogue…';draft.maxLength=650;
+    const feedback=element('p','','write-note');feedback.setAttribute('role','status');
+    const actions=element('div','','p35-actions');
+    const check=control('Check original dialogue rule');
+    check.onclick=()=>{
+      if(!draft.value.trim()){feedback.textContent='Compose a French response before checking.';return;}
+      const matched=matchSourceRule(sourceCompanion.graph,sourceCompanion.active.nodeId,
+        draft.value,sourceCompanion.active.slots);
+      feedback.textContent=matched.status==='accepted'?
+        'Original source pattern recognized. This is rehearsal only; return and answer again in Conversation.':
+        matched.status==='repair'?'Clarification wording recognized. Return to the original dialogue to continue.':
+        'Source rule did not recognize this wording. Rework the French or inspect the original model. No grade was recorded.';
+    };
+    const reference=control('Show original authored phrase');
+    reference.onclick=()=>{
+      feedback.textContent='Original authored example · '+
+        (sourceCompanion.node.phrases?.[0]??'No source phrase for this node.')+
+        ' · supported rehearsal only.';
+    };
+    const carry=control('Use this draft in original conversation (supported)');
+    carry.onclick=()=>{
+      const value=draft.value.trim();
+      if(!value){feedback.textContent='Write your French draft before returning.';return;}
+      if(!offerSourceDraft(sourceCompanion.state,value,Date.now())){
+        feedback.textContent='Source turn changed or model support unavailable; draft not transferred.';return;
+      }
+      // Explicit same-tab memory transfer only: nothing written to IndexedDB,
+      // sessionStorage, activity, SRS, or a second learner record.
+      navigate('conversation');
+    };
+    const back=control('Return to original conversation');
+    back.onclick=()=>navigate('conversation');
+    actions.append(check,reference,carry,back);
+    panel.append(scene,partner,goal,draft,actions,feedback);
+    host.insertBefore(panel,switcher);
+  }
   let state:WritingState=stateValue,mode:WritingMode='phrase',busy=false,started=performance.now();
   let family:'writing'|'usage'='writing',usageMode:UsageMode='usage';
   let usageState:UsageState=safeUsageState(usageSaved,usagePack),usageStarted=performance.now();

@@ -23,8 +23,8 @@ export interface ReviewWord {
   source:'corpus'|'user'|'edited';
 }
 
-let userContentPromise:ReturnType<typeof readCanonicalUserContent>|null=null;
-async function userContent(){userContentPromise??=readCanonicalUserContent();return userContentPromise;}
+// A Word edited during this session must not remain stale in Review after navigation.
+async function userContent(){return readCanonicalUserContent();}
 
 function fromUserCard(id:string,raw:Record<string,unknown>):ReviewWord|null{
   const word=text(raw.fr||raw.word).trim();

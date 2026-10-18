@@ -16,7 +16,16 @@ test('U48 A1 independent speaking is visible without opening optional sound comp
  await transfer.getByRole('button',{name:'Read the original turn instead'}).click();
  await expect(transfer.locator('.u46-transfer-source')).toBeVisible();
  await transfer.getByRole('button',{name:'Show independent self-check'}).click();
- await expect(transfer.locator('.u46-transfer-check')).toBeVisible();
+ // U49 adds a separate, initially folded repair self-check; inspect the visible
+ // original U48 reflection explicitly instead of treating both as one element.
+ await expect(transfer.locator('.u46-transfer-check').first()).toBeVisible();
+ const repair=transfer.locator('.u46-original-repair');
+ await expect(repair).toBeVisible();
+ await repair.locator('summary').first().click();
+ await expect(repair).toContainText('An interlocutor misunderstood');
+ const repairCheck=repair.locator('details');
+ await repairCheck.locator('summary').click();
+ await expect(repair.locator('.u46-transfer-check')).toBeVisible();
  for(const [name,width] of [['mobile',390],['tablet',768],['desktop',1280]]){
    await page.setViewportSize({width,height:860});
    await expect(transfer).toBeVisible();
