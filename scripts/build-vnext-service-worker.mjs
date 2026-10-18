@@ -28,25 +28,79 @@ const shellCache='french-vnext-shell-'+digest.digest('hex').slice(0,12);
 const contentCache='french-vnext-content-v1';
 const manifestSha=createHash('sha256').update(await readFile(join(rootPath,'content/manifest.json'))).digest('hex');
 const shell=['/','/content/manifest.json',...files.map(path=>'/'+path)];
+const shellDigests=Object.fromEntries(await Promise.all(shell.map(async path=>[
+  path,createHash('sha256').update(await readFile(join(rootPath,path==='/'?'index.html':path.slice(1)))).digest('hex')
+])));
 const source=`
 const CACHE_NAME=${JSON.stringify(shellCache)};
 const CONTENT_CACHE=${JSON.stringify(contentCache)};
 const LEGACY_SHELL='french-vnext-shell-v1';
 const PINNED_MANIFEST=${JSON.stringify('/content/manifest.json?verifiedSha256='+manifestSha)};
 const APP_SHELL=${JSON.stringify(shell)};
+const SHELL_DIGESTS=${JSON.stringify(shellDigests)};
 const SHELL_PATHS=new Set(APP_SHELL.map(path=>new URL(path,self.location.origin).pathname));
 const cache=()=>caches.open(CACHE_NAME);
-self.addEventListener('install',event=>{
-  event.waitUntil((async()=>{
-    const shell=await cache();
-    await shell.addAll(APP_SHELL);
-    // Build-owned source bytes are installed before activation. Preserving the
-    // digest key prevents old tabs adopting a newer worker's manifest offline.
+const sha256=async response=>{
+  if(!response?.ok)return null;
+  const bytes=await response.arrayBuffer();
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+};
+async function shellHealth(){
+  const names=await caches.keys();
+  if(!names.includes(CACHE_NAME))return{ready:false,total:APP_SHELL.length,valid:0,missing:APP_SHELL,cachePresent:false};
+  const store=await cache(),missing=[];
+  for(const path of APP_SHELL){
+    const response=await store.match(path);
     try{
-      const original=await shell.match('/content/manifest.json');
-      if(original)await(await caches.open(CONTENT_CACHE)).put(PINNED_MANIFEST,original);
-    }catch(error){console.warn('Pinned manifest secondary cache unavailable',error);}
-    await self.skipWaiting();
+      if(!response||await sha256(response)!==SHELL_DIGESTS[path])missing.push(path);
+    }catch{missing.push(path);}
+  }
+  return{ready:missing.length===0,total:APP_SHELL.length,valid:APP_SHELL.length-missing.length,
+    missing,cachePresent:true};
+}
+async function restoreVerifiedShell(){
+  // Fetch all exact build assets and verify EVERY digest before a single cache
+  // write. An old worker may not repopulate itself with newer deployed bytes.
+  // This never accesses IndexedDB, Account, P35 or private learner content.
+  const recovered=[];
+  for(const path of APP_SHELL){
+    const response=await fetch(path,{cache:'no-store'});
+    if(await sha256(response.clone())!==SHELL_DIGESTS[path])
+      throw Error('Installed French version no longer matches its online shell: '+path+'. Reload online to update first.');
+    recovered.push({path,response});
+  }
+  const store=await cache();
+  for(const {path,response} of recovered)await store.put(path,response);
+  const manifest=recovered.find(item=>item.path==='/content/manifest.json');
+  if(manifest)try{
+    await(await caches.open(CONTENT_CACHE)).put(PINNED_MANIFEST,manifest.response.clone());
+  }catch(error){console.warn('French verified manifest secondary cache unavailable',error);}
+  const status=await shellHealth();
+  if(!status.ready)throw Error('App-shell verification failed after restoration.');
+  return status;
+}
+self.addEventListener('install',event=>{
+  event.waitUntil(restoreVerifiedShell().then(()=>self.skipWaiting()));
+});
+// The only supported messages are a read-only shell diagnostic or an explicit
+// public-asset repair. Reply only over the requesting same-origin client's port.
+self.addEventListener('message',event=>{
+  const type=event.data?.type;
+  if(type!=='FRENCH_VNEXT_SHELL_CHECK'&&type!=='FRENCH_VNEXT_SHELL_REPAIR')return;
+  const port=event.ports?.[0],source=event.source;
+  if(!port||!source?.url)return;
+  try{if(new URL(source.url).origin!==self.location.origin)return;}
+  catch{return;}
+  event.waitUntil((async()=>{
+    try{
+      if(type==='FRENCH_VNEXT_SHELL_REPAIR'){
+        const before=await shellHealth();
+        if(before.ready){port.postMessage({ok:true,status:before});return;}
+        const after=await restoreVerifiedShell();
+        port.postMessage({ok:true,status:after});
+      }else port.postMessage({ok:true,status:await shellHealth()});
+    }catch(error){port.postMessage({ok:false,error:error instanceof Error?error.message:String(error)});}
   })());
 });
 self.addEventListener('activate',event=>{
