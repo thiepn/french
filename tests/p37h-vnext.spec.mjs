@@ -427,7 +427,7 @@ test('U54 corpus index retries in the same tab after an offline cache miss',asyn
   await context.setOffline(true);
   try{
     await page.evaluate(()=>{location.hash='#words';});
-    await expect(page.getByRole('heading',{name:'Words'})).toBeVisible({timeout:30_000});
+    await expect(page.getByRole('heading',{name:'Words',exact:true})).toBeVisible({timeout:30_000});
     await expect(page.locator('[data-results] .word-result')).toHaveCount(0);
   }finally{await context.setOffline(false);}
   // Same JS realm: merely navigating to Home and back must recover both the
