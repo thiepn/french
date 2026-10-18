@@ -1,6 +1,6 @@
 import { ROUTE_IDS,type RouteContext,type RouteId,type RouteModule,type ShellApi } from './types';
 const loaders:Record<RouteId,()=>Promise<RouteModule>>={
-  home:()=>import('../routes/home'),learn:()=>import('../routes/learn'),review:()=>import('../routes/review'),words:()=>import('../routes/words'),
+  home:()=>import('../routes/home'),learn:()=>import('../routes/learn'),review:()=>import('../routes/review'),read:()=>import('../routes/read'),words:()=>import('../routes/words'),
   listen:()=>import('../routes/listen'),speak:()=>import('../routes/speak'),progress:()=>import('../routes/progress'),settings:()=>import('../routes/settings')
 };
 function current():RouteId{const value=location.hash.replace(/^#/,'')||'home';return ROUTE_IDS.includes(value as RouteId)?value as RouteId:'home';}

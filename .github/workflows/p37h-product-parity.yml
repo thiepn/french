@@ -1,0 +1,92 @@
+name: P37H product-surface parity
+
+on:
+  push:
+    branches: ["p37h-product-surface-parity","main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p37h-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install vNext toolchain
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Qualify vNext product parity
+        run: npm run qualify:vnext
+      - name: Upload qualified P37H build
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-p37h-dist-${{ github.sha }}
+          path: dist-vnext
+          retention-days: 14
+
+  browser:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: chromium-desktop
+            engine: chromium
+          - project: firefox-desktop
+            engine: firefox
+          - project: webkit-desktop
+            engine: webkit
+          - project: android-chrome
+            engine: chromium
+          - project: ios-webkit
+            engine: webkit
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: french-p37h-dist-${{ github.sha }}
+          path: dist-vnext
+      - name: Install pinned Playwright
+        run: npm install --no-save @playwright/test@1.63.0
+      - name: Install browser engine
+        run: npx playwright install --with-deps "${{ matrix.engine }}"
+      - name: Start P37H release candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist-vnext
+          python3 -m http.server 4175 --bind 127.0.0.1 > /tmp/french-p37h-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4175/vnext-release.json >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/french-p37h-server.log
+          exit 1
+      - name: Run P37H product parity acceptance
+        env:
+          P37H_BASE_URL: http://127.0.0.1:4175
+        run: npx playwright test --config tests/playwright.p37h.config.mjs --project="${{ matrix.project }}"
+      - name: Preserve failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-p37h-${{ matrix.project }}-${{ github.sha }}
+          path: test-results/p37h
+          if-no-files-found: ignore
+          retention-days: 30

@@ -6,7 +6,7 @@ const pkg=JSON.parse(pkgText);if(pkg.devDependencies?.vite!=='8.3.3')failures.pu
 for(const t of ["root:'app'","outDir:'../dist-vnext'","cssCodeSplit:true","manifest:true"])need(config,t);
 if(index.length>6000)failures.push('source HTML > 6 KB');for(const t of ['P35 Stable Release','v5100RunQa','french3000'])if(index.includes(t)||main.includes(t))failures.push('legacy bootstrap token '+t);
 for(const t of ["requestAnimationFrame","beginBackgroundStartup"])need(main,t);
-for(const t of ["import('../routes/home')","import('../routes/learn')","import('../routes/review')","import('../routes/words')","import('../routes/listen')","import('../routes/speak')","import('../routes/progress')","import('../routes/settings')"])need(router,t);
+for(const t of ["import('../routes/home')","import('../routes/learn')","import('../routes/review')","import('../routes/read')","import('../routes/words')","import('../routes/listen')","import('../routes/speak')","import('../routes/progress')","import('../routes/settings')"])need(router,t);
 for(const t of ["await import('./storage/hydrate')","requestIdleCallback","french:vnext-state-ready"])need(startup,t);
 const manifest=JSON.parse(manifestText);if(manifest.schema!=='thiepn-french-content-manifest-v1'||!Array.isArray(manifest.packs))failures.push('content manifest invalid');
 const release=JSON.parse(releaseText);if(release.productionCutover!==false||release.stableProduction!=='5.24.0/P35')failures.push('cutover boundary invalid');
