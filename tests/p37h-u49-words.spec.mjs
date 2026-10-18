@@ -686,3 +686,81 @@ test('U53 migrated P35 fallback cannot overwrite already-used native learner dat
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('french3000-progress-v2'))))
   .toHaveProperty('p35:legacy::d31:0:recognition');
 });
+
+test('U53 first-boot P35 depth database migrates once without touching original source',async({page})=>{
+ // Seed the same-origin P35 database before loading any French vNext app shell.
+ await page.goto('/content/manifest.json');
+ const original=await page.evaluate(async()=>{
+  const legacy={
+   version:'5.24.0',schema:13,updatedAt:1700000000000,
+   progress:{
+    'legacy-depth::d31:0:recognition':{
+     status:'learned',seen:5,interval:14,due:1700200000000,
+     lastReviewed:1699500000000,stability:12,difficulty:4.6,
+     fsrsState:'review',fsrsVersion:'fsrs-v1'
+    }
+   },
+   reviewLog:[{t:1699500000000,id:'legacy-depth::d31:0:recognition',
+    rating:'good',interval:14,responseMs:1300}],
+   profile:{xp:147},studyDays:['2026-10-17'],
+   userCards:{'p35-personal':{word:'un cahier',meaning:'notebook'}}
+  };
+  await new Promise((resolve,reject)=>{
+   const req=indexedDB.open('french3000-depth-v31',1);
+   req.onupgradeneeded=()=>req.result.createObjectStore('kv');
+   req.onerror=()=>reject(req.error);
+   req.onsuccess=()=>{
+    const db=req.result,tx=db.transaction('kv','readwrite');
+    tx.objectStore('kv').put(legacy,'app-state');
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  });
+  return legacy;
+ });
+ await page.goto('/#home');
+ await expect.poll(async()=>page.evaluate(()=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onerror=()=>reject(req.error);
+  req.onsuccess=()=>{
+   const db=req.result,tx=db.transaction('meta','readonly');
+   const get=tx.objectStore('meta').get('canonical-migration-v1');
+   get.onsuccess=()=>resolve(typeof get.result==='string'&&get.result.length>0);
+   get.onerror=()=>reject(get.error);
+   tx.oncomplete=()=>db.close();
+  };
+ })),{timeout:45_000}).toBe(true);
+ const state=await page.evaluate(()=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open('thiepn-french-vnext');
+  req.onerror=()=>reject(req.error);
+  req.onsuccess=()=>{
+   const db=req.result,tx=db.transaction(['learner','srs','activity','migration'],'readonly');
+   const state={learner:null,srs:[],events:[],envelope:null};
+   tx.objectStore('learner').get('state-v1').onsuccess=e=>{state.learner=e.target.result;};
+   tx.objectStore('srs').getAll().onsuccess=e=>{state.srs=e.target.result;};
+   tx.objectStore('activity').getAll().onsuccess=e=>{state.events=e.target.result;};
+   tx.objectStore('migration').get('legacy-import-v1').onsuccess=e=>{state.envelope=e.target.result;};
+   tx.oncomplete=()=>{db.close();resolve(state);};
+   tx.onerror=()=>{db.close();reject(tx.error);};
+  };
+ }));
+ expect(state.envelope.source).toBe('depth-db');
+ expect(state.envelope.payload).toEqual(original);
+ expect(state.learner.profile.xp).toBe(147);
+ expect(state.srs).toHaveLength(1);
+ expect(state.srs[0].id).toBe('legacy-depth::d31:0:recognition');
+ expect(state.srs[0].intervalDays).toBe(14);
+ expect(state.events).toHaveLength(1);
+ expect(state.events[0].id).toBe('legacy-depth::d31:0:recognition');
+ expect(await page.evaluate(()=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open('french3000-depth-v31');
+  req.onerror=()=>reject(req.error);
+  req.onsuccess=()=>{
+   const db=req.result,tx=db.transaction('kv','readonly');
+   const get=tx.objectStore('kv').get('app-state');
+   get.onsuccess=()=>resolve(get.result);
+   get.onerror=()=>reject(get.error);
+   tx.oncomplete=()=>db.close();
+  };
+ }))).toEqual(original);
+});
