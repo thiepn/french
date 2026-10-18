@@ -4,7 +4,7 @@ import type { FrenchAccountUser } from './session';
 
 const META_KEY='french-thiepn-sync-v2',DEVICE_KEY='french-thiepn-device-id-v1',APP_VERSION='vnext-p37h';
 export type FrenchSyncStatus='disabled'|'synced'|'pushed'|'pulled'|'conflict'|'offline'|'error';
-export interface FrenchSyncResult{status:FrenchSyncStatus;message:string;revision?:number;cloudUpdatedAt?:string;reviewedLocalHash?:string}
+export interface FrenchSyncResult{status:FrenchSyncStatus;message:string;revision?:number;cloudUpdatedAt?:string;reviewedLocalHash?:string;recoveryOnly?:boolean}
 interface Meta{schemaVersion:2;userId:string;enabled:boolean;revision?:number;hash?:string;lastSyncedAt?:string;deviceId:string}
 interface Cloud{revision:number;state:FrenchCloudSnapshot;updated_at?:string}
 function deviceId():string{try{const current=localStorage.getItem(DEVICE_KEY);if(current)return current;const value=crypto.randomUUID();localStorage.setItem(DEVICE_KEY,value);return value;}catch{return'french-'+Date.now();}}
@@ -27,8 +27,21 @@ async function readCloud():Promise<Cloud|undefined>{const rows=await accountJson
 async function writeCloud(expected:number|null,state:FrenchCloudSnapshot,device:string):Promise<Cloud>{return cloudRow(await rpc('sync_thiepn_french_state',{p_expected_revision:expected,p_state:state,p_app_version:APP_VERSION,p_device_id:device,p_client_updated_at:new Date().toISOString()}));}
 function baseline(userId:string,cloud:Cloud,hash:string):void{const m=metaFor(userId);writeMeta({...m,revision:cloud.revision,hash,lastSyncedAt:new Date().toISOString()});}
 async function push(userId:string,cloud:Cloud|undefined,local:FrenchCloudSnapshot):Promise<FrenchSyncResult>{
+  // A formerly synced device can lose IndexedDB without losing localStorage.
+  // Never publish a blank native database over meaningful remote progress,
+  // including through an explicitly reviewed conflict choice.
+  if(cloud&&snapshotHasMeaningfulState(cloud.state)&&!snapshotHasMeaningfulState(local))
+    return emptyLocalRecoveryConflict(cloud,await hashFrenchCloudSnapshot(local));
   const m=metaFor(userId),uploaded=await writeCloud(cloud?.revision??null,local,m.deviceId),hash=await hashFrenchCloudSnapshot(local);baseline(userId,uploaded,hash);
   const result:FrenchSyncResult={status:'pushed',message:'This device is now synced to THIEPN Account.',revision:uploaded.revision,...(uploaded.updated_at?{cloudUpdatedAt:uploaded.updated_at}:{})};emit(result);return result;
+}
+function emptyLocalRecoveryConflict(cloud:Cloud,localHash:string):FrenchSyncResult{
+  const result:FrenchSyncResult={
+    status:'conflict',recoveryOnly:true,revision:cloud.revision,
+    reviewedLocalHash:localHash,
+    message:'This device has no recognizable French study progress, but the cloud has an existing copy. Local storage may have been cleared. Nothing was uploaded; recover from the cloud or review the latest state.'
+  };
+  emit(result);return result;
 }
 function unsafeToReplace(message:string,revision?:number):FrenchSyncResult{
   const result:FrenchSyncResult={status:'conflict',message,...(revision!==undefined?{revision}:{})};
@@ -73,6 +86,8 @@ async function reconcileFrenchSyncOnce(user:FrenchAccountUser):Promise<FrenchSyn
     if(localHash===cloudHash){baseline(user.id,cloud,localHash);const r:FrenchSyncResult={status:'synced',message:'French is up to date.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(r);return r;}
     if(m.revision===undefined||!m.hash){if(snapshotHasMeaningfulState(local)){const r:FrenchSyncResult={status:'conflict',message:'This device and the cloud both contain French progress or preferences. Choose the source of truth.',revision:cloud.revision,reviewedLocalHash:localHash,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(r);return r;}return pull(user.id,cloud,localHash);}
     const localChanged=localHash!==m.hash,cloudChanged=cloudHash!==m.hash;
+    if(localChanged&&!snapshotHasMeaningfulState(local)&&snapshotHasMeaningfulState(cloud.state))
+      return emptyLocalRecoveryConflict(cloud,localHash);
     if(localChanged&&cloudChanged){const r:FrenchSyncResult={status:'conflict',message:'French changed on this device and in the cloud. Choose the source of truth.',revision:cloud.revision,reviewedLocalHash:localHash,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(r);return r;}
     if(localChanged)return push(user.id,cloud,local);if(cloudChanged)return pull(user.id,cloud,localHash);
     baseline(user.id,cloud,localHash);return{status:'synced',message:'French is up to date.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};
@@ -89,6 +104,11 @@ export async function chooseThisDevice(user:FrenchAccountUser,expectedCloudRevis
   const local=await createFrenchCloudSnapshot();
   if(await hashFrenchCloudSnapshot(local)!==reviewedLocalHash)
     return unsafeToReplace('This device changed after the conflict was reviewed. Review the latest state before replacing the cloud.');
+  // A recovery-only decision cannot turn a cleared local database into a
+  // destructive cloud replacement by reusing the generic "Use this device" path.
+  const current=await readCloud();
+  if(current&&snapshotHasMeaningfulState(current.state)&&!snapshotHasMeaningfulState(local))
+    return emptyLocalRecoveryConflict(current,reviewedLocalHash);
   try{return await push(user.id,expectedCloudRevision===null?undefined:{revision:expectedCloudRevision,state:local},local);}
   catch(error){
     const message=error instanceof Error?error.message:String(error);
