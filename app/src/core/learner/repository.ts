@@ -1,4 +1,5 @@
 import { openFrenchDatabase,readMetaValue,writeMetaValue } from '../storage/idb';
+import { writeBackupStoresIfUnchanged,type BackupPayload } from '../backup/archive';
 import type {
   CanonicalLearnerStateV1,
   CanonicalMigrationV1,
@@ -108,38 +109,30 @@ export async function initializeCanonicalMigrationIfAbsent(data:CanonicalMigrati
   }finally{db.close();}
 }
 
-export async function writeCanonicalMigration(data:CanonicalMigrationV1):Promise<void>{
-  const db=await openFrenchDatabase();
-  try{
-    const tx=db.transaction(['learner','srs','activity','user-content','meta'],'readwrite');
-    const learner=tx.objectStore('learner');
-    const srs=tx.objectStore('srs');
-    const activity=tx.objectStore('activity');
-    const userContent=tx.objectStore('user-content');
-    const meta=tx.objectStore('meta');
-
+/** An Account legacy-cloud replacement requires the exact local snapshot
+ * reviewed before the network request. The writer cannot race a native tab.
+ */
+export async function writeCanonicalMigration(
+  data:CanonicalMigrationV1,expectedCurrent:BackupPayload
+):Promise<void>{
+  await writeBackupStoresIfUnchanged(expectedCurrent,tx=>{
+    const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),
+      activity=tx.objectStore('activity'),content=tx.objectStore('user-content'),
+      session=tx.objectStore('session'),meta=tx.objectStore('meta');
     learner.put(data.learner,'state-v1');
-    userContent.put(data.userContent,'content-v1');
-
+    content.put(data.userContent,'content-v1');
     srs.clear();
     for(const row of data.srs)srs.put(row,row.id);
-
     activity.clear();
     for(const row of data.reviews)activity.put(row,row.eventId);
-
+    session.clear(); // A foreign legacy session is not a valid native queue.
     meta.put(data.learner.sourceFingerprint,MIGRATION_MARKER);
     meta.put({
       currentLevel:highestEarnedLevel(data.learner.promotions),
       dueCount:data.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
       streakDays:studyStreak(data.learner.studyDays)
     },'learner-summary');
-
-    await new Promise<void>((resolve,reject)=>{
-      tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??new Error('Canonical learner migration failed.'));
-      tx.onabort=()=>reject(tx.error??new Error('Canonical learner migration was aborted.'));
-    });
-  }finally{db.close();}
+  });
 }
 
 export async function readCanonicalLearnerState():Promise<CanonicalLearnerStateV1|null>{
