@@ -16,6 +16,18 @@ export interface CloudBackupPayload{
 export interface FrenchCloudSnapshot extends Record<string,unknown>{
   _vnext?:{schema:'thiepn-french-cloud-vnext-v1';payload:CloudBackupPayload};
 }
+/** Durable lineage of the canonical learner database, not the cloud revision.
+ * Study/settings edits preserve these fields; a newly recreated IndexedDB
+ * changes migratedAt even when localStorage retains the prior sync revision.
+ */
+export function nativeLearnerEpoch(snapshot:FrenchCloudSnapshot):string|null{
+  const vnext=obj(snapshot._vnext),payload=vnext.payload as CloudBackupPayload|undefined;
+  if(vnext.schema!=='thiepn-french-cloud-vnext-v1'||!payload?.stores?.learner)return null;
+  const learner=obj(at(payload,'learner','state-v1'));
+  if(learner.schema!=='thiepn-french-learner-state-v1'||!Number.isFinite(learner.migratedAt)||
+     Number(learner.migratedAt)<=0||typeof learner.sourceFingerprint!=='string')return null;
+  return learner.sourceFingerprint+':'+String(learner.migratedAt);
+}
 function at(payload:CloudBackupPayload,store:keyof CloudBackupPayload['stores'],key:string):unknown{
   return payload.stores[store].find(row=>String(row.key)===key)?.value;
 }

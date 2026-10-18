@@ -350,6 +350,7 @@ async function waitForDeviceSyncBaseline(page,api){
   ),{timeout:30_000}).toBe(api.cloud.revision);
   const info=await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null'));
   expect(info?.hash).toMatch(/^[0-9a-f]{64}$/);
+  expect(info?.nativeEpoch).toMatch(/^fresh-vnext:[0-9]+$/);
   return {revision:api.cloud.revision,uploads:api.uploads};
 }
 
@@ -385,7 +386,9 @@ test('U55 storage eviction with retained Account metadata cannot erase a meaning
       };
     });
   });
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')).revision)).toBe(1);
+  const retained=await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')));
+  expect(retained.revision).toBe(1);
+  expect(retained.nativeEpoch).toBeTruthy();
   await page.reload();
   await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
   await page.getByRole('button',{name:'Sync now'}).click();
