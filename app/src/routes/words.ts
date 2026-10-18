@@ -56,15 +56,15 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   // Existing sessions are learner-owned; a different selection must not silently impersonate one.
   const offerExistingReview=(target:HTMLElement)=>{
     target.textContent='An unfinished Review session is already saved. These selected words were not scheduled; finish that session first.';
-    let button=target.nextElementSibling;
+    const button=target.nextElementSibling;
     if(!(button instanceof HTMLButtonElement)||!button.matches('[data-resume-saved-review]')){
-      button=document.createElement('button');
-      button.type='button';
-      button.className='secondary-action compact-action';
-      button.setAttribute('data-resume-saved-review','');
-      button.textContent='Continue unfinished Review';
-      button.addEventListener('click',()=>navigate('review'));
-      target.after(button);
+      const resumeButton=document.createElement('button');
+      resumeButton.type='button';
+      resumeButton.className='secondary-action compact-action';
+      resumeButton.setAttribute('data-resume-saved-review','');
+      resumeButton.textContent='Continue unfinished Review';
+      resumeButton.addEventListener('click',()=>navigate('review'));
+      target.after(resumeButton);
     }
   };
   const corpusSelected=new Set<string>();
