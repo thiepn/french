@@ -411,6 +411,36 @@ test('U54 P35 legacy cache survives vNext worker update and cannot supply foreig
   }finally{await context.setOffline(false);}
 });
 
+
+test('U54 corpus index retries in the same tab after an offline cache miss',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  const before=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-shell-v1');
+    return Boolean(await store.match('/content/search/vocabulary-index.json'));
+  });
+  expect(before).toBe(false); // Full search index remains on-demand.
+  await context.setOffline(true);
+  try{
+    await page.evaluate(()=>{location.hash='#words';});
+    await expect(page.getByRole('heading',{name:'Words'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-results] .word-result')).toHaveCount(0);
+  }finally{await context.setOffline(false);}
+  // Same JS realm: merely navigating to Home and back must recover both the
+  // previously rejected index promise and any aborted route's signal.
+  await page.evaluate(()=>{location.hash='#home';});
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  await page.evaluate(()=>{location.hash='#words';});
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  expect(await page.evaluate(async()=>Boolean(
+    await(await caches.open('french-vnext-shell-v1')).match('/content/search/vocabulary-index.json')
+  ))).toBe(true);
+});
+
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
