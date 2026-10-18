@@ -444,6 +444,69 @@ test('U54 corpus index retries in the same tab after an offline cache miss',asyn
   ))).toBe(true);
 });
 
+test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-verified offline content',async({page,context})=>{
+  await page.goto('/#read');
+  await expect(page.locator('.open-world-entry')).toBeVisible({timeout:45_000});
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  const original=await page.evaluate(async()=>{
+    const names=await caches.keys();
+    const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!current)throw Error('No content-addressed installed shell');
+    const contents=await caches.open('french-vnext-content-v1');
+    const contentPaths=(await contents.keys()).map(req=>new URL(req.url).pathname);
+    const manifest=await (await contents.match('/content/manifest.json'))?.json();
+    const reading=manifest?.packs.find(pack=>pack.id==='reading-stable-p35')?.path;
+    if(!reading||!contentPaths.includes(reading))throw Error('Source-verified reading not prewarmed');
+    // A prior build cache must not be mutated or deleted by installation.
+    const prior=await caches.open('french-vnext-shell-000000000000');
+    await prior.put('/u56-prior-build',new Response('IMMUTABLE_PRIOR_BUILD'));
+    const stable=await caches.open('french-shell-v35');
+    await stable.put('/u56-original-p35',new Response('ORIGINAL_P35'));
+    return{current,reading,contentPaths};
+  });
+  await page.evaluate(async()=>{
+    const registration=await navigator.serviceWorker.register('/service-worker.js?u56-upgrade-retention');
+    await new Promise((resolve,reject)=>{
+      if(registration.active?.scriptURL.includes('u56-upgrade-retention'))return resolve();
+      const worker=registration.installing??registration.waiting;
+      if(!worker)return reject(Error('No upgrade worker'));
+      worker.addEventListener('statechange',()=>{
+        if(worker.state==='activated')resolve();
+        if(worker.state==='redundant')reject(Error('Upgrade worker redundant'));
+      });
+    });
+  });
+  await expect.poll(async()=>page.evaluate(()=>Boolean(
+    navigator.serviceWorker.controller?.scriptURL.includes('u56-upgrade-retention')
+  )),{timeout:20_000}).toBe(true);
+  const kept=await page.evaluate(async()=>{
+    const names=await caches.keys();
+    const read=async(name,path)=>(await(await caches.open(name)).match(path))?.text();
+    const contentPaths=(await(await caches.open('french-vnext-content-v1')).keys())
+      .map(request=>new URL(request.url).pathname);
+    return{
+      previous:await read('french-vnext-shell-000000000000','/u56-prior-build'),
+      p35:await read('french-shell-v35','/u56-original-p35'),
+      contentPaths,current:names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name)&&name!=='french-vnext-shell-000000000000')
+    };
+  });
+  expect(kept.previous).toBe('IMMUTABLE_PRIOR_BUILD');
+  expect(kept.p35).toBe('ORIGINAL_P35');
+  expect(kept.current).toBe(original.current);
+  expect(kept.contentPaths).toEqual(original.contentPaths);
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('.open-world-entry')).toBeVisible({timeout:30_000});
+    const body=await page.evaluate(async path=>(await fetch(path)).text(),original.reading);
+    expect(body).toContain('reading-stable-p35');
+  }finally{await context.setOffline(false);}
+});
+
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
