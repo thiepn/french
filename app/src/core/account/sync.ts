@@ -70,7 +70,11 @@ async function pull(userId:string,cloud:Cloud,expectedLocalHash:string):Promise<
       return unsafeToReplace('French changed on this device while restoring from the cloud. Review the latest state before restoring.',cloud.revision);
     throw error;
   }
-  const hash=await hashFrenchCloudSnapshot(cloud.state);baseline(userId,cloud,hash,cloud.state);
+  // A legacy cloud payload is converted into native local learner data during
+  // restoration; its pre-conversion wire envelope has no native lineage.
+  const restoredLocal=await createFrenchCloudSnapshot();
+  const hash=await hashFrenchCloudSnapshot(cloud.state);
+  baseline(userId,cloud,hash,restoredLocal);
   const result:FrenchSyncResult={status:'pulled',message:'Cloud French progress was restored on this device.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(result);return result;
 }
 export async function enableFrenchSync(user:FrenchAccountUser):Promise<FrenchSyncResult>{
