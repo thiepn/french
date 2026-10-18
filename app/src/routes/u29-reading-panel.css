@@ -1,0 +1,40 @@
+/* U29: evidence-first original reading lab, no inferred CEFR or mastery states */
+.u29-reader{margin:1.2rem 0;min-width:0}
+.u29-reader-disclosure{border:1px solid var(--line,var(--border,#9198a2));border-radius:.3rem}
+.u29-reader-disclosure>summary{cursor:pointer;font-weight:650;min-height:44px;padding:.8rem 1rem;line-height:1.45}
+.u29-reader-disclosure[open]>summary{border-bottom:1px solid var(--line,var(--border,#9198a2))}
+.u29-reader-body{padding:clamp(.75rem,2vw,1.2rem);display:grid;gap:.8rem;min-width:0}
+.u29-reader-body h3{font-size:1.2rem;margin:0}
+.u29-reader-body h4{font-size:1.03rem;line-height:1.4;margin:.2rem 0}
+.u29-reader-body h5{font-size:.94rem;margin:.4rem 0}
+.u29-note,.u29-live{font-size:.88rem;color:var(--muted,inherit);line-height:1.6;margin:.2rem 0}
+.u29-eyebrow{font-size:.73rem;letter-spacing:.03em;color:var(--muted,inherit);font-weight:600;margin:0}
+.u29-kind-tabs{display:flex;flex-wrap:wrap;gap:.4rem}
+.u29-kind{font:inherit;font-size:.82rem;min-height:44px;padding:.5rem .7rem;border:1px solid var(--line,var(--border,#999));border-radius:.2rem;color:var(--text,inherit);background:var(--surface,transparent);cursor:pointer}
+.u29-kind.is-active{border-color:var(--accent,#68778a);box-shadow:inset 0 -3px 0 var(--accent,#68778a);font-weight:650}
+.u29-original-source,.u29-synthesis{border:1px solid var(--line,var(--border,#999));border-radius:.25rem;min-width:0}
+.u29-original-source>summary,.u29-synthesis>summary{cursor:pointer;line-height:1.45;min-height:44px;padding:.65rem .8rem;font-weight:600}
+.u29-documents,.u29-transfer-body{padding:.65rem .8rem;display:grid;gap:.7rem}
+.u29-paragraph,.u29-document{padding:.7rem;border-left:2px solid var(--line,var(--border,#999));background:var(--surface,transparent)}
+.u29-document{border-left-color:var(--accent,#68778a)}
+.u29-fr{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;max-width:80ch;margin:.3rem 0}
+.u29-decision{padding:.65rem 0;display:grid;gap:.55rem}
+.u29-answer-label{display:grid;gap:.4rem;font-size:.9rem;font-weight:600;min-width:0}
+.u29-answer-label select{font:inherit;min-height:44px;width:100%;box-sizing:border-box;padding:.6rem;color:var(--text,inherit);background:var(--surface,transparent);border:1px solid var(--line,var(--border,#999));border-radius:.25rem}
+.u29-form{display:grid;gap:.65rem}
+.u29-source-label{font-size:.75rem;color:var(--muted,inherit);line-height:1.45;overflow-wrap:anywhere;margin:0}
+.u29-evidence{font-size:.92rem;line-height:1.7;white-space:pre-wrap;border-left:3px solid var(--accent,#68778a);padding:.65rem;overflow-wrap:anywhere}
+.u29-hint,.u29-feedback{font-size:.9rem;line-height:1.65;margin:.2rem 0}
+.u29-hint{padding-left:.6rem;border-left:2px solid var(--accent,#68778a)}
+.u29-activity-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+.u29-activity-actions button{min-height:44px;white-space:normal;text-align:left}
+.u29-summary-label{display:grid;gap:.45rem;font-size:.9rem;font-weight:600}
+.u29-summary-label textarea{font:inherit;width:100%;min-width:0;box-sizing:border-box;padding:.7rem;line-height:1.7;min-height:130px;background:var(--surface,transparent);color:var(--text,inherit);border:1px solid var(--line,var(--border,#999));border-radius:.25rem;resize:vertical}
+.u29-criteria{padding-left:1.3rem;line-height:1.65;display:grid;gap:.35rem;font-size:.87rem}
+.u29-summary-hints{border-left:2px solid var(--accent,#68778a);padding:.3rem .7rem}
+.u29-summary-hints>summary{cursor:pointer;font-size:.88rem;min-height:44px}
+.u29-reader [hidden]{display:none!important}
+.u29-reader :is(button,textarea,select,summary):focus-visible{outline:2px solid var(--accent,#68778a);outline-offset:3px}
+@media(max-width:620px){.u29-kind-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.u29-activity-actions{display:grid;grid-template-columns:minmax(0,1fr)}.u29-activity-actions button{width:100%}.u29-reader-body{padding:.7rem}}
+@media(max-width:380px){.u29-kind-tabs{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.u29-reader *{animation:none!important;transition:none!important}}

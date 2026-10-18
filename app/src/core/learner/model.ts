@@ -69,6 +69,22 @@ export interface CanonicalReviewEventV1 {
   retrievability:number;
   scheduledDays:number;
   fsrsState:FsrsState;
+  supportLevel?:number;
+  firstListen?:boolean;
+  playCount?:number;
+  playbackRate?:number;
+  transcriptUsed?:boolean;
+  translationUsed?:boolean;
+  errorCategory?:string;
+  sentenceExerciseId?:string;
+  sentenceDiagnosis?:string;
+  targetText?:string;
+  recognizedText?:string;
+  recognitionConfidence?:number;
+  manualJudgment?:string;
+  recordingDurationMs?:number;
+  modelDurationMs?:number;
+  paceRatio?:number;
 }
 
 export interface CanonicalLearnerStateV1 {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="French 3000">
+  <rect width="512" height="512" rx="108" fill="#14213d"/>
+  <text x="256" y="230" text-anchor="middle" fill="#fffaf2" font-family="Arial, Helvetica, sans-serif" font-size="176" font-weight="800" letter-spacing="-10">FR</text>
+  <text x="256" y="315" text-anchor="middle" fill="#c79335" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="800" letter-spacing="5">3000</text>
+  <clipPath id="stripeClip"><rect x="60" y="356" width="392" height="72" rx="14"/></clipPath>
+  <g clip-path="url(#stripeClip)">
+    <rect x="60" y="356" width="131" height="72" fill="#426b9c"/>
+    <rect x="191" y="356" width="130" height="72" fill="#fffaf2"/>
+    <rect x="321" y="356" width="131" height="72" fill="#c84b4b"/>
+  </g>
+</svg>

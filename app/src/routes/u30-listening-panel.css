@@ -1,0 +1,31 @@
+.u30-listening{margin:1.5rem 0;border-block-start:1px solid var(--line,#d9dde5);padding-top:1rem}
+.u30-disclosure>summary{cursor:pointer;font-weight:700;line-height:1.55;padding:.65rem 0}
+.u30-body{display:grid;gap:1rem;min-width:0;max-width:100%}
+.u30-body h3,.u30-body h4,.u30-body h5{margin:.35rem 0}
+.u30-note,.u30-source,.u30-speakers,.u30-support-state{line-height:1.55}
+.u30-note,.u30-source{color:var(--muted,#596274)}
+.u30-audio,.u30-question,.u30-written,.u30-interpretation{border:1px solid var(--line,#d9dde5);padding:1rem;min-width:0}
+.u30-audio-controls,.u30-support-controls,.u30-navigation,.u30-tabs,.u30-handoffs{display:flex;flex-wrap:wrap;align-items:end;gap:.55rem}
+.u30-audio-controls label,.u30-answer label,.u30-editor-label{display:grid;gap:.35rem;min-width:0}
+.u30-audio-controls select,.u30-answer select,.u30-editor-label textarea{width:100%;max-width:100%;font:inherit;padding:.55rem;border:1px solid var(--line,#8d98a5);border-radius:0;background:var(--surface,#fff);color:var(--text,#1a2130)}
+.u30-audio-controls label{flex:1 1 13rem}
+.u30-audio-controls button,.u30-navigation button,.u30-support-controls button,.u30-handoffs button{min-height:2.65rem}
+.u30-tabs{border-block:1px solid var(--line,#d9dde5);padding:.7rem 0}
+.u30-tabs [aria-current=true]{text-decoration:underline;text-underline-offset:4px;font-weight:700}
+.u30-question{display:grid;gap:.65rem}
+.u30-answer{display:grid;gap:.75rem}
+.u30-answer>button{justify-self:start}
+.u30-transcript,.u30-glosses{padding-left:1.75rem}
+.u30-line,.u30-glosses li{padding:.35rem .15rem;line-height:1.6}
+.u30-excerpt,.u30-document{border-inline-start:3px solid var(--accent,#64748b);padding:.6rem .85rem;line-height:1.6;background:var(--surface-muted,#f5f6f8);overflow-wrap:anywhere}
+.u30-document{margin:.7rem 0}
+.u30-hint,.u30-feedback,.u30-status,.u30-progress{line-height:1.55;overflow-wrap:anywhere}
+.u30-interpretation .u30-editor-label textarea{min-height:7rem;resize:vertical}
+.u30-self-check{padding-left:1.5rem;line-height:1.7}
+.u30-interpretation .u30-model{white-space:pre-wrap;line-height:1.6}
+.u30-listening button:focus-visible,.u30-listening select:focus-visible,.u30-listening textarea:focus-visible,.u30-disclosure>summary:focus-visible{outline:2px solid var(--accent,#1d4ed8);outline-offset:3px}
+@media (max-width:640px){
+ .u30-audio,.u30-question,.u30-written,.u30-interpretation{padding:.75rem}
+ .u30-audio-controls,.u30-tabs,.u30-navigation,.u30-support-controls,.u30-handoffs{align-items:stretch}
+ .u30-audio-controls button,.u30-tabs button,.u30-navigation button,.u30-support-controls button,.u30-handoffs button{flex:1 1 100%;width:100%;text-align:left}
+}

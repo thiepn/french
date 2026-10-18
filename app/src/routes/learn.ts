@@ -4,7 +4,7 @@ import { readActiveStudySession } from '../core/learner/repository';
 import { createLearnStudySession,createTodayStudySession } from '../core/learner/study-session-builder';
 
 export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
-  main.innerHTML='<section class="page learn-page"><p class="eyebrow">Adaptive curriculum</p><h1>Learn</h1><p class="lede">Start a new-card session or let French compose today’s due + new work from your migrated limits.</p><div class="inline-status" data-status>Loading curriculum index…</div><div class="action-grid learn-actions"><button class="primary-action" data-start="today">Study today</button><button class="secondary-action" data-start="new">Learn new words</button></div><div data-resume></div></section>';
+  main.innerHTML='<section class="page learn-page"><p class="eyebrow">Adaptive curriculum</p><h1>Learn</h1><p class="lede">Start a new-card session or let French compose today’s due + new work from your migrated limits.</p><div class="inline-status" data-status>Loading curriculum index…</div><div class="action-grid learn-actions"><button class="primary-action" data-start="today" disabled>Study today</button><button class="secondary-action" data-start="new" disabled>Learn new words</button></div><div data-resume></div></section>';
   const manifest=await loadContentManifest(signal);
   const status=main.querySelector<HTMLElement>('[data-status]');
   const todayButton=main.querySelector<HTMLButtonElement>('[data-start="today"]');
@@ -17,7 +17,14 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
 
   const active=await readActiveStudySession();
-  if(active&&resumeHost){
+  if(signal.aborted||!main.isConnected)return;
+  const unfinished=Boolean(active&&active.cursor<active.queueIds.length);
+  if(unfinished){
+    if(todayButton)todayButton.disabled=true;
+    if(newButton)newButton.disabled=true;
+    if(status)status.textContent+=' An unfinished native study session must be resumed before starting another.';
+  }
+  if(unfinished&&active&&resumeHost){
     const card=document.createElement('div');card.className='inline-status resume-session';
     const text=document.createElement('span');
     text.textContent='Saved '+active.mode+' session · '+Math.max(0,active.queueIds.length-active.cursor)+' items remaining';
@@ -27,6 +34,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
 
   const start=async(kind:'today'|'new')=>{
+    const pending=await readActiveStudySession();
+    if(pending&&pending.cursor<pending.queueIds.length){
+      if(status)status.textContent='An unfinished session is saved. Resume it in Review before beginning another session.';
+      return;
+    }
     if(todayButton)todayButton.disabled=true;
     if(newButton)newButton.disabled=true;
     try{
@@ -47,4 +59,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
 
   todayButton?.addEventListener('click',()=>void start('today'));
   newButton?.addEventListener('click',()=>void start('new'));
+  // Reveal actionable controls only after async session ownership checks AND
+  // event listeners are ready. Firefox may otherwise dispatch a lost click.
+  if(!unfinished&&!signal.aborted){
+    if(todayButton)todayButton.disabled=false;
+    if(newButton)newButton.disabled=false;
+  }
 }

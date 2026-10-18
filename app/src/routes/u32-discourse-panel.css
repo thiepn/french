@@ -1,0 +1,53 @@
+.u32-discourse{margin:1.4rem 0;min-width:0;max-width:100%;border-top:1px solid var(--line,#c7ced7);padding-top:1rem}
+.u32-disclosure{border:1px solid var(--line,#c7ced7);padding:0 .9rem;background:var(--surface,#fff)}
+.u32-disclosure>summary{font-weight:700;cursor:pointer;padding:1rem .25rem;line-height:1.5}
+.u32-body{display:grid;gap:1.1rem;min-width:0;padding:.5rem 0 1.25rem}
+.u32-head h3{margin:.2rem 0 .7rem}
+.u32-head p,.u32-interlocutor p,.u32-task,.u32-caveat,.u32-source-label,.u32-live{line-height:1.6;overflow-wrap:anywhere}
+.u32-source-label,.u32-caveat,.u32-live{color:var(--muted,#5b6574)}
+.u32-head .u32-caveat{border-left:3px solid var(--accent,#516c85);padding-left:.8rem}
+.u32-round-nav,.u32-round-controls,.u32-nav-footer,.u32-pair-actions,.u32-question-nav,.u32-exit-actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.u32-round-nav{border-block:1px solid var(--line,#c7ced7);padding:.75rem 0}
+.u32-round-nav button{flex:1 1 9rem;min-height:2.8rem;text-align:left}
+.u32-round-nav [aria-current=step]{font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.u32-round,.u32-compare,.u32-decisions,.u32-exits{display:grid;gap:.85rem;padding:1rem;border:1px solid var(--line,#c7ced7);min-width:0}
+.u32-round h4,.u32-compare h4,.u32-decisions h4,.u32-exits h4{margin:.25rem 0 .4rem}
+.u32-setting{font-weight:600;line-height:1.5}
+.u32-interlocutor{border-left:4px solid var(--accent,#536b7d);background:var(--surface-muted,#f3f5f7);padding:.9rem 1rem;margin:0;line-height:1.6}
+.u32-interlocutor p{margin:.35rem 0 0}
+.u32-task{font-weight:600}
+.u32-coach{display:grid;gap:.55rem}
+.u32-coach-hint{line-height:1.65;padding:.6rem .8rem;border-left:2px solid var(--line,#a0a6b0)}
+.u32-turn-evidence{display:grid;gap:.5rem}
+.u32-evidence-item{padding:.9rem;border:1px solid var(--line,#c7ced7);min-width:0;overflow-wrap:anywhere}
+.u32-evidence-item h5{margin:.2rem 0 .55rem}
+.u32-original-fr{white-space:pre-wrap;line-height:1.75;overflow-wrap:anywhere}
+.u32-illustrative{border-left:3px solid var(--accent,#536b7d);padding:.65rem 1rem;line-height:1.75;white-space:pre-wrap}
+.u32-round label,.u32-pair-notes label,.u32-question-form label{display:grid;gap:.45rem;min-width:0}
+.u32-round textarea,.u32-pair-notes textarea,.u32-question-form select{font:inherit;border:1px solid var(--line,#8b95a4);border-radius:0;padding:.65rem;background:var(--surface,#fff);color:inherit;width:100%;min-width:0;max-width:100%}
+.u32-round textarea,.u32-pair-notes textarea{resize:vertical;min-height:6.5rem}
+.u32-self-check{padding:.8rem 1rem;border:1px solid var(--line,#c7ced7);display:grid;gap:.65rem}
+.u32-self-check legend{font-weight:700;padding:0 .25rem}
+.u32-check-item{display:flex!important;gap:.55rem!important;align-items:start;line-height:1.55}
+.u32-check-item input{margin-top:.3rem;flex:0 0 auto}
+.u32-revision{padding:1rem;border:1px solid var(--line,#c7ced7);overflow-wrap:anywhere}
+.u32-revision h5{margin:.65rem 0 .25rem}
+.u32-nav-footer{justify-content:space-between}
+.u32-compare .u32-pair-actions button{flex:1 1 13rem;text-align:left}
+.u32-pair-source-cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.75rem}
+.u32-pair-notes{display:grid;gap:.65rem}
+.u32-question-form{display:grid;gap:.7rem}
+.u32-question-form>button{justify-self:start}
+.u32-evidence{border:1px solid var(--line,#c7ced7);padding:.9rem}
+.u32-evidence>summary{cursor:pointer;line-height:1.55;font-weight:600}
+.u32-evidence-list{display:grid;gap:.75rem;margin-top:.85rem}
+.u32-exit-actions button{flex:1 1 11rem}
+.u32-discourse button:focus-visible,.u32-discourse summary:focus-visible,.u32-discourse textarea:focus-visible,.u32-discourse select:focus-visible{outline:2px solid var(--accent,#2254a0);outline-offset:3px}
+@media(max-width:700px){
+ .u32-disclosure{padding:0 .6rem}
+ .u32-round,.u32-compare,.u32-decisions,.u32-exits{padding:.7rem}
+ .u32-pair-source-cards{grid-template-columns:minmax(0,1fr)}
+ .u32-round-nav button{flex-basis:calc(50% - .6rem)}
+ .u32-round-controls button,.u32-pair-actions button,.u32-exit-actions button,.u32-question-nav button{width:100%;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){.u32-discourse *{scroll-behavior:auto}}

@@ -1,0 +1,15 @@
+/* P37I-D6-B: compact repair desk; no modal or fixed-width controls. */
+.p26-runner{display:grid;gap:.75rem;margin:.75rem 0 1.25rem}
+.p26-run-card{display:grid;gap:.65rem;padding:1rem;border:1px solid var(--line,rgba(128,128,128,.28));border-radius:.35rem;background:var(--surface-raised,rgba(128,128,128,.055));min-width:0}
+.p26-run-card h3{margin:0;overflow-wrap:anywhere}
+.p26-run-card label{display:block;font-weight:600}
+.p26-run-card input{width:100%;min-width:0;max-width:28rem;padding:.7rem;border:1px solid currentColor;border-radius:.25rem;background:var(--surface,#fff);color:inherit;font:inherit}
+.p26-step{text-transform:uppercase;font-size:.8rem;letter-spacing:.06em;font-weight:700;margin:0}
+.p26-model{padding:.55rem .75rem;border-left:3px solid currentColor;overflow-wrap:anywhere;font-weight:600}
+.p26-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0}
+.p26-actions button,.p26-runner>button{min-height:44px;white-space:normal;text-align:left;overflow-wrap:anywhere}
+.p26-armed{font-size:.88rem}
+.p26-feedback:empty{display:none}
+.p26-feedback{max-width:72ch;overflow-wrap:anywhere}
+@media(max-width:550px){.p26-actions{display:grid;grid-template-columns:minmax(0,1fr)}.p26-actions button{width:100%}.p26-run-card{padding:.75rem}}
+@media(min-width:550px) and (max-width:850px){.p26-actions button{flex:1 1 12rem}}

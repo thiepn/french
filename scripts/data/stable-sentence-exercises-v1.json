@@ -1,0 +1,540 @@
+{
+  "schema": "thiepn-french-stable-sentence-source-v1",
+  "sourceRuntime": "5.24.0/P35",
+  "sourcePhase": "P12/v5.3.0",
+  "sourceBlob": "8a354063b20421ad53b3417b3f677adc926f3cb5",
+  "count": 36,
+  "exercises": [
+    {
+      "id": "p12-001",
+      "frame": "tenir compte de + nom",
+      "type": "complete",
+      "context": "planning",
+      "prompt": "Complete the sentence: Nous devons ______ la météo.",
+      "expected": "Nous devons tenir compte de la météo.",
+      "alternatives": [
+        "On doit tenir compte de la météo."
+      ],
+      "required": [
+        "tenir compte"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-002",
+      "frame": "avoir besoin",
+      "type": "complete",
+      "context": "study",
+      "prompt": "Complete the thought: Je ______ plus de temps pour finir.",
+      "expected": "J'ai besoin de plus de temps pour finir.",
+      "alternatives": [
+        "J’ai besoin de plus de temps pour finir."
+      ],
+      "required": [
+        "besoin"
+      ]
+    },
+    {
+      "id": "p12-003",
+      "frame": "prendre une décision",
+      "type": "complete",
+      "context": "daily life",
+      "prompt": "Complete the sentence: Nous devons ______ aujourd’hui.",
+      "expected": "Nous devons prendre une décision aujourd'hui.",
+      "alternatives": [
+        "Nous devons prendre une décision aujourd’hui."
+      ],
+      "required": [
+        "prendre une décision"
+      ]
+    },
+    {
+      "id": "p12-004",
+      "frame": "avoir du mal à + infinitif",
+      "type": "complete",
+      "context": "study",
+      "prompt": "Complete the sentence: J’______ comprendre cette phrase.",
+      "expected": "J'ai du mal à comprendre cette phrase.",
+      "alternatives": [
+        "J’ai du mal à comprendre cette phrase."
+      ],
+      "required": [
+        "du mal à"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-005",
+      "frame": "poser une question à quelqu’un",
+      "type": "complete",
+      "context": "university",
+      "prompt": "Complete the sentence: Je voudrais ______ au professeur.",
+      "expected": "Je voudrais poser une question au professeur.",
+      "alternatives": [
+        "Je veux poser une question au professeur."
+      ],
+      "required": [
+        "poser une question"
+      ]
+    },
+    {
+      "id": "p12-006",
+      "frame": "faire partie de + nom",
+      "type": "complete",
+      "context": "social",
+      "prompt": "Complete the sentence: Elle ______ notre équipe.",
+      "expected": "Elle fait partie de notre équipe.",
+      "alternatives": [
+        "Elle fait partie de l’équipe."
+      ],
+      "required": [
+        "fait partie"
+      ]
+    },
+    {
+      "id": "p12-007",
+      "frame": "apprendre à + infinitif",
+      "type": "cue",
+      "context": "skills",
+      "prompt": "Situation: you are learning to drive. Write one sentence using apprendre à.",
+      "expected": "J'apprends à conduire.",
+      "alternatives": [
+        "J’apprends à conduire."
+      ],
+      "required": [
+        "apprends à"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-008",
+      "frame": "décider de + infinitif",
+      "type": "cue",
+      "context": "plans",
+      "prompt": "Situation: you decided to leave tomorrow. Use décider de.",
+      "expected": "J'ai décidé de partir demain.",
+      "alternatives": [
+        "J’ai décidé de partir demain."
+      ],
+      "required": [
+        "décidé de"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-009",
+      "frame": "essayer de + infinitif",
+      "type": "cue",
+      "context": "language learning",
+      "prompt": "Situation: you try to speak French every day. Use essayer de.",
+      "expected": "J'essaie de parler français tous les jours.",
+      "alternatives": [
+        "J’essaye de parler français tous les jours.",
+        "J'essaye de parler français tous les jours."
+      ],
+      "required": [
+        "essaie de"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-010",
+      "frame": "rêver de + infinitif",
+      "type": "cue",
+      "context": "travel",
+      "prompt": "Situation: you dream of visiting Canada. Use rêver de.",
+      "expected": "Je rêve de visiter le Canada.",
+      "alternatives": [
+        "Je rêve de visiter le Canada un jour."
+      ],
+      "required": [
+        "rêve de"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-011",
+      "frame": "prendre rendez-vous avec quelqu’un",
+      "type": "cue",
+      "context": "appointments",
+      "prompt": "Situation: you need an appointment with the doctor. Use prendre rendez-vous avec.",
+      "expected": "Je dois prendre rendez-vous avec le médecin.",
+      "alternatives": [
+        "J'ai besoin de prendre rendez-vous avec le médecin."
+      ],
+      "required": [
+        "prendre rendez vous avec"
+      ],
+      "connector": "avec"
+    },
+    {
+      "id": "p12-012",
+      "frame": "faire face à + nom",
+      "type": "cue",
+      "context": "problems",
+      "prompt": "Situation: your team must deal with a problem. Use faire face à.",
+      "expected": "Nous devons faire face à ce problème.",
+      "alternatives": [
+        "On doit faire face à ce problème."
+      ],
+      "required": [
+        "faire face"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-013",
+      "frame": "permettre à quelqu’un de + infinitif",
+      "type": "translate",
+      "context": "travel",
+      "prompt": "Translate using permettre à quelqu’un de: This ticket allows my brother to travel for free.",
+      "expected": "Ce billet permet à mon frère de voyager gratuitement.",
+      "alternatives": [
+        "Ce billet permet à mon frère de voyager sans payer."
+      ],
+      "required": [
+        "permet à",
+        "de voyager"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-014",
+      "frame": "demander à quelqu’un de + infinitif",
+      "type": "translate",
+      "context": "daily life",
+      "prompt": "Translate using demander à quelqu’un de: I ask Paul to help me.",
+      "expected": "Je demande à Paul de m'aider.",
+      "alternatives": [
+        "Je demande à Paul de m’aider."
+      ],
+      "required": [
+        "demande à",
+        "de m aider"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-015",
+      "frame": "expliquer quelque chose à quelqu’un",
+      "type": "translate",
+      "context": "university",
+      "prompt": "Translate using expliquer quelque chose à quelqu’un: I explain the problem to my professor.",
+      "expected": "J'explique le problème à mon professeur.",
+      "alternatives": [
+        "J’explique le problème à mon professeur."
+      ],
+      "required": [
+        "explique",
+        "à mon professeur"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-016",
+      "frame": "faire plaisir à quelqu’un",
+      "type": "translate",
+      "context": "relationships",
+      "prompt": "Translate using faire plaisir à: This gift will please my mother.",
+      "expected": "Ce cadeau va faire plaisir à ma mère.",
+      "alternatives": [
+        "Ce cadeau fera plaisir à ma mère."
+      ],
+      "required": [
+        "faire plaisir",
+        "à ma mère"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-017",
+      "frame": "mettre fin à + nom",
+      "type": "translate",
+      "context": "problem solving",
+      "prompt": "Translate using mettre fin à: They want to put an end to the discussion.",
+      "expected": "Ils veulent mettre fin à la discussion.",
+      "alternatives": [
+        "Ils souhaitent mettre fin à la discussion."
+      ],
+      "required": [
+        "mettre fin"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-018",
+      "frame": "avoir de la chance",
+      "type": "translate",
+      "context": "daily life",
+      "prompt": "Translate using avoir de la chance: We are lucky today.",
+      "expected": "Nous avons de la chance aujourd'hui.",
+      "alternatives": [
+        "Nous avons de la chance aujourd’hui."
+      ],
+      "required": [
+        "avons de la chance"
+      ]
+    },
+    {
+      "id": "p12-019",
+      "frame": "prendre des notes",
+      "type": "transform",
+      "context": "study",
+      "prompt": "Transform: Je prends des notes pendant le cours. → subject nous, passé composé.",
+      "expected": "Nous avons pris des notes pendant le cours.",
+      "alternatives": [
+        "Nous avons pris des notes en cours."
+      ],
+      "required": [
+        "pris des notes"
+      ]
+    },
+    {
+      "id": "p12-020",
+      "frame": "faire un effort",
+      "type": "transform",
+      "context": "self improvement",
+      "prompt": "Transform: Je fais un effort. → subject nous, futur proche.",
+      "expected": "Nous allons faire un effort.",
+      "alternatives": [
+        "Nous allons faire un effort maintenant."
+      ],
+      "required": [
+        "faire un effort"
+      ]
+    },
+    {
+      "id": "p12-021",
+      "frame": "faire des progrès",
+      "type": "transform",
+      "context": "language learning",
+      "prompt": "Transform: Tu fais des progrès en français. → subject il, passé composé.",
+      "expected": "Il a fait des progrès en français.",
+      "alternatives": [
+        "Il a fait beaucoup de progrès en français."
+      ],
+      "required": [
+        "fait des progrès"
+      ]
+    },
+    {
+      "id": "p12-022",
+      "frame": "avoir raison",
+      "type": "transform",
+      "context": "discussion",
+      "prompt": "Transform: J’ai raison. → subject nous, imparfait.",
+      "expected": "Nous avions raison.",
+      "alternatives": [],
+      "required": [
+        "avions raison"
+      ]
+    },
+    {
+      "id": "p12-023",
+      "frame": "avoir tort",
+      "type": "transform",
+      "context": "discussion",
+      "prompt": "Transform: Tu as tort. → passé composé.",
+      "expected": "Tu as eu tort.",
+      "alternatives": [],
+      "required": [
+        "eu tort"
+      ]
+    },
+    {
+      "id": "p12-024",
+      "frame": "finir de + infinitif",
+      "type": "transform",
+      "context": "work",
+      "prompt": "Transform: Je finis de travailler. → subject nous, passé composé.",
+      "expected": "Nous avons fini de travailler.",
+      "alternatives": [],
+      "required": [
+        "fini de travailler"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-025",
+      "frame": "tenir compte de + nom",
+      "type": "transfer",
+      "context": "hotel",
+      "prompt": "You are choosing a hotel. Say that you also have to take location into account.",
+      "expected": "Il faut aussi tenir compte de l'emplacement.",
+      "alternatives": [
+        "Il faut également tenir compte de l'emplacement.",
+        "On doit aussi tenir compte de l'emplacement."
+      ],
+      "required": [
+        "tenir compte"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-026",
+      "frame": "avoir besoin",
+      "type": "transfer",
+      "context": "information",
+      "prompt": "You cannot decide yet. Say that you need more information.",
+      "expected": "J'ai besoin de plus d'informations.",
+      "alternatives": [
+        "J’ai besoin de plus d’informations.",
+        "Nous avons besoin de plus d'informations."
+      ],
+      "required": [
+        "besoin"
+      ]
+    },
+    {
+      "id": "p12-027",
+      "frame": "décider de + infinitif",
+      "type": "transfer",
+      "context": "study abroad",
+      "prompt": "Your friend has made the choice to study abroad. Say that they decided to study abroad.",
+      "expected": "Il a décidé d'étudier à l'étranger.",
+      "alternatives": [
+        "Elle a décidé d'étudier à l'étranger.",
+        "Il a décidé d’étudier à l’étranger."
+      ],
+      "required": [
+        "décidé d"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-028",
+      "frame": "prendre une décision",
+      "type": "transfer",
+      "context": "restaurant",
+      "prompt": "Your friends cannot agree where to eat. Say that you need to make a decision.",
+      "expected": "Nous devons prendre une décision.",
+      "alternatives": [
+        "Il faut prendre une décision.",
+        "On doit prendre une décision."
+      ],
+      "required": [
+        "prendre une décision"
+      ]
+    },
+    {
+      "id": "p12-029",
+      "frame": "faire attention à + nom",
+      "type": "transfer",
+      "context": "street",
+      "prompt": "You are crossing a busy street. Tell someone to pay attention to the traffic.",
+      "expected": "Fais attention à la circulation.",
+      "alternatives": [
+        "Faites attention à la circulation."
+      ],
+      "required": [
+        "attention à"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-030",
+      "frame": "faire attention à + infinitif",
+      "type": "transfer",
+      "context": "travel",
+      "prompt": "Your friend is leaving for the station. Tell them to be careful not to forget the ticket.",
+      "expected": "Fais attention à ne pas oublier ton billet.",
+      "alternatives": [
+        "Faites attention à ne pas oublier votre billet."
+      ],
+      "required": [
+        "attention à",
+        "oublier"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-031",
+      "frame": "aider quelqu’un à + infinitif",
+      "type": "transfer",
+      "context": "study",
+      "prompt": "Say that you help your friend prepare for the exam.",
+      "expected": "J'aide mon ami à préparer l'examen.",
+      "alternatives": [
+        "J’aide mon ami à préparer l’examen.",
+        "J'aide une amie à préparer l'examen."
+      ],
+      "required": [
+        "aide",
+        "à préparer"
+      ],
+      "connector": "à"
+    },
+    {
+      "id": "p12-032",
+      "frame": "proposer de + infinitif",
+      "type": "transfer",
+      "context": "plans",
+      "prompt": "Your group is running late. Suggest leaving earlier.",
+      "expected": "Je propose de partir plus tôt.",
+      "alternatives": [
+        "Nous proposons de partir plus tôt."
+      ],
+      "required": [
+        "propose de"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-033",
+      "frame": "refuser de + infinitif",
+      "type": "transfer",
+      "context": "discussion",
+      "prompt": "Say that he refuses to change his mind.",
+      "expected": "Il refuse de changer d'avis.",
+      "alternatives": [
+        "Il refuse de changer d’avis."
+      ],
+      "required": [
+        "refuse de"
+      ],
+      "connector": "de"
+    },
+    {
+      "id": "p12-034",
+      "frame": "avoir peur",
+      "type": "transfer",
+      "context": "speaking",
+      "prompt": "Say that she is afraid to speak in public.",
+      "expected": "Elle a peur de parler en public.",
+      "alternatives": [
+        "Elle a peur de parler devant tout le monde."
+      ],
+      "required": [
+        "a peur"
+      ]
+    },
+    {
+      "id": "p12-035",
+      "frame": "avoir envie",
+      "type": "transfer",
+      "context": "weekend",
+      "prompt": "Say that you want to travel this weekend.",
+      "expected": "Nous avons envie de voyager ce week-end.",
+      "alternatives": [
+        "J'ai envie de voyager ce week-end."
+      ],
+      "required": [
+        "envie"
+      ]
+    },
+    {
+      "id": "p12-036",
+      "frame": "faire le ménage",
+      "type": "transfer",
+      "context": "home",
+      "prompt": "Guests are coming. Say that you have to clean before they arrive.",
+      "expected": "Je dois faire le ménage avant l'arrivée des invités.",
+      "alternatives": [
+        "Nous devons faire le ménage avant l'arrivée des invités."
+      ],
+      "required": [
+        "faire le ménage"
+      ]
+    }
+  ]
+}

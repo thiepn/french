@@ -1,0 +1,12 @@
+.u40-lesson-native{border:1px solid var(--border,#8885);padding:1rem;margin:0 0 1rem}
+.u40-lesson-native h3{margin:0 0 .5rem}
+.u40-muted{color:var(--muted,#646b73);font-size:.9rem;line-height:1.5}
+.u40-toolbar{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0}
+.u40-lexemes{list-style:none;padding:0;margin:1rem 0 0;display:grid;gap:.65rem}
+.u40-lexeme{border-top:1px solid var(--border,#8885);padding:.65rem 0}
+.u40-gloss{font-size:.92rem}
+.u40-context{font-style:italic;line-height:1.5;margin:.35rem 0}
+.u40-result{min-height:1rem}
+.u40-lexeme button{margin-top:.25rem}
+.u40-lesson-native button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+@media(max-width:600px){.u40-lesson-native{padding:.7rem}.u40-toolbar button{width:100%;min-height:44px}.u40-lexeme button{min-height:44px}}

@@ -22,7 +22,8 @@ for(const token of [
 
 for(const token of ['count?:number','bytes?:number','sha256?:string','totals?:'])need(manifest,token,'manifest '+token);
 for(const token of ['12,001 word objects','12,001 to 120,000','Web Worker','P37H'])need(docs,token,'documentation '+token);
-need(pkg,'"build:vnext":"npm run content:vnext && vite build','content build before Vite');
+const packageJson=JSON.parse(pkg);
+if(typeof packageJson.scripts?.['build:vnext']!=='string'||!packageJson.scripts['build:vnext'].startsWith('npm run content:vnext && vite build'))failures.push('missing content build before Vite');
 
 console.log(JSON.stringify({
   schema:'thiepn-french-p37d-content-pipeline',

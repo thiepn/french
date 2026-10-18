@@ -126,6 +126,7 @@ export function legacyReviewLogToCanonical(payload:JsonObject):CanonicalReviewEv
 }
 
 const FEATURE_KEYS=[
+  'mistakeLog','resumeSnapshot','sessionHistory',
   'v550Reading','v560Listening','v570Speaking','v580Conversation','v590Missions',
   'v5110Curriculum','v5120OpenWorld','v5130Orchestrator','v5140Composer',
   'v5150Longitudinal','v5160Progression','v5170Remediation','v5190Benchmark',

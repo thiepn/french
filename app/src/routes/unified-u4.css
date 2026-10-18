@@ -1,0 +1,25 @@
+/* U4: source-only contextual journeys and temporary review feedback. */
+.u4-journeys{border:1px solid var(--line);background:var(--surface);border-radius:.7rem;padding:clamp(.7rem,2vw,1.2rem);margin:1rem 0}
+.u4-journeys h3{font-size:1.1rem;margin:0 0 .45rem}
+.u4-journeys>p{font-size:.85rem;line-height:1.55;color:var(--muted)}
+.u4-journeys>label,.u4-checkpoint-actions label{display:grid;gap:.4rem;font-size:.83rem;color:var(--muted);margin:.6rem 0}
+.u4-journeys select,.u4-checkpoint-actions input{min-height:44px;border:1px solid var(--line);border-radius:.45rem;background:var(--surface);color:var(--text);padding:.55rem;max-width:100%}
+.u4-journey-stops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;list-style:none;padding:0;margin:.8rem 0}
+.u4-journey-stop{min-width:0;margin:0}
+.u4-journey-stop button{height:100%;width:100%;min-height:44px!important;text-align:left;white-space:normal;line-height:1.35;justify-content:start}
+.u4-journey-stop button.u4-suggested{border:2px solid var(--accent);font-weight:700}
+.u4-journey-stop small{display:block;margin:.2rem .1rem;color:var(--muted);line-height:1.45}
+.u4-checkpoint-actions{display:flex;gap:.6rem;align-items:end;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:.8rem}
+.u4-checkpoint-actions>button{min-height:44px!important}
+.u4-checkpoint-actions label{flex:1;min-width:160px}
+.u4-checkpoint-status{font-size:.85rem;line-height:1.6;overflow-wrap:anywhere}
+.u4-repair{padding:.7rem;border-left:2px solid var(--accent);background:var(--surface);margin:.55rem 0}
+.u4-repair[hidden]{display:none}
+.u4-repair strong{font-size:.85rem}
+.u4-remediation{display:grid;gap:.5rem;margin-top:.5rem}
+.u4-remediation label{display:grid;gap:.45rem;font-size:.85rem;line-height:1.5}
+.u4-remediation input{min-height:44px;width:100%;padding:.6rem;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:.45rem}
+.u4-remediation button{justify-self:start;min-height:44px!important}
+.u4-journeys button:focus-visible,.u4-repair input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:720px){.u4-journey-stops{grid-template-columns:1fr}.u4-checkpoint-actions{display:grid}.u4-checkpoint-actions>*{width:100%;max-width:100%}}
+@media(prefers-reduced-motion:reduce){.u4-journeys *,.u4-repair *{animation:none!important;transition:none!important}}

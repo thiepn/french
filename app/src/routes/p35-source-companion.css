@@ -1,0 +1,11 @@
+.p35-source-companion{border:1px solid var(--line);padding:1rem;margin:1rem 0;background:var(--surface);display:grid;gap:.7rem;max-width:100%;min-width:0}
+.p35-source-companion h2{font-size:1.05rem;margin:0}
+.p35-source-companion p{margin:.1rem 0;line-height:1.5;overflow-wrap:anywhere}
+.p35-source-companion textarea{width:100%;min-height:100px;max-width:100%;box-sizing:border-box;padding:.75rem;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+.p35-source-companion .p35-actions{display:flex;flex-wrap:wrap;gap:.55rem}
+.p35-source-companion button{min-height:44px}
+.p35-source-companion [role=status]{font-size:.86rem}
+.source-mission-steps{margin:.5rem 0;padding-left:1.5rem;line-height:1.65;font-size:.85rem}
+.source-companion-actions{display:flex;gap:.55rem;flex-wrap:wrap;margin-top:.65rem;align-items:center}
+.source-companion-actions p{flex-basis:100%;margin:0;color:var(--muted);font-size:.85rem;line-height:1.5}
+@media(max-width:550px){.p35-source-companion{padding:.8rem}.p35-source-companion .p35-actions,.source-companion-actions{display:grid;grid-template-columns:1fr;width:100%}}

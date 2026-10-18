@@ -1,0 +1,27 @@
+/* P37I-D3 — compact observational ledger; no dashboard cards or artificial scores. */
+.longitudinal-panel{min-width:0}
+.longitudinal-stats{font-variant-numeric:tabular-nums;font-size:.86rem;font-weight:700;line-height:1.55;
+  padding:.9rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.longitudinal-priority{display:grid;gap:0;margin:1rem 0}
+.longitudinal-priority h3{font-size:.95rem;margin:.2rem 0 .45rem}
+.longitudinal-target{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;
+  width:100%;gap:.25rem .8rem;background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--line);
+  padding:.8rem 0;text-align:left;cursor:pointer}
+.longitudinal-target strong{font-size:.9rem;overflow-wrap:anywhere}
+.longitudinal-target span{font-size:.77rem;color:var(--muted)}
+.longitudinal-target small{grid-column:1/-1;font-size:.73rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.longitudinal-ledger{border-top:1px solid var(--line);margin:1rem 0}
+.longitudinal-row{border-bottom:1px solid var(--line)}
+.longitudinal-row summary{display:flex;align-items:baseline;justify-content:space-between;
+  gap:1rem;cursor:pointer;min-height:48px;padding:.85rem .15rem;list-style:revert}
+.longitudinal-row summary strong{font-size:.85rem;overflow-wrap:anywhere}
+.longitudinal-row summary span{font-size:.75rem;color:var(--muted);text-align:right}
+.longitudinal-row-detail{padding:.2rem .8rem 1rem;max-width:64ch}
+.longitudinal-row-detail p{font-size:.82rem;line-height:1.6;margin:.45rem 0}
+.longitudinal-target:focus-visible,.longitudinal-row summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){
+ .longitudinal-target{grid-template-columns:1fr}
+ .longitudinal-target span{grid-column:1}
+ .longitudinal-row summary{flex-direction:column;gap:.15rem}
+ .longitudinal-row summary span{text-align:left}
+}

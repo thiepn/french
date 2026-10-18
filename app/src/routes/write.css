@@ -1,0 +1,50 @@
+/* P37I-C1: per-route writing workspace; no initial shell CSS dependency. */
+.write-workspace{max-width:880px}
+.write-workspace h1{font-size:clamp(2rem,5vw,3.2rem)}
+.write-modes{display:flex;gap:.6rem;margin:1.5rem 0 1rem;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:.8rem}
+.write-tab{min-height:42px;padding:.6rem 1rem;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;border-radius:.25rem}
+.write-tab.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.write-heading{margin:1rem 0 1.3rem}
+.write-heading h2{font-size:clamp(1.4rem,3vw,2.2rem);margin:.4rem 0;letter-spacing:-.03em}
+.write-context{text-transform:uppercase;color:var(--muted);font-size:.72rem;letter-spacing:.09em}
+.write-note{color:var(--muted);font-size:.87rem;line-height:1.55}
+.write-progress{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px solid var(--line);padding-bottom:.85rem;font-size:.82rem}
+.write-progress small{color:var(--muted)}
+.write-task{padding:1.5rem 0}
+.write-label{font-size:.69rem;font-weight:750;color:var(--muted);letter-spacing:.1em}
+.write-prompt{font-size:clamp(1.15rem,3vw,1.7rem);line-height:1.4;letter-spacing:-.02em;margin:.5rem 0 1.2rem}
+.write-form{display:grid;gap:.8rem}
+.write-answer{width:100%;min-height:115px;resize:vertical;padding:1rem;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:.25rem;font:inherit;line-height:1.55}
+.write-actions,.write-assess{display:flex;flex-wrap:wrap;gap:.6rem}
+.write-actions button,.write-assess button{min-height:44px}
+.write-support{font-size:.85rem;color:var(--muted);line-height:1.55}
+.write-support:empty,.write-feedback:empty,.write-assess:empty{display:none}
+.write-feedback{border-left:2px solid var(--accent);padding:.65rem .9rem;background:var(--surface);line-height:1.5}
+.write-feedback p{font-size:.82rem;color:var(--muted)}
+.write-reference{word-break:break-word}
+.write-assess{margin-top:1rem}
+.write-tab:focus-visible,.write-answer:focus-visible,.write-actions button:focus-visible,.write-assess button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:600px){.write-actions,.write-assess{display:grid;grid-template-columns:1fr 1fr}.write-actions button:first-child,.write-assess button:first-child{grid-column:1/-1}.write-progress{display:grid;gap:.2rem}}
+
+/* C2 extends the existing writing desk rather than adding bootstrap styles. */
+.write-switcher{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.4rem 0 .4rem}
+.write-switch{min-height:44px;padding:.72rem 1.05rem;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:.2rem;cursor:pointer;font:inherit;font-size:.86rem}
+.write-switch.is-active{border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:700}
+.write-source{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem;color:var(--muted);font-size:.78rem;line-height:1.55}
+.write-source a{color:var(--accent);text-underline-offset:3px}
+.write-source a:focus-visible,.write-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:600px){.write-switcher{display:grid;grid-template-columns:1fr 1fr}.write-switch{padding:.65rem .6rem}}
+
+/* P37I-C3: light data typography for formative usage mastery. */
+.write-mastery-overview{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:1rem 0 1.3rem}
+.write-mastery-stat{display:flex;flex-direction:column;gap:.2rem;padding:.9rem .7rem .85rem;border-right:1px solid var(--line)}
+.write-mastery-stat:last-child{border-right:0}
+.write-mastery-stat strong{font-size:clamp(1.1rem,2.6vw,1.6rem);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.write-mastery-stat span{color:var(--muted);font-size:.68rem;line-height:1.35}
+@media(max-width:700px){.write-mastery-overview{grid-template-columns:repeat(3,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:0}.write-mastery-stat:nth-child(n+4){border-top:1px solid var(--line)}}
+@media(max-width:400px){.write-mastery-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.write-mastery-stat:nth-child(3){border-right:1px solid var(--line)}.write-mastery-stat:nth-child(even){border-right:0}.write-mastery-stat:nth-child(n+3){border-top:1px solid var(--line)}}
+
+/* P37I-C4: structural provenance only; avoid decorative progress cards. */
+.write-bridge-source{display:flex;align-items:center;justify-content:space-between;gap:.7rem;border-top:1px solid var(--line);margin-top:1rem;padding-top:.7rem;flex-wrap:wrap}
+.write-bridge-source span{font-size:.75rem;color:var(--muted)}
+.write-bridge-source button{font-size:.73rem}

@@ -15,3 +15,6 @@ requestAnimationFrame(()=>{
   performance.measure('french-vnext-shell-bootstrap','french-vnext-bootstrap-start','french-vnext-shell-ready');
   void beginBackgroundStartup(shell);
 });
+
+const registerOfflineShell=()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('/service-worker.js').catch(error=>console.warn('French offline shell registration failed',error));};
+if(document.readyState==='complete')setTimeout(registerOfflineShell,0);else window.addEventListener('load',()=>setTimeout(registerOfflineShell,0),{once:true});
