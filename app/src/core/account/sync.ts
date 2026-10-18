@@ -136,7 +136,9 @@ async function reconcileFrenchSyncOnce(user:FrenchAccountUser):Promise<FrenchSyn
   if(!m.enabled)return{status:'disabled',message:'Cloud sync is not enabled on this device.'};
   if(!navigator.onLine)return{status:'offline',message:'Offline. French remains fully local and sync will resume when connected.'};
   try{
-    if(!(await isFrenchAccountConnectionActive())){writeMeta({...m,enabled:false});const r:FrenchSyncResult={status:'disabled',message:'French is disconnected in THIEPN Account.'};emit(r);return r;}
+    const connected=await isFrenchAccountConnectionActive();
+    if(!consentCurrent(user.id,generation))return syncPaused();
+    if(!connected){writeMeta({...metaFor(user.id),enabled:false});const r:FrenchSyncResult={status:'disabled',message:'French is disconnected in THIEPN Account.'};emit(r);return r;}
     const [local,cloud]=await Promise.all([createFrenchCloudSnapshot(),readCloud()]),localHash=await hashFrenchCloudSnapshot(local),cloudHash=cloud?await hashFrenchCloudSnapshot(cloud.state):undefined;
     if(!consentCurrent(user.id,generation))return syncPaused();
     if(!cloud){if(m.revision!==undefined){const r:FrenchSyncResult={status:'conflict',message:'The earlier cloud copy is missing. Choose whether to recreate it from this device.',reviewedLocalHash:localHash};emit(r);return r;}return push(user.id,undefined,local,generation);}
