@@ -1203,7 +1203,10 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
   const offlineContent=await page.evaluate(async()=>{
     const cache=await caches.open('french-vnext-content-v1');
     const keys=(await cache.keys()).map(request=>new URL(request.url).pathname);
-    const storedManifest=await cache.match('/content/manifest.json');
+    const pinnedManifest=(await cache.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinnedManifest)throw Error('No verified build-specific offline manifest');
+    const storedManifest=await cache.match(pinnedManifest);
     const manifest=storedManifest?await storedManifest.json():null;
     const readingDescriptor=manifest?.packs?.find(row=>row.id==='reading-stable-p35');
     return{manifest:keys.includes('/content/manifest.json'),
