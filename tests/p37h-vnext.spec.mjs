@@ -672,6 +672,74 @@ test('U58 offline storage diagnostics show low quota and never delete original c
   await expect(page.locator('[data-offline-status]')).toContainText('Persistent storage was not granted');
   expect(await page.evaluate(()=>caches.keys())).toEqual(before);
 });
+
+test('U59 older running build rejects a changed shared manifest and keeps SHA-pinned offline study',async({page,context})=>{
+  await page.goto('/#words');
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const saved=await page.evaluate(async()=>{
+    const content=await caches.open('french-vnext-content-v1');
+    const keys=(await content.keys()).map(request=>request.url);
+    const pinned=keys.find(key=>key.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinned)throw Error('Build has no SHA-pinned manifest');
+    const original=await(await content.match(pinned)).text();
+    const sha=pinned.split('verifiedSha256=')[1];
+    const bad=JSON.stringify({...JSON.parse(original),revision:'foreign-vnext-build'});
+    await content.put('/content/manifest.json',new Response(bad,
+      {headers:{'content-type':'application/json'}}));
+    return {sha,pinned,original};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+    const retained=await page.evaluate(async pinned=>{
+      const storage=await caches.open('french-vnext-content-v1');
+      const response=await storage.match(pinned);
+      if(!response)return null;
+      return await response.text();
+    },saved.pinned);
+    expect(retained).toBe(saved.original);
+  }finally{await context.setOffline(false);}
+});
+
+test('U59 wrong-build online manifest is rejected and recovered from matching installed shell',async({page})=>{
+  await page.goto('/#words');
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const baseline=await page.evaluate(async()=>{
+    const storage=await caches.open('french-vnext-content-v1');
+    const keys=await storage.keys();
+    const pinned=keys.map(request=>request.url).find(url=>url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinned)throw Error('No build manifest');
+    const original=await(await storage.match(pinned)).text();
+    await storage.delete(pinned);
+    await storage.delete('/content/manifest.json');
+    return{pinned,original};
+  });
+  // Model a newer deployed origin serving a different valid-shaped manifest
+  // while this tab still runs the old JS. The old immutable shell is intact.
+  await page.addInitScript(()=>{
+    const originalFetch=window.fetch.bind(window);
+    window.fetch=(input,init)=>{
+      const url=new URL(typeof input==='string'?input:input.url,location.href);
+      if(url.pathname==='/content/manifest.json'){
+        return Promise.resolve(new Response(JSON.stringify({
+          schema:'thiepn-french-content-manifest-v1',revision:'foreign-new-build',
+          indexes:{vocabulary:{path:'/content/search/vocabulary-index.json',
+            sha256:'0'.repeat(64),schema:'x',count:0,bytes:1,revision:'foreign'}},
+          packs:[]
+        }),{status:200,headers:{'content-type':'application/json'}}));
+      }
+      return originalFetch(input,init);
+    };
+  });
+  await page.reload();
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const restored=await page.evaluate(async pinned=>{
+    const r=await(await caches.open('french-vnext-content-v1')).match(pinned);
+    return r?await r.text():null;
+  },baseline.pinned);
+  expect(restored).toBe(baseline.original);
+});
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
