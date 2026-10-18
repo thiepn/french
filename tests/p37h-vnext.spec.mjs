@@ -763,6 +763,80 @@ test('U59 wrong-build online manifest is rejected and recovered from matching in
   },baseline.pinned);
   expect(restored).toBe(baseline.original);
 });
+
+test('U60 on-demand offline essentials prepare five SHA-verified public sources and survive offline reload',async({page,context})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('button',{name:'Check offline lessons'})).toBeVisible();
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText(/verified public essentials available/,{timeout:30_000});
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  const prepared=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const pinnedManifest=(await store.keys()).find(req=>req.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinnedManifest)throw Error('No pinned manifest found');
+    const manifest=await(await store.match(pinnedManifest)).json();
+    const first=manifest.packs.filter(pack=>pack.kind==='vocabulary'&&pack.level==='A1')
+      .sort((a,b)=>a.id.localeCompare(b.id))[0];
+    const selected=[manifest.indexes.vocabulary,first,
+      ...['reading-stable-p35','sentence-stable-p12','usage-stable-p10']
+        .map(id=>manifest.packs.find(pack=>pack.id===id))];
+    const report=[];
+    for(const row of selected){
+      const response=await store.match(row.path+'?verifiedSha256='+row.sha256);
+      if(!response)throw Error('Missing pinned source '+row.path);
+      const bytes=await response.arrayBuffer();
+      const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+        .map(b=>b.toString(16).padStart(2,'0')).join('');
+      report.push({id:row.id??'index',valid:sha===row.sha256});
+    }
+    return report;
+  });
+  expect(prepared).toHaveLength(5);
+  expect(prepared.every(row=>row.valid)).toBe(true);
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('button',{name:'Check offline lessons'})).toBeVisible({timeout:30_000});
+    await page.getByRole('button',{name:'Check offline lessons'}).click();
+    await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials available',{timeout:30_000});
+    await page.goto('/#read');
+    await expect(page.getByRole('heading',{name:'Read',exact:true})).toBeVisible({timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
+test('U60 offline readiness refuses corrupted public packs without modifying P35 or private study data',async({page,context})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('button',{name:'Prepare offline essentials'})).toBeVisible();
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await store.keys()).find(req=>req.url.includes('/content/manifest.json?verifiedSha256='));
+    const manifest=await(await store.match(manifestKey)).json();
+    const row=manifest.packs.find(pack=>pack.id==='reading-stable-p35');
+    const damaged=new Response('{"schema":"thiepn-french-reading-pack-v1","readings":["U60_BAD"]}',
+      {headers:{'content-type':'application/json'}});
+    await store.put(row.path+'?verifiedSha256='+row.sha256,damaged.clone());
+    await store.put(row.path,damaged);
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u60-owned-source',new Response('P35_UNCHANGED'));
+  });
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('4/5 verified public essentials available',{timeout:30_000});
+  await context.setOffline(true);
+  try{
+    await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+    await expect(page.locator('[data-essentials-status]')).toContainText('Connect to the internet',{timeout:30_000});
+    const unchanged=await page.evaluate(async()=>{
+      const cache=await caches.open('french-shell-v35');
+      return(await(await cache.match('/u60-owned-source')).text());
+    });
+    expect(unchanged).toBe('P35_UNCHANGED');
+  }finally{await context.setOffline(false);}
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+});
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
