@@ -38,12 +38,21 @@ self.addEventListener('install',event=>{
   event.waitUntil(cache().then(store=>store.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',event=>{
-  // Keep the prior vNext shell while older tabs finish. P35 and previously
-  // verified public content remain outside this shell-cleanup lifecycle.
-  event.waitUntil(caches.keys().then(names=>{
-    const old=names.filter(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name)&&name!==CACHE_NAME);
-    return Promise.all(old.slice(0,-1).map(name=>caches.delete(name)));
-  }).then(()=>self.clients.claim()));
+  // Never delete the shell backing an older tab while it is still open:
+  // after skipWaiting a new worker may control pages running older JS.
+  // Do not use storage pressure as a reason to erase P35, learner data, or
+  // SHA-verified public content. When no windows remain, retain two previous
+  // native builds for rollback and prune only older native shell versions.
+  event.waitUntil((async()=>{
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    if(clients.length===0){
+      const names=await caches.keys();
+      const older=names.filter(name=>
+        /^french-vnext-shell-[0-9a-f]{12}$/.test(name)&&name!==CACHE_NAME);
+      await Promise.all(older.slice(0,-2).map(name=>caches.delete(name)));
+    }
+    await self.clients.claim();
+  })());
 });
 self.addEventListener('fetch',event=>{
   const request=event.request;
