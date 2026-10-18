@@ -60,7 +60,27 @@ self.addEventListener('fetch',event=>{
   }
   const isContent=url.pathname.startsWith('/content/');
   const isStatic=SHELL_PATHS.has(url.pathname);
-  if(!isContent&&!isStatic)return; // Never cache Account, API or private reads.
+  const priorAsset=url.pathname.startsWith('/assets/')&&!isStatic;
+  if(!isContent&&!isStatic&&!priorAsset)return; // Never cache Account, API or private reads.
+  if(priorAsset){
+    // Old tabs may request a hashed lazy chunk after skipWaiting() activates a
+    // newer worker. Recover ONLY that exact asset from the previous vNext
+    // build; never read P35 or unrelated caches and never copy old bytes into
+    // the new build's immutable shell.
+    const previous=async()=>{
+      const names=(await caches.keys()).filter(name=>
+        /^french-vnext-shell-[0-9a-f]{12}$/.test(name)&&name!==CACHE_NAME);
+      for(const name of names.reverse()){
+        const found=await(await caches.open(name)).match(request);
+        if(found)return found;
+      }
+      return null;
+    };
+    event.respondWith(fetch(request).then(async response=>
+      response.status===404?await previous()||response:response
+    ).catch(async()=>await previous()||Response.error()));
+    return;
+  }
   if(isContent){
     // The verified content loader and manifest parser own cache.put.
     // Network responses must not poison a previously validated offline pack.

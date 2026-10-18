@@ -464,6 +464,7 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
     // A prior build cache must not be mutated or deleted by installation.
     const prior=await caches.open('french-vnext-shell-000000000000');
     await prior.put('/u56-prior-build',new Response('IMMUTABLE_PRIOR_BUILD'));
+    await prior.put('/assets/u56-legacy-hash.js',new Response('PREVIOUS_BUILD_CHUNK'));
     const stable=await caches.open('french-shell-v35');
     await stable.put('/u56-original-p35',new Response('ORIGINAL_P35'));
     return{current,reading,contentPaths};
@@ -504,6 +505,10 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
     await expect(page.locator('.open-world-entry')).toBeVisible({timeout:30_000});
     const body=await page.evaluate(async path=>(await fetch(path)).text(),original.reading);
     expect(body).toContain('reading-stable-p35');
+    // The new worker must still serve an old tab's lazy hashed chunk.
+    expect(await page.evaluate(async()=>{
+      return(await fetch('/assets/u56-legacy-hash.js')).text();
+    })).toBe('PREVIOUS_BUILD_CHUNK');
   }finally{await context.setOffline(false);}
 });
 
