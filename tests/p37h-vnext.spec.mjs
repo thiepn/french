@@ -535,6 +535,11 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
 
 test('U57 old-tab unversioned cache writes cannot replace SHA-pinned offline vocabulary',async({page,context})=>{
   await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   const baseline=await page.evaluate(async()=>{
     const store=await caches.open('french-vnext-content-v1');
@@ -569,6 +574,11 @@ test('U57 old-tab unversioned cache writes cannot replace SHA-pinned offline voc
 
 test('U57 damaged pinned and legacy corpus caches fail closed, then recover after reconnect',async({page,context})=>{
   await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   const target=await page.evaluate(async()=>{
     const store=await caches.open('french-vnext-content-v1');
