@@ -346,9 +346,9 @@ test('U54 offline cold-start precaches public manifest without loading any priva
     const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
     if(!current)throw Error('Versioned vNext shell was not installed');
     const store=await caches.open(current);
-    const names=(await store.keys()).map(request=>new URL(request.url).pathname);
-    return {manifest:names.includes('/content/manifest.json'),
-      unrelated:names.filter(path=>path.startsWith('/api/')||path.startsWith('/rest/v1/'))};
+    const paths=(await store.keys()).map(request=>new URL(request.url).pathname);
+    return {manifest:paths.includes('/content/manifest.json'),
+      unrelated:paths.filter(path=>path.startsWith('/api/')||path.startsWith('/rest/v1/'))};
   });
   expect(prewarm).toEqual({manifest:true,unrelated:[]});
   await context.setOffline(true);
