@@ -501,7 +501,9 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
   expect(kept.previous).toBe('IMMUTABLE_PRIOR_BUILD');
   expect(kept.p35).toBe('ORIGINAL_P35');
   expect(kept.current).toBe(original.current);
-  expect(kept.contentPaths).toEqual(original.contentPaths);
+  // A worker upgrade may add a SHA-pinned manifest to the verified cache.
+  // Every previous verified path must survive, even if a new key is added.
+  expect(original.contentPaths.every(path=>kept.contentPaths.includes(path))).toBe(true);
   await context.setOffline(true);
   try{
     await page.reload();
@@ -521,7 +523,10 @@ test('U57 old-tab unversioned cache writes cannot replace SHA-pinned offline voc
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   const baseline=await page.evaluate(async()=>{
     const store=await caches.open('french-vnext-content-v1');
-    const manifest=await(await store.match('/content/manifest.json')).json();
+    const manifestKey=(await store.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)throw Error('Build-pinned verified manifest not available');
+    const manifest=await(await store.match(manifestKey)).json();
     const descriptor=manifest.indexes.vocabulary;
     const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
     const response=await store.match(pinned);
@@ -552,7 +557,10 @@ test('U57 damaged pinned and legacy corpus caches fail closed, then recover afte
   await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
   const target=await page.evaluate(async()=>{
     const store=await caches.open('french-vnext-content-v1');
-    const manifest=await(await store.match('/content/manifest.json')).json();
+    const manifestKey=(await store.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)throw Error('Build-pinned verified manifest not available');
+    const manifest=await(await store.match(manifestKey)).json();
     const descriptor=manifest.indexes.vocabulary;
     const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
     const poison=new Response('{"schema":"thiepn-french-vocabulary-search-v1","rows":[{"word":"U57_CORRUPTED"}]}',
