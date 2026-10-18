@@ -37,10 +37,11 @@ function unsafeToReplace(message:string,revision?:number):FrenchSyncResult{
 async function pull(userId:string,cloud:Cloud,expectedLocalHash:string):Promise<FrenchSyncResult>{
   // A learner can study or edit preferences while the remote read is pending.
   // Do not overwrite a newly changed local snapshot from a stale cloud decision.
-  const currentHash=await hashFrenchCloudSnapshot(await createFrenchCloudSnapshot());
+  const expectedLocal=await createFrenchCloudSnapshot();
+  const currentHash=await hashFrenchCloudSnapshot(expectedLocal);
   if(currentHash!==expectedLocalHash)return unsafeToReplace('French changed on this device while checking the cloud. Review the latest state before restoring.',cloud.revision);
   if(!isFrenchSyncEnabled(userId))return{status:'disabled',message:'Cloud sync is paused; no local progress was replaced.'};
-  await applyFrenchCloudSnapshot(cloud.state);
+  await applyFrenchCloudSnapshot(cloud.state,expectedLocal);
   const hash=await hashFrenchCloudSnapshot(cloud.state);baseline(userId,cloud,hash);
   const result:FrenchSyncResult={status:'pulled',message:'Cloud French progress was restored on this device.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(result);return result;
 }
