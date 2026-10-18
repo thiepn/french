@@ -15,7 +15,7 @@ const RETURN_KEY = 'thiepn:french-sso:return:v1';
 const ROOT = process.env.P37H_BASE_URL || 'http://127.0.0.1:4175';
 
 async function interceptProduction(context, options = {}) {
-  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, delayReadMs: 0, identityId: USER_ID, tokenExchanges: 0, requests: [] };
+  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, readFinished: 0, delayReadMs: 0, holdRead: false, releaseRead: null, identityId: USER_ID, tokenExchanges: 0, requests: [] };
 
   // Routes registered on the browser context also cover independently created pages.
   await context.route(ORIGIN + '/**', async route => {
@@ -72,7 +72,9 @@ async function interceptProduction(context, options = {}) {
     }
     if (path === '/rest/v1/french_sync_state') {
       state.readStarted++;
+      if (state.holdRead) await new Promise(resolve => { state.releaseRead = resolve; });
       if (state.delayReadMs > 0) await new Promise(resolve => setTimeout(resolve, state.delayReadMs));
+      state.readFinished++;
       return json(route, state.cloud ? [state.cloud] : []);
     }
     if (path === '/rest/v1/rpc/sync_thiepn_french_state') {
@@ -289,21 +291,24 @@ test('U62 pausing during a pending cloud read prevents the delayed upload',async
   await page.getByRole('button',{name:'Sync this device'}).click();
   await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
   await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
-  const initialUploads=api.uploads,initialReads=api.readStarted;
+  const initialUploads=api.uploads,initialReads=api.readStarted,initialFinished=api.readFinished;
   await page.locator('input[name="dailyNewLimit"]').fill('42');
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
-  api.delayReadMs=900;
+  api.holdRead=true;
   await page.getByRole('button',{name:'Sync now'}).click();
   await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(initialReads+1);
   await page.getByRole('button',{name:'Pause sync'}).click();
   await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible({timeout:30_000});
-  await expect.poll(()=>api.requests.filter(path=>path.includes('/rest/v1/french_sync_state')).length).toBeGreaterThan(initialReads);
-  // Wait for the delayed request to finish, then check that no RPC occurred.
+  // The backend may not release the snapshot until pause has actually
+  // changed persisted consent. No device-speed timing assumption is involved.
   await expect.poll(async()=>page.evaluate(()=>
     JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.enabled
   ),{timeout:30_000}).toBe(false);
-  await page.waitForTimeout(1200);
+  expect(api.releaseRead).toBeInstanceOf(Function);
+  api.holdRead=false; api.releaseRead(); api.releaseRead=null;
+  await expect.poll(()=>api.readFinished,{timeout:30_000}).toBe(initialFinished+1);
+  await expect(page.getByText(/No new transfer was started/i)).toBeVisible({timeout:30_000});
   expect(api.uploads).toBe(initialUploads);
   expect(api.cloud.revision).toBe(1);
   expect(api.cloud.state.settings.dailyNewLimit).not.toBe(42);
@@ -323,11 +328,13 @@ test('U62 Account identity change during cloud read cannot upload an old account
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
   const previous=api.uploads,reads=api.readStarted;
-  api.delayReadMs=900;
+  api.holdRead=true;
   await page.getByRole('button',{name:'Sync now'}).click();
   await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(reads+1);
   // Synthetic Account provider now verifies a different signed-in identity.
   api.identityId='9c1d9e59-e7d4-4d51-a849-6f5d112c04dd';
+  expect(api.releaseRead).toBeInstanceOf(Function);
+  api.holdRead=false; api.releaseRead(); api.releaseRead=null;
   await expect(page.getByText(/Account identity changed or cannot be verified/i)).toBeVisible({timeout:30_000});
   expect(api.uploads).toBe(previous);
   expect(api.cloud.revision).toBe(1);
