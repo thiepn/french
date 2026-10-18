@@ -33,6 +33,14 @@ assert.ok(repository.includes("if(active&&active.cursor<active.queueIds.length)"
 assert.ok(repository.includes("if(lookup.result===undefined)srs.put(row,row.id)"));
 assert.ok(!builder.includes('await ensureNewRecognitionRecords('));
 assert.ok(!builder.includes('await ensureSkillRecord('));
+const review=read('app/src/routes/review.ts');
+assert.ok(repository.includes('export async function clearCompletedStudySession('));
+assert.ok(repository.includes('guardedReads(tx,[a,b,c,...(d?[d]:[])]'));
+assert.ok(repository.includes('guardedReads(tx,[a,b,c,d,e]'));
+assert.ok(repository.includes('guardedReads(tx,[current]'));
+assert.ok(review.includes('clearCompletedStudySession(finalSession)'));
+assert.ok(review.includes('undoLastStudySessionReview(Date.now(),session)'));
+assert.ok(review.includes("grade?.quality??'none',session)"));
 assert.ok(words.includes('Study my words')&&words.includes('createSelectedVocabularySession'));
 assert.ok(words.includes('saveUserVocabularyCard')&&words.includes('navigate(\'review\')'));
 assert.ok(!read('app/src/core/content/review-content.ts').includes('userContentPromise'));

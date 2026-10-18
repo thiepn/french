@@ -420,3 +420,109 @@ test('U51 atomic two-tab corpus study: one winner, no abandoned SRS or overwritt
   expect(after).toEqual(before);
  }finally{await other.close();}
 });
+
+async function studySnapshot(page){
+ return page.evaluate(()=>new Promise((resolve,reject)=>{
+  const open=indexedDB.open('thiepn-french-vnext');
+  open.onerror=()=>reject(open.error);
+  open.onsuccess=()=>{
+   const db=open.result,tx=db.transaction(['session','srs','activity','learner','meta'],'readonly');
+   const state={session:null,srs:[],events:[],learner:null,summary:null};
+   const fetch=(store,key,method='get')=>{
+    const request=method==='getAll'?tx.objectStore(store).getAll():tx.objectStore(store).get(key);
+    request.onsuccess=()=>{state[key==='active'?'session':key==='state-v1'?'learner':key==='learner-summary'?'summary':store==='activity'?'events':'srs']=request.result;};
+   };
+   fetch('session','active');fetch('srs','srs','getAll');fetch('activity','activity','getAll');
+   fetch('learner','state-v1');fetch('meta','learner-summary');
+   tx.oncomplete=()=>{db.close();resolve(state);};
+   tx.onerror=()=>{db.close();reject(tx.error);};
+  };
+ }));
+}
+
+test('U52 two tabs grading and undoing the same review cannot double-apply learner evidence',async({context,page})=>{
+ const other=await context.newPage();
+ try{
+  await page.goto('/#words');
+  const form=page.locator('[data-card-form]');
+  await expect(form).toBeVisible({timeout:45_000});
+  for(const [fr,en] of [['un cahier','notebook'],['une maison','house']]){
+   await form.locator('[name="fr"]').fill(fr);
+   await form.locator('[name="en"]').fill(en);
+   await form.getByRole('button',{name:'Save my word'}).click();
+   await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+  }
+  await page.getByRole('button',{name:'Study my words'}).click();
+  await expect(page).toHaveURL(/#review$/,{timeout:45_000});
+  await other.goto('/#review');
+  for(const tab of [page,other]){
+   await expect(tab.locator('.review-prompt')).toBeVisible({timeout:30_000});
+   await tab.getByRole('button',{name:'Show answer'}).click();
+   await expect(tab.locator('.review-answer')).toBeVisible();
+  }
+  const original=await studySnapshot(page);
+  expect(original.session.queueIds).toHaveLength(2);
+  await Promise.all([page.getByRole('button',{name:'Good',exact:true}).click(),
+    other.getByRole('button',{name:'Good',exact:true}).click()]);
+  await expect.poll(async()=>(await studySnapshot(page)).events.length,{timeout:30_000}).toBe(1);
+  const graded=await studySnapshot(page);
+  expect(graded.session.stats.reviewed).toBe(1);
+  expect(graded.session.cursor).toBe(1);
+  expect(graded.learner.profile.lifetimeAnswers-original.learner.profile.lifetimeAnswers).toBe(1);
+  expect(graded.learner.profile.xp-original.learner.profile.xp).toBe(7);
+  await page.reload();await other.reload();
+  await expect(page.getByRole('button',{name:'Undo answer'})).toBeVisible({timeout:30_000});
+  await expect(other.getByRole('button',{name:'Undo answer'})).toBeVisible({timeout:30_000});
+  await Promise.all([page.getByRole('button',{name:'Undo answer'}).click(),
+    other.getByRole('button',{name:'Undo answer'}).click()]);
+  await expect.poll(async()=>(await studySnapshot(page)).events.length,{timeout:30_000}).toBe(0);
+  const undone=await studySnapshot(page);
+  expect(undone.session.cursor).toBe(0);
+  expect(undone.session.stats.reviewed).toBe(0);
+  expect(undone.srs).toEqual(original.srs);
+  expect(undone.learner.profile).toEqual(original.learner.profile);
+  expect(undone.summary).toEqual(original.summary);
+ }finally{await other.close();}
+});
+
+test('U52 simultaneous skips of an unresolved word advance only once',async({context,page})=>{
+ const other=await context.newPage();
+ try{
+  await page.goto('/#words');
+  const form=page.locator('[data-card-form]');
+  await expect(form).toBeVisible({timeout:45_000});
+  for(const [fr,en] of [['un train','train'],['un autobus','bus']]){
+   await form.locator('[name="fr"]').fill(fr);
+   await form.locator('[name="en"]').fill(en);
+   await form.getByRole('button',{name:'Save my word'}).click();
+   await expect(page.locator('[data-card-status]')).toContainText('Word saved');
+  }
+  await page.getByRole('button',{name:'Study my words'}).click();
+  await expect(page).toHaveURL(/#review$/,{timeout:45_000});
+  const existing=await studySnapshot(page);
+  expect(existing.session.queueIds).toHaveLength(2);
+  const id=existing.session.queueIds[0].split('::d31:')[0];
+  await page.evaluate(noteId=>new Promise((resolve,reject)=>{
+   const open=indexedDB.open('thiepn-french-vnext');
+   open.onerror=()=>reject(open.error);
+   open.onsuccess=()=>{
+    const db=open.result,tx=db.transaction('user-content','readwrite');
+    const owner=tx.objectStore('user-content'),r=owner.get('content-v1');
+    r.onsuccess=()=>{const content=r.result;delete content.userCards[noteId];owner.put(content,'content-v1');};
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+   };
+  }),id);
+  await page.reload();await other.goto('/#review');
+  const skip='Skip without changing progress';
+  await expect(page.getByRole('button',{name:skip})).toBeVisible({timeout:30_000});
+  await expect(other.getByRole('button',{name:skip})).toBeVisible({timeout:30_000});
+  await Promise.all([page.getByRole('button',{name:skip}).click(),
+    other.getByRole('button',{name:skip}).click()]);
+  await expect.poll(async()=>(await studySnapshot(page)).session.cursor,{timeout:30_000}).toBe(1);
+  const saved=await studySnapshot(page);
+  expect(saved.session.stats.skipped).toBe(1);
+  expect(saved.events).toEqual([]);
+  expect(saved.learner.profile).toEqual(existing.learner.profile);
+ }finally{await other.close();}
+});
