@@ -103,12 +103,12 @@ export function validateBackupPayload(value:unknown):BackupPayload{
   for(const name of STORE_NAMES)stores[name]=assertRows((storesRaw as Record<string,unknown>)[name],name);
   return{dbName:DB_NAME,dbVersion:Number(raw.dbVersion)||DB_VERSION,stores};
 }
-/** Conditional restore compares the reviewed snapshot inside the SAME
- * read-write transaction as all seven store replacements. A tab that grades,
- * edits, syncs or claims a session in between makes the restore fail closed.
+/** Compare all seven stores inside the active read-write transaction.
+ * Used by both native backup restoration and legacy Account import.
  */
-export async function restoreBackupPayload(value:unknown,expectedCurrent:unknown):Promise<void>{
-  const payload=validateBackupPayload(value);
+export async function writeBackupStoresIfUnchanged(
+  expectedCurrent:unknown,apply:(tx:IDBTransaction)=>void
+):Promise<void>{
   const expected=validateBackupPayload(expectedCurrent);
   const db=await openFrenchDatabase();
   try{
@@ -117,17 +117,27 @@ export async function restoreBackupPayload(value:unknown,expectedCurrent:unknown
       readStores(tx,stores=>{
         const present={dbName:DB_NAME,dbVersion:DB_VERSION,stores};
         if(JSON.stringify(present)!==JSON.stringify(expected))
-          throw Error('FRENCH_RESTORE_LOCAL_CHANGED: Local French changed since preview. Review the latest state before restoring.');
-        for(const name of STORE_NAMES){
-          const store=tx.objectStore(name);store.clear();
-          for(const row of payload.stores[name])store.put(row.value,row.key);
-        }
+          throw Error('FRENCH_RESTORE_LOCAL_CHANGED: Local French changed since review. Review the latest state before restoring.');
+        apply(tx);
       },reject);
       tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??Error('Backup restore failed'));
-      tx.onabort=()=>reject(tx.error??Error('Backup restore was aborted'));
+      tx.onerror=()=>reject(tx.error??Error('Guarded local restore failed'));
+      tx.onabort=()=>reject(tx.error??Error('Guarded local restore aborted'));
     });
   }finally{db.close();}
+}
+
+/** A backup may replace records only after the entire reviewed local state
+ * still matches at the moment the write transaction owns the database.
+ */
+export async function restoreBackupPayload(value:unknown,expectedCurrent:unknown):Promise<void>{
+  const payload=validateBackupPayload(value);
+  await writeBackupStoresIfUnchanged(expectedCurrent,tx=>{
+    for(const name of STORE_NAMES){
+      const store=tx.objectStore(name);store.clear();
+      for(const row of payload.stores[name])store.put(row.value,row.key);
+    }
+  });
 }
 export async function createBackupArchive(now=Date.now()):Promise<{archive:FrenchBackupArchive;text:string;filename:string}>{
   const payload=await createBackupPayload();
