@@ -261,6 +261,9 @@ test('Settings persist preferences and expose recovery controls',async({page})=>
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
   await page.goto('/#home');
+  // Prove the preceding navigation finished before reloading Settings on
+  // slower Android devices; do not let two full route loads race the SW.
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
   await page.goto('/#settings');
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('17');
   await expect(page.getByRole('button',{name:'Export backup'})).toBeVisible();
