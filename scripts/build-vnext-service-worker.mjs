@@ -26,16 +26,28 @@ for(const path of files){
 digest.update(await readFile(join(rootPath,'content/manifest.json')));
 const shellCache='french-vnext-shell-'+digest.digest('hex').slice(0,12);
 const contentCache='french-vnext-content-v1';
+const manifestSha=createHash('sha256').update(await readFile(join(rootPath,'content/manifest.json'))).digest('hex');
 const shell=['/','/content/manifest.json',...files.map(path=>'/'+path)];
 const source=`
 const CACHE_NAME=${JSON.stringify(shellCache)};
 const CONTENT_CACHE=${JSON.stringify(contentCache)};
 const LEGACY_SHELL='french-vnext-shell-v1';
+const PINNED_MANIFEST=${JSON.stringify('/content/manifest.json?verifiedSha256='+manifestSha)};
 const APP_SHELL=${JSON.stringify(shell)};
 const SHELL_PATHS=new Set(APP_SHELL.map(path=>new URL(path,self.location.origin).pathname));
 const cache=()=>caches.open(CACHE_NAME);
 self.addEventListener('install',event=>{
-  event.waitUntil(cache().then(store=>store.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
+  event.waitUntil((async()=>{
+    const shell=await cache();
+    await shell.addAll(APP_SHELL);
+    // Build-owned source bytes are installed before activation. Preserving the
+    // digest key prevents old tabs adopting a newer worker's manifest offline.
+    try{
+      const original=await shell.match('/content/manifest.json');
+      if(original)await(await caches.open(CONTENT_CACHE)).put(PINNED_MANIFEST,original);
+    }catch(error){console.warn('Pinned manifest secondary cache unavailable',error);}
+    await self.skipWaiting();
+  })());
 });
 self.addEventListener('activate',event=>{
   // Never delete the shell backing an older tab while it is still open:
