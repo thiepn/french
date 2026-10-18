@@ -60,6 +60,54 @@ export async function canonicalMigrationFingerprint():Promise<string>{
   return (await readMetaValue<string>(MIGRATION_MARKER))??'';
 }
 
+
+/** Initial P35 import may only initialize an untouched vNext database.
+ * P35 might continue changing in another tab; a new fingerprint must never
+ * reset SRS, activity or learner-owned vNext progress after first use.
+ */
+export async function initializeCanonicalMigrationIfAbsent(data:CanonicalMigrationV1):Promise<boolean>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise<boolean>((resolve,reject)=>{
+      let imported=false;
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),
+        activity=tx.objectStore('activity'),content=tx.objectStore('user-content'),
+        session=tx.objectStore('session'),meta=tx.objectStore('meta');
+      const checks=[
+        learner.get('state-v1'),srs.count(),activity.count(),content.count(),
+        session.count(),meta.get(MIGRATION_MARKER)
+      ];
+      let pending=checks.length;
+      for(const request of checks){
+        request.onsuccess=()=>{
+          if(--pending!==0)return;
+          try{
+            const [saved,srsCount,eventCount,contentCount,sessionCount,marker]=checks.map(item=>item.result);
+            if(saved!==undefined||Number(srsCount)>0||Number(eventCount)>0||
+               Number(contentCount)>0||Number(sessionCount)>0||marker!==undefined)return;
+            learner.put(data.learner,'state-v1');
+            content.put(data.userContent,'content-v1');
+            for(const row of data.srs)srs.put(row,row.id);
+            for(const event of data.reviews)activity.put(event,event.eventId);
+            meta.put(data.learner.sourceFingerprint,MIGRATION_MARKER);
+            meta.put({
+              currentLevel:highestEarnedLevel(data.learner.promotions),
+              dueCount:data.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+              streakDays:studyStreak(data.learner.studyDays)
+            },'learner-summary');
+            imported=true;
+          }catch(error){reject(error);tx.abort();}
+        };
+        request.onerror=()=>{reject(request.error??Error('Migration ownership read failed'));tx.abort();};
+      }
+      tx.oncomplete=()=>resolve(imported);
+      tx.onerror=()=>reject(tx.error??Error('Canonical first import failed'));
+      tx.onabort=()=>reject(tx.error??Error('Canonical first import aborted'));
+    });
+  }finally{db.close();}
+}
+
 export async function writeCanonicalMigration(data:CanonicalMigrationV1):Promise<void>{
   const db=await openFrenchDatabase();
   try{
