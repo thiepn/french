@@ -473,7 +473,10 @@ test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-
     if(!current)throw Error('No content-addressed installed shell');
     const contents=await caches.open('french-vnext-content-v1');
     const contentPaths=(await contents.keys()).map(req=>new URL(req.url).pathname);
-    const manifest=await (await contents.match('/content/manifest.json'))?.json();
+    const verifiedManifestKey=(await contents.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!verifiedManifestKey)throw Error('Expected build-pinned manifest missing');
+    const manifest=await(await contents.match(verifiedManifestKey)).json();
     const reading=manifest?.packs.find(pack=>pack.id==='reading-stable-p35')?.path;
     if(!reading||!contentPaths.includes(reading))throw Error('Source-verified reading not prewarmed');
     // A prior build cache must not be mutated or deleted by installation.
