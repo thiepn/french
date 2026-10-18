@@ -1,6 +1,6 @@
 import type { RouteContext } from '../core/types';
 import { ensureCanonicalLearnerState,replaceCanonicalLearnerSettings } from '../core/learner/repository';
-import { createBackupArchive,inspectBackupArchive,restoreBackupArchive } from '../core/backup/archive';
+import { createBackupArchive,createBackupPayload,inspectBackupArchive,restoreBackupArchive,type BackupPayload } from '../core/backup/archive';
 
 function object(value:unknown):Record<string,unknown>{return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
 function number(value:unknown,fallback:number):number{const n=Number(value);return Number.isFinite(n)?n:fallback;}
@@ -60,6 +60,7 @@ export async function mount({main}:RouteContext):Promise<void>{
   const restoreButton=main.querySelector<HTMLButtonElement>('[data-restore]');
   const dataStatus=main.querySelector<HTMLElement>('[data-data-status]');
   let selectedText='';
+  let selectedBaseline:BackupPayload|null=null;
 
   exportButton?.addEventListener('click',async()=>{
     exportButton.disabled=true;if(dataStatus)dataStatus.textContent='Building complete backup…';
@@ -71,31 +72,32 @@ export async function mount({main}:RouteContext):Promise<void>{
   });
 
   fileInput?.addEventListener('change',async()=>{
-    selectedText='';if(preview)preview.hidden=true;if(confirmRow)confirmRow.hidden=true;if(restoreButton){restoreButton.hidden=true;restoreButton.disabled=true;}if(confirmCheck)confirmCheck.checked=false;
+    selectedText='';selectedBaseline=null;if(preview)preview.hidden=true;if(confirmRow)confirmRow.hidden=true;if(restoreButton){restoreButton.hidden=true;restoreButton.disabled=true;}if(confirmCheck)confirmCheck.checked=false;
     const file=fileInput.files?.[0];if(!file)return;
     if(dataStatus)dataStatus.textContent='Validating '+file.name+'…';
     try{
       const text=await file.text();
       const inspection=await inspectBackupArchive(text);
+      selectedBaseline=await createBackupPayload();
       selectedText=text;
       if(preview){
         preview.hidden=false;
         preview.textContent=new Date(inspection.createdAt).toLocaleString()+' · '+inspection.totalRows+' database rows · '+inspection.rowsByStore.activity+' activity events · '+inspection.rowsByStore.srs+' SRS records';
       }
       if(confirmRow)confirmRow.hidden=false;if(restoreButton)restoreButton.hidden=false;
-      if(dataStatus)dataStatus.textContent='Backup validated. Review the preview before restoring.';
+      if(dataStatus)dataStatus.textContent='Backup validated. Review the preview before restoring. Changes made on this device afterward require another review.';
     }catch(error){
       if(dataStatus)dataStatus.textContent=error instanceof Error?error.message:'Backup validation failed.';
     }
   });
   confirmCheck?.addEventListener('change',()=>{if(restoreButton)restoreButton.disabled=!confirmCheck.checked||!selectedText;});
   restoreButton?.addEventListener('click',async()=>{
-    if(!selectedText||!confirmCheck?.checked)return;
+    if(!selectedText||!selectedBaseline||!confirmCheck?.checked)return;
     restoreButton.disabled=true;if(dataStatus)dataStatus.textContent='Creating mandatory safety backup…';
     try{
       const safety=await createBackupArchive();downloadText(safety.text,'pre-restore-'+safety.filename);
       if(dataStatus)dataStatus.textContent='Safety backup exported. Restoring validated data…';
-      await restoreBackupArchive(selectedText);
+      await restoreBackupArchive(selectedText,selectedBaseline);
       if(dataStatus)dataStatus.textContent='Restore complete. Reloading French…';
       setTimeout(()=>location.reload(),250);
     }catch(error){
