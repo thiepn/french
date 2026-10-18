@@ -333,6 +333,84 @@ test('installed vNext shell survives a real offline reload',async({page,context}
 });
 
 
+
+test('U54 offline cold-start precaches public manifest without loading any private data',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  const prewarm=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-shell-v1');
+    const names=(await store.keys()).map(request=>new URL(request.url).pathname);
+    return {manifest:names.includes('/content/manifest.json'),
+      unrelated:names.filter(path=>path.startsWith('/api/')||path.startsWith('/rest/v1/'))};
+  });
+  expect(prewarm).toEqual({manifest:true,unrelated:[]});
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await page.goto('/#learn');
+    await expect(page.getByRole('heading',{name:'Learn'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-status]')).toContainText('vocabulary records',{timeout:30_000});
+    expect(await page.evaluate(async()=>{
+      const response=await fetch('/content/manifest.json');
+      const payload=await response.json();
+      return response.ok&&payload.schema==='thiepn-french-content-manifest-v1';
+    })).toBe(true);
+  }finally{await context.setOffline(false);}
+});
+
+test('U54 P35 legacy cache survives vNext worker update and cannot supply foreign offline responses',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  // Install a representative P35-owned cache before an isolated vNext worker update.
+  await page.evaluate(async()=>{
+    const legacy=await caches.open('french-shell-v35');
+    await legacy.put('/content/packs/p35-legacy-only.json',new Response('P35_CACHE_ONLY',
+      {headers:{'content-type':'application/json'}}));
+    await legacy.put('/api/p35-private',new Response('P35_PRIVATE_ONLY',
+      {headers:{'content-type':'text/plain'}}));
+    const registration=await navigator.serviceWorker.register('/service-worker.js?u54-cache-boundary');
+    await new Promise((resolve,reject)=>{
+      if(registration.active?.scriptURL.includes('u54-cache-boundary')){resolve();return;}
+      const active=registration.installing??registration.waiting;
+      if(!active){reject(Error('Test update did not create a worker'));return;}
+      active.addEventListener('statechange',()=>{
+        if(active.state==='activated')resolve();
+        if(active.state==='redundant')reject(Error('Test worker redundant'));
+      });
+    });
+  });
+  await expect.poll(async()=>page.evaluate(async()=>({
+    controlled:Boolean(navigator.serviceWorker.controller?.scriptURL.includes('u54-cache-boundary')),
+    legacy:(await caches.keys()).includes('french-shell-v35')
+  })),{timeout:20_000}).toEqual({controlled:true,legacy:true});
+  await context.setOffline(true);
+  try{
+    const found=await page.evaluate(async()=>{
+      const check=async path=>{
+        try{return await (await fetch(path)).text();}
+        catch{return 'NETWORK_UNAVAILABLE';}
+      };
+      return {
+        legacyPack:await check('/content/packs/p35-legacy-only.json'),
+        privateApi:await check('/api/p35-private'),
+        originalStillOwned:(await caches.keys()).includes('french-shell-v35'),
+        nativeLeak:(await(await caches.open('french-vnext-shell-v1')).keys())
+          .some(request=>new URL(request.url).pathname==='/api/p35-private')
+      };
+    });
+    expect(found).toEqual({
+      legacyPack:'NETWORK_UNAVAILABLE',privateApi:'NETWORK_UNAVAILABLE',
+      originalStillOwned:true,nativeLeak:false
+    });
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
   await expect(page.getByRole('heading',{name:'THIEPN Account'})).toBeVisible();
