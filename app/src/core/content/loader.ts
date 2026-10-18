@@ -50,7 +50,7 @@ let searchMap:Map<string,VocabularySearchRow>|null=null;
  * replace content selected by a newer manifest on this device.
  */
 function pinnedContentPath(path:string,sha256:string):string{
-  if(!path.startsWith('/content/')||!/^\\/[a-z]/.test(path)||
+  if(!path.startsWith('/content/')||path.includes('..')||
      !/^[0-9a-f]{64}$/.test(sha256))
     throw new Error('French content descriptor has no valid source digest.');
   return path+(path.includes('?')?'&':'?')+'verifiedSha256='+sha256;
