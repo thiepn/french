@@ -15,7 +15,7 @@ const RETURN_KEY = 'thiepn:french-sso:return:v1';
 const ROOT = process.env.P37H_BASE_URL || 'http://127.0.0.1:4175';
 
 async function interceptProduction(context, options = {}) {
-  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, tokenExchanges: 0, requests: [] };
+  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, delayReadMs: 0, identityId: USER_ID, tokenExchanges: 0, requests: [] };
 
   // Routes registered on the browser context also cover independently created pages.
   await context.route(ORIGIN + '/**', async route => {
@@ -65,12 +65,14 @@ async function interceptProduction(context, options = {}) {
       });
     }
     if (path === '/auth/v1/user') {
-      return json(route, { id: USER_ID, email: 'french-integration@example.invalid' });
+      return json(route, { id: state.identityId, email: 'french-integration@example.invalid' });
     }
     if (path === '/rest/v1/account_app_connections') {
       return json(route, state.connected ? [{ status: 'connected' }] : []);
     }
     if (path === '/rest/v1/french_sync_state') {
+      state.readStarted++;
+      if (state.delayReadMs > 0) await new Promise(resolve => setTimeout(resolve, state.delayReadMs));
       return json(route, state.cloud ? [state.cloud] : []);
     }
     if (path === '/rest/v1/rpc/sync_thiepn_french_state') {
@@ -276,6 +278,62 @@ test('pausing during an in-flight sync never turns cloud sync back on', async ({
   await page.reload();
   await expect(page.getByRole('button', { name: 'Sync this device' })).toBeVisible();
   expect(api.uploads).toBe(2);
+});
+
+
+test('U62 pausing during a pending cloud read prevents the delayed upload',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  const initialUploads=api.uploads,initialReads=api.readStarted;
+  await page.locator('input[name="dailyNewLimit"]').fill('42');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  api.delayReadMs=900;
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(initialReads+1);
+  await page.getByRole('button',{name:'Pause sync'}).click();
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible({timeout:30_000});
+  await expect.poll(()=>api.requests.filter(path=>path.includes('/rest/v1/french_sync_state')).length).toBeGreaterThan(initialReads);
+  // Wait for the delayed request to finish, then check that no RPC occurred.
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.enabled
+  ),{timeout:30_000}).toBe(false);
+  await page.waitForTimeout(1200);
+  expect(api.uploads).toBe(initialUploads);
+  expect(api.cloud.revision).toBe(1);
+  expect(api.cloud.state.settings.dailyNewLimit).not.toBe(42);
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('42',{timeout:30_000});
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible();
+});
+
+test('U62 Account identity change during cloud read cannot upload an old account learner',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await page.locator('input[name="dailyNewLimit"]').fill('43');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  const previous=api.uploads,reads=api.readStarted;
+  api.delayReadMs=900;
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(reads+1);
+  // Synthetic Account provider now verifies a different signed-in identity.
+  api.identityId='9c1d9e59-e7d4-4d51-a849-6f5d112c04dd';
+  await expect(page.getByText(/Account identity changed or cannot be verified/i)).toBeVisible({timeout:30_000});
+  expect(api.uploads).toBe(previous);
+  expect(api.cloud.revision).toBe(1);
+  expect(api.cloud.state.settings.dailyNewLimit).not.toBe(43);
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('43',{timeout:30_000});
 });
 
 test('a conflict choice cannot overwrite an unreviewed newer cloud revision', async ({ page, context }) => {
