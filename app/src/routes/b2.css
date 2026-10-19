@@ -55,3 +55,9 @@
 .b2-assessment .b2-actions{margin:1rem 0 1.5rem}
 .b2-assessment input[type=checkbox]{accent-color:var(--accent)}
 @media(max-width:650px){.b2-assessment-line{grid-template-columns:1fr;gap:.15rem}.b2-assessment .b2-action{width:100%}}
+
+.b2-oral .b2-prompt{margin-top:1rem}
+.b2-oral-scratch{display:block;width:100%;max-width:75ch;padding:.85rem;background:var(--surface);border:1px solid var(--line);color:var(--text);font:inherit;line-height:1.6;margin:1rem 0;resize:vertical}
+.b2-oral .b2-actions{margin-top:1.25rem}
+.b2-oral .b2-report{max-width:85ch}
+.b2-oral :is(button,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
