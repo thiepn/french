@@ -5,11 +5,13 @@
  */
 import {B2_ARGUMENT_PAIRS,observeB2Draft,sourceFivegramOverlap} from './b2-observation.ts';
 import type {ReadingItem} from '../content/loader';
+import {originalP32Question,sourceMatchesAuthority,type P32SourceAuthority} from './b2-source-contract.ts';
 
 export const B2_EVIDENCE_KEY='vU65B2StructuralEvidence';
 export const B2_EVIDENCE_SCHEMA='thiepn-french-u65-b2-evidence-v1';
 export const B2_EVALUATOR_VERSION='u65-structural-v1';
 export const B2_EVIDENCE_DAYS=35;
+export const P32_SOURCE_EVALUATOR='u66-source-comprehension-v1';
 export type B2Kind='p31'|'p32';
 export type B2Status='structural-targets-met'|'insufficient'|'unscored';
 export interface B2Receipt {
@@ -18,6 +20,9 @@ export interface B2Receipt {
   score:number;confidence:number;topicGroups:number;
   directCopyPct:number;transformation:number;playCount:number;
   elapsedMs:number;status:B2Status;reason:string;
+  sourceDigest?:string;sourceRevision?:string;sourceBlob?:string;
+  questionId?:string;comprehensionCorrect?:boolean;playbackCompleted?:boolean;
+  sourceEvaluator?:typeof P32_SOURCE_EVALUATOR;
   evaluator:typeof B2_EVALUATOR_VERSION;
 }
 export interface B2Attempt{
@@ -63,6 +68,13 @@ export function normalizeB2Evidence(raw:unknown):B2Evidence|null{
         'transformation','playCount','elapsedMs'].every(k=>
           typeof t[k]==='number'&&Number.isFinite(t[k])&&Number(t[k])>=0))return null;
    if(t.sourceId!==undefined&&(typeof t.sourceId!=='string'||t.sourceId.length>100))return null;
+   if(t.sourceDigest!==undefined&&(typeof t.sourceDigest!=='string'||!/^[0-9a-f]{64}$/.test(t.sourceDigest)))return null;
+   if(t.sourceRevision!==undefined&&(typeof t.sourceRevision!=='string'||t.sourceRevision.length>70))return null;
+   if(t.sourceBlob!==undefined&&(typeof t.sourceBlob!=='string'||!/^[0-9a-f]{40}$/.test(t.sourceBlob)))return null;
+   if(t.questionId!==undefined&&(typeof t.questionId!=='string'||t.questionId.length>80))return null;
+   if(t.comprehensionCorrect!==undefined&&typeof t.comprehensionCorrect!=='boolean')return null;
+   if(t.playbackCompleted!==undefined&&typeof t.playbackCompleted!=='boolean')return null;
+   if(t.sourceEvaluator!==undefined&&t.sourceEvaluator!==P32_SOURCE_EVALUATOR)return null;
    tasks.push({
     taskId:t.taskId,sourceId:t.sourceId as string|undefined,
     modality:t.modality as B2Receipt['modality'],
@@ -71,7 +83,12 @@ export function normalizeB2Evidence(raw:unknown):B2Evidence|null{
     score:t.score as number,confidence:t.confidence as number,topicGroups:t.topicGroups as number,
     directCopyPct:t.directCopyPct as number,transformation:t.transformation as number,
     playCount:t.playCount as number,elapsedMs:t.elapsedMs as number,status:t.status as B2Status,
-    reason:t.reason as string,evaluator:B2_EVALUATOR_VERSION
+    reason:t.reason as string,evaluator:B2_EVALUATOR_VERSION,
+    sourceDigest:t.sourceDigest as string|undefined,sourceRevision:t.sourceRevision as string|undefined,
+    sourceBlob:t.sourceBlob as string|undefined,questionId:t.questionId as string|undefined,
+    comprehensionCorrect:t.comprehensionCorrect as boolean|undefined,
+    playbackCompleted:t.playbackCompleted as boolean|undefined,
+    sourceEvaluator:t.sourceEvaluator as typeof P32_SOURCE_EVALUATOR|undefined
    });
   }
   if(entry.kind==='p31'&&tasks.some(t=>t.modality!=='argument'))return null;
@@ -83,12 +100,22 @@ export function normalizeB2Evidence(raw:unknown):B2Evidence|null{
  }
  return {schema:B2_EVIDENCE_SCHEMA,token:root.token,history};
 }
-export function currentB2Evidence(state:B2Evidence,kind:B2Kind,now=Date.now()):B2Attempt|null{
+export function currentB2Evidence(state:B2Evidence,kind:B2Kind,now=Date.now(),expectedSourceDigest?:string):B2Attempt|null{
  // An unscored attempt is not a newly failed assessment; a scored failure supersedes.
  const newest=[...state.history].reverse().find(a=>a.kind===kind&&a.status!=='unscored');
  if(!newest||newest.status!=='structural-targets-met'||newest.evaluator!==B2_EVALUATOR_VERSION||
     newest.at>now||now-newest.at>B2_EVIDENCE_DAYS*86_400_000)return null;
- if(kind==='p32'&&!currentB2Evidence(state,'p31',now))return null;
+ if(kind==='p32'){
+  if(!currentB2Evidence(state,'p31',now))return null;
+  const [read,listen]=newest.tasks;
+  if(read.sourceEvaluator!==P32_SOURCE_EVALUATOR||listen.sourceEvaluator!==P32_SOURCE_EVALUATOR||
+   !read.sourceDigest||read.sourceDigest!==listen.sourceDigest||
+   read.sourceDigest!==expectedSourceDigest||
+   !read.sourceRevision||read.sourceRevision!==listen.sourceRevision||
+   !read.sourceBlob||read.sourceBlob!==listen.sourceBlob||
+   !read.comprehensionCorrect||!listen.comprehensionCorrect||
+   listen.playbackCompleted!==true)return null;
+ }
  return newest;
 }
 const P31_ANCHORS:ReadonlyArray<readonly (readonly RegExp[])[]>=[
@@ -129,13 +156,27 @@ export interface AssessmentInput {
  kind:B2Kind;taskId:string;modality:B2Receipt['modality'];
  text:string;elapsedMs:number;attested:boolean;
  pair?:number;taskIndex?:number;source?:ReadingItem;playCount?:number;
+ sourceAuthority?:P32SourceAuthority;questionId?:string;answerIndex?:number|null;
  audioCompleted?:boolean;transcriptRevealed?:boolean;
 }
 export function assessB2Structure(input:AssessmentInput):B2Receipt{
  const reading=input.source;
+ const authority=input.sourceAuthority;
+ const q=reading&&input.questionId?originalP32Question(reading,input.questionId):null;
+ const sourceValid=Boolean(input.kind==='p32'&&reading&&authority&&q&&
+  sourceMatchesAuthority(authority,reading,input.questionId??''));
+ const answerProvided=Number.isInteger(input.answerIndex)&&Number(input.answerIndex)>=0&&
+  Boolean(q&&Number(input.answerIndex)<q.options.length);
+ const comprehensionCorrect=Boolean(q&&answerProvided&&q.answer===input.answerIndex);
  const base={taskId:input.taskId,sourceId:reading?.id,modality:input.modality,
   evaluator:B2_EVALUATOR_VERSION as typeof B2_EVALUATOR_VERSION,elapsedMs:Math.max(0,Math.min(7_200_000,Math.floor(input.elapsedMs))),
-  playCount:Math.max(0,Math.min(2,input.playCount??0))};
+  playCount:Math.max(0,Math.min(2,input.playCount??0)),
+  ...(input.kind==='p32'&&sourceValid&&authority?{
+   sourceDigest:authority.digest,sourceRevision:authority.revision,sourceBlob:authority.sourceBlob,
+   questionId:input.questionId,comprehensionCorrect,
+   playbackCompleted:input.modality==='listening'&&input.audioCompleted===true,
+   sourceEvaluator:P32_SOURCE_EVALUATOR as typeof P32_SOURCE_EVALUATOR
+  }:{})};
  const observed=observeB2Draft(input.text);
  const marker=observed.markerFamilies;
  const contrast=Number(marker.includes('contrast')||marker.includes('concession'));
@@ -171,8 +212,12 @@ export function assessB2Structure(input:AssessmentInput):B2Receipt{
  if(!input.attested){
   status='unscored';reason='Independent work attestation is required before calibrated structural checks.';
  }else if(input.kind==='p32'&&
-  (!reading||reading.level!=='B2'||input.modality==='argument'||reading.sentences.length<4)){
-  status='unscored';reason='Original B2 source not verified; integrated assessment abstained.';
+  (!sourceValid||!reading||reading.level!=='B2'||input.modality==='argument'||reading.sentences.length<4)){
+  status='unscored';reason='SHA-pinned P35 source or original question mismatch; transfer not scored.';
+ }else if(input.kind==='p32'&&!answerProvided){
+  status='unscored';reason='Answer the original P35 comprehension question before submitting.';
+ }else if(input.kind==='p32'&&!comprehensionCorrect){
+  status='insufficient';reason='Original source question was incorrect; no transfer credit.';
  }else if(input.kind==='p32'&&input.modality==='listening'&&
    (!input.audioCompleted||base.playCount<1||base.playCount>2||input.transcriptRevealed)){
   status='unscored';reason='Complete French device playback with hidden source is required; this is unscored.';
@@ -193,6 +238,12 @@ export function finalizeB2Attempt(kind:B2Kind,first:B2Receipt,second:B2Receipt,a
  if(kind==='p32'&&(first.modality!=='reading'||second.modality!=='listening'||
     !first.sourceId||!second.sourceId||first.sourceId===second.sourceId))
   throw Error('P32_SOURCE_PAIR_MISMATCH');
+ if(kind==='p32'&&(
+  first.sourceEvaluator!==P32_SOURCE_EVALUATOR||second.sourceEvaluator!==P32_SOURCE_EVALUATOR||
+  !first.sourceDigest||first.sourceDigest!==second.sourceDigest||
+  !first.sourceRevision||first.sourceRevision!==second.sourceRevision||
+  !first.sourceBlob||first.sourceBlob!==second.sourceBlob))
+  throw Error('P32_SOURCE_REVISION_MISMATCH');
  if(first.evaluator!==B2_EVALUATOR_VERSION||second.evaluator!==B2_EVALUATOR_VERSION)
   throw Error('B2_EVALUATOR_MISMATCH');
  const tasks:[B2Receipt,B2Receipt]=[first,second];
