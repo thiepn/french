@@ -145,7 +145,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    for(const q of original.questions)criteria.append(el('li',q));
    panel.append(criteria,el('p','Calibration: at least 110 words, four sentences, topic contact, observable argumentation, nuance, cohesion, and no strong repetition. The offline markers do not evaluate correctness.','b2-disclaimer'));
   }else if(source){
-   panel.append(el('p','Source '+source.id+' · '+source.sourceLabel+' · '+source.license,'b2-source-id'));
+   panel.append(el('p','Source '+source.id+' · '+source.sourceLabel+' · '+source.license+' · P35 '+(sourceAuthority?.revision??'unverified')+' · SHA '+(sourceAuthority?.digest.slice(0,12)??'unknown'),'b2-source-id'));
+   panel.append(el('p','The original keyed question checks a specific detail. A correct selection does not verify the meaning or originality of your written synthesis.','b2-disclaimer'));
    panel.append(el('p',attempt.cursor===0?
     'Read the original French source and produce a qualified independent synthesis. Select relevant ideas, consider a limitation and conclude in your own words.':
     'Hear the original French source (no transcript) and write a qualified synthesis from memory. Browser speech events cannot verify comprehension or the quality of audio.','b2-question'));
