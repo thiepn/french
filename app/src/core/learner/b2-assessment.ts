@@ -134,7 +134,7 @@ export interface AssessmentInput {
 export function assessB2Structure(input:AssessmentInput):B2Receipt{
  const reading=input.source;
  const base={taskId:input.taskId,sourceId:reading?.id,modality:input.modality,
-  evaluator:B2_EVALUATOR_VERSION,elapsedMs:Math.max(0,Math.min(7_200_000,Math.floor(input.elapsedMs))),
+  evaluator:B2_EVALUATOR_VERSION as typeof B2_EVALUATOR_VERSION,elapsedMs:Math.max(0,Math.min(7_200_000,Math.floor(input.elapsedMs))),
   playCount:Math.max(0,Math.min(2,input.playCount??0))};
  const observed=observeB2Draft(input.text);
  const marker=observed.markerFamilies;
