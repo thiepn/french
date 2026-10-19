@@ -66,7 +66,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const hasContent=content.status==='fulfilled'&&content.value.packs.length>0;
   if(hasContent){
     const records=content.value.totals?.records??0;
-    corpus.textContent=records?records.toLocaleString()+' source-indexed words available.':
+    corpus.textContent=records?records.toLocaleString()+' vocabulary records across '+content.value.packs.length+' verified packs.':
       content.value.packs.length+' verified content packs indexed.';
   }else{
     corpus.textContent='Vocabulary content is unavailable. Reconnect or restore the verified offline pack; original Course and other practice remain accessible.';
@@ -92,7 +92,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }else if(!hasContent){
     status.textContent='New vocabulary sessions require an available verified corpus. Existing Review and Course remain accessible.';
   }else{
-    status.textContent='Ready to start. Study today respects your saved limits and due cards.';
+    status.textContent='Ready to start. Study today respects your saved limits and due cards. '+corpus.textContent;
   }
 
   let starting=false;
