@@ -102,6 +102,8 @@ test('U67 real Chromium P33 original two-task simulated recognition, 20-second p
  await page.getByRole('button',{name:'Start P33 two-task oral assessment'}).click();
  await expect(page.getByRole('heading',{name:'Immediate response · prompt hidden'})).toBeVisible();
  await expect(page.getByText('The prompt appears only after device recognition starts.')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Begin French speech recognition'})).toBeDisabled();
+ await page.getByRole('checkbox').check();
  await page.getByRole('button',{name:'Begin French speech recognition'}).click();
  await expect(page.getByText(/Une direction souhaite supprimer/)).toBeVisible();
  await page.clock.fastForward(60000);
@@ -114,9 +116,11 @@ test('U67 real Chromium P33 original two-task simulated recognition, 20-second p
  await expect(page.getByRole('button',{name:'Resume interrupted P33 two-task attempt'})).toBeVisible();
  await page.getByRole('button',{name:'Resume interrupted P33 two-task attempt'}).click();
  await page.clock.fastForward(20500);
+ await expect(page.getByRole('button',{name:'Begin French speech recognition'})).toBeDisabled();
+ await page.getByRole('checkbox').check();
  await expect(page.getByRole('button',{name:'Begin French speech recognition'})).toBeEnabled();
  await page.getByRole('button',{name:'Begin French speech recognition'}).click();
- await expect(page.getByText(/Speech recognition started/)).toBeVisible();
+ await expect(page.getByText(/Device reported recognition started/)).toBeVisible();
  await page.clock.fastForward(60000);
  await page.getByRole('button',{name:'Finish this spoken response'}).click();
  await expect(page.getByRole('button',{name:'Save two-task aggregate evidence'})).toBeVisible();
@@ -163,6 +167,7 @@ test('U67 recognition interrupted before first task is resumable without transcr
  await page.goto('/#b2-oral');await expect(page.getByRole('heading',{name:'B2 spontaneous speaking'})).toBeVisible({timeout:45000});
  await seedB2Prerequisites(page);await page.reload();
  await page.getByRole('button',{name:'Start P33 two-task oral assessment'}).click();
+ await page.getByRole('checkbox').check();
  await page.getByRole('button',{name:'Begin French speech recognition'}).click();
  await expect(page.getByText(/Une direction souhaite supprimer/)).toBeVisible();
  await page.reload();
