@@ -38,7 +38,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       '<button type="button" data-route="speak"><strong>Speak</strong><span>Original oral prompts and recording</span></button>'+
       '<button type="button" data-route="conversation"><strong>Conversation</strong><span>Source-labelled exchanges and missions</span></button>'+
       '<button type="button" data-route="write"><strong>Write</strong><span>Sentences, constructions and transfer</span></button>'+
-      '<button type="button" data-route="grammar"><strong>Grammar</strong><span>Explanations and original examples</span></button>'+
+      '<button type="button" data-route="grammar"><strong>Grammar</strong><span>Explanations and original examples</span></button>'+ 
+      '<button type="button" data-route="b2"><strong>B2 Studio</strong><span>Arguments and original-source synthesis without artificial grades</span></button>'+
       '</div></section></section>';
   const status=main.querySelector<HTMLElement>('[data-status]')!;
   const corpus=main.querySelector<HTMLElement>('[data-corpus]')!;
