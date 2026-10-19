@@ -15,15 +15,23 @@ const RETURN_KEY = 'thiepn:french-sso:return:v1';
 const ROOT = process.env.P37H_BASE_URL || 'http://127.0.0.1:4175';
 
 async function interceptProduction(context, options = {}) {
-  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, readFinished: 0, delayReadMs: 0, holdRead: false, releaseRead: null, identityId: USER_ID, tokenExchanges: 0, requests: [] };
+  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, readFinished: 0, heldReadFinished: 0, delayReadMs: 0, holdRead: false, releaseRead: null, identityId: USER_ID, tokenExchanges: 0, requests: [] };
 
   // Routes registered on the browser context also cover independently created pages.
   await context.route(ORIGIN + '/**', async route => {
     const incoming = new URL(route.request().url());
     // The browser keeps the actual production origin for origin checks; only bytes
     // are read from the local, qualified static build.
-    const asset = await route.fetch({ url: ROOT + incoming.pathname + incoming.search });
-    await route.fulfill({ response: asset });
+    try {
+      const asset = await route.fetch({ url: ROOT + incoming.pathname + incoming.search });
+      await route.fulfill({ response: asset });
+    } catch (error) {
+      // A navigated-away request may dispose its fetched response before
+      // fulfill. This is an aborted browser request, not a failed app asset.
+      // Never suppress other fixture/proxy errors.
+      if (/Fetch response has been disposed/.test(String(error))) return;
+      throw error;
+    }
   });
   await context.route(ACCOUNT + '/**', async route => {
     const incoming = new URL(route.request().url());
@@ -72,7 +80,10 @@ async function interceptProduction(context, options = {}) {
     }
     if (path === '/rest/v1/french_sync_state') {
       state.readStarted++;
-      if (state.holdRead) await new Promise(resolve => { state.releaseRead = resolve; });
+      if (state.holdRead) {
+        await new Promise(resolve => { state.releaseRead = resolve; });
+        state.heldReadFinished++;
+      }
       if (state.delayReadMs > 0) await new Promise(resolve => setTimeout(resolve, state.delayReadMs));
       state.readFinished++;
       return json(route, state.cloud ? [state.cloud] : []);
@@ -291,7 +302,7 @@ test('U62 pausing during a pending cloud read prevents the delayed upload',async
   await page.getByRole('button',{name:'Sync this device'}).click();
   await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
   await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
-  const initialUploads=api.uploads,initialReads=api.readStarted,initialFinished=api.readFinished;
+  const initialUploads=api.uploads,initialReads=api.readStarted;
   await page.locator('input[name="dailyNewLimit"]').fill('42');
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
@@ -307,7 +318,9 @@ test('U62 pausing during a pending cloud read prevents the delayed upload',async
   ),{timeout:30_000}).toBe(false);
   expect(api.releaseRead).toBeInstanceOf(Function);
   api.holdRead=false; api.releaseRead(); api.releaseRead=null;
-  await expect.poll(()=>api.readFinished,{timeout:30_000}).toBe(initialFinished+1);
+  // Only the explicitly released held read is relevant; background
+  // read-only reconciliations may finish in either order on Android.
+  await expect.poll(()=>api.heldReadFinished,{timeout:30_000}).toBe(1);
   await expect(page.getByText(/No new transfer was started/i)).toBeVisible({timeout:30_000});
   expect(api.uploads).toBe(initialUploads);
   expect(api.cloud.revision).toBe(1);
