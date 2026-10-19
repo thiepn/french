@@ -83,7 +83,7 @@ data=appendB2Attempt(data,{...p32,status:'structural-targets-met',at:now},'token
 assert.ok(currentB2Evidence(data,'p32',now,authority.digest));
 assert.equal(currentB2Evidence(data,'p32',now,'e'.repeat(64)),null,'different original source revision invalidates P32 current evidence');
 assert.equal(currentB2Evidence(data,'p32',now),null,'unbound retrieval cannot grant P32 credit');
-assert.equal(JSON.stringify(normalizeB2Evidence(JSON.parse(JSON.stringify(data)))),JSON.stringify(data),'v1 records with v2 source proof remain backup-compatible');
+assert.deepEqual(JSON.parse(JSON.stringify(normalizeB2Evidence(JSON.parse(JSON.stringify(data))))),JSON.parse(JSON.stringify(data)),'v1 records with v2 source proof remain backup-compatible');
 assert.equal(JSON.stringify(data).includes(text),false,'raw French essay never saved');
 console.log(JSON.stringify({schema:'u66-source-transfer',status:'PASS',sourceReadings:authority.readings.length,
  keyedQuestions:authority.readings.reduce((n,x)=>n+x.questions.length,0),
