@@ -13,7 +13,7 @@ export function createFrenchPlayback(signal:AbortSignal){
   active=null;
   try{synth?.cancel();}catch{/* Device synthesis may be unavailable on teardown. */}
  };
- const play=(text:string,rate:number,onStart:()=>void,onFailure:()=>void):boolean=>{
+ const play=(text:string,rate:number,onStart:()=>void,onFailure:()=>void,onEnd?:()=>void):boolean=>{
   if(!supported||signal.aborted)return false;
   cancel();
   try{
@@ -28,7 +28,7 @@ export function createFrenchPlayback(signal:AbortSignal){
     active=null;
     if(!signal.aborted)onFailure();
    };
-   utterance.onend=()=>{if(active===utterance)active=null;};
+   utterance.onend=()=>{if(active===utterance){active=null;if(!signal.aborted)onEnd?.();}};
    synth!.speak(utterance);
    return true;
   }catch{
