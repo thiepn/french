@@ -100,3 +100,19 @@
 .source-authored-options p{flex-basis:100%;line-height:1.5}
 .source-authored-options button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere;min-height:44px}
 @media(max-width:550px){.source-authored-options{display:grid;grid-template-columns:minmax(0,1fr)}.source-repair-row button{width:100%}}
+
+
+/* Mobile conversation exit controls must remain above the fixed global nav.
+   The original graph and adaptive set share this action row. */
+@media(max-width:760px){
+ .conversation-workspace .conversation-bottom{
+  position:sticky;
+  bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  z-index:5;
+  background:var(--bg);
+  padding:.75rem 0;
+ }
+ .conversation-workspace .conversation-stage{
+  padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px));
+ }
+}
