@@ -157,10 +157,18 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const report=node('div','','b2-report');report.setAttribute('role','status');
   const controls=node('div','','b2-actions');
   const begin=action('Begin French speech recognition',true),stop=action('Finish this spoken response');
+  const permission=node('label','','b2-check'),consent=node('input');
+  consent.type='checkbox';
+  permission.append(consent,document.createTextNode('Allow this task to use the microphone and browser speech recognition. The browser or OS may process speech through a remote service.'));
+  begin.disabled=true;
+  consent.addEventListener('change',()=>{
+   const prepared=prompt.mode==='immediate'||Date.now()>=(session?.prepStartedAt??Infinity)+P33_PREP_MS;
+   begin.disabled=!consent.checked||!prepared;
+  });
   stop.disabled=true;const exit=action('Leave and resume later');
   exit.onclick=()=>{clean();showHome();};
   controls.append(begin,stop,exit);
-  panel.append(controls,report);stage.append(panel);
+  panel.append(permission,controls,report);stage.append(panel);
   status.textContent=prompt.mode==='immediate'?
    'Zero-preparation task: prompt is hidden until browser recognition reports started.':
    'Prepared task: a 20-second mental-planning window is required.';
@@ -177,7 +185,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
      if(!alive())return;
      const ms=Math.max(0,(session?.prepStartedAt??Date.now())+P33_PREP_MS-Date.now());
      if(ms>0){begin.disabled=true;begin.textContent='Mental preparation: '+Math.ceil(ms/1000)+' s remaining';}
-     else{begin.disabled=false;begin.textContent='Begin French speech recognition';window.clearInterval(prepTimer)}
+     else{begin.disabled=!consent.checked;begin.textContent='Begin French speech recognition';window.clearInterval(prepTimer)}
     };update();prepTimer=window.setInterval(update,250);
    };void startPrep();
   }
@@ -219,10 +227,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    };
   };
   begin.onclick=()=>{
-   if(!alive()||!session||session.id!==selectedSession.id||!ready()||
+   if(!alive()||!consent.checked||!session||session.id!==selectedSession.id||!ready()||
     (responseMode==='brief-prep'&&Date.now()<(session.prepStartedAt??Infinity)+P33_PREP_MS))return;
    const ctor=recognitionCtor();if(!ctor){report.textContent='Speech recognition unavailable; no oral evidence.';return;}
-   begin.disabled=true;activeTake++;const take=activeTake;
+   begin.disabled=true;consent.disabled=true;activeTake++;const take=activeTake;
    const rec=new ctor();currentRecognition=rec;runningTask=prompt;
    recorderStartedAt=0;recorderStoppedAt=0;recorderError=false;stopping=false;startObserved=false;
    segments=new Map();
