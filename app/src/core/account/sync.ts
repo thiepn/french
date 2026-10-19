@@ -141,6 +141,11 @@ async function reconcileFrenchSyncOnce(user:FrenchAccountUser):Promise<FrenchSyn
     if(!connected){writeMeta({...metaFor(user.id),enabled:false});const r:FrenchSyncResult={status:'disabled',message:'French is disconnected in THIEPN Account.'};emit(r);return r;}
     const [local,cloud]=await Promise.all([createFrenchCloudSnapshot(),readCloud()]),localHash=await hashFrenchCloudSnapshot(local),cloudHash=cloud?await hashFrenchCloudSnapshot(cloud.state):undefined;
     if(!consentCurrent(user.id,generation))return syncPaused();
+    // U66: a pending remote read can outlive a provider Account switch even
+    // when it ends in an early synced/conflict decision without any write.
+    // Verify identity *before all* post-read results, not only push/pull.
+    const postReadDenied=await transferDenied(user.id,generation);
+    if(postReadDenied)return postReadDenied;
     if(!cloud){if(m.revision!==undefined){const r:FrenchSyncResult={status:'conflict',message:'The earlier cloud copy is missing. Choose whether to recreate it from this device.',reviewedLocalHash:localHash};emit(r);return r;}return push(user.id,undefined,local,generation);}
     if(localHash===cloudHash){baseline(user.id,cloud,localHash,local);const r:FrenchSyncResult={status:'synced',message:'French is up to date.',revision:cloud.revision,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(r);return r;}
     if(m.revision===undefined||!m.hash){if(snapshotHasMeaningfulState(local)){const r:FrenchSyncResult={status:'conflict',message:'This device and the cloud both contain French progress or preferences. Choose the source of truth.',revision:cloud.revision,reviewedLocalHash:localHash,...(cloud.updated_at?{cloudUpdatedAt:cloud.updated_at}:{})};emit(r);return r;}return pull(user.id,cloud,localHash,generation);}
