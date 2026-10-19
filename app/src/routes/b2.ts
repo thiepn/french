@@ -24,7 +24,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  const sets=el('div','','b2-sets');sets.setAttribute('role','group');sets.setAttribute('aria-label','Choose a practice prompt set');
  const stage=el('div','','b2-stage');
  const note=el('p','Preparing verified B2 source material…','b2-loading');note.setAttribute('role','status');
- host.append(navigation,sets,note,stage);
+ const calibration=action('Open P31 / P32 independent B2 assessment');
+ calibration.onclick=()=>navigate('b2-assess');
+ host.append(calibration,navigation,sets,note,stage);
  main.replaceChildren(host);
 
  const speech=createFrenchPlayback(signal);
