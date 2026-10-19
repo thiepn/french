@@ -1,5 +1,7 @@
 import type {RouteContext} from '../core/types';
 import {loadStableReadingPack,type ReadingItem} from '../core/content/loader';
+import {loadContentManifest} from '../core/content/manifest';
+import {originalP32Question,verifyP32SourceAuthority,type P32SourceAuthority} from '../core/learner/b2-source-contract';
 import {readCanonicalLearnerState,compareAndSetB2Evidence} from '../core/learner/repository';
 import {hydrateLearnerState} from '../core/storage/hydrate';
 import {createFrenchPlayback} from './french-playback';
@@ -33,7 +35,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  main.replaceChildren(host);
  const active=()=>!signal.aborted&&host.isConnected;
  let evidence:B2Evidence=emptyB2Evidence(),run:Run|null=null;
- let sources:ReadingItem[]=[],sourceProblem='',savePending=false;
+ let sources:ReadingItem[]=[],sourceAuthority:P32SourceAuthority|null=null,sourceProblem='',savePending=false;
  const speech=createFrenchPlayback(signal);
  let audioStarts=0,audioCompleted=false,audioPending=false,audioError='',transcriptRevealed=false;
  const sourceFor=(pair:number,cursor:0|1):ReadingItem|null=>{
@@ -42,14 +44,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  };
  const loadSource=async()=>{
   try{
-   const pack=await loadStableReadingPack(signal);
+   const [pack,manifest]=await Promise.all([loadStableReadingPack(signal),loadContentManifest(signal)]);
    if(!active())return;
-   if(pack.schema!=='thiepn-french-reading-pack-v1'||!Array.isArray(pack.readings))
-    throw Error('Wrong P35 original reading schema');
-   sources=pack.readings.filter(row=>row.level==='B2'&&row.id&&row.sourceLabel&&row.license&&
-    Array.isArray(row.sentences)&&row.sentences.length>=4&&
-    row.sentences.every(s=>typeof s.fr==='string'&&s.fr.trim().length>0));
-   if(sources.length<6)sourceProblem='Six distinct original B2 readings are required. Source-based calibration is unavailable.';
+   sourceAuthority=verifyP32SourceAuthority(pack,manifest.packs.find(p=>p.id==='reading-stable-p35'));
+   if(!sourceAuthority)throw Error('P35 B2 revision, original questions, IDs or pack digest invalid');
+   sources=sourceAuthority.readings;
   }catch(error){
    sourceProblem='SHA-verified original P35 B2 source unavailable. P32 is locked, not replaced with invented text.';
    console.warn('U65 original B2 assessment source could not load',error);
@@ -72,7 +71,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  const renderHome=()=>{
   if(!active())return;
   speech.cancel();run=null;
-  const p31=currentB2Evidence(evidence,'p31'),p32=currentB2Evidence(evidence,'p32');
+  const p31=currentB2Evidence(evidence,'p31'),p32=currentB2Evidence(evidence,'p32',Date.now(),sourceAuthority?.digest);
   const last31=[...evidence.history].reverse().find(e=>e.kind==='p31');
   const last32=[...evidence.history].reverse().find(e=>e.kind==='p32');
   status.textContent=evidence.history.length+' private assessment receipts · evaluator '+B2_EVALUATOR_VERSION+' · '+B2_EVIDENCE_DAYS+'-day evidence window';
@@ -97,7 +96,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   open31.onclick=()=>start('p31');
   actions.append(open31);
   const open32=button('Begin P32 original-source capstone');
-  const can32=Boolean(p31)&&sources.length>=6&&speech.supported;
+  const can32=Boolean(p31)&&Boolean(sourceAuthority)&&sources.length===6&&speech.supported;
   open32.disabled=!can32;
   open32.onclick=()=>start('p32');
   actions.append(open32);
@@ -119,7 +118,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  };
  const start=(kind:B2Kind)=>{
   if(!active()||savePending)return;
-  if(kind==='p32'&&(!currentB2Evidence(evidence,'p31')||sources.length<6||!speech.supported))return;
+  if(kind==='p32'&&(!currentB2Evidence(evidence,'p31')||!sourceAuthority||sources.length!==6||!speech.supported))return;
   const count=evidence.history.filter(e=>e.kind===kind).length;
   run={kind,pair:count%3,cursor:0,startedAt:Date.now(),results:[],id:crypto.randomUUID()};
   audioStarts=0;audioCompleted=false;audioPending=false;audioError='';transcriptRevealed=false;
@@ -132,6 +131,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const source=attempt.kind==='p32'?sourceFor(attempt.pair,attempt.cursor):null;
   const original=attempt.kind==='p31'?B2_ARGUMENT_PAIRS[attempt.pair][attempt.cursor]:null;
   const taskId=original?.id??source?.id??'missing-source';
+  const question=source?originalP32Question(source,source.questions[attempt.cursor]?.id??''):null;
+  let selectedAnswer:number|null=null;
   status.textContent=attempt.kind.toUpperCase()+' · task '+(attempt.cursor+1)+' / 2 · independent evidence only';
   stage.replaceChildren();
   const panel=el('article','','b2-prompt');
@@ -159,7 +160,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     play.disabled=!speech.supported;
     play.onclick=()=>{
      if(!active()||run!==attempt||audioStarts>=2||audioPending||audioCompleted&&audioStarts>=2)return;
-     audioPending=true;play.disabled=true;audioError='';
+     audioPending=true;audioCompleted=false;play.disabled=true;audioError='';
      state.textContent='Playback requested; only onstart and onend can confirm device events.';
      const requested=speech.play(source.sentences.map(s=>s.fr).join(' '),1,()=>{
       if(!active()||run!==attempt)return;
@@ -183,6 +184,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const switchPractice=button('Open supported listening practice (discard assessment)');
     switchPractice.onclick=()=>{transcriptRevealed=true;speech.cancel();navigate('b2');};
     panel.append(el('div','','b2-listening'));panel.lastElementChild?.append(play,switchPractice,state);
+   }
+   if(question){
+    const quiz=el('fieldset','','b2-source-question');
+    quiz.append(el('legend','Original P35 source question · '+question.id));
+    quiz.append(el('p',question.prompt,'b2-question'));
+    for(let i=0;i<question.options.length;i++){
+     const label=el('label','','b2-check'),input=el('input');
+     input.type='radio';input.name='source-answer-'+attempt.id+'-'+attempt.cursor;input.value=String(i);
+     input.addEventListener('change',()=>{if(input.checked)selectedAnswer=i;});
+     label.append(input,document.createTextNode(question.options[i]));quiz.append(label);
+    }
+    panel.append(quiz);
+   }else{
+    panel.append(el('p','Original P35 comprehension key unavailable; this task will abstain.','b2-disclaimer'));
    }
   }else{
    panel.append(el('p','Original P35 B2 source has disappeared; assessment will abstain.','b2-disclaimer'));
@@ -214,7 +229,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     kind:attempt.kind,taskId,modality:attempt.kind==='p31'?'argument':attempt.cursor===0?'reading':'listening',
     text:answer.value,elapsedMs:Date.now()-attempt.startedAt,attested:checked.checked,
     pair:attempt.pair,taskIndex:attempt.cursor,
-    source:source??undefined,playCount:audioStarts,
+    source:source??undefined,sourceAuthority:sourceAuthority??undefined,
+    questionId:question?.id,answerIndex:selectedAnswer,playCount:audioStarts,
     audioCompleted:audioCompleted&&!audioPending&&!audioError,
     transcriptRevealed
    });
@@ -243,8 +259,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     // Recheck the live P31 prerequisite and original CAS token inside this tab;
     // a competing tab is separately rejected atomically in IndexedDB.
     const now=Date.now();
-    if(attempt.kind==='p32'&&!currentB2Evidence(evidence,'p31',now))
-     throw Error('P32 prerequisite expired before completion');
+    if(attempt.kind==='p32'){
+     if(!currentB2Evidence(evidence,'p31',now))
+      throw Error('P32 prerequisite expired before completion');
+     // The original pack digest is pinned to these JS bytes. Recheck it before
+     // preserving the source-linked receipt, not just when entering P32.
+     const manifest=await loadContentManifest(signal);
+     const descriptor=manifest.packs.find(p=>p.id==='reading-stable-p35');
+     if(!sourceAuthority||descriptor?.sha256!==sourceAuthority.digest||
+        completed.tasks.some(t=>t.sourceDigest!==sourceAuthority?.digest))
+      throw Error('P32 source revision changed; no stale evidence was saved');
+    }
     const next=appendB2Attempt(evidence,completed,crypto.randomUUID());
     const saved=await compareAndSetB2Evidence(evidence.token,next);
     if(!active())return;
