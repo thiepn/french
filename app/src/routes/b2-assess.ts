@@ -1,6 +1,7 @@
 import type {RouteContext} from '../core/types';
 import {loadStableReadingPack,type ReadingItem} from '../core/content/loader';
 import {readCanonicalLearnerState,compareAndSetB2Evidence} from '../core/learner/repository';
+import {hydrateLearnerState} from '../core/storage/hydrate';
 import {createFrenchPlayback} from './french-playback';
 import {B2_ARGUMENT_PAIRS} from '../core/learner/b2-observation';
 import {
@@ -55,6 +56,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   }
  };
  const refresh=async()=>{
+  // Share the shell's guarded first-import pipeline before touching the
+  // learner row. A direct deep link must never pre-empt P35 migration.
+  await hydrateLearnerState();
   const learner=await readCanonicalLearnerState();
   if(!active())return false;
   if(!learner){status.textContent='Canonical learner state is not initialized. Use the original Learn route first.';return false;}
