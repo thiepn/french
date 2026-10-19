@@ -138,7 +138,10 @@ test('U67 real Chromium P33 original two-task simulated recognition, 20-second p
  expect(oral.tasks.every(t=>t.asrConfidence>=25)).toBe(true);
  expect(oral.tasks.map(t=>t.promptId)).toEqual(['oral-work-policy','oral-media-claim']);
  expect(JSON.stringify(field)).not.toContain('Je recommande une solution prudente');
- expect(JSON.stringify(field)).not.toContain('transcript');
+ for(const item of oral.tasks){
+  for(const forbidden of ['transcript','audio','segments','recording','response','text'])
+   expect(Object.hasOwn(item,forbidden),forbidden+' cannot be stored in a P33 aggregate receipt').toBe(false);
+ }
  expect(after.learner.promotions?.B2?.earnedAt||0).toBe(0);
  await page.reload();await expect(page.getByText(/Current observable P33 structural receipt/)).toBeVisible();
 });
