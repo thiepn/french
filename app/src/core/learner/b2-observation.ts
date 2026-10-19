@@ -33,13 +33,13 @@ export interface B2Observation {
 }
 const TOKENS=/[\p{L}]+(?:[’'-][\p{L}]+)*/gu;
 const MARKERS:ReadonlyArray<readonly [string,RegExp]>=[
- ['contrast',/\b(?:cependant|pourtant|toutefois|néanmoins|en revanche|alors que|mais)\b/iu],
- ['concession',/\b(?:bien que|même si|certes|malgré|quoique)\b/iu],
- ['condition',/\b(?:à condition que|dans le cas où|si|à moins que|pourvu que)\b/iu],
- ['example',/\b(?:par exemple|notamment|ainsi|illustrer|illustration)\b/iu],
- ['consequence',/\b(?:par conséquent|donc|en conséquence|de ce fait|cela entraînerait|cela implique)\b/iu],
- ['qualification',/\b(?:peut-être|il semble|il est possible|selon|en partie|sous réserve)\b/iu],
- ['conclusion',/\b(?:en conclusion|pour conclure|finalement|en somme|je recommande|nous proposons)\b/iu]
+ ['contrast',/(?<![\p{L}\p{M}])(?:cependant|pourtant|toutefois|néanmoins|en revanche|alors que|mais)(?![\p{L}\p{M}])/iu],
+ ['concession',/(?<![\p{L}\p{M}])(?:bien que|même si|certes|malgré|quoique)(?![\p{L}\p{M}])/iu],
+ ['condition',/(?<![\p{L}\p{M}])(?:à condition que|dans le cas où|si|à moins que|pourvu que)(?![\p{L}\p{M}])/iu],
+ ['example',/(?<![\p{L}\p{M}])(?:par exemple|notamment|ainsi|illustrer|illustration)(?![\p{L}\p{M}])/iu],
+ ['consequence',/(?<![\p{L}\p{M}])(?:par conséquent|donc|en conséquence|de ce fait|cela entraînerait|cela implique)(?![\p{L}\p{M}])/iu],
+ ['qualification',/(?<![\p{L}\p{M}])(?:peut-être|il semble|il est possible|selon|en partie|sous réserve)(?![\p{L}\p{M}])/iu],
+ ['conclusion',/(?<![\p{L}\p{M}])(?:en conclusion|pour conclure|finalement|en somme|je recommande|nous proposons)(?![\p{L}\p{M}])/iu]
 ];
 function tokens(value:string):string[]{return (value.match(TOKENS)??[]).map(x=>x.toLocaleLowerCase('fr'));}
 export function observeB2Draft(raw:string):B2Observation{
