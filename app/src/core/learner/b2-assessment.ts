@@ -3,7 +3,7 @@
  * This does NOT replicate or authorize the original P31/P32 P35 evaluator,
  * grant a CEFR qualification, prove semantic transfer or grade grammar.
  */
-import {B2_ARGUMENT_PAIRS,observeB2Draft,sourceFivegramOverlap} from './b2-observation';
+import {B2_ARGUMENT_PAIRS,observeB2Draft,sourceFivegramOverlap} from './b2-observation.ts';
 import type {ReadingItem} from '../content/loader';
 
 export const B2_EVIDENCE_KEY='vU65B2StructuralEvidence';
