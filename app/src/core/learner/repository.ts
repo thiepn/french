@@ -1136,3 +1136,42 @@ export async function compareAndSetOriginalCourseCheckpoint(
   });
  }finally{db.close();}
 }
+
+
+/**
+ * U65 B2 original learner-row CAS. The receipt is sanitized by the B2
+ * evaluator before this write; no secondary store, profile, grade, event
+ * or SRS mutation is permitted. A stale tab cannot overwrite newer evidence.
+ */
+export async function compareAndSetB2Evidence(expectedToken:string,nextValue:unknown):Promise<'saved'|'conflict'>{
+ const incoming=nextValue as {schema?:unknown;token?:unknown;history?:unknown}|null;
+ if(incoming?.schema!=='thiepn-french-u65-b2-evidence-v1'||
+    typeof incoming.token!=='string'||incoming.token.length<8||
+    !Array.isArray(incoming.history)||incoming.history.length>24)
+  throw Error('B2_INVALID_STATE');
+ const db=await openFrenchDatabase();
+ try{
+  return await new Promise<'saved'|'conflict'>((resolve,reject)=>{
+   const tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner');
+   let result:'saved'|'conflict'='conflict';
+   const request=store.get('state-v1');
+   request.onsuccess=()=>{
+    const learner=request.result as CanonicalLearnerStateV1|undefined;
+    if(!learner)return;
+    const raw=learner.featureState['vU65B2StructuralEvidence'];
+    const saved=raw===undefined?'':raw&&typeof raw==='object'&&!Array.isArray(raw)&&
+     (raw as Record<string,unknown>).schema==='thiepn-french-u65-b2-evidence-v1'&&
+     typeof (raw as Record<string,unknown>).token==='string'?
+      (raw as Record<string,string>).token:null;
+    if(saved===null||saved!==expectedToken||incoming.token===expectedToken)return;
+    store.put({...learner,featureState:{
+     ...learner.featureState,vU65B2StructuralEvidence:nextValue
+    }} satisfies CanonicalLearnerStateV1,'state-v1');
+    result='saved';
+   };
+   tx.oncomplete=()=>resolve(result);
+   tx.onerror=()=>reject(tx.error??Error('B2 evidence save failed'));
+   tx.onabort=()=>reject(tx.error??Error('B2 evidence transaction aborted'));
+  });
+ }finally{db.close();}
+}
