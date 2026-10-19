@@ -6,6 +6,7 @@
 import {B2_ARGUMENT_PAIRS,observeB2Draft,sourceFivegramOverlap} from './b2-observation.ts';
 import type {ReadingItem} from '../content/loader';
 import {originalP32Question,sourceMatchesAuthority,type P32SourceAuthority} from './b2-source-contract.ts';
+import {normalizeP33Fields,type P33PairReceipt,type P33Session} from './b2-oral.ts';
 
 export const B2_EVIDENCE_KEY='vU65B2StructuralEvidence';
 export const B2_EVIDENCE_SCHEMA='thiepn-french-u65-b2-evidence-v1';
@@ -32,6 +33,7 @@ export interface B2Attempt{
 }
 export interface B2Evidence{
   schema:typeof B2_EVIDENCE_SCHEMA;token:string;history:B2Attempt[];
+  oralHistory?:P33PairReceipt[];oralSession?:P33Session;
 }
 function obj(v:unknown):Record<string,unknown>|null{
  return v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:null;
@@ -100,7 +102,9 @@ export function normalizeB2Evidence(raw:unknown):B2Evidence|null{
    status:entry.status as B2Status,evaluator:B2_EVALUATOR_VERSION,
    tasks:tasks as [B2Receipt,B2Receipt]});
  }
- return {schema:B2_EVIDENCE_SCHEMA,token:root.token,history};
+ const oral=normalizeP33Fields(root);
+ if(!oral)return null;
+ return {schema:B2_EVIDENCE_SCHEMA,token:root.token,history,...oral};
 }
 export function currentB2Evidence(state:B2Evidence,kind:B2Kind,now=Date.now(),expectedSourceDigest?:string):B2Attempt|null{
  // An unscored attempt is not a newly failed assessment; a scored failure supersedes.
