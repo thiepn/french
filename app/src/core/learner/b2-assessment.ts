@@ -84,11 +84,13 @@ export function normalizeB2Evidence(raw:unknown):B2Evidence|null{
     directCopyPct:t.directCopyPct as number,transformation:t.transformation as number,
     playCount:t.playCount as number,elapsedMs:t.elapsedMs as number,status:t.status as B2Status,
     reason:t.reason as string,evaluator:B2_EVALUATOR_VERSION,
-    sourceDigest:t.sourceDigest as string|undefined,sourceRevision:t.sourceRevision as string|undefined,
-    sourceBlob:t.sourceBlob as string|undefined,questionId:t.questionId as string|undefined,
-    comprehensionCorrect:t.comprehensionCorrect as boolean|undefined,
-    playbackCompleted:t.playbackCompleted as boolean|undefined,
-    sourceEvaluator:t.sourceEvaluator as typeof P32_SOURCE_EVALUATOR|undefined
+    ...(t.sourceDigest!==undefined?{sourceDigest:t.sourceDigest as string}:{}),
+    ...(t.sourceRevision!==undefined?{sourceRevision:t.sourceRevision as string}:{}),
+    ...(t.sourceBlob!==undefined?{sourceBlob:t.sourceBlob as string}:{}),
+    ...(t.questionId!==undefined?{questionId:t.questionId as string}:{}),
+    ...(t.comprehensionCorrect!==undefined?{comprehensionCorrect:t.comprehensionCorrect as boolean}:{}),
+    ...(t.playbackCompleted!==undefined?{playbackCompleted:t.playbackCompleted as boolean}:{}),
+    ...(t.sourceEvaluator!==undefined?{sourceEvaluator:P32_SOURCE_EVALUATOR}:{})
    });
   }
   if(entry.kind==='p31'&&tasks.some(t=>t.modality!=='argument'))return null;
