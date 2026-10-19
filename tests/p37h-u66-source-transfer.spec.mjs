@@ -59,7 +59,7 @@ test('U66 P32 original P35 keyed reading and completed synthetic listening creat
  await expect(page.getByRole('button',{name:'Begin P32 original-source capstone'})).toBeEnabled({timeout:45000});
  const before=await readStorage(page);
  await page.getByRole('button',{name:'Begin P32 original-source capstone'}).click();
- await expect(page.getByRole('heading',{name:/B2/})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'B2 Evidence Lab'})).toBeVisible();
  await expect(page.getByText(/P35 .* · SHA [a-f0-9]{12}/)).toBeVisible();
  await expect(page.getByRole('group',{name:/Original P35 source question/})).toBeVisible();
  await page.getByRole('radio').nth(1).check(); // Original P35 read-b2-teletravail q1 answer index 1.
