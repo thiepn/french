@@ -46,3 +46,12 @@
  .b2-writing textarea{min-height:300px}
 }
 @media(prefers-reduced-motion:reduce){.b2-studio *{scroll-behavior:auto!important;transition:none!important}}
+
+/* U65 independent assessment: distinct from U64 supported practice. */
+.b2-assessment-summary{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:1rem 0;margin:1rem 0}
+.b2-assessment-summary h2{font-size:1.35rem;margin:.3rem 0 1rem}
+.b2-assessment-line{display:grid;grid-template-columns:minmax(13rem,1fr) minmax(12rem,2fr);gap:.7rem;padding:.9rem 0;border-top:1px solid var(--line);line-height:1.5}
+.b2-assessment-line span{color:var(--muted)}
+.b2-assessment .b2-actions{margin:1rem 0 1.5rem}
+.b2-assessment input[type=checkbox]{accent-color:var(--accent)}
+@media(max-width:650px){.b2-assessment-line{grid-template-columns:1fr;gap:.15rem}.b2-assessment .b2-action{width:100%}}
