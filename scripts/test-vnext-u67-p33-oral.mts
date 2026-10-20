@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
  P33_PAIRS,P33_EVALUATOR,P33_MIN_MS,P33_MAX_MS,P33_PREP_MS,
+ P33_START_WATCHDOG_MS,P33_STOP_WATCHDOG_MS,p33CaptureMustAbstain,p33RecoveryGuidance,
  evaluateP33Task,completeP33Pair,currentP33Evidence,normalizeP33Fields
 } from '../app/src/core/learner/b2-oral.ts';
 import {emptyB2Evidence,normalizeB2Evidence} from '../app/src/core/learner/b2-assessment.ts';
@@ -61,6 +62,18 @@ assert.equal(normalizeP33Fields({oralHistory:[{...pair,tasks:[{...immediate,tran
 assert.ok(!JSON.stringify(normalized).includes('Je recommande une solution'));
 assert.ok(!JSON.stringify(normalized).includes('Je veux dire'));
 assert.equal(normalizeP33Fields({oralHistory:[{...pair,tasks:[{...immediate,evaluator:'future'},prepared]}]}),null);
+// U68 recovery is operational, not a new scorer or a reason to downgrade French ability.
+assert.equal(P33_START_WATCHDOG_MS,12000);
+assert.equal(P33_STOP_WATCHDOG_MS,8000);
+for(const exit of ['unexpected-end','start-failed','start-timeout','recognition-error','stop-timeout']){
+ assert.equal(p33CaptureMustAbstain(exit),true,'incomplete browser lifecycle must abstain: '+exit);
+ assert.match(p33RecoveryGuidance(exit,immediate),/microphone permission/);
+}
+assert.equal(p33CaptureMustAbstain('finished'),false);
+assert.equal(p33CaptureMustAbstain('time-ceiling'),false);
+assert.match(p33RecoveryGuidance('finished',speaking(P33_PAIRS[0][0],39000)),/at least 40 seconds/);
+assert.match(p33RecoveryGuidance('finished',speaking(P33_PAIRS[0][0],60000,.01)),/Recognition confidence/);
+assert.match(p33RecoveryGuidance('finished',immediate),/No semantic or CEFR grade/);
 console.log(JSON.stringify({schema:'u67-p33-native-oral',status:'PASS',prompts:6,
  twoTasks:'immediate+20s-prep',minMs:P33_MIN_MS,maxMs:P33_MAX_MS,
  observed:'ASR confidence, rate, pauses, reformulations',persistedProse:false,sourceBound:true}));
