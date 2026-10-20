@@ -196,3 +196,121 @@ test('U67 existing P31/P32 prerequisite cannot be bypassed by synthetic recognit
  const data=await stored(page);
  expect(data.learner.featureState.vU65B2StructuralEvidence).toBeUndefined();
 });
+
+
+// U68: real installed Chromium runtime with deliberately failing browser
+// recognition implementations. These tests do not claim to measure real ASR.
+for(const cause of ['never-starts','unexpected-end','error-without-end']){
+ test('U68 original P33 '+cause+' safely abstains and retains a private retryable task',async({page})=>{
+  await page.clock.install();
+  await page.addInitScript((mode)=>{
+   class FailedRecognition{
+    lang='';continuous=false;interimResults=false;maxAlternatives=0;
+    start(){
+     if(mode==='never-starts')return;
+     queueMicrotask(()=>{
+      this.onstart?.();
+      if(mode==='unexpected-end')queueMicrotask(()=>this.onend?.());
+      else queueMicrotask(()=>this.onerror?.({error:'network'}));
+     });
+    }
+    stop(){}abort(){window.__u68Aborts=(window.__u68Aborts??0)+1}
+   }
+   Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:FailedRecognition});
+  },cause);
+  await page.goto('/#b2-oral');
+  await expect(page.getByRole('button',{name:'Open text-only speaking rehearsal'})).toBeVisible({timeout:45000});
+  await seedB2Prerequisites(page);await page.reload();
+  await page.getByRole('button',{name:'Start P33 two-task oral assessment'}).click();
+  await expect(page.getByRole('heading',{name:'Immediate response · prompt hidden'})).toBeVisible();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Begin French speech recognition'}).click();
+  if(cause==='never-starts')await page.clock.fastForward(12500);
+  await expect(page.getByRole('heading',{name:'Observable oral evidence'})).toBeVisible({timeout:15000});
+  await expect(page.getByText(/unscored · Speech recognition failed/)).toBeVisible();
+  await expect(page.getByText(/The browser did not complete a reliable French recognition session/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Retry current spoken task'})).toBeVisible();
+  const before=await stored(page);
+  const evidence=before.learner.featureState.vU65B2StructuralEvidence;
+  expect(evidence.oralHistory).toBeUndefined();
+  expect(evidence.oralSession.cursor).toBe(0);
+  expect(JSON.stringify(evidence)).not.toContain('transcript');
+  await page.getByRole('button',{name:'Retry current spoken task'}).click();
+  await expect(page.getByRole('heading',{name:'Immediate response · prompt hidden'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Begin French speech recognition'})).toBeDisabled();
+ });
+}
+
+test('U68 browser stop without onend settles as unscored within bounded watchdog and keeps P31/P32 untouched',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(()=>{
+  class StalledStop{
+   lang='';continuous=false;interimResults=false;maxAlternatives=0;
+   start(){queueMicrotask(()=>this.onstart?.())}
+   stop(){window.__u68Stops=(window.__u68Stops??0)+1}
+   abort(){window.__u68Aborts=(window.__u68Aborts??0)+1}
+  }
+  Object.defineProperty(window,'SpeechRecognition',{configurable:true,value:StalledStop});
+ });
+ await page.goto('/#b2-oral');
+ await expect(page.getByRole('button',{name:'Open text-only speaking rehearsal'})).toBeVisible({timeout:45000});
+ await seedB2Prerequisites(page);await page.reload();
+ const before=await stored(page);
+ await page.getByRole('button',{name:'Start P33 two-task oral assessment'}).click();
+ await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:'Begin French speech recognition'}).click();
+ await expect(page.getByText(/Device reported recognition started/)).toBeVisible();
+ await page.clock.fastForward(45000);
+ await page.getByRole('button',{name:'Finish this spoken response'}).click();
+ await page.clock.fastForward(8200);
+ await expect(page.getByRole('heading',{name:'Observable oral evidence'})).toBeVisible();
+ await expect(page.getByText(/unscored · Speech recognition failed/)).toBeVisible();
+ const after=await stored(page);
+ expect(after.srs).toEqual(before.srs);expect(after.activity).toEqual(before.activity);
+ expect(after.learner.featureState.vU65B2StructuralEvidence.history).toEqual(before.learner.featureState.vU65B2StructuralEvidence.history);
+ expect(after.learner.featureState.vU65B2StructuralEvidence.oralSession.cursor).toBe(0);
+ expect(after.learner.featureState.vU65B2StructuralEvidence.oralHistory).toBeUndefined();
+});
+
+test('U68 concurrent P32 prerequisite invalidation blocks later oral task continuation without overwriting learner evidence',async({page})=>{
+ await page.clock.install();
+ await page.addInitScript(browserRecognition);
+ await page.goto('/#b2-oral');
+ await expect(page.getByRole('button',{name:'Open text-only speaking rehearsal'})).toBeVisible({timeout:45000});
+ await seedB2Prerequisites(page);await page.reload();
+ await page.getByRole('button',{name:'Start P33 two-task oral assessment'}).click();
+ await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:'Begin French speech recognition'}).click();
+ await expect(page.getByText(/Une direction souhaite supprimer/)).toBeVisible();
+ await page.clock.fastForward(60000);
+ await page.getByRole('button',{name:'Finish this spoken response'}).click();
+ await expect(page.getByRole('button',{name:'Save task 1 evidence and continue to timed preparation'})).toBeVisible();
+ // A second tab causes a newer scored P32 failure in the original canonical
+ // learner state. The first tab must not advance a stale oral assessment.
+ await page.evaluate(async()=>new Promise((resolve,reject)=>{
+  const open=indexedDB.open('thiepn-french-vnext',5);
+  open.onerror=()=>reject(open.error);
+  open.onsuccess=()=>{
+   const db=open.result,tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner');
+   const get=store.get('state-v1');
+   get.onsuccess=()=>{
+    const current=get.result,e=current.featureState.vU65B2StructuralEvidence;
+    const old=e.history[1];
+    store.put({...current,featureState:{...current.featureState,
+     vU65B2StructuralEvidence:{...e,token:'u68-newer-other-tab',
+      history:[...e.history,{...old,id:'u68-newer-scored-p32-failure',at:Date.now(),status:'insufficient'}]}
+    }},'state-v1');
+   };
+   tx.oncomplete=()=>{db.close();resolve()};
+   tx.onerror=()=>reject(tx.error);
+  };
+ }));
+ await page.getByRole('button',{name:'Save task 1 evidence and continue to timed preparation'}).click();
+ await expect(page.getByText(/P31\/P32 evidence changed in another tab or is no longer current/)).toBeVisible();
+ const data=await stored(page);
+ const e=data.learner.featureState.vU65B2StructuralEvidence;
+ expect(e.token).toBe('u68-newer-other-tab');
+ expect(e.oralHistory).toBeUndefined();
+ expect(e.oralSession.cursor).toBe(0);
+ expect(e.history.at(-1).status).toBe('insufficient');
+});
