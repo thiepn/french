@@ -11,6 +11,26 @@ export const P33_PREP_MS=20_000;
 export const P33_MIN_MS=40_000;
 export const P33_MAX_MS=105_000;
 export const P33_VALID_MS=35*86_400_000;
+/** A recognition request that never starts, or a stop that never settles,
+ * must not strand an in-progress learner or record a timed oral failure. */
+export const P33_START_WATCHDOG_MS=12_000;
+export const P33_STOP_WATCHDOG_MS=8_000;
+export type P33CaptureExit='finished'|'time-ceiling'|'unexpected-end'|'start-failed'|'start-timeout'|'recognition-error'|'stop-timeout';
+/** Never score an operational device/recognition failure as learner weakness. */
+export function p33CaptureMustAbstain(exit:P33CaptureExit):boolean{
+ return exit!=='finished'&&exit!=='time-ceiling';
+}
+/** Learner-specific next actions based solely on observable aggregates, no grammar/semantics inference. */
+export function p33RecoveryGuidance(exit:P33CaptureExit,result:P33Receipt):string{
+ if(p33CaptureMustAbstain(exit))return 'The browser did not complete a reliable French recognition session. Check microphone permission, connection and speech-recognition support, then retry this task. No oral failure is inferred.';
+ if(result.status==='unscored')return 'Recognition confidence or final words were unavailable. Retry in a quieter setting or use text rehearsal without claiming oral evidence.';
+ if(result.durationMs<P33_MIN_MS)return 'Speak for at least 40 seconds before finishing; develop a position, a counterargument and a qualified conclusion.';
+ if(result.words<80||result.wordsPerMinute<70)return 'Try developing your argument with a concrete example, an objection and a conclusion. The recognizer may miss words; this is not a pronunciation judgment.';
+ if(result.wordsPerMinute>200)return 'Try a measured pace with one idea at a time. Recognition timing cannot grade real fluency.';
+ if(result.topicGroups<2)return 'Respond directly to more of the displayed situation before comparing alternatives.';
+ if(result.status==='insufficient')return 'Organize your response with an example, concession and conclusion; these checks are only observable transcript proxies.';
+ return 'Review the argument and consider a clearer counterargument before the next source-linked situation. No semantic or CEFR grade is implied.';
+}
 export type P33Status='structural-targets-met'|'insufficient'|'unscored';
 export type P33Mode='immediate'|'brief-prep';
 export interface P33Prompt{
