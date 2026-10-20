@@ -104,6 +104,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   if(!p31)stage.append(el('p','P32 locked: finish a current P31 two-task structural assessment first. Historical P35 results are not reinterpreted.','b2-disclaimer'));
   if(sourceProblem)stage.append(el('p',sourceProblem,'b2-disclaimer'));
   if(!speech.supported)stage.append(el('p','P32 calibrated listening unavailable: browser speech synthesis is missing. P31 writing remains available; use P32 supported practice in the original studio.','b2-disclaimer'));
+  const roadmap=button('Review B2 P31–P33 pathway');
+  roadmap.onclick=()=>navigate('b2-path');stage.append(roadmap);
   const spoken=button('Open P33 spontaneous speaking');
   spoken.onclick=()=>navigate('b2-oral');stage.append(spoken);
   const practice=button('Return to B2 practice');
