@@ -20,6 +20,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   el('h1','Argument & Source Studio'),
   el('p','Build sustained French arguments and transform verified original reading or listening material. This is formative practice, not a P31/P32 calibration, P28 benchmark or CEFR promotion. No answer text, score or practice completion is saved.','lede')
  );
+ const pathLink=action('Continue B2 P31–P33 evidence pathway');
+ pathLink.onclick=()=>navigate('b2-path');host.append(pathLink);
  const navigation=el('div','','b2-tracks');navigation.setAttribute('role','group');navigation.setAttribute('aria-label','Advanced practice track');
  const sets=el('div','','b2-sets');sets.setAttribute('role','group');sets.setAttribute('aria-label','Choose a practice prompt set');
  const stage=el('div','','b2-stage');
