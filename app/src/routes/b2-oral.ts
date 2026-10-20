@@ -306,7 +306,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    };
    try{
     rec.start();
-    if(currentRecognition===rec)startWatchdog=window.setTimeout(()=>settle('start-timeout'),P33_START_WATCHDOG_MS);
+    if(currentRecognition===rec&&!startObserved)startWatchdog=window.setTimeout(()=>settle('start-timeout'),P33_START_WATCHDOG_MS);
    }catch{settle('start-failed')}
   };
   stop.onclick=()=>{stopCapture?.('finished');};
