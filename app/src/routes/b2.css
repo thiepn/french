@@ -61,3 +61,20 @@
 .b2-oral .b2-actions{margin-top:1.25rem}
 .b2-oral .b2-report{max-width:85ch}
 .b2-oral :is(button,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* U69 B2 evidence continuation: functional, accessible, without decorative cards. */
+.b2-pathway{max-width:960px}
+.b2-path-next{border-top:2px solid var(--accent);padding:1rem 0 1.25rem}
+.b2-path-next h2,.b2-path-sequence h2,.b2-path-boundary h2{font-size:1.32rem;margin:.2rem 0 1rem}
+.b2-path-next>p{font-size:1rem;line-height:1.55}
+.b2-path-stages{list-style:none;margin:0;padding:0}
+.b2-path-stage{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:.25rem 1rem;border-top:1px solid var(--line);padding:1.1rem 0}
+.b2-path-stage h3{margin:0;font-size:1.07rem}
+.b2-path-state{font-weight:700;font-size:.91rem}
+.b2-path-explanation{grid-column:1 / -1;line-height:1.6;margin:.3rem 0}
+.b2-path-date{grid-column:1 / -1;font-size:.91rem;color:var(--muted);margin:.1rem 0}
+.b2-path-stage>.b2-action{grid-column:1 / -1;justify-self:start;margin-top:.6rem}
+.b2-path-sequence,.b2-path-boundary{margin:1.2rem 0;padding:1.1rem 0;border-top:1px solid var(--line)}
+.b2-path-boundary p{max-width:78ch;line-height:1.65}
+.b2-path-warning{padding:.8rem 0;border-bottom:1px solid var(--line);font-weight:600}
+@media(max-width:650px){.b2-path-stage{grid-template-columns:1fr}.b2-path-stage>.b2-action{width:100%}}
