@@ -47,8 +47,8 @@ export function deriveB2Pathway(
 ):B2Pathway{
  const sourceVerified=typeof sourceDigest==='string'&&/^[0-9a-f]{64}$/.test(sourceDigest);
  const p31=currentB2Evidence(evidence,'p31',now);
- const p32=sourceVerified?currentB2Evidence(evidence,'p32',now,sourceDigest):null;
- const p33=sourceVerified?currentP33Evidence(evidence.oralHistory??[],sourceDigest,Boolean(p31&&p32),now):null;
+ const p32=sourceVerified?currentB2Evidence(evidence,'p32',now,sourceDigest??undefined):null;
+ const p33=sourceVerified?currentP33Evidence(evidence.oralHistory??[],sourceDigest??'',Boolean(p31&&p32),now):null;
  const previous31=LAST(evidence.history,'p31');
  const previous32=LAST(evidence.history,'p32');
  const previous33=ORAL_LAST(evidence.oralHistory??[]);
