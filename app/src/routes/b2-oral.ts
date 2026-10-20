@@ -113,6 +113,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const practice=action('Open text-only speaking rehearsal');
   practice.onclick=()=>{mode='practice';renderPractice()};
   actions.append(practice);
+  const pathway=action('Review B2 pathway');pathway.onclick=()=>navigate('b2-path');actions.append(pathway);
   const back=action('Return to B2 evidence');
   back.onclick=()=>navigate('b2-assess');actions.append(back);
   stage.append(actions);
