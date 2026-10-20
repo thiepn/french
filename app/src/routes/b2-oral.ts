@@ -7,8 +7,9 @@ import {verifyP32SourceAuthority} from '../core/learner/b2-source-contract';
 import {B2_EVIDENCE_KEY,emptyB2Evidence,normalizeB2Evidence,currentB2Evidence,type B2Evidence} from '../core/learner/b2-assessment';
 import {
  P33_PAIRS,P33_PREP_MS,P33_MAX_MS,P33_MIN_MS,P33_EVALUATOR,
+ P33_START_WATCHDOG_MS,P33_STOP_WATCHDOG_MS,p33CaptureMustAbstain,p33RecoveryGuidance,
  evaluateP33Task,completeP33Pair,currentP33Evidence,
- type P33Prompt,type P33Receipt,type P33FinalSegment,type P33Session
+ type P33Prompt,type P33Receipt,type P33FinalSegment,type P33Session,type P33CaptureExit
 } from '../core/learner/b2-oral';
 import './b2.css';
 
@@ -41,12 +42,15 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  const alive=()=>!signal.aborted&&host.isConnected;
  let evidence:B2Evidence=emptyB2Evidence();
  let digest='',sourceError='',saving=false,mode:Mode='assessment';
- let currentRecognition:RecognitionLike|null=null,stopTimer=0,prepTimer=0;
+ let currentRecognition:RecognitionLike|null=null,stopTimer=0,prepTimer=0,startWatchdog=0,finishWatchdog=0;
+ let stopCapture:((cause:'finished'|'time-ceiling')=>void)|null=null;
+ let captureExit:P33CaptureExit='unexpected-end';
  let recorderStartedAt=0,recorderStoppedAt=0,recorderError=false,stopping=false;
  let startObserved=false,segments=new Map<number,P33FinalSegment>(),session:P33Session|null=null;
  let runningTask:P33Prompt|null=null,activeTake=0;
  const clean=()=>{
-  window.clearTimeout(stopTimer);window.clearInterval(prepTimer);
+  window.clearTimeout(stopTimer);window.clearTimeout(startWatchdog);window.clearTimeout(finishWatchdog);
+  window.clearInterval(prepTimer);stopCapture=null;
   if(currentRecognition){const current=currentRecognition;currentRecognition=null;
    current.onstart=null;current.onresult=null;current.onerror=null;current.onend=null;
    try{current.abort()}catch{/* user can revoke microphone access */}}
@@ -193,14 +197,17 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    if(!alive()||!runningTask||session?.id!==selectedSession.id)return;
    const task=runningTask;runningTask=null;stop.disabled=true;
    const final=[...segments.entries()].sort(([a],[b])=>a-b).map(([,s])=>s);
-   const result=evaluateP33Task(task,final,recorderStartedAt,recorderStoppedAt||Date.now(),recorderError||!startObserved);
+   const result=evaluateP33Task(task,final,recorderStartedAt,recorderStoppedAt||Date.now(),
+    recorderError||!startObserved||p33CaptureMustAbstain(captureExit));
    // Final text and ASR segments are discarded before any storage boundary.
    segments.clear();
    if(mode!=='assessment'){showHome();return}
    report.replaceChildren(node('h3','Observable oral evidence'),
     node('p',result.status.replaceAll('-',' ')+' · '+result.reason),
     node('p',result.words+' recognized words · '+Math.round(result.durationMs/1000)+' s · '+result.wordsPerMinute+' WPM · recognition confidence '+result.asrConfidence+'%'),
-    node('p','Fluency proxy '+result.fluencyProxy+'/100 · discourse proxy '+result.discourseProxy+'/100 · '+result.selfCorrections+' explicit reformulations; these are not accent or semantic grades.'));
+    node('p','Fluency proxy '+result.fluencyProxy+'/100 · discourse proxy '+result.discourseProxy+'/100 · '+result.selfCorrections+' explicit reformulations; these are not accent or semantic grades.'),
+    node('p',p33RecoveryGuidance(captureExit,result),'b2-disclaimer'));
+   if(result.status==='unscored')report.append(node('p','This incomplete device capture is an abstention, not a scored speaking failure. Your current task can be retried.','b2-disclaimer'));
    controls.replaceChildren();
    const reflection=node('textarea','','b2-oral-scratch');reflection.rows=3;reflection.maxLength=1800;
    reflection.placeholder='Private self-repair: What would you qualify, clarify or reorganize? This text is not saved.';
@@ -214,6 +221,14 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(saving)return;
     try{
      if(!ready())throw Error('Current P31/P32 prerequisite expired or the original source changed');
+     // The saved learner record, not the tab's previous snapshot, owns
+     // prerequisite validity and the CAS version at every completion.
+     const liveLearner=await readCanonicalLearnerState();
+     const liveEvidence=liveLearner?normalizeB2Evidence(liveLearner.featureState[B2_EVIDENCE_KEY]):null;
+     if(!liveEvidence||liveEvidence.token!==evidence.token||
+        !currentB2Evidence(liveEvidence,'p31')||
+        !currentB2Evidence(liveEvidence,'p32',Date.now(),digest))
+      throw Error('P31/P32 evidence changed in another tab or is no longer current. Reopen B2 evidence before continuing');
      if(selectedSession.cursor===0){
       await write(old=>({...old,oralSession:{...selectedSession,cursor:1,first:result,prepStartedAt:Date.now()}}));
       renderTask();
@@ -231,18 +246,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     (responseMode==='brief-prep'&&Date.now()<(session.prepStartedAt??Infinity)+P33_PREP_MS))return;
    const ctor=recognitionCtor();if(!ctor){report.textContent='Speech recognition unavailable; no oral evidence.';return;}
    begin.disabled=true;consent.disabled=true;activeTake++;const take=activeTake;
+   captureExit='unexpected-end';
    const rec=new ctor();currentRecognition=rec;runningTask=prompt;
    recorderStartedAt=0;recorderStoppedAt=0;recorderError=false;stopping=false;startObserved=false;
    segments=new Map();
    rec.lang='fr-FR';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
    rec.onstart=()=>{
     if(!alive()||currentRecognition!==rec||take!==activeTake)return;
+    window.clearTimeout(startWatchdog);
     startObserved=true;recorderStartedAt=Date.now();
     if(responseMode==='immediate'){
      promptHead.textContent=prompt.title;question.textContent=prompt.question;
     }
     stop.disabled=false;report.textContent='Device reported recognition started. Respond for at least 40 seconds (maximum 105).';
-    stopTimer=window.setTimeout(()=>{if(currentRecognition===rec){stopping=true;recorderStoppedAt=Date.now();rec.stop()}},P33_MAX_MS);
+    stopTimer=window.setTimeout(()=>{if(currentRecognition===rec)stopCapture?.('time-ceiling')},P33_MAX_MS);
    };
    rec.onresult=event=>{
     if(!alive()||currentRecognition!==rec||!startObserved)return;
@@ -254,30 +271,45 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
      }
     }
    };
-   rec.onerror=event=>{
-    if(currentRecognition!==rec)return;
-    recorderError=true;
-    report.textContent='Speech recognition error ('+(event.error??'unknown')+'). This take will abstain; no recording is stored.';
-   };
-   rec.onend=()=>{
+   // ASR may end before the learner presses Finish, fail to start, report an
+   // error without onend, or never finish after stop(). Each path settles once,
+   // clears native handlers, discards late recognition callbacks and abstains.
+   const settle=(exit:P33CaptureExit)=>{
     if(currentRecognition!==rec||take!==activeTake)return;
-    window.clearTimeout(stopTimer);currentRecognition=null;
-    recorderStoppedAt=recorderStoppedAt||Date.now();
+    captureExit=exit;
+    if(p33CaptureMustAbstain(exit))recorderError=true;
+    window.clearTimeout(stopTimer);window.clearTimeout(startWatchdog);
+    window.clearTimeout(finishWatchdog);stopCapture=null;
+    currentRecognition=null;recorderStoppedAt=recorderStoppedAt||Date.now();
+    rec.onstart=null;rec.onresult=null;rec.onerror=null;rec.onend=null;
+    if(p33CaptureMustAbstain(exit))try{rec.abort()}catch{/* Browser service ended already */ }
     void evaluateEnd();
    };
-   try{rec.start()}catch{
-    recorderError=true;recorderStoppedAt=Date.now();currentRecognition=null;
-    report.textContent='Microphone access or device recognition start failed. No oral result was saved.';
-    begin.disabled=false;runningTask=null;
-   }
+   stopCapture=(exit)=>{
+    if(currentRecognition!==rec||stopping||!startObserved)return;
+    stopping=true;captureExit=exit;stop.disabled=true;
+    recorderStoppedAt=Date.now();
+    try{
+     rec.stop();
+     if(currentRecognition===rec)finishWatchdog=window.setTimeout(()=>settle('stop-timeout'),P33_STOP_WATCHDOG_MS);
+    }catch{settle('recognition-error')}
+   };
+   rec.onerror=event=>{
+    if(currentRecognition!==rec)return;
+    report.textContent='Speech recognition error ('+(event.error??'unknown')+'). This take will abstain; no recording is stored.';
+    settle('recognition-error');
+   };
+   rec.onend=()=>{
+    // An unsolicited end is not evidence of weak speaking. Manual stop or
+    // the configured ceiling are the only normal scored completion paths.
+    settle(stopping?captureExit:'unexpected-end');
+   };
+   try{
+    rec.start();
+    if(currentRecognition===rec)startWatchdog=window.setTimeout(()=>settle('start-timeout'),P33_START_WATCHDOG_MS);
+   }catch{settle('start-failed')}
   };
-  stop.onclick=()=>{
-   if(!currentRecognition||stopping||!startObserved)return;
-   stopping=true;stop.disabled=true;recorderStoppedAt=Date.now();
-   try{currentRecognition.stop()}catch{
-    recorderError=true;clean();void evaluateEnd();
-   }
-  };
+  stop.onclick=()=>{stopCapture?.('finished');};
  };
  try{
   await hydrateLearnerState();await reload();
