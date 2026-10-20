@@ -70,8 +70,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    if(sourceError)stage.append(element('p',sourceError,'b2-path-warning'));
    const next=element('section','','b2-path-next');
    if(pathway.next){
-    next.append(element('h2','Next step'),element('p',pathway.next.title),
-     element('p',pathway.next.detail,'b2-path-explanation'));
+    next.append(element('h2','Next step'),element('p',pathway.next.title));
     const go=action(pathway.next.action,true);
     go.onclick=()=>navigate(pathway.next!.route);
     go.disabled=pathway.next.state==='blocked';
