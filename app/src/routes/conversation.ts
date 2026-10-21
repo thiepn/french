@@ -67,6 +67,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(signal.aborted)return true;
     const sameTask=Boolean(previous&&latest.active&&
       previous.runId===latest.active.runId&&previous.nodeId===latest.active.nodeId);
+    // The failed CAS is settled. Render fresh controls in enabled state.
+    busy=false;
     if(sameTask&&reply){
       // Safe to edit and retry only if the exact run AND node still match.
       renderOriginalSource(reply);
