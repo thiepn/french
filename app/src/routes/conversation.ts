@@ -84,7 +84,9 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         recovery.append(draft);stage.prepend(recovery);
       }
     }
-    status.textContent=sourceNotice;
+    // The source task or home already renders sourceNotice. Do not repeat
+    // the same conflict message in the shell-level status.
+    status.textContent='';
     return true;
   };
   const canStartOriginal=()=>!busy&&!state.active&&!state.mission&&!state.adaptive&&!originalSource.active;
