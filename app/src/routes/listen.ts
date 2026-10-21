@@ -121,9 +121,12 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
             throw Error('SOURCE_DIALOGUE_CHANGED');
           const now=Date.now();
           const next=sourceSupport(state,2,now);
-          await persistSourceGraphState(next);
+          // U72: a Conversation tab can advance the original source while
+          // Listen is open. Only upgrade support from the exact live snapshot,
+          // in the source owner's original atomic meta CAS transaction.
+          const saved=await persistSourceGraphState(next,state);
           if(signal.aborted)return;
-          sessionStorage.setItem(SOURCE_HANDOFF_KEY,JSON.stringify(createSourceHandoff(next,'write',now)));
+          sessionStorage.setItem(SOURCE_HANDOFF_KEY,JSON.stringify(createSourceHandoff(saved,'write',now)));
           navigate('write');
         }catch(error){
           feedback.textContent='Original conversation changed or could not be saved. Return to Conversation to resume.';
