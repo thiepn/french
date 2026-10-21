@@ -87,8 +87,8 @@ test('U69 authentic B2 entry is useful when unstarted; no fictional P28 B2 bench
  await expect(page.getByText('0 of 3 current structural stages',{exact:false})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Next step'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Open P31 assessment'}).first()).toBeEnabled();
- await expect(page.getByText(/P28 fixed-task benchmarks and P29 longitudinal maintenance are supported for A1–B1/)).toBeVisible();
- await expect(page.getByText(/P28 has no B2 mission battery/)).toBeVisible();
+ await expect(page.getByText(/Original P35 P30 added a gated B2 fixed-mission benchmark and P29 maintenance/)).toBeVisible();
+ await expect(page.getByText(/This vNext candidate has not reproduced or qualified their B2 scoring/)).toBeVisible();
  await expect(page.getByRole('button',{name:/B2 benchmark/i})).toHaveCount(0);
  const w=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,viewport:innerWidth}));
  expect(w.scroll).toBeLessThanOrEqual(w.viewport+2);
@@ -108,7 +108,7 @@ test('U69 canonical original source P31/P32/P33 receipts show 3/3 current, prese
  await expect(page.getByRole('heading',{name:'Three structural stages current'})).toBeVisible();
  await expect(page.getByText('Valid through',{exact:false})).toHaveCount(3);
  await expect(page.getByText('Current',{exact:true})).toHaveCount(3);
- await expect(page.getByText(/Completing the B2 pathway above does not unlock a fictional benchmark/)).toBeVisible();
+ await expect(page.getByText(/Completing these three structural stages does not award an original P28 B2 pass/)).toBeVisible();
  const after=await stored(page);
  expect(after.srs).toBe(before.srs);
  expect(after.activity).toBe(before.activity);
