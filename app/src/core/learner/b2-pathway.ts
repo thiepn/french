@@ -1,7 +1,8 @@
 /**
  * U69 B2 continuation derived from original U65–U68 aggregate receipts.
  * Pure read-only projection: no new evaluator, benchmark, scheduler or store.
- * P35 P28/P29 define no B2 benchmark battery; this path cannot manufacture one.
+ * P35 P30 added gated B2 P28/P29 authority, but this vNext candidate has
+ * no qualified native equivalent. Structural practice cannot manufacture it.
  */
 import {B2_EVIDENCE_DAYS,currentB2Evidence,type B2Evidence,type B2Attempt} from './b2-assessment.ts';
 import {currentP33Evidence,P33_VALID_MS,type P33PairReceipt} from './b2-oral.ts';
@@ -99,7 +100,7 @@ export function deriveB2Pathway(
  return{
   steps,completed:steps.filter(x=>x.state==='current').length,
   next:steps.find(x=>x.state!=='current')??null,sourceVerified,oralResumable,
-  benchmark:{level:'B2',available:false,reason:'P35 P28 has no audited B2 mission battery. Three structural results cannot create a functional benchmark pass.'},
-  maintenance:{level:'B2',available:false,reason:'P35 P29 derives maintenance only from genuine P28 passes. B2 has no P28 battery or maintenance status.'}
+  benchmark:{level:'B2',available:false,reason:'Original P35 P30 defined a gated B2 P28 mission battery. This vNext candidate has not implemented or independently qualified that benchmark; three structural results cannot create a pass.'},
+  maintenance:{level:'B2',available:false,reason:'Original P35 P30 added B2 P29 maintenance from genuine P28 passes. This vNext candidate cannot award or reset B2 maintenance without a qualified B2 benchmark and preserved historical pass evidence.'}
  };
 }
