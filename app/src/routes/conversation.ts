@@ -14,7 +14,7 @@ import {P35_P18_MISSIONS,P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS,P35_LATER_
 import {startSourceGraph,startSourceMission,startB2SourceGraph,startB2SourcePracticeChain,
  sourceSupport,respondSourceGraph,cancelSourceGraph,
  sourcePrompt,matchingP35AuthoredExamples,type SourceGraphState} from '../core/conversation/p35-runtime';
-import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
+import {loadSourceGraphState,persistSourceGraphState,SourceGraphWriteConflictError} from '../core/conversation/p35-storage';
 import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
 import {originalRepairTargets,originalMissionRepairStages} from '../core/conversation/source-practice-review';
 import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
@@ -54,8 +54,36 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let lastResult:ConversationResult|null=null,lastMissionResult:MissionResult|null=null;
   let lastAdaptiveResult:AdaptiveResult|null=null;
   const saveOriginal=async(next:SourceGraphState)=>{
-    await persistSourceGraphState(next);
-    originalSource=next;
+    // The expected snapshot is the state this tab actually rendered.
+    // The original meta owner checks it atomically before any source write.
+    originalSource=await persistSourceGraphState(next,originalSource);
+  };
+  const recoverOriginalConflict=async(error:unknown,reply=''):Promise<boolean>=>{
+    if(!(error instanceof SourceGraphWriteConflictError))return false;
+    const previous=originalSource.active;
+    const latest=await loadSourceGraphState();
+    originalSource=latest;sourcePaused=false;
+    sourceNotice='Another tab saved a newer original dialogue. The latest checkpoint is loaded; your stale answer was not saved.';
+    if(signal.aborted)return true;
+    const sameTask=Boolean(previous&&latest.active&&
+      previous.runId===latest.active.runId&&previous.nodeId===latest.active.nodeId);
+    if(sameTask&&reply){
+      // Safe to edit and retry only if the exact run AND node still match.
+      renderOriginalSource(reply);
+    }else{
+      render();
+      if(reply){
+        // Different node or mission: retain text only in this tab's DOM for
+        // copying. Never place a stale response in the new node's input.
+        const recovery=item('section','','source-conflict-reply');
+        recovery.append(item('p','Unsent reply from the previous source task (not submitted or stored). Copy it if needed.','conversation-feedback'));
+        const draft=item('textarea');draft.value=reply;draft.readOnly=true;
+        draft.setAttribute('aria-label','Unsent reply from outdated source task');
+        recovery.append(draft);stage.prepend(recovery);
+      }
+    }
+    status.textContent=sourceNotice;
+    return true;
   };
   const canStartOriginal=()=>!busy&&!state.active&&!state.mission&&!state.adaptive&&!originalSource.active;
   const handoffOriginal=async(kind:SourceHandoff['kind'],level:1|2)=>{
@@ -68,10 +96,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       await saveOriginal(current);
       if(signal.aborted)return;
       sessionStorage.setItem(SOURCE_HANDOFF_KEY,JSON.stringify(
-        createSourceHandoff(current,kind,Date.now())));
+        createSourceHandoff(originalSource,kind,Date.now())));
       navigate(kind);
     }catch(error){
-      status.textContent='Source transfer was not opened; saved original dialogue remains available.';
+      if(!await recoverOriginalConflict(error))
+        status.textContent='Source transfer was not opened; saved original dialogue remains available.';
       console.error('Original source companion transfer failed',error);
     }finally{busy=false;}
   };
@@ -88,8 +117,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       if(preservedSourceReply!==undefined&&originalSource.active)
         renderOriginalSource(preservedSourceReply);
       else render();
-    }catch(error){status.textContent='Source practice was not saved. No new step has been credited. '+String(error);}
-    finally{busy=false;}
+    }catch(error){
+      if(!await recoverOriginalConflict(error,preservedSourceReply))
+        status.textContent='Source practice was not saved. No new step has been credited. '+String(error);
+    }finally{busy=false;}
   };
   const save=async(next:ConversationState)=>{
     await persistConversationState(next);
@@ -779,8 +810,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         sourcePaused=false;busy=false;
         if(outcome.outcome==='uncertain'||outcome.outcome==='repair')renderOriginalSource(reply);
         else render();
-      }catch(error){localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);}
-      finally{busy=false;}
+      }catch(error){
+        if(!await recoverOriginalConflict(error,reply))
+          localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);
+      }finally{busy=false;}
     };
     form.onsubmit=event=>{event.preventDefault();void submit(false);};
     field.addEventListener('keydown',event=>{
