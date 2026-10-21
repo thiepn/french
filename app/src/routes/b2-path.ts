@@ -107,8 +107,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
    stage.append(sequence);
    const boundary=element('section','','b2-path-boundary');
    boundary.append(element('h2','Original functional benchmark and maintenance'),
-    element('p','P28 fixed-task benchmarks and P29 longitudinal maintenance are supported for A1–B1 in the original P35 application. P28 has no B2 mission battery; P29 cannot create B2 maintenance without real P28 passes.'),
-    element('p','Completing the B2 pathway above does not unlock a fictional benchmark, grant a CEFR level or reset maintenance.'));
+    element('p','Original P35 P30 added a gated B2 fixed-mission benchmark and P29 maintenance. This vNext candidate has not reproduced or qualified their B2 scoring, pass history or maintenance actions; original P35 A1–B1 benchmark flows are separate.'),
+    element('p','Completing these three structural stages does not award an original P28 B2 pass, grant a CEFR level or reset P29 maintenance.'));
    const practice=action('Continue B2 supported practice');
    practice.onclick=()=>navigate('b2');boundary.append(practice);
    const dialogues=action('Open original P35 B2 dialogue practice');
