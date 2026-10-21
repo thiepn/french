@@ -19,7 +19,7 @@ export interface B2ContextTransfer{
  unfinishedUnassistedContexts:number;
  supportedOnlyContexts:number;
  observedVariants:number;
- status:'not-observed'|'supported-only'|'one-context'|'cross-context';
+ status:'not-observed'|'unfinished'|'supported-only'|'one-context'|'cross-context';
  nextSceneId:string|null;
  nextSceneTitle:string|null;
  nextAction:'first-context'|'retry-without-help'|'different-context'|'new-original-variant'|null;
@@ -63,7 +63,8 @@ export function deriveB2ContextTransfer(state:SourceGraphState):B2ContextTransfe
   const total=complete.reduce((n,scene)=>n+scene.independent.length,0);
   const assisted=scenes.reduce((n,scene)=>n+scene.assisted.length,0);
   const status:B2ContextTransfer['status']=complete.length>=2?'cross-context':
-   complete.length===1?'one-context':assisted>0||unfinishedOnly.length>0?'supported-only':'not-observed';
+   complete.length===1?'one-context':assisted>0?'supported-only':
+   unfinishedOnly.length>0?'unfinished':'not-observed';
   // Until a successful completed source run exists, retry an attempted
   // supported context before sending the learner elsewhere. Once one context
   // is observed, prioritize a different original setting. After every
