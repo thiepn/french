@@ -141,3 +141,33 @@ test('U72 a stale original hint cannot silently downgrade independent evidence a
  expect(after.source.evidence[0].independent).toBe(true);
  await other.close();
 });
+
+test('U72 Listen-to-Write handoff never upgrades a newer Conversation node after original source changed in another tab',async({page,context})=>{
+ await originalHome(page);
+ await page.getByRole('button',{name:'Practise original B2 · Defend a workplace policy'}).click();
+ await expect(page.getByRole('heading',{name:'Defend a workplace policy'})).toBeVisible();
+ await page.getByRole('button',{name:'Listen to this original partner turn'}).click();
+ await expect(page).toHaveURL(/#listen$/);
+ await expect(page.getByText('Original P35 dialogue · partner listening')).toBeVisible({timeout:45000});
+ await expect(page.getByRole('button',{name:'Continue original conversation in Write'})).toBeVisible();
+ const other=await context.newPage();await other.goto('/#conversation');
+ await expect(other.getByRole('heading',{name:'Defend a workplace policy'})).toBeVisible({timeout:45000});
+ const first='Cette mesure peut améliorer la flexibilité, mais elle risque de compliquer la coordination.';
+ await submit(other,first,'nuance');
+ const accepted=await saved(other);
+ expect(accepted.source.active.nodeId).toBe('nuance');
+ expect(accepted.source.active.support).toBe(0);
+ expect(accepted.source.evidence[0].practiceOnly).toBe(true);
+ expect(accepted.source.evidence[0].independent).toBe(false,'Listen handoff correctly marks earlier response supported');
+ await page.getByRole('button',{name:'Continue original conversation in Write'}).click();
+ await expect(page.getByText(/Original conversation changed or could not be saved/)).toBeVisible();
+ await expect(page).toHaveURL(/#listen$/);
+ const after=await saved(page);
+ expect(after.source).toEqual(accepted.source);
+ expect(after.source.active.nodeId).toBe('nuance');
+ expect(after.source.active.support).toBe(0,'stale Listen may not reveal model support against a new node');
+ expect(after.source.evidence).toHaveLength(1);
+ expect(after.learner?.promotions?.B2?.earnedAt??0).toBe(0);
+ expect(JSON.stringify(after.source)).not.toContain(first);
+ await other.close();
+});
