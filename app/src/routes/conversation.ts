@@ -13,7 +13,7 @@ import {getP35SourceScenario,P35_SOURCE_SCENARIOS} from '../core/conversation/p3
 import {P35_P18_MISSIONS,P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS,P35_LATER_B2_FUNCTIONS} from '../core/conversation/source-parity';
 import {startSourceGraph,startSourceMission,startB2SourceGraph,startB2SourcePracticeChain,
  sourceSupport,respondSourceGraph,cancelSourceGraph,
- sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
+ sourcePrompt,matchingP35AuthoredExamples,type SourceGraphState} from '../core/conversation/p35-runtime';
 import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
 import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
 import {originalRepairTargets,originalMissionRepairStages} from '../core/conversation/source-practice-review';
@@ -563,6 +563,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const manual=button('My response fits');
     manual.title='Continue without scoring this turn as independently matched.';
     controls.append(send,repeat,hint,example,manual);form.append(field,controls);
+    const approvedExamples=matchingP35AuthoredExamples(graph,active.nodeId,active.slots);
     const assistance=item('p','','conversation-assistance');
     const feedback=item('p','','conversation-feedback');feedback.setAttribute('role','status');
     if((active.repairMoves??0)>0)assistance.append(item('span',
@@ -702,12 +703,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(returned)assistance.append(item('span',
       'Explicit Write draft restored from same-tab memory only. Model support remains active; this reply cannot earn independent source evidence.'));
     if(active.support>=1)assistance.append(item('span','Source hint · '+(node.hint??'Respond in French.')));
-    if(active.support>=2)assistance.append(item('span','Source model · '+(node.phrases?.[0]??'No source example available')));
+    if(active.support>=2)assistance.append(item('span','Source model · '+(approvedExamples[0]??'No original exact-rule example available')));
     const authored=item('div','','source-authored-options');
     if(active.support>=2){
-      authored.append(item('p','Original P35 authored examples for this node · supported only. Select to edit; nothing is submitted or graded automatically.','muted-copy'));
-      const samples=[...new Set([...(node.phrases??[]),...(node.rules??[]).map(rule=>rule.sample)]
-        .filter(text=>Boolean(text&&text.trim())))].slice(0,8);
+      authored.append(item('p','Original P35 examples accepted by this node’s rule matcher · supported practice only.','muted-copy'));
+      const samples=approvedExamples.slice(0,8);
       for(const sample of samples){
         const choice=button('Use authored phrase · '+sample,'secondary-action compact-action');
         choice.onclick=()=>{field.value=sample;field.focus({preventScroll:true});};
@@ -720,7 +720,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const send=button('Check source rule','primary-action compact-action');send.type='submit';
     const hint=button('Show original hint');hint.onclick=()=>void commitOriginal(()=>
       sourceSupport(originalSource,1,Date.now()),'Original hint requested. Independent turn credit is reduced.',field.value);
-    const example=button('Show source example');example.onclick=()=>void commitOriginal(()=>
+    const example=button('Show source example');example.disabled=approvedExamples.length===0;example.onclick=()=>void commitOriginal(()=>
       sourceSupport(originalSource,2,Date.now()),'Source phrase revealed; independent credit withheld.',field.value);
     const repeat=button('Ask for clarification');repeat.onclick=()=>void commitOriginal(()=>
       respondSourceGraph(originalSource,'Pardon, pouvez-vous répéter ?',Date.now()).state,
