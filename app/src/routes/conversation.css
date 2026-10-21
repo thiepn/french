@@ -116,3 +116,13 @@
   padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px));
  }
 }
+
+/* U70 original B2 source practice: five P35 scenario choices, not new grades. */
+.source-b2-practice{border-top:1px solid var(--line);padding:1rem 0;display:grid;gap:.6rem;min-width:0}
+.source-b2-practice h3{margin:.3rem 0;font-size:1.06rem}
+.source-b2-practice button{min-height:44px;text-align:left;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.source-b2-practice button:disabled{opacity:.55;cursor:not-allowed}
+.source-b2-goal,.source-b2-boundary{line-height:1.55;margin:0 0 .3rem;color:var(--muted);font-size:.89rem}
+.source-b2-coverage{line-height:1.6;margin:.25rem 0;font-size:.9rem;overflow-wrap:anywhere}
+.source-b2-boundary{padding-top:.6rem;border-top:1px solid var(--line)}
+@media(max-width:680px){.source-b2-practice button{width:100%}}
