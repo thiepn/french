@@ -19,6 +19,7 @@ import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHan
 import {originalRepairTargets,originalMissionRepairStages} from '../core/conversation/source-practice-review';
 import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
 import {sourceFunctionPracticePlan} from '../core/conversation/source-function-practice';
+import {deriveB2ContextTransfer} from '../core/conversation/b2-context-transfer';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
@@ -172,16 +173,36 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     // P28 B2 benchmark authority is exposed here.
     const b2Deck=item('section','','source-b2-practice');
     b2Deck.append(item('h3','Original B2 dialogue practice'));
-    const functionCoverage=P35_LATER_B2_FUNCTIONS.map(fn=>{
-      const count=P35_P30_B2_SCENES.filter(id=>{
-        const graph=getP35SourceScenario(id);
-        return graph&&Object.values(graph.nodes).some(node=>
-          node?.rules?.some(rule=>rule.func===fn));
-      }).length;
-      return fn+' · '+count+' scenes';
-    });
-    const b2FunctionContextLine=item('p','Original B2 function contexts: '+functionCoverage.join(' / '),'source-b2-coverage');
-    b2Deck.append(b2FunctionContextLine);
+    b2Deck.append(item('h3','Original B2 function contexts:'));
+    const contrastRows=item('div','','source-b2-transfer');
+    for(const plan of deriveB2ContextTransfer(originalSource)){
+      const row=item('section','','source-b2-transfer-row');
+      row.append(item('h4',plan.label));
+      const context=plan.completedUnassistedContexts+' / '+plan.authoredContexts+
+        ' completed original settings with unassisted rule matches';
+      const details=[context,plan.unassistedRuleMatches+' first-try source-rule matches'];
+      if(plan.supportedOnlyContexts)
+        details.push(plan.supportedOnlyContexts+' settings with supported-only answers');
+      if(plan.unfinishedUnassistedContexts)
+        details.push(plan.unfinishedUnassistedContexts+' unfinished source settings');
+      const summary=item('p',details.join(' · '),'source-b2-transfer-data');
+      row.append(summary);
+      if(plan.nextSceneId&&plan.nextSceneTitle){
+        const reason=plan.nextAction==='different-context'?'Different original setting':
+          plan.nextAction==='retry-without-help'?'Retry source dialogue without help':
+          plan.nextAction==='new-original-variant'?'Other original prompt variant':
+          'First source dialogue';
+        const open=button('Practise B2 function · '+plan.label,'secondary-action compact-action');
+        open.disabled=!canStartOriginal();
+        const target=plan.nextSceneId;
+        open.onclick=()=>void commitOriginal(()=>
+          startB2SourceGraph(originalSource,target,Date.now()),
+          'Opened original P35 source graph; completed goal/rule matches remain practice only.');
+        row.append(item('p',reason+' · '+plan.nextSceneTitle,'source-b2-transfer-next'),open);
+      }
+      contrastRows.append(row);
+    }
+    b2Deck.append(contrastRows,item('h3','Original B2 source situations'));
     for(const id of P35_P30_B2_SCENES){
       const graph=getP35SourceScenario(id);
       if(!graph||graph.level!=='B2')continue;
