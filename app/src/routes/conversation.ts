@@ -563,7 +563,6 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const manual=button('My response fits');
     manual.title='Continue without scoring this turn as independently matched.';
     controls.append(send,repeat,hint,example,manual);form.append(field,controls);
-    const approvedExamples=matchingP35AuthoredExamples(graph,active.nodeId,active.slots);
     const assistance=item('p','','conversation-assistance');
     const feedback=item('p','','conversation-feedback');feedback.setAttribute('role','status');
     if((active.repairMoves??0)>0)assistance.append(item('span',
@@ -699,6 +698,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const returned=returnedSourceDraft;
     returnedSourceDraft=null;
     field.value=preservedText||returned||'';
+    const approvedExamples=matchingP35AuthoredExamples(graph,active.nodeId,active.slots);
     const assistance=item('p','','conversation-assistance');
     if(returned)assistance.append(item('span',
       'Explicit Write draft restored from same-tab memory only. Model support remains active; this reply cannot earn independent source evidence.'));
