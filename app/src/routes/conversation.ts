@@ -10,8 +10,9 @@ import {
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
 import {partnerWording} from '../core/conversation/variants';
 import {getP35SourceScenario,P35_SOURCE_SCENARIOS} from '../core/conversation/p35-graphs';
-import {P35_P18_MISSIONS} from '../core/conversation/source-parity';
-import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,cancelSourceGraph,
+import {P35_P18_MISSIONS,P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS,P35_LATER_B2_FUNCTIONS} from '../core/conversation/source-parity';
+import {startSourceGraph,startSourceMission,startB2SourceGraph,startB2SourcePracticeChain,
+ sourceSupport,respondSourceGraph,cancelSourceGraph,
  sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
 import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
 import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
@@ -166,6 +167,50 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         originalDeck.append(repeatOriginal);
       }
     }
+    // P30 source-authored B2 graph practice. Exact P35 scene IDs/partner
+    // nodes and the original source matcher; neither B2 level promotion nor
+    // P28 B2 benchmark authority is exposed here.
+    const b2Deck=item('section','','source-b2-practice');
+    b2Deck.append(item('h3','Original B2 dialogue practice'));
+    const functionCoverage=P35_LATER_B2_FUNCTIONS.map(fn=>{
+      const count=P35_P30_B2_SCENES.filter(id=>{
+        const graph=getP35SourceScenario(id);
+        return graph&&Object.values(graph.nodes).some(node=>
+          node?.rules?.some(rule=>rule.func===fn));
+      }).length;
+      return fn+' · '+count+' scenes';
+    });
+    const coverage=item('p','Original B2 function contexts: '+functionCoverage.join(' / '),'source-b2-coverage');
+    b2Deck.append(coverage);
+    for(const id of P35_P30_B2_SCENES){
+      const graph=getP35SourceScenario(id);
+      if(!graph||graph.level!=='B2')continue;
+      const recent=originalSource.history.filter(row=>row.scenarioId===id);
+      const control=button('Practise original B2 · '+graph.title,'secondary-action compact-action');
+      control.disabled=!canStartOriginal();
+      control.onclick=()=>void commitOriginal(()=>
+        startB2SourceGraph(originalSource,id,Date.now()),
+        'Opened original P35 B2 dialogue for practice. No benchmark or CEFR score.');
+      b2Deck.append(control);
+      const summary=item('p',graph.goal+' · '+recent.filter(row=>row.complete).length+
+        ' completed source-objective runs','source-b2-goal');
+      b2Deck.append(summary);
+    }
+    b2Deck.append(item('h3','B2 three-scenario practice sequences'));
+    for(const chain of P35_P30_B2_PRACTICE_CHAINS){
+      const earlier=(originalSource.missionHistory??[]).filter(row=>row.missionId===chain.id);
+      const start=button('Practise B2 sequence · '+chain.title,'secondary-action compact-action');
+      start.disabled=!canStartOriginal();
+      start.onclick=()=>void commitOriginal(()=>
+        startB2SourcePracticeChain(originalSource,chain.id,Date.now()),
+        'P30-informed practice sequence started using original source graphs. No P28 benchmark was created.');
+      b2Deck.append(start);
+      const detail=item('p',chain.scenarios.map(id=>getP35SourceScenario(id)?.title??id).join(' → ')+
+        ' · '+earlier.length+' completed practice runs','source-b2-goal');
+      b2Deck.append(detail);
+    }
+    b2Deck.append(item('p','Practice only. Original P35 P28 B2 qualification and P29 maintenance are not available in this runtime.','source-b2-boundary'));
+    originalDeck.append(b2Deck);
     originalDeck.append(item('h3','Source P18 missions'));
     const missionList=item('div','','source-graph-list');
     for(const recommendation of rankSourceMissionContinuity(originalSource)){
@@ -614,7 +659,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       item('p','Pinned source graph node '+active.nodeId+' · wording variant '+(active.variant+1)+'/'+graph.variantCount+
         ' · '+active.turns+' accepted steps · '+active.repairs+' clarification attempts. No automatic SRS, CEFR or true oral fluency award.','muted-copy'));
     if(originalSource.mission){
-      const mission=P35_P18_MISSIONS.find(m=>m.id===originalSource.mission?.id);
+      const mission=[...P35_P18_MISSIONS,...P35_P30_B2_PRACTICE_CHAINS].find(m=>m.id===originalSource.mission?.id);
       banner.append(item('p','Source mission '+(mission?.title??originalSource.mission.id)+
         ' · task '+(originalSource.mission.index+1)+'/3 · earlier tasks '+
         originalSource.mission.completed.length,'conversation-mission-banner'));
