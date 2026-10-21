@@ -73,9 +73,14 @@ test('U70 authentic P35 B2 multi-turn source graph matches authored French, surv
  expect(resumed.source?.maxLevel).toBe('A1');
  expect(resumed.source?.mission).toBeNull();
  expect(JSON.stringify(resumed.source)).not.toContain(answers[0]);
+ const expectedNext=['objection','consequence','condition','summary'];
  for(let i=1;i<answers.length;i++){
   await submitOriginal(page,answers[i]);
-  if(i!==answers.length-1)await expect(page.getByRole('textbox',{name:'Reply to original source graph in French'})).toBeVisible();
+  // Wait for the saved original source node to advance before submitting the
+  // next turn. An already-visible textarea is NOT evidence of an async save.
+  if(i<answers.length-1){
+   await expect(page.getByText(new RegExp('Pinned source graph node '+expectedNext[i-1]))).toBeVisible();
+  }
  }
  await expect(page.getByRole('heading',{name:'Original B2 dialogue practice'})).toBeVisible();
  const after=await snapshot(page);
