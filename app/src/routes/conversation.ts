@@ -180,8 +180,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       }).length;
       return fn+' · '+count+' scenes';
     });
-    const coverage=item('p','Original B2 function contexts: '+functionCoverage.join(' / '),'source-b2-coverage');
-    b2Deck.append(coverage);
+    const b2FunctionContextLine=item('p','Original B2 function contexts: '+functionCoverage.join(' / '),'source-b2-coverage');
+    b2Deck.append(b2FunctionContextLine);
     for(const id of P35_P30_B2_SCENES){
       const graph=getP35SourceScenario(id);
       if(!graph||graph.level!=='B2')continue;
