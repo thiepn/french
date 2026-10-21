@@ -49,7 +49,8 @@ const inspect=(e,sha=digest,clock=now)=>{
 let x=inspect(state());
 assert.equal(x.completed,0);assert.equal(x.next.phase,'p31');assert.equal(x.steps[1].state,'blocked');
 assert.equal(x.benchmark.available,false);assert.equal(x.maintenance.available,false);
-assert.match(x.benchmark.reason,/no audited B2 mission battery/);
+assert.match(x.benchmark.reason,/Original P35 P30 defined a gated B2 P28 mission battery/);
+assert.match(x.maintenance.reason,/Original P35 P30 added B2 P29 maintenance/);
 x=inspect(state([p31()]));
 assert.equal(x.completed,1);assert.equal(x.next.phase,'p32');
 assert.equal(x.steps[1].state,'missing');assert.equal(x.steps[2].state,'blocked');
