@@ -111,6 +111,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     element('p','Completing the B2 pathway above does not unlock a fictional benchmark, grant a CEFR level or reset maintenance.'));
    const practice=action('Continue B2 supported practice');
    practice.onclick=()=>navigate('b2');boundary.append(practice);
+   const dialogues=action('Open original P35 B2 dialogue practice');
+   dialogues.onclick=()=>navigate('conversation');boundary.append(dialogues);
    stage.append(boundary);
    const controls=element('div','','b2-actions');
    const update=action('Refresh current evidence');
