@@ -22,6 +22,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
  );
  const pathLink=action('Continue B2 P31–P33 evidence pathway');
  pathLink.onclick=()=>navigate('b2-path');host.append(pathLink);
+ const dialogues=action('Practise original P35 B2 dialogues and missions');
+ dialogues.onclick=()=>navigate('conversation');host.append(dialogues);
  const navigation=el('div','','b2-tracks');navigation.setAttribute('role','group');navigation.setAttribute('aria-label','Advanced practice track');
  const sets=el('div','','b2-sets');sets.setAttribute('role','group');sets.setAttribute('aria-label','Choose a practice prompt set');
  const stage=el('div','','b2-stage');
