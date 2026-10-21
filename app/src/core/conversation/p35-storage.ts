@@ -1,5 +1,5 @@
-import {openFrenchDatabase,readMetaValue} from '../storage/idb';
-import {safeSourceGraphState,SOURCE_GRAPH_KEY,type SourceGraphState} from './p35-runtime';
+import {openFrenchDatabase,readMetaValue} from '../storage/idb.ts';
+import {safeSourceGraphState,SOURCE_GRAPH_KEY,type SourceGraphState} from './p35-runtime.ts';
 
 /** U72 keeps the original P35 metadata key/schema and backup scope.
  * All source turn, assistance, stage and resume writes use one native IDB
