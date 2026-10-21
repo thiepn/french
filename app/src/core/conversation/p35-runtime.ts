@@ -97,6 +97,21 @@ export function matchSourceRule(graph:P35Graph,nodeId:string,response:string,sto
  }
  return{status:'uncertain',slots:storedSlots,confidence:0};
 }
+/**
+ * Source-authoritative supported examples, using the *same* original pinned
+ * rule matcher as learner submissions. Some original P30 model/phrase strings
+ * contain French inflections not in the compact rule token lists. Never show
+ * such a string as a guaranteed rule-matching example, and never loosen the
+ * matcher to manufacture independent B2 interaction evidence.
+ */
+export function matchingP35AuthoredExamples(graph:P35Graph,nodeId:string,
+ slots:Record<string,string>):string[]{
+ const node=graph.nodes[nodeId];
+ if(!node||node.end)return[];
+ const original=[...(node.phrases??[]),...(node.rules??[]).map(rule=>rule.sample)];
+ return [...new Set(original.filter(text=>typeof text==='string'&&text.trim().length>0))]
+  .filter(text=>matchSourceRule(graph,nodeId,text,slots).status==='accepted');
+}
 export function validateSourceGraphs():string[]{
  const problems:string[]=[],ids=new Set<string>();
  for(const graph of P35_SOURCE_SCENARIOS){
