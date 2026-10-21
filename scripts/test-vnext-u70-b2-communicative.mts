@@ -4,7 +4,7 @@ import {P35_P18_MISSIONS,P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS,
  P35_LATER_B2_FUNCTIONS} from '../app/src/core/conversation/source-parity.ts';
 import {emptySourceGraphState,startSourceGraph,startSourceMission,startB2SourceGraph,
  startB2SourcePracticeChain,respondSourceGraph,matchSourceRule,sourcePrompt,
- safeSourceGraphState,validateSourceGraphs,sourceSupport,cancelSourceGraph,
+ safeSourceGraphState,validateSourceGraphs,matchingP35AuthoredExamples,sourceSupport,cancelSourceGraph,
  SOURCE_GRAPH_KEY,SOURCE_GRAPH_SCHEMA} from '../app/src/core/conversation/p35-runtime.ts';
 const now=1_790_000_000_000;
 assert.deepEqual(validateSourceGraphs(),[],'all 19 original pinned graph nodes/rules and U70 practice coverage valid');
@@ -38,6 +38,24 @@ for(const fn of P35_LATER_B2_FUNCTIONS){
 }
 let clock=now;
 const sourceSamples:string[]=[];
+let authoredMismatches=0;
+for(const id of P35_P30_B2_SCENES){
+ const graph=getP35SourceScenario(id)!;
+ for(const [nodeId,node] of Object.entries(graph.nodes)){
+  if(!node||node.end)continue;
+  const sample=node.rules?.[0]?.sample;
+  assert.ok(sample,'original P35 B2 source rule sample required');
+  const match=matchSourceRule(graph,nodeId,sample!,{});
+  const approved=matchingP35AuthoredExamples(graph,nodeId,{});
+  assert.ok(approved.length>0,id+'/'+nodeId+' must offer a genuinely accepted original example');
+  for(const phrase of approved)assert.equal(matchSourceRule(graph,nodeId,phrase,{}).status,'accepted');
+  if(match.status!=='accepted'){
+   authoredMismatches++;
+   assert.ok(!approved.includes(sample!),'false-confidence original source example must not be offered');
+  }
+ }
+}
+assert.ok(authoredMismatches>=5,'pinned P35 B2 compact morphology mismatch remains honestly detected, not silently graded');
 function advanceOriginalSource(state){
  const id=state.active?.scenarioId;
  const graph=id&&getP35SourceScenario(id);
@@ -45,11 +63,14 @@ function advanceOriginalSource(state){
  const node=graph.nodes[state.active.nodeId];
  const rule=node?.rules?.[0];
  assert.ok(rule,'every original authored P35 B2 node must have a rule');
- const sample=rule.sample;
+ const approved=matchingP35AuthoredExamples(graph,state.active.nodeId,state.active.slots);
+ assert.ok(approved.length>0,graph.id+'/'+state.active.nodeId+
+  ' must have at least one genuine original authored phrase accepted by its own pinned rule');
+ const sample=approved[0];
  sourceSamples.push(sample);
  const match=matchSourceRule(graph,state.active.nodeId,sample,state.active.slots);
  assert.equal(match.status,'accepted',graph.id+'/'+state.active.nodeId+
-  ' original P35 source rule sample must match; never substitute a fabricated answer');
+  ' actual original source authored response must match; never substitute a fabricated answer');
  const result=respondSourceGraph(state,sample,++clock);
  assert.ok(result.outcome==='accepted'||result.outcome==='finished',
   graph.id+'/'+state.active.nodeId+' must be a genuine matched source turn');
@@ -132,6 +153,7 @@ assert.equal(tampered.active?.scenarioId,'project-crisis','valid original source
 assert.ok(sourceSamples.length>=60,'actual authored multi-turn source corpus exercised');
 console.log(JSON.stringify({schema:'u70-b2-original-communicative-practice',status:'PASS',
  originalP35B2Graphs:5,authoredFunctions:6,contextsPerFunction:'at-least-two',
+ filteredOriginalAuthoredMismatches:authoredMismatches,
  originalB2ComposedPracticeChains:2,sourceTurns:sourceSamples.length,
  existingMissionEngine:true,backupRoundtrip:true,rawLearnerTextStored:false,
  originalP28B2Benchmark:false,p29Maintenance:false,originalCourseCeiling:'unchanged'}));
