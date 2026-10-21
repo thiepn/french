@@ -58,7 +58,7 @@ test('U70 authentic P35 B2 multi-turn source graph matches authored French, surv
   'Cette mesure peut améliorer la flexibilité, mais elle risque de compliquer la coordination.',
   'Je suis favorable dans la mesure où les équipes gardent des moments communs.',
   "Je comprends l'objection, mais il faudrait comparer des résultats mesurables.",
-  "Si la même règle s'appliquait partout, certains services pourraient perdre en efficacité.",
+  "On risquerait de créer des inégalités entre les postes si les contraintes réelles n'étaient pas prises en compte.",
   "Je proposerais une période d'essai, à condition qu'on évalue ensuite les résultats.",
   "En résumé, le principe est accepté à condition de préserver la coordination et de mesurer les effets."
  ];
@@ -102,7 +102,7 @@ test('U70 P30 three-stage workplace practice uses original P35 mission runner an
  await expect(page.getByRole('heading',{name:'Resolve a project crisis'})).toBeVisible();
  await expect(page.getByText(/Source mission Advanced workplace decision · task 1\/3/)).toBeVisible();
  await expect(page.getByText(/Original P35 deterministic source · project-crisis · B2/)).toBeVisible();
- const originalModel="Le principal problème est que nous avons gardé trop de priorités alors que les ressources ont diminué.";
+ const originalModel="Le retard vient surtout du fait que plusieurs dépendances ont été sous-estimées, pas d'une seule erreur individuelle.";
  await submitOriginal(page,originalModel);
  await expect(page.getByText(/Pinned source graph node options/)).toBeVisible();
  await page.reload();
@@ -137,7 +137,7 @@ test('U70 unrecognized French text abstains in existing P35 rule engine, assista
  expect(JSON.stringify(afterUncertain.source)).not.toContain(invented);
  await page.getByRole('button',{name:'Show source example'}).click();
  await expect(page.getByText(/Source model ·/)).toBeVisible();
- const supported="Je vérifierais la source originale, la méthode et ce que les chiffres mesurent réellement.";
+ const supported="Il faut d'abord savoir si la source est fiable et si les données soutiennent exactement cette conclusion.";
  await submitOriginal(page,supported);
  await expect(page.getByText(/Pinned source graph node certainty/)).toBeVisible();
  const after=await snapshot(page);
