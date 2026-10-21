@@ -11,8 +11,16 @@ export class SourceGraphWriteConflictError extends Error{
   this.name='SourceGraphWriteConflictError';
  }
 }
+function canonicalSourceSnapshot(input:unknown):string{
+ const s=safeSourceGraphState(input);
+ // Empty originals and normalized reads may have a different property order.
+ // Compare the complete same-schema data in one fixed order. No key is omitted.
+ return JSON.stringify({schema:s.schema,active:s.active,mission:s.mission,
+  history:s.history,evidence:s.evidence,maxLevel:s.maxLevel,
+  missionHistory:s.missionHistory??[]});
+}
 export function sameSourceGraphSnapshot(current:unknown,expected:SourceGraphState):boolean{
- return JSON.stringify(safeSourceGraphState(current))===JSON.stringify(safeSourceGraphState(expected));
+ return canonicalSourceSnapshot(current)===canonicalSourceSnapshot(expected);
 }
 export async function loadSourceGraphState():Promise<SourceGraphState>{
  return safeSourceGraphState(await readMetaValue<SourceGraphState>(SOURCE_GRAPH_KEY));
