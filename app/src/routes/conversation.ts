@@ -706,7 +706,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     if(active.support>=2)assistance.append(item('span','Source model · '+(approvedExamples[0]??'No original exact-rule example available')));
     const authored=item('div','','source-authored-options');
     if(active.support>=2){
-      authored.append(item('p','Original P35 examples accepted by this node’s rule matcher · supported practice only.','muted-copy'));
+      authored.append(item('p','Original P35 authored examples accepted by this node’s rule matcher · supported practice only.','muted-copy'));
       const samples=approvedExamples.slice(0,8);
       for(const sample of samples){
         const choice=button('Use authored phrase · '+sample,'secondary-action compact-action');
