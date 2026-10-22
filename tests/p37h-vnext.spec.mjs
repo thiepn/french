@@ -261,6 +261,9 @@ test('Settings persist preferences and expose recovery controls',async({page})=>
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
   await page.goto('/#home');
+  // Prove the preceding navigation finished before reloading Settings on
+  // slower Android devices; do not let two full route loads race the SW.
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
   await page.goto('/#settings');
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('17');
   await expect(page.getByRole('button',{name:'Export backup'})).toBeVisible();
@@ -332,6 +335,616 @@ test('installed vNext shell survives a real offline reload',async({page,context}
   }
 });
 
+
+
+test('U54 offline cold-start precaches public manifest without loading any private data',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  const prewarm=await page.evaluate(async()=>{
+    const names=await caches.keys();
+    const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!current)throw Error('Versioned vNext shell was not installed');
+    const store=await caches.open(current);
+    const paths=(await store.keys()).map(request=>new URL(request.url).pathname);
+    return {manifest:paths.includes('/content/manifest.json'),
+      unrelated:paths.filter(path=>path.startsWith('/api/')||path.startsWith('/rest/v1/'))};
+  });
+  expect(prewarm).toEqual({manifest:true,unrelated:[]});
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await page.goto('/#learn');
+    await expect(page.getByRole('heading',{name:'Learn'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-status]')).toContainText('vocabulary records',{timeout:30_000});
+    expect(await page.evaluate(async()=>{
+      const response=await fetch('/content/manifest.json');
+      const payload=await response.json();
+      return response.ok&&payload.schema==='thiepn-french-content-manifest-v1';
+    })).toBe(true);
+  }finally{await context.setOffline(false);}
+});
+
+test('U54 P35 legacy cache survives vNext worker update and cannot supply foreign offline responses',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  // Install a representative P35-owned cache before an isolated vNext worker update.
+  await page.evaluate(async()=>{
+    const legacy=await caches.open('french-shell-v35');
+    await legacy.put('/content/packs/p35-legacy-only.json',new Response('P35_CACHE_ONLY',
+      {headers:{'content-type':'application/json'}}));
+    await legacy.put('/api/p35-private',new Response('P35_PRIVATE_ONLY',
+      {headers:{'content-type':'text/plain'}}));
+    const registration=await navigator.serviceWorker.register('/service-worker.js?u54-cache-boundary');
+    await new Promise((resolve,reject)=>{
+      if(registration.active?.scriptURL.includes('u54-cache-boundary')){resolve();return;}
+      const active=registration.installing??registration.waiting;
+      if(!active){reject(Error('Test update did not create a worker'));return;}
+      active.addEventListener('statechange',()=>{
+        if(active.state==='activated')resolve();
+        if(active.state==='redundant')reject(Error('Test worker redundant'));
+      });
+    });
+  });
+  await expect.poll(async()=>page.evaluate(async()=>({
+    controlled:Boolean(navigator.serviceWorker.controller?.scriptURL.includes('u54-cache-boundary')),
+    legacy:(await caches.keys()).includes('french-shell-v35')
+  })),{timeout:20_000}).toEqual({controlled:true,legacy:true});
+  await context.setOffline(true);
+  try{
+    const found=await page.evaluate(async()=>{
+      const check=async path=>{
+        try{return await (await fetch(path)).text();}
+        catch{return 'NETWORK_UNAVAILABLE';}
+      };
+      return {
+        legacyPack:await check('/content/packs/p35-legacy-only.json'),
+        privateApi:await check('/api/p35-private'),
+        originalStillOwned:(await caches.keys()).includes('french-shell-v35'),
+        nativeLeak:(await(await caches.open('french-vnext-content-v1')).keys())
+          .some(request=>new URL(request.url).pathname==='/api/p35-private')
+      };
+    });
+    expect(found).toEqual({
+      legacyPack:'NETWORK_UNAVAILABLE',privateApi:'NETWORK_UNAVAILABLE',
+      originalStillOwned:true,nativeLeak:false
+    });
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
+
+test('U54 corpus index retries in the same tab after an offline cache miss',async({page,context})=>{
+  await page.goto('/#home');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  const before=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    return Boolean(await store.match('/content/search/vocabulary-index.json'));
+  });
+  expect(before).toBe(false); // Full search index remains on-demand.
+  await context.setOffline(true);
+  try{
+    await page.evaluate(()=>{location.hash='#words';});
+    await expect(page.getByRole('heading',{name:'Words',exact:true})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-results] .word-result')).toHaveCount(0);
+  }finally{await context.setOffline(false);}
+  // Same JS realm: merely navigating to Home and back must recover both the
+  // previously rejected index promise and any aborted route's signal.
+  await page.evaluate(()=>{location.hash='#home';});
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  await page.evaluate(()=>{location.hash='#words';});
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  expect(await page.evaluate(async()=>Boolean(
+    await(await caches.open('french-vnext-content-v1')).match('/content/search/vocabulary-index.json')
+  ))).toBe(true);
+});
+
+test('U56 vNext shell update preserves the previous build, P35 rollback and SHA-verified offline content',async({page,context})=>{
+  await page.goto('/#read');
+  await expect(page.locator('.open-world-entry')).toBeVisible({timeout:45_000});
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  // The Read shell renders before the verified reading pack is written.
+  // An upgrade test must await the actual SHA-pinned public evidence.
+  await expect.poll(async()=>page.evaluate(async()=>{
+    const content=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await content.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)return false;
+    const manifest=await(await content.match(manifestKey)).json();
+    const descriptor=manifest?.packs.find(pack=>pack.id==='reading-stable-p35');
+    return Boolean(descriptor&&await content.match(
+      descriptor.path+'?verifiedSha256='+descriptor.sha256));
+  }),{timeout:30_000}).toBe(true);
+  const original=await page.evaluate(async()=>{
+    const names=await caches.keys();
+    const current=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!current)throw Error('No content-addressed installed shell');
+    const contents=await caches.open('french-vnext-content-v1');
+    const contentPaths=(await contents.keys()).map(req=>new URL(req.url).pathname);
+    const verifiedManifestKey=(await contents.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!verifiedManifestKey)throw Error('Expected build-pinned manifest missing');
+    const manifest=await(await contents.match(verifiedManifestKey)).json();
+    const reading=manifest?.packs.find(pack=>pack.id==='reading-stable-p35')?.path;
+    if(!reading||!contentPaths.includes(reading))throw Error('Source-verified reading not prewarmed');
+    // A prior build cache must not be mutated or deleted by installation.
+    const prior=await caches.open('french-vnext-shell-000000000000');
+    await prior.put('/u56-prior-build',new Response('IMMUTABLE_PRIOR_BUILD'));
+    await prior.put('/assets/u56-legacy-hash.js',new Response('PREVIOUS_BUILD_CHUNK'));
+    const stable=await caches.open('french-shell-v35');
+    await stable.put('/u56-original-p35',new Response('ORIGINAL_P35'));
+    return{current,reading,contentPaths};
+  });
+  await page.evaluate(async()=>{
+    const registration=await navigator.serviceWorker.register('/service-worker.js?u56-upgrade-retention');
+    await new Promise((resolve,reject)=>{
+      if(registration.active?.scriptURL.includes('u56-upgrade-retention'))return resolve();
+      const worker=registration.installing??registration.waiting;
+      if(!worker)return reject(Error('No upgrade worker'));
+      worker.addEventListener('statechange',()=>{
+        if(worker.state==='activated')resolve();
+        if(worker.state==='redundant')reject(Error('Upgrade worker redundant'));
+      });
+    });
+  });
+  await expect.poll(async()=>page.evaluate(()=>Boolean(
+    navigator.serviceWorker.controller?.scriptURL.includes('u56-upgrade-retention')
+  )),{timeout:20_000}).toBe(true);
+  const kept=await page.evaluate(async()=>{
+    const names=await caches.keys();
+    const read=async(name,path)=>(await(await caches.open(name)).match(path))?.text();
+    const contentPaths=(await(await caches.open('french-vnext-content-v1')).keys())
+      .map(request=>new URL(request.url).pathname);
+    return{
+      previous:await read('french-vnext-shell-000000000000','/u56-prior-build'),
+      p35:await read('french-shell-v35','/u56-original-p35'),
+      contentPaths,current:names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name)&&name!=='french-vnext-shell-000000000000')
+    };
+  });
+  expect(kept.previous).toBe('IMMUTABLE_PRIOR_BUILD');
+  expect(kept.p35).toBe('ORIGINAL_P35');
+  expect(kept.current).toBe(original.current);
+  // A worker upgrade may add a SHA-pinned manifest to the verified cache.
+  // Every previous verified path must survive, even if a new key is added.
+  expect(original.contentPaths.every(path=>kept.contentPaths.includes(path))).toBe(true);
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('.open-world-entry')).toBeVisible({timeout:30_000});
+    const body=await page.evaluate(async path=>(await fetch(path)).text(),original.reading);
+    expect(body).toContain('reading-stable-p35');
+    // The new worker must still serve an old tab's lazy hashed chunk.
+    expect(await page.evaluate(async()=>{
+      return(await fetch('/assets/u56-legacy-hash.js')).text();
+    })).toBe('PREVIOUS_BUILD_CHUNK');
+  }finally{await context.setOffline(false);}
+});
+
+
+test('U57 old-tab unversioned cache writes cannot replace SHA-pinned offline vocabulary',async({page,context})=>{
+  await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const baseline=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await store.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)throw Error('Build-pinned verified manifest not available');
+    const manifest=await(await store.match(manifestKey)).json();
+    const descriptor=manifest.indexes.vocabulary;
+    const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
+    const response=await store.match(pinned);
+    if(!response)throw Error('Verified index not pinned to its digest');
+    const original=await response.text();
+    await store.put(descriptor.path,new Response('{"schema":"foreign","rows":[{"word":"U57_CORRUPTED"}]}',
+      {headers:{'content-type':'application/json'}}));
+    return{pinned,original,sha:descriptor.sha256};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+    const evidence=await page.evaluate(async pinned=>{
+      const store=await caches.open('french-vnext-content-v1');
+      const bytes=await(await store.match(pinned)).arrayBuffer();
+      const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
+        .map(b=>b.toString(16).padStart(2,'0')).join('');
+      return{actual,containsAttack:JSON.stringify(document.body.textContent).includes('U57_CORRUPTED')};
+    },baseline.pinned);
+    expect(evidence.actual).toBe(baseline.sha);
+    expect(evidence.containsAttack).toBe(false);
+  }finally{await context.setOffline(false);}
+});
+
+test('U57 damaged pinned and legacy corpus caches fail closed, then recover after reconnect',async({page,context})=>{
+  await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const target=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await store.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!manifestKey)throw Error('Build-pinned verified manifest not available');
+    const manifest=await(await store.match(manifestKey)).json();
+    const descriptor=manifest.indexes.vocabulary;
+    const pinned=descriptor.path+'?verifiedSha256='+descriptor.sha256;
+    const poison=new Response('{"schema":"thiepn-french-vocabulary-search-v1","rows":[{"word":"U57_CORRUPTED"}]}',
+      {headers:{'content-type':'application/json'}});
+    await store.put(pinned,poison.clone());
+    await store.put(descriptor.path,poison);
+    return{pinned,sha:descriptor.sha256};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Words',exact:true})).toBeVisible({timeout:30_000});
+    await expect(page.locator('[data-results] .word-result')).toHaveCount(0,{timeout:30_000});
+    const remaining=await page.evaluate(async pinned=>Boolean(
+      await(await caches.open('french-vnext-content-v1')).match(pinned)
+    ),target.pinned);
+    expect(remaining).toBe(false);
+    expect(await page.evaluate(()=>document.body.textContent.includes('U57_CORRUPTED'))).toBe(false);
+  }finally{await context.setOffline(false);}
+  // The rejected shared promise must be replaced on navigation without reload.
+  await page.evaluate(()=>{location.hash='#home';});
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible({timeout:30_000});
+  await page.evaluate(()=>{location.hash='#words';});
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const actual=await page.evaluate(async pinned=>{
+    const response=await(await caches.open('french-vnext-content-v1')).match(pinned);
+    if(!response)return'UNCACHED';
+    const bytes=await response.arrayBuffer();
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
+      .map(b=>b.toString(16).padStart(2,'0')).join('');
+  },target.pinned);
+  expect(actual).toBe(target.sha);
+});
+
+
+test('U58 active mixed-version tabs preserve all prior native shell caches across worker updates',async({page,context})=>{
+  const older=await context.newPage();
+  try{
+    await page.goto('/#home');
+    await older.goto('/#home');
+    await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+    await expect(older.getByRole('heading',{name:'Continue French'})).toBeVisible();
+    await page.evaluate(async()=>navigator.serviceWorker.ready);
+    if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+      await page.reload();
+      await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+    }
+    const names=await page.evaluate(async()=>{
+      const old=['french-vnext-shell-000000000001','french-vnext-shell-000000000002','french-vnext-shell-000000000003'];
+      for(let i=0;i<old.length;i++){
+        const store=await caches.open(old[i]);
+        await store.put('/assets/u58-prior-'+i+'.js',new Response('PRIOR_BUILD_'+i));
+      }
+      const p35=await caches.open('french-shell-v35');
+      await p35.put('/u58-p35-original',new Response('P35_INTACT'));
+      const verified=await caches.open('french-vnext-content-v1');
+      await verified.put('/u58-verified-public',new Response('VERIFIED_CONTENT'));
+      return old;
+    });
+    await page.evaluate(async()=>{
+      const registration=await navigator.serviceWorker.register('/service-worker.js?u58-mixed-version-protection');
+      await new Promise((resolve,reject)=>{
+        if(registration.active?.scriptURL.includes('u58-mixed-version-protection'))return resolve();
+        const worker=registration.installing??registration.waiting;
+        if(!worker)return reject(Error('No U58 upgrade worker'));
+        worker.addEventListener('statechange',()=>{
+          if(worker.state==='activated')resolve();
+          if(worker.state==='redundant')reject(Error('Upgrade worker was redundant'));
+        });
+      });
+    });
+    await expect.poll(()=>page.evaluate(()=>Boolean(
+      navigator.serviceWorker.controller?.scriptURL.includes('u58-mixed-version-protection')
+    )),{timeout:20_000}).toBe(true);
+    const retained=await page.evaluate(async names=>{
+      const values=[];
+      for(let i=0;i<names.length;i++)
+        values.push(await(await(await caches.open(names[i])).match('/assets/u58-prior-'+i+'.js')).text());
+      const p35=await(await(await caches.open('french-shell-v35')).match('/u58-p35-original')).text();
+      const verified=await(await(await caches.open('french-vnext-content-v1')).match('/u58-verified-public')).text();
+      return{values,p35,verified};
+    },names);
+    expect(retained).toEqual({
+      values:['PRIOR_BUILD_0','PRIOR_BUILD_1','PRIOR_BUILD_2'],
+      p35:'P35_INTACT',verified:'VERIFIED_CONTENT'
+    });
+    await context.setOffline(true);
+    try{
+      // Still-open old tabs can lazily fetch their own previous hashed assets.
+      expect(await older.evaluate(async()=>(
+        await fetch('/assets/u58-prior-0.js')
+      ).text())).toBe('PRIOR_BUILD_0');
+    }finally{await context.setOffline(false);}
+  }finally{await older.close();}
+});
+
+test('U58 offline storage diagnostics show low quota and never delete original caches',async({page})=>{
+  await page.goto('/#home');
+  await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+  const before=await page.evaluate(async()=>{
+    await caches.open('french-shell-v35');
+    await caches.open('french-vnext-content-v1');
+    Object.defineProperty(navigator,'storage',{configurable:true,value:{
+      estimate:async()=>({usage:95_000_000,quota:100_000_000}),
+      persisted:async()=>false,
+      persist:async()=>false
+    }});
+    return await caches.keys();
+  });
+  await page.evaluate(()=>{location.hash='#settings';});
+  await expect(page.getByRole('heading',{name:'Offline storage'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Check offline storage'}).click();
+  await expect(page.locator('[data-offline-status]')).toContainText('95.0 MB of 100.0 MB');
+  await expect(page.locator('[data-offline-status]')).toContainText('Low remaining space');
+  await expect(page.locator('[data-offline-status]')).toContainText('No data was deleted');
+  await page.getByRole('button',{name:'Request persistent storage'}).click();
+  await expect(page.locator('[data-offline-status]')).toContainText('Persistent storage was not granted');
+  expect(await page.evaluate(()=>caches.keys())).toEqual(before);
+});
+
+test('U59 older running build rejects a changed shared manifest and keeps SHA-pinned offline study',async({page,context})=>{
+  await page.goto('/#words');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const saved=await page.evaluate(async()=>{
+    const content=await caches.open('french-vnext-content-v1');
+    const keys=(await content.keys()).map(request=>request.url);
+    const pinned=keys.find(key=>key.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinned)throw Error('Build has no SHA-pinned manifest');
+    const original=await(await content.match(pinned)).text();
+    const sha=pinned.split('verifiedSha256=')[1];
+    const bad=JSON.stringify({...JSON.parse(original),revision:'foreign-vnext-build'});
+    await content.put('/content/manifest.json',new Response(bad,
+      {headers:{'content-type':'application/json'}}));
+    return {sha,pinned,original};
+  });
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+    const retained=await page.evaluate(async pinned=>{
+      const storage=await caches.open('french-vnext-content-v1');
+      const response=await storage.match(pinned);
+      if(!response)return null;
+      return await response.text();
+    },saved.pinned);
+    expect(retained).toBe(saved.original);
+  }finally{await context.setOffline(false);}
+});
+
+test('U59 wrong-build online manifest is rejected and recovered from matching installed shell',async({page})=>{
+  await page.goto('/#words');
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const baseline=await page.evaluate(async()=>{
+    const storage=await caches.open('french-vnext-content-v1');
+    const keys=await storage.keys();
+    const pinned=keys.map(request=>request.url).find(url=>url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinned)throw Error('No build manifest');
+    const original=await(await storage.match(pinned)).text();
+    await storage.delete(pinned);
+    await storage.delete('/content/manifest.json');
+    return{pinned,original};
+  });
+  // Model a newer deployed origin serving a different valid-shaped manifest
+  // while this tab still runs the old JS. The old immutable shell is intact.
+  await page.addInitScript(()=>{
+    const originalFetch=window.fetch.bind(window);
+    window.fetch=(input,init)=>{
+      const url=new URL(typeof input==='string'?input:input.url,location.href);
+      if(url.pathname==='/content/manifest.json'){
+        return Promise.resolve(new Response(JSON.stringify({
+          schema:'thiepn-french-content-manifest-v1',revision:'foreign-new-build',
+          indexes:{vocabulary:{path:'/content/search/vocabulary-index.json',
+            sha256:'0'.repeat(64),schema:'x',count:0,bytes:1,revision:'foreign'}},
+          packs:[]
+        }),{status:200,headers:{'content-type':'application/json'}}));
+      }
+      return originalFetch(input,init);
+    };
+  });
+  await page.reload();
+  await expect(page.locator('[data-results] .word-result').first()).toBeVisible({timeout:45_000});
+  const restored=await page.evaluate(async pinned=>{
+    const r=await(await caches.open('french-vnext-content-v1')).match(pinned);
+    return r?await r.text():null;
+  },baseline.pinned);
+  expect(restored).toBe(baseline.original);
+});
+
+test('U60 on-demand offline essentials prepare five SHA-verified public sources and survive offline reload',async({page,context})=>{
+  await page.goto('/#settings');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true);
+  }
+  await expect(page.getByRole('button',{name:'Check offline lessons'})).toBeVisible();
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText(/verified public essentials available/,{timeout:30_000});
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  const prepared=await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const pinnedManifest=(await store.keys()).find(req=>req.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinnedManifest)throw Error('No pinned manifest found');
+    const manifest=await(await store.match(pinnedManifest)).json();
+    const first=manifest.packs.filter(pack=>pack.kind==='vocabulary'&&pack.level==='A1')
+      .sort((a,b)=>a.id.localeCompare(b.id))[0];
+    const selected=[manifest.indexes.vocabulary,first,
+      ...['reading-stable-p35','sentence-stable-p12','usage-stable-p10']
+        .map(id=>manifest.packs.find(pack=>pack.id===id))];
+    const report=[];
+    for(const row of selected){
+      const response=await store.match(row.path+'?verifiedSha256='+row.sha256);
+      if(!response)throw Error('Missing pinned source '+row.path);
+      const bytes=await response.arrayBuffer();
+      const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+        .map(b=>b.toString(16).padStart(2,'0')).join('');
+      report.push({id:row.id??'index',valid:sha===row.sha256});
+    }
+    return report;
+  });
+  expect(prepared).toHaveLength(5);
+  expect(prepared.every(row=>row.valid)).toBe(true);
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('button',{name:'Check offline lessons'})).toBeVisible({timeout:30_000});
+    await page.getByRole('button',{name:'Check offline lessons'}).click();
+    await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials available',{timeout:30_000});
+    await page.goto('/#read');
+    await expect(page.getByRole('heading',{name:'Read',exact:true})).toBeVisible({timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
+test('U60 offline readiness refuses corrupted public packs without modifying P35 or private study data',async({page,context})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('button',{name:'Prepare offline essentials'})).toBeVisible();
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  await page.evaluate(async()=>{
+    const store=await caches.open('french-vnext-content-v1');
+    const manifestKey=(await store.keys()).find(req=>req.url.includes('/content/manifest.json?verifiedSha256='));
+    const manifest=await(await store.match(manifestKey)).json();
+    const row=manifest.packs.find(pack=>pack.id==='reading-stable-p35');
+    const damaged=new Response('{"schema":"thiepn-french-reading-pack-v1","readings":["U60_BAD"]}',
+      {headers:{'content-type':'application/json'}});
+    await store.put(row.path+'?verifiedSha256='+row.sha256,damaged.clone());
+    await store.put(row.path,damaged);
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u60-owned-source',new Response('P35_UNCHANGED'));
+  });
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('4/5 verified public essentials available',{timeout:30_000});
+  await context.setOffline(true);
+  try{
+    await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+    await expect(page.locator('[data-essentials-status]')).toContainText('Connect to the internet',{timeout:30_000});
+    const unchanged=await page.evaluate(async()=>{
+      const cache=await caches.open('french-shell-v35');
+      return(await(await cache.match('/u60-owned-source')).text());
+    });
+    expect(unchanged).toBe('P35_UNCHANGED');
+  }finally{await context.setOffline(false);}
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+});
+test('U61 evicted native offline shell is detected and rebuilt without deleting P35 or learner preferences',async({page,context})=>{
+  await page.goto('/#settings');
+  await expect(page.getByRole('button',{name:'Prepare offline essentials'})).toBeVisible({timeout:30_000});
+  await page.locator('input[name="dailyNewLimit"]').fill('23');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device');
+  await page.getByRole('button',{name:'Prepare offline essentials'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials are prepared',{timeout:60_000});
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:30_000});
+  const cache=await page.evaluate(async()=>{
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u61-owned',new Response('P35_RETAINED'));
+    const names=await caches.keys();
+    const native=names.find(name=>/^french-vnext-shell-[0-9a-f]{12}$/.test(name));
+    if(!native)throw Error('No original native shell');
+    await caches.delete(native);
+    return native;
+  });
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app is not ready',{timeout:30_000});
+  // Source-verified lessons survive shell eviction; they do not prove restart
+  // can work. The distinct shell status must remain an actionable warning.
+  await page.getByRole('button',{name:'Check offline lessons'}).click();
+  await expect(page.locator('[data-essentials-status]')).toContainText('5/5 verified public essentials available',{timeout:30_000});
+  await context.setOffline(true);
+  try{
+    await page.getByRole('button',{name:'Repair offline app'}).click();
+    await expect(page.locator('[data-shell-status]')).toContainText('Connect to the internet',{timeout:30_000});
+    expect(await page.evaluate(async name=>(await caches.keys()).includes(name),cache)).toBe(false);
+  }finally{await context.setOffline(false);}
+  await page.getByRole('button',{name:'Repair offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:45_000});
+  const after=await page.evaluate(async name=>{
+    const shell=await caches.open(name);
+    const p35=await caches.open('french-shell-v35');
+    return{root:Boolean(await shell.match('/')),manifest:Boolean(await shell.match('/content/manifest.json')),
+      p35:await(await p35.match('/u61-owned')).text()};
+  },cache);
+  expect(after).toEqual({root:true,manifest:true,p35:'P35_RETAINED'});
+  await context.setOffline(true);
+  try{
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible({timeout:30_000});
+    await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('23',{timeout:30_000});
+  }finally{await context.setOffline(false);}
+});
+
+test('U61 detects a tampered installed asset and repairs its original SHA without touching P35',async({page})=>{
+  await page.goto('/#settings');
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
+  if(!await page.evaluate(()=>Boolean(navigator.serviceWorker.controller))){
+    await page.reload();
+    await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:15_000}).toBe(true);
+  }
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:30_000});
+  const identity=await page.evaluate(async()=>{
+    const name=(await caches.keys()).find(value=>/^french-vnext-shell-[0-9a-f]{12}$/.test(value));
+    const shell=await caches.open(name);
+    const original=await shell.match('/');
+    const bytes=await original.arrayBuffer();
+    const originalHash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+      .map(value=>value.toString(16).padStart(2,'0')).join('');
+    await shell.put('/',new Response('<html>U61_TAMPERED</html>',{headers:{'content-type':'text/html'}}));
+    const p35=await caches.open('french-shell-v35');
+    await p35.put('/u61-rollback',new Response('P35_UNCHANGED'));
+    return{name,originalHash};
+  });
+  await page.getByRole('button',{name:'Check offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app is not ready',{timeout:30_000});
+  await page.getByRole('button',{name:'Repair offline app'}).click();
+  await expect(page.locator('[data-shell-status]')).toContainText('Offline app ready',{timeout:45_000});
+  const verified=await page.evaluate(async name=>{
+    const shell=await caches.open(name);
+    const bytes=await(await shell.match('/')).arrayBuffer();
+    const sha=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+      .map(value=>value.toString(16).padStart(2,'0')).join('');
+    const p35=await caches.open('french-shell-v35');
+    return{sha,p35:await(await p35.match('/u61-rollback')).text()};
+  },identity.name);
+  expect(verified).toEqual({sha:identity.originalHash,p35:'P35_UNCHANGED'});
+});
 
 test('Registered first-party French client remains local-only outside production',async({page})=>{
   await page.goto('/#settings');
@@ -786,9 +1399,12 @@ test('P37I-D5 imported personal French remains local and readable after a PWA of
   // The first online Read visit must persist only public, visited content in
   // Cache Storage, even if it happened before the SW acquired control.
   const offlineContent=await page.evaluate(async()=>{
-    const cache=await caches.open('french-vnext-shell-v1');
+    const cache=await caches.open('french-vnext-content-v1');
     const keys=(await cache.keys()).map(request=>new URL(request.url).pathname);
-    const storedManifest=await cache.match('/content/manifest.json');
+    const pinnedManifest=(await cache.keys()).find(request=>
+      request.url.includes('/content/manifest.json?verifiedSha256='));
+    if(!pinnedManifest)throw Error('No verified build-specific offline manifest');
+    const storedManifest=await cache.match(pinnedManifest);
     const manifest=storedManifest?await storedManifest.json():null;
     const readingDescriptor=manifest?.packs?.find(row=>row.id==='reading-stable-p35');
     return{manifest:keys.includes('/content/manifest.json'),

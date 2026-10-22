@@ -53,6 +53,20 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const corpusAdd=corpusToolbar.querySelector<HTMLButtonElement>('[data-corpus-add]')!;
   const corpusStudy=corpusToolbar.querySelector<HTMLButtonElement>('[data-corpus-study]')!;
   const corpusStatus=corpusToolbar.querySelector<HTMLElement>('[data-corpus-selection]')!;
+  // Existing sessions are learner-owned; a different selection must not silently impersonate one.
+  const offerExistingReview=(target:HTMLElement)=>{
+    target.textContent='An unfinished Review session is already saved. These selected words were not scheduled; finish that session first.';
+    const button=target.nextElementSibling;
+    if(!(button instanceof HTMLButtonElement)||!button.matches('[data-resume-saved-review]')){
+      const resumeButton=document.createElement('button');
+      resumeButton.type='button';
+      resumeButton.className='secondary-action compact-action';
+      resumeButton.setAttribute('data-resume-saved-review','');
+      resumeButton.textContent='Continue unfinished Review';
+      resumeButton.addEventListener('click',()=>navigate('review'));
+      target.after(resumeButton);
+    }
+  };
   const corpusSelected=new Set<string>();
   let shownCorpus:VocabularySearchRow[]=[];
   const updateCorpusStatus=()=>{corpusStatus.textContent=corpusSelected.size+
@@ -273,6 +287,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const answer=await createSelectedVocabularySession(ids);
         if(signal.aborted)return;
         if(answer.kind==='empty'){selectionStatus.textContent='No due or eligible new cards in this deck today.';return;}
+        if(answer.kind==='resume'){offerExistingReview(selectionStatus);return;}
         navigate('review');
       }catch(error){selectionStatus.textContent='Unable to start this deck session.';console.error(error);}
       finally{studyDeck.disabled=false;}
@@ -326,7 +341,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const session=await createSelectedVocabularySession(current.map(row=>row.id));
         if(signal.aborted)return;
         if(session.kind==='empty'){cardStatus.textContent='No personal words are due or eligible under today’s limits.';return;}
-        navigate('review'); // Existing unfinished work resumes; never overwritten.
+        if(session.kind==='resume'){offerExistingReview(cardStatus);return;}
+        navigate('review');
       }catch(error){
         if(!signal.aborted)cardStatus.textContent='Could not open the native vocabulary session.';
         console.error('Private vocabulary session failed',error);
@@ -385,7 +401,8 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
               studyStatus.textContent='This word has no due or new activity eligible under today’s limits.';
               return;
             }
-            navigate('review');
+            if(outcome.kind==='resume'){offerExistingReview(studyStatus);return;}
+             navigate('review');
           }catch(error){
             if(!signal.aborted)studyStatus.textContent='Unable to open this native study session.';
             console.error('Word-to-study handoff failed',error);
@@ -499,6 +516,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         const session=await createSelectedVocabularySession(ids);
         if(signal.aborted)return;
         if(session.kind==='empty'){corpusStatus.textContent='No selected words due or eligible under your current limits.';return;}
+        if(session.kind==='resume'){offerExistingReview(corpusStatus);return;}
         navigate('review');
       }catch(error){corpusStatus.textContent='Native source-word Review unavailable.';console.error(error);}
       finally{corpusStudy.disabled=false;}

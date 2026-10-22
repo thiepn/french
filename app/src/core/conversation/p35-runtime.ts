@@ -3,7 +3,8 @@
  * graph nodes are originals; grading abstains when no exact rule matches.
  */
 import {P35_SOURCE_SCENARIOS,getP35SourceScenario,type P35Graph,type P35Rule} from './p35-graphs.ts';
-import {P35_P18_MISSIONS,P35_P20_FUNCTIONS} from './source-parity.ts';
+import {P35_P18_MISSIONS,P35_P20_FUNCTIONS,P35_LATER_B2_FUNCTIONS,
+ P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS} from './source-parity.ts';
 export const SOURCE_GRAPH_KEY='p35-source-graph-v1';
 export const SOURCE_GRAPH_SCHEMA='thiepn-french-p35-source-graph-v1';
 export interface SourceEvidence{
@@ -32,8 +33,13 @@ export interface SourceGraphState{
  history:SourceRun[];evidence:SourceEvidence[];maxLevel:'A1'|'A2'|'B1';
  missionHistory?:SourceMissionRun[];
 }
-const originalFns=new Set<string>(P35_P20_FUNCTIONS.map(x=>x.id));
-const missionById=(id:string)=>P35_P18_MISSIONS.find(x=>x.id===id);
+const originalFns=new Set<string>([
+ ...P35_P20_FUNCTIONS.map(x=>x.id),...P35_LATER_B2_FUNCTIONS
+]);
+// B2 function events remain practice-only source-rule observations. They never
+// cross into original P35 P20 mastery, P25, P28/P29 or FSRS.
+const B2_SOURCE_IDS=new Set<string>(P35_P30_B2_SCENES);
+const missionById=(id:string)=>[...P35_P18_MISSIONS,...P35_P30_B2_PRACTICE_CHAINS].find(x=>x.id===id);
 const safeInt=(n:unknown,max=100)=>Number.isInteger(n)&&Number(n)>=0&&Number(n)<=max?Number(n):0;
 const clamp=(v:number)=>Math.max(0,Math.min(1,v));
 const obj=(input:unknown):Record<string,unknown>=>input&&typeof input==='object'&&!Array.isArray(input)?input as Record<string,unknown>:{};
@@ -91,6 +97,21 @@ export function matchSourceRule(graph:P35Graph,nodeId:string,response:string,sto
  }
  return{status:'uncertain',slots:storedSlots,confidence:0};
 }
+/**
+ * Source-authoritative supported examples, using the *same* original pinned
+ * rule matcher as learner submissions. Some original P30 model/phrase strings
+ * contain French inflections not in the compact rule token lists. Never show
+ * such a string as a guaranteed rule-matching example, and never loosen the
+ * matcher to manufacture independent B2 interaction evidence.
+ */
+export function matchingP35AuthoredExamples(graph:P35Graph,nodeId:string,
+ slots:Record<string,string>):string[]{
+ const node=graph.nodes[nodeId];
+ if(!node||node.end)return[];
+ const original=[...(node.phrases??[]),...(node.rules??[]).map(rule=>rule.sample)];
+ return [...new Set(original.filter(text=>typeof text==='string'&&text.trim().length>0))]
+  .filter(text=>matchSourceRule(graph,nodeId,text,slots).status==='accepted');
+}
 export function validateSourceGraphs():string[]{
  const problems:string[]=[],ids=new Set<string>();
  for(const graph of P35_SOURCE_SCENARIOS){
@@ -108,6 +129,22 @@ export function validateSourceGraphs():string[]{
  }
  for(const mission of P35_P18_MISSIONS)
   for(const id of mission.scenarios)if(!ids.has(id))problems.push('missing mission scene '+mission.id+'/'+id);
+ // P30-authored source scenario coverage. The two compositions are practice
+ // routes, not original mission/benchmark IDs or qualification authority.
+ const b2=P35_SOURCE_SCENARIOS.filter(graph=>graph.level==='B2');
+ if(b2.length!==5||P35_P30_B2_SCENES.some(id=>!b2.some(graph=>graph.id===id)))
+  problems.push('U70 must use the five exact pinned P35 B2 source graphs');
+ for(const fn of P35_LATER_B2_FUNCTIONS){
+  const contexts=b2.filter(graph=>Object.values(graph.nodes).some(node=>
+   node?.rules?.some(rule=>rule.func===fn))).length;
+  if(contexts<2)problems.push('P30 B2 communicative function lacks independent contexts '+fn);
+ }
+ for(const chain of P35_P30_B2_PRACTICE_CHAINS){
+  if(chain.scenarios.length!==3||new Set(chain.scenarios).size!==3)
+   problems.push('Invalid B2 practice composition '+chain.id);
+  for(const id of chain.scenarios)
+   if(!B2_SOURCE_IDS.has(id))problems.push('Unknown original B2 source scenario '+chain.id+'/'+id);
+ }
  return problems;
 }
 function newActive(state:SourceGraphState,graph:P35Graph,now:number):SourceActive{
@@ -122,6 +159,30 @@ export function startSourceGraph(state:SourceGraphState,id:string,now:number):So
  if(state.active||state.mission)throw Error('SOURCE_ALREADY_ACTIVE');
  if(['A1','A2','B1'].indexOf(g.level)>['A1','A2','B1'].indexOf(state.maxLevel))throw Error('SOURCE_LEVEL_LOCKED');
  return{...state,active:newActive(state,g,now)};
+}
+/**
+ * U70: explicitly requested advanced source rehearsal uses the EXISTING
+ * original P35 graph/response/mission engine. This does not change native
+ * course ceilings, benchmark gates, SRS cards or qualification.
+ */
+export function startB2SourceGraph(state:SourceGraphState,id:string,now:number):SourceGraphState{
+ const graph=getP35SourceScenario(id);
+ if(!graph||graph.level!=='B2'||!B2_SOURCE_IDS.has(id))throw Error('B2_SOURCE_GRAPH_NOT_PINNED');
+ if(state.active||state.mission)throw Error('SOURCE_ALREADY_ACTIVE');
+ return{...state,active:newActive(state,graph,now)};
+}
+export function startB2SourcePracticeChain(state:SourceGraphState,id:string,now:number):SourceGraphState{
+ const chain=P35_P30_B2_PRACTICE_CHAINS.find(row=>row.id===id);
+ if(!chain||chain.benchmarkEligible!==false)throw Error('B2_NOT_A_P28_BENCHMARK');
+ if(state.active||state.mission)throw Error('SOURCE_ALREADY_ACTIVE');
+ const graphs=chain.scenarios.map(scenarioId=>getP35SourceScenario(scenarioId));
+ if(graphs.some((graph,i)=>!graph||graph.level!=='B2'||
+  !B2_SOURCE_IDS.has(chain.scenarios[i])))
+  throw Error('B2_SOURCE_GRAPH_NOT_PINNED');
+ const first=graphs[0];
+ if(!first)throw Error('B2_SOURCE_GRAPH_NOT_PINNED');
+ return{...state,mission:{id:chain.id,index:0,startedAt:now,completed:[]},
+  active:newActive(state,first,now)};
 }
 export function startSourceMission(state:SourceGraphState,id:string,now:number):SourceGraphState{
  const mission=missionById(id);
@@ -252,7 +313,7 @@ export function safeSourceGraphState(raw:unknown):SourceGraphState{
  }
  let active:SourceActive|null=null;
  const a=obj(input.active),g=typeof a.scenarioId==='string'&&getP35SourceScenario(a.scenarioId);
- if(g&&g.level!=='B2'&&typeof a.runId==='string'&&typeof a.nodeId==='string'&&
+ if(g&&(g.level!=='B2'||B2_SOURCE_IDS.has(g.id))&&typeof a.runId==='string'&&typeof a.nodeId==='string'&&
    g.nodes[a.nodeId]&&!g.nodes[a.nodeId]?.end&&Number.isFinite(a.startedAt)){
   const slots:Record<string,string>={};
   for(const [k,v] of Object.entries(obj(a.slots)).slice(0,20))

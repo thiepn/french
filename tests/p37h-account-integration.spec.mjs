@@ -15,15 +15,23 @@ const RETURN_KEY = 'thiepn:french-sso:return:v1';
 const ROOT = process.env.P37H_BASE_URL || 'http://127.0.0.1:4175';
 
 async function interceptProduction(context, options = {}) {
-  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, tokenExchanges: 0, requests: [] };
+  const state = { connected: options.connected !== false, cloud: null, uploads: 0, writeStarted: 0, delayWriteMs: 0, readStarted: 0, readFinished: 0, heldReadFinished: 0, delayReadMs: 0, holdRead: false, releaseRead: null, identityId: USER_ID, tokenExchanges: 0, requests: [] };
 
   // Routes registered on the browser context also cover independently created pages.
   await context.route(ORIGIN + '/**', async route => {
     const incoming = new URL(route.request().url());
     // The browser keeps the actual production origin for origin checks; only bytes
     // are read from the local, qualified static build.
-    const asset = await route.fetch({ url: ROOT + incoming.pathname + incoming.search });
-    await route.fulfill({ response: asset });
+    try {
+      const asset = await route.fetch({ url: ROOT + incoming.pathname + incoming.search });
+      await route.fulfill({ response: asset });
+    } catch (error) {
+      // A navigated-away request may dispose its fetched response before
+      // fulfill. This is an aborted browser request, not a failed app asset.
+      // Never suppress other fixture/proxy errors.
+      if (/Fetch response has been disposed/.test(String(error))) return;
+      throw error;
+    }
   });
   await context.route(ACCOUNT + '/**', async route => {
     const incoming = new URL(route.request().url());
@@ -65,12 +73,19 @@ async function interceptProduction(context, options = {}) {
       });
     }
     if (path === '/auth/v1/user') {
-      return json(route, { id: USER_ID, email: 'french-integration@example.invalid' });
+      return json(route, { id: state.identityId, email: 'french-integration@example.invalid' });
     }
     if (path === '/rest/v1/account_app_connections') {
       return json(route, state.connected ? [{ status: 'connected' }] : []);
     }
     if (path === '/rest/v1/french_sync_state') {
+      state.readStarted++;
+      if (state.holdRead) {
+        await new Promise(resolve => { state.releaseRead = resolve; });
+        state.heldReadFinished++;
+      }
+      if (state.delayReadMs > 0) await new Promise(resolve => setTimeout(resolve, state.delayReadMs));
+      state.readFinished++;
       return json(route, state.cloud ? [state.cloud] : []);
     }
     if (path === '/rest/v1/rpc/sync_thiepn_french_state') {
@@ -278,6 +293,69 @@ test('pausing during an in-flight sync never turns cloud sync back on', async ({
   expect(api.uploads).toBe(2);
 });
 
+
+test('U62 pausing during a pending cloud read prevents the delayed upload',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  const initialUploads=api.uploads,initialReads=api.readStarted;
+  await page.locator('input[name="dailyNewLimit"]').fill('42');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  api.holdRead=true;
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(initialReads+1);
+  await page.getByRole('button',{name:'Pause sync'}).click();
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible({timeout:30_000});
+  // The backend may not release the snapshot until pause has actually
+  // changed persisted consent. No device-speed timing assumption is involved.
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.enabled
+  ),{timeout:30_000}).toBe(false);
+  expect(api.releaseRead).toBeInstanceOf(Function);
+  api.holdRead=false; api.releaseRead(); api.releaseRead=null;
+  // Only the explicitly released held read is relevant; background
+  // read-only reconciliations may finish in either order on Android.
+  await expect.poll(()=>api.heldReadFinished,{timeout:30_000}).toBe(1);
+  await expect(page.getByText(/No new transfer was started/i)).toBeVisible({timeout:30_000});
+  expect(api.uploads).toBe(initialUploads);
+  expect(api.cloud.revision).toBe(1);
+  expect(api.cloud.state.settings.dailyNewLimit).not.toBe(42);
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('42',{timeout:30_000});
+  await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible();
+});
+
+test('U62 Account identity change during cloud read cannot upload an old account learner',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await page.locator('input[name="dailyNewLimit"]').fill('43');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
+  const previous=api.uploads,reads=api.readStarted;
+  api.holdRead=true;
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect.poll(()=>api.readStarted,{timeout:15_000}).toBe(reads+1);
+  // Synthetic Account provider now verifies a different signed-in identity.
+  api.identityId='9c1d9e59-e7d4-4d51-a849-6f5d112c04dd';
+  expect(api.releaseRead).toBeInstanceOf(Function);
+  api.holdRead=false; api.releaseRead(); api.releaseRead=null;
+  await expect(page.getByText(/Account identity changed or cannot be verified/i)).toBeVisible({timeout:30_000});
+  expect(api.uploads).toBe(previous);
+  expect(api.cloud.revision).toBe(1);
+  expect(api.cloud.state.settings.dailyNewLimit).not.toBe(43);
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('43',{timeout:30_000});
+});
+
 test('a conflict choice cannot overwrite an unreviewed newer cloud revision', async ({ page, context }) => {
   const api = await interceptProduction(context);
   await seedSession(context);
@@ -338,4 +416,110 @@ test('a conflict choice cannot restore cloud over local changes made after revie
   await page.reload();
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('23');
   expect(api.uploads).toBe(1);
+});
+
+/** An RPC revision can be visible before the first-party device has
+ * persisted its sync baseline. Eviction tests must start AFTER both settle.
+ */
+async function waitForDeviceSyncBaseline(page,api){
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await expect.poll(async()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.revision
+  ),{timeout:30_000}).toBe(api.cloud.revision);
+  const info=await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null'));
+  expect(info?.hash).toMatch(/^[0-9a-f]{64}$/);
+  expect(info?.nativeEpoch).toMatch(/^fresh-vnext:[0-9]+$/);
+  return {revision:api.cloud.revision,uploads:api.uploads};
+}
+
+test('U55 storage eviction with retained Account metadata cannot erase a meaningful cloud revision',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  const workload=page.locator('input[name="dailyNewLimit"]');
+  await expect(workload).toBeVisible({timeout:30_000});
+  await workload.fill('31');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device');
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  const synced=await waitForDeviceSyncBaseline(page,api);
+  expect(synced.uploads).toBe(1);
+  expect(api.cloud.state.settings.dailyNewLimit).toBe(31);
+  const cloudBackup=structuredClone(api.cloud.state);
+
+  // Simulate browser eviction of only IndexedDB, keeping existing device
+  // authorization and sync revision in localStorage. No real app data used.
+  await page.evaluate(async()=>{
+    await new Promise((resolve,reject)=>{
+      const req=indexedDB.open('thiepn-french-vnext');
+      req.onerror=()=>reject(req.error);
+      req.onsuccess=()=>{
+        const db=req.result;
+        const stores=['learner','srs','activity','user-content','session','meta','migration'];
+        const tx=db.transaction(stores,'readwrite');
+        for(const store of stores)tx.objectStore(store).clear();
+        tx.oncomplete=()=>{db.close();resolve();};
+        tx.onerror=()=>{db.close();reject(tx.error);};
+      };
+    });
+  });
+  const retained=await page.evaluate(()=>JSON.parse(localStorage.getItem('french-thiepn-sync-v2')));
+  expect(retained.revision).toBe(1);
+  expect(retained.nativeEpoch).toBeTruthy();
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect(page.getByRole('button',{name:'Recover from cloud'})).toBeVisible({timeout:30_000});
+  await expect(page.getByText(/local storage may have been cleared/i)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Use this device'})).toHaveCount(0);
+  expect(api.cloud.revision).toBe(synced.revision);
+  expect(api.uploads).toBe(synced.uploads);
+  expect(api.cloud.state).toEqual(cloudBackup);
+
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Recover from cloud'}).click();
+  await expect(page.getByText(/Cloud French progress was restored on this device/i)).toBeVisible({timeout:30_000});
+  expect(api.cloud.revision).toBe(synced.revision);
+  expect(api.uploads).toBe(synced.uploads);
+  await page.reload();
+  await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('31',{timeout:30_000});
+});
+
+test('U55 recovery refuses stale cloud revision without uploading an empty device',async({page,context})=>{
+  const api=await interceptProduction(context);
+  await seedSession(context);
+  await page.goto(ORIGIN+'/#settings');
+  await page.locator('input[name="dailyNewLimit"]').fill('39');
+  await page.getByRole('button',{name:'Save settings'}).click();
+  await expect(page.locator('[data-status]')).toContainText('Saved on this device');
+  await page.getByRole('button',{name:'Sync this device'}).click();
+  await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
+  const synced=await waitForDeviceSyncBaseline(page,api);
+  await page.evaluate(async()=>{
+    await new Promise((resolve,reject)=>{
+      const req=indexedDB.open('thiepn-french-vnext');
+      req.onerror=()=>reject(req.error);
+      req.onsuccess=()=>{
+        const db=req.result,stores=['learner','srs','activity','user-content','session','meta','migration'];
+        const tx=db.transaction(stores,'readwrite');
+        for(const name of stores)tx.objectStore(name).clear();
+        tx.oncomplete=()=>{db.close();resolve();};
+        tx.onerror=()=>{db.close();reject(tx.error);};
+      };
+    });
+  });
+  await page.reload();
+  await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Sync now'}).click();
+  await expect(page.getByRole('button',{name:'Recover from cloud'})).toBeVisible({timeout:30_000});
+  // A different device updates the cloud after this recovery choice was shown.
+  api.cloud.revision=synced.revision+1;
+  api.cloud.state.settings.dailyNewLimit=54;
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Recover from cloud'}).click();
+  await expect(page.getByRole('button',{name:'Review latest state'})).toBeVisible({timeout:30_000});
+  await expect(page.getByText(/cloud changed after you reviewed the conflict/i)).toBeVisible();
+  expect(api.cloud.revision).toBe(synced.revision+1);
+  expect(api.uploads).toBe(synced.uploads);
 });

@@ -1,0 +1,80 @@
+/* U64: source-first editorial practice, no assessment dashboard or fake grades. */
+.b2-studio{max-width:1060px}
+.b2-studio h1{font-size:clamp(2rem,5vw,3.6rem);max-width:17ch}
+.b2-studio .lede{font-size:1rem;max-width:78ch}
+.b2-tracks,.b2-sets,.b2-tasks,.b2-actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.b2-tracks{margin:1.6rem 0 .7rem;border-bottom:1px solid var(--line);padding-bottom:.75rem}
+.b2-sets{margin:.4rem 0 1rem}
+.b2-tab,.b2-set,.b2-action{border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;text-align:left;min-height:44px;padding:.7rem .9rem}
+.b2-tab.is-active,.b2-set.is-active{border-color:var(--accent);box-shadow:inset 0 -2px var(--accent);font-weight:750}
+.b2-action.is-primary{background:var(--accent);color:var(--accent-ink);font-weight:750}
+.b2-action:disabled,.b2-tab:disabled{opacity:.52;cursor:not-allowed}
+.b2-tab:focus-visible,.b2-set:focus-visible,.b2-action:focus-visible,.b2-writing textarea:focus-visible,.b2-check input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.b2-loading,.b2-kicker,.b2-source-id{color:var(--muted);font-size:.8rem}
+.b2-loading{line-height:1.5;overflow-wrap:anywhere}
+.b2-kicker{text-transform:uppercase;letter-spacing:.09em;font-weight:750}
+.b2-prompt{padding:clamp(1rem,2vw,1.5rem) 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.b2-prompt h2{margin:.4rem 0;font-size:clamp(1.5rem,3.5vw,2.5rem);letter-spacing:-.035em}
+.b2-question{font-size:clamp(1rem,2.4vw,1.25rem);line-height:1.6;max-width:73ch}
+.b2-criteria{line-height:1.75;padding-left:1.4rem}
+.b2-disclaimer{font-size:.81rem;line-height:1.6;color:var(--muted);max-width:86ch}
+.b2-source-text{margin:1.2rem 0;padding:.8rem 1.15rem;border-left:2px solid var(--accent);background:var(--surface);max-width:82ch}
+.b2-source-text p{line-height:1.85;margin:.7rem 0}
+.b2-source-text[hidden]{display:none}
+.b2-listening{display:grid;justify-items:start;gap:.5rem;margin-top:1rem}
+.b2-listening .b2-source-text{width:100%}
+.b2-comprehension{margin-top:1rem;border-top:1px solid var(--line);padding-top:.75rem}
+.b2-comprehension summary{cursor:pointer;font-weight:700}
+.b2-comprehension p{line-height:1.65}
+.b2-writing{margin-top:1.6rem}
+.b2-writing h3{font-size:1.25rem;letter-spacing:-.025em;margin:0 0 .3rem}
+.b2-writing textarea{display:block;width:100%;min-height:260px;padding:1rem;background:var(--surface);border:1px solid var(--line);color:var(--text);font:inherit;line-height:1.8;resize:vertical;margin:.9rem 0}
+.b2-count{font-size:.83rem;font-variant-numeric:tabular-nums;color:var(--muted)}
+.b2-actions{margin:1rem 0 .7rem}
+.b2-report{margin-top:1rem;padding:1rem 1.1rem;border-left:2px solid var(--accent);background:var(--surface);line-height:1.65}
+.b2-report:empty{display:none}
+.b2-report h4{margin:.2rem 0 .7rem}
+.b2-report li{margin:.35rem 0}
+.b2-self-check{margin:1.25rem 0;padding:1rem 0;border:0;border-top:1px solid var(--line)}
+.b2-self-check legend{font-weight:750;margin-bottom:.7rem}
+.b2-check{display:flex;align-items:flex-start;gap:.65rem;padding:.55rem 0;line-height:1.55}
+.b2-check input{width:18px;height:18px;flex-shrink:0;margin-top:.2rem}
+@media(max-width:650px){
+ .b2-tracks,.b2-actions{display:grid}
+ .b2-tracks .b2-tab,.b2-actions .b2-action{width:100%}
+ .b2-source-text{padding:.7rem .85rem}
+ .b2-writing textarea{min-height:300px}
+}
+@media(prefers-reduced-motion:reduce){.b2-studio *{scroll-behavior:auto!important;transition:none!important}}
+
+/* U65 independent assessment: distinct from U64 supported practice. */
+.b2-assessment-summary{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:1rem 0;margin:1rem 0}
+.b2-assessment-summary h2{font-size:1.35rem;margin:.3rem 0 1rem}
+.b2-assessment-line{display:grid;grid-template-columns:minmax(13rem,1fr) minmax(12rem,2fr);gap:.7rem;padding:.9rem 0;border-top:1px solid var(--line);line-height:1.5}
+.b2-assessment-line span{color:var(--muted)}
+.b2-assessment .b2-actions{margin:1rem 0 1.5rem}
+.b2-assessment input[type=checkbox]{accent-color:var(--accent)}
+@media(max-width:650px){.b2-assessment-line{grid-template-columns:1fr;gap:.15rem}.b2-assessment .b2-action{width:100%}}
+
+.b2-oral .b2-prompt{margin-top:1rem}
+.b2-oral-scratch{display:block;width:100%;max-width:75ch;padding:.85rem;background:var(--surface);border:1px solid var(--line);color:var(--text);font:inherit;line-height:1.6;margin:1rem 0;resize:vertical}
+.b2-oral .b2-actions{margin-top:1.25rem}
+.b2-oral .b2-report{max-width:85ch}
+.b2-oral :is(button,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* U69 B2 evidence continuation: functional, accessible, without decorative cards. */
+.b2-pathway{max-width:960px}
+.b2-path-next{border-top:2px solid var(--accent);padding:1rem 0 1.25rem}
+.b2-path-next h2,.b2-path-sequence h2,.b2-path-boundary h2{font-size:1.32rem;margin:.2rem 0 1rem}
+.b2-path-next>p{font-size:1rem;line-height:1.55}
+.b2-path-stages{list-style:none;margin:0;padding:0}
+.b2-path-stage{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:.25rem 1rem;border-top:1px solid var(--line);padding:1.1rem 0}
+.b2-path-stage h3{margin:0;font-size:1.07rem}
+.b2-path-state{font-weight:700;font-size:.91rem}
+.b2-path-explanation{grid-column:1 / -1;line-height:1.6;margin:.3rem 0}
+.b2-path-date{grid-column:1 / -1;font-size:.91rem;color:var(--muted);margin:.1rem 0}
+.b2-path-stage>.b2-action{grid-column:1 / -1;justify-self:start;margin-top:.6rem}
+.b2-path-sequence,.b2-path-boundary{margin:1.2rem 0;padding:1.1rem 0;border-top:1px solid var(--line)}
+.b2-path-boundary p{max-width:78ch;line-height:1.65}
+.b2-path-warning{padding:.8rem 0;border-bottom:1px solid var(--line);font-weight:600}
+@media(max-width:650px){.b2-path-stage{grid-template-columns:1fr}.b2-path-stage>.b2-action{width:100%}}

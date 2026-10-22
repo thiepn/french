@@ -3,8 +3,8 @@ import {resolveU40LessonLinks} from '../unified/u40-lexical-bridge';
 import {
   countDueSrs,
   ensureCanonicalLearnerState,
-  ensureNewRecognitionRecords,
-  ensureSkillRecord,
+  claimActiveStudySession,
+  newSkillRecord,
   readCanonicalLearnerState,
   readDueSrs,
   readRecentReviewEvents,
@@ -12,8 +12,7 @@ import {
   readSrsByNoteIds,
   readStartedRecognitionNoteIds,
   readActiveStudySession,
-  todayReviewCounts,
-  writeActiveStudySession
+  todayReviewCounts
 } from './repository';
 import type { CanonicalSrsRecordV1,SkillId } from './model';
 import { createStudySession,type StudyMix,type StudySessionStateV1 } from './session';
@@ -81,7 +80,7 @@ async function freshRecords(limit:number,indexRows?:VocabularySearchRow[]){
     .filter(row=>row.id&&!started.has(row.id))
     .sort((a,b)=>a.order-b.order)
     .slice(0,limit);
-  return ensureNewRecognitionRecords(unseen.map(row=>row.id));
+  return unseen.map(row=>newSkillRecord(row.id,'recognition'));
 }
 
 
@@ -103,7 +102,7 @@ async function adaptiveStagedRecords(
     for(const meta of batch){
       const skill=nextAdaptiveSkill(meta,records.get(meta.id)??[]);
       if(!skill||skill==='recognition')continue;
-      staged.push(await ensureSkillRecord(meta.id,skill));
+      staged.push(newSkillRecord(meta.id,skill));
       if(staged.length>=limit)break;
     }
   }
@@ -140,8 +139,7 @@ export async function createReviewStudySession(limit=50,now=Date.now()):Promise<
   const prefs=sessionPreferences(learner);
   const queue=await smartDue(limit,now);
   const session=createStudySession(queue,{mode:'review',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
-  await writeActiveStudySession(session);
-  return session;
+  return (await claimActiveStudySession(session,[],Date.now())).session;
 }
 
 export async function createLearnStudySession(limit?:number,now=Date.now()):Promise<StudySessionStateV1>{
@@ -151,8 +149,7 @@ export async function createLearnStudySession(limit?:number,now=Date.now()):Prom
   const rows=await freshRecords(limit??prefs.dailyNewLimit,index.rows);
   const queue=spaceWholeQueue(rows.map(row=>row.id),prefs.siblingSpacing);
   const session=createStudySession(queue,{mode:'learn',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
-  await writeActiveStudySession(session);
-  return session;
+  return (await claimActiveStudySession(session,rows,Date.now())).session;
 }
 
 export async function createTodayStudySession(now=Date.now()):Promise<StudySessionStateV1>{
@@ -180,8 +177,7 @@ export async function createTodayStudySession(now=Date.now()):Promise<StudySessi
   if(prefs.size>0)queue=queue.slice(0,prefs.size);
 
   const session=createStudySession(queue,{mode:'today',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
-  await writeActiveStudySession(session);
-  return session;
+  return (await claimActiveStudySession(session,[...staged,...fresh],Date.now())).session;
 }
 
 
@@ -224,16 +220,13 @@ export async function createSelectedVocabularySession(
   const dueIds=due.slice(0,maxSize);
   const newQueued=newIds.slice(0,Math.max(0,maxSize-dueIds.length));
   if(!dueIds.length&&!newQueued.length)return{kind:'empty',due:0,fresh:0,matched:ids.length};
-  // Check again before touching native learner state: never replace unsent work.
-  const newer=await readActiveStudySession(now);
-  if(newer&&newer.cursor<newer.queueIds.length)
-    return{kind:'resume',due:0,fresh:0,matched:ids.length};
-  const fresh=await ensureNewRecognitionRecords(newQueued);
+  const fresh=newQueued.map(id=>newSkillRecord(id,'recognition'));
   const queue=spaceWholeQueue(
     mixTodayQueue(dueIds,fresh.map(record=>record.id),prefs.mix),prefs.siblingSpacing
   );
   const session=createStudySession(queue,{mode:'custom',requeueAgain:prefs.requeueAgain,mix:prefs.mix,now});
-  await writeActiveStudySession(session);
+  const claimed=await claimActiveStudySession(session,fresh,Date.now());
+  if(claimed.kind==='resume')return{kind:'resume',due:0,fresh:0,matched:ids.length};
   return{kind:'created',due:dueIds.length,fresh:fresh.length,matched:ids.length};
 }
 

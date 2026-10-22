@@ -1,4 +1,5 @@
 import { openFrenchDatabase,readMetaValue,writeMetaValue } from '../storage/idb';
+import { writeBackupStoresIfUnchanged,type BackupPayload } from '../backup/archive';
 import type {
   CanonicalLearnerStateV1,
   CanonicalMigrationV1,
@@ -60,38 +61,78 @@ export async function canonicalMigrationFingerprint():Promise<string>{
   return (await readMetaValue<string>(MIGRATION_MARKER))??'';
 }
 
-export async function writeCanonicalMigration(data:CanonicalMigrationV1):Promise<void>{
+
+/** Initial P35 import may only initialize an untouched vNext database.
+ * P35 might continue changing in another tab; a new fingerprint must never
+ * reset SRS, activity or learner-owned vNext progress after first use.
+ */
+export async function initializeCanonicalMigrationIfAbsent(data:CanonicalMigrationV1):Promise<boolean>{
   const db=await openFrenchDatabase();
   try{
-    const tx=db.transaction(['learner','srs','activity','user-content','meta'],'readwrite');
-    const learner=tx.objectStore('learner');
-    const srs=tx.objectStore('srs');
-    const activity=tx.objectStore('activity');
-    const userContent=tx.objectStore('user-content');
-    const meta=tx.objectStore('meta');
+    return await new Promise<boolean>((resolve,reject)=>{
+      let imported=false;
+      const tx=db.transaction(['learner','srs','activity','user-content','session','meta'],'readwrite');
+      const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),
+        activity=tx.objectStore('activity'),content=tx.objectStore('user-content'),
+        session=tx.objectStore('session'),meta=tx.objectStore('meta');
+      const checks=[
+        learner.get('state-v1'),srs.count(),activity.count(),content.count(),
+        session.count(),meta.get(MIGRATION_MARKER)
+      ];
+      let pending=checks.length;
+      for(const request of checks){
+        request.onsuccess=()=>{
+          if(--pending!==0)return;
+          try{
+            const [saved,srsCount,eventCount,contentCount,sessionCount,marker]=checks.map(item=>item.result);
+            if(saved!==undefined||Number(srsCount)>0||Number(eventCount)>0||
+               Number(contentCount)>0||Number(sessionCount)>0||marker!==undefined)return;
+            learner.put(data.learner,'state-v1');
+            content.put(data.userContent,'content-v1');
+            for(const row of data.srs)srs.put(row,row.id);
+            for(const event of data.reviews)activity.put(event,event.eventId);
+            meta.put(data.learner.sourceFingerprint,MIGRATION_MARKER);
+            meta.put({
+              currentLevel:highestEarnedLevel(data.learner.promotions),
+              dueCount:data.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
+              streakDays:studyStreak(data.learner.studyDays)
+            },'learner-summary');
+            imported=true;
+          }catch(error){reject(error);tx.abort();}
+        };
+        request.onerror=()=>{reject(request.error??Error('Migration ownership read failed'));tx.abort();};
+      }
+      tx.oncomplete=()=>resolve(imported);
+      tx.onerror=()=>reject(tx.error??Error('Canonical first import failed'));
+      tx.onabort=()=>reject(tx.error??Error('Canonical first import aborted'));
+    });
+  }finally{db.close();}
+}
 
+/** An Account legacy-cloud replacement requires the exact local snapshot
+ * reviewed before the network request. The writer cannot race a native tab.
+ */
+export async function writeCanonicalMigration(
+  data:CanonicalMigrationV1,expectedCurrent:BackupPayload
+):Promise<void>{
+  await writeBackupStoresIfUnchanged(expectedCurrent,tx=>{
+    const learner=tx.objectStore('learner'),srs=tx.objectStore('srs'),
+      activity=tx.objectStore('activity'),content=tx.objectStore('user-content'),
+      session=tx.objectStore('session'),meta=tx.objectStore('meta');
     learner.put(data.learner,'state-v1');
-    userContent.put(data.userContent,'content-v1');
-
+    content.put(data.userContent,'content-v1');
     srs.clear();
     for(const row of data.srs)srs.put(row,row.id);
-
     activity.clear();
     for(const row of data.reviews)activity.put(row,row.eventId);
-
+    session.clear(); // A foreign legacy session is not a valid native queue.
     meta.put(data.learner.sourceFingerprint,MIGRATION_MARKER);
     meta.put({
       currentLevel:highestEarnedLevel(data.learner.promotions),
       dueCount:data.srs.filter(row=>row.status!=='new'&&!row.suspended&&row.dueAt>0&&row.dueAt<=Date.now()).length,
       streakDays:studyStreak(data.learner.studyDays)
     },'learner-summary');
-
-    await new Promise<void>((resolve,reject)=>{
-      tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??new Error('Canonical learner migration failed.'));
-      tx.onabort=()=>reject(tx.error??new Error('Canonical learner migration was aborted.'));
-    });
-  }finally{db.close();}
+  });
 }
 
 export async function readCanonicalLearnerState():Promise<CanonicalLearnerStateV1|null>{
@@ -372,11 +413,58 @@ export async function readActiveStudySession(now=Date.now()):Promise<StudySessio
       request.onsuccess=()=>resolve(request.result);
       request.onerror=()=>reject(request.error??new Error('Could not read active study session.'));
     });
-    const session=normalizeStudySession(raw,now);
-    if(session)return session;
+    // A read must not remove a newly claimed session from a different tab.
+    // Expired data is replaced only inside an atomic session claim.
+    return normalizeStudySession(raw,now);
   }finally{db.close();}
-  await clearActiveStudySession();
-  return null;
+}
+
+/** Serialize competing study starts across tabs; newly introduced SRS records
+ * belong to the winning claim transaction, never a losing speculative builder.
+ */
+export async function claimActiveStudySession(
+  candidate:StudySessionStateV1,
+  proposedNewSkills:readonly CanonicalSrsRecordV1[]=[],
+  now=Date.now()
+):Promise<{kind:'created'|'resume';session:StudySessionStateV1}>{
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(['session','srs'],'readwrite');
+      const owner=tx.objectStore('session'),srs=tx.objectStore('srs');
+      let outcome:{kind:'created'|'resume';session:StudySessionStateV1}|undefined;
+      const request=owner.get('active');
+      request.onsuccess=()=>{
+        try{
+          const raw=request.result as unknown;
+          const active=normalizeStudySession(raw,now);
+          if(active&&active.cursor<active.queueIds.length){
+            outcome={kind:'resume',session:active};return;
+          }
+          // Preserve unknown source/owner records rather than replacing them.
+          if(raw!==undefined&&!active&&
+             (!raw||typeof raw!=='object'||Array.isArray(raw)||
+              (raw as {schema?:unknown}).schema!=='thiepn-french-study-session-v1'))
+            throw Error('UNKNOWN_SAVED_STUDY_SESSION');
+          outcome={kind:'created',session:candidate};
+          if(!candidate.queueIds.length)return; // No empty session persisted.
+          const queue=new Set(candidate.queueIds);
+          const needed=new Map<string,CanonicalSrsRecordV1>();
+          for(const row of proposedNewSkills)if(queue.has(row.id))needed.set(row.id,row);
+          // Enqueue all requests in this transaction; no await or external lock.
+          for(const row of needed.values()){
+            const lookup=srs.get(row.id);
+            lookup.onsuccess=()=>{if(lookup.result===undefined)srs.put(row,row.id);};
+          }
+          owner.put(candidate,'active');
+        }catch(error){reject(error);tx.abort();}
+      };
+      request.onerror=()=>reject(request.error??Error('Cannot inspect saved session'));
+      tx.oncomplete=()=>outcome?resolve(outcome):reject(Error('Missing claim result'));
+      tx.onerror=()=>reject(tx.error??Error('Session claim failed'));
+      tx.onabort=()=>reject(tx.error??Error('Session claim aborted'));
+    });
+  }finally{db.close();}
 }
 
 export async function writeActiveStudySession(session:StudySessionStateV1):Promise<void>{
@@ -390,6 +478,38 @@ export async function writeActiveStudySession(session:StudySessionStateV1):Promi
       tx.onabort=()=>reject(tx.error??new Error('Study session save was aborted.'));
     });
   }finally{db.close();}
+}
+
+export async function clearCompletedStudySession(expected:StudySessionStateV1,now=Date.now()):Promise<boolean>{
+  if(expected.cursor<expected.queueIds.length)return false;
+  const db=await openFrenchDatabase();
+  try{
+    return await new Promise<boolean>((resolve,reject)=>{
+      const tx=db.transaction('session','readwrite');
+      const owner=tx.objectStore('session'),read=owner.get('active');
+      let cleared=false;
+      read.onsuccess=()=>{
+        const current=normalizeStudySession(read.result,now);
+        if(current&&sameSession(current,expected)){owner.delete('active');cleared=true;}
+      };
+      tx.oncomplete=()=>resolve(cleared);
+      tx.onerror=()=>reject(tx.error??Error('Completed session cleanup failed'));
+      tx.onabort=()=>reject(tx.error??Error('Completed session cleanup aborted'));
+    });
+  }finally{db.close();}
+}
+function sameValue(a:unknown,b:unknown):boolean{return JSON.stringify(a)===JSON.stringify(b);}
+function sameSession(a:StudySessionStateV1,b:StudySessionStateV1):boolean{return sameValue(a,b);}
+function sessionConflict():Error{return Error('STUDY_SESSION_CONFLICT');}
+function guardedReads(
+  tx:IDBTransaction,requests:readonly IDBRequest[],write:()=>void,reject:(reason:unknown)=>void
+):void{
+  let pending=requests.length;
+  const fail=(error:unknown)=>{reject(error);try{tx.abort();}catch{/* closed */}};
+  for(const request of requests){
+    request.onsuccess=()=>{if(--pending===0){try{write();}catch(error){fail(error);}}};
+    request.onerror=()=>fail(request.error??Error('Guarded learner read failed'));
+  }
 }
 
 export async function clearActiveStudySession():Promise<void>{
@@ -441,11 +561,13 @@ export async function recordStudySessionReview(
   context:ReviewContentContext={},
   timestamp=Date.now(),
   responseMs=0,
-  typedQuality:TypedQuality='none'
+  typedQuality:TypedQuality='none',
+  expectedSession?:StudySessionStateV1
 ):Promise<{next:CanonicalSrsRecordV1;event:CanonicalReviewEventV1;session:StudySessionStateV1}>{
   const learner=await ensureCanonicalLearnerState(timestamp);
   const active=await readActiveStudySession(timestamp);
-  if(!active)throw new Error('Active learner session is unavailable.');
+  if(!active||active.cursor>=active.queueIds.length||active.currentId!==previous.id||
+     (expectedSession&&!sameSession(active,expectedSession)))throw sessionConflict();
 
   const reinforcement=reinforcementAt(active);
   const practiceOnly=Boolean(reinforcement);
@@ -552,11 +674,20 @@ export async function recordStudySessionReview(
         ?['learner','activity','meta','session']
         :['learner','srs','activity','meta','session'];
       const tx=db.transaction(stores,'readwrite');
-      tx.objectStore('learner').put(updatedLearner,'state-v1');
-      if(!practiceOnly)tx.objectStore('srs').put(next,next.id);
-      tx.objectStore('activity').put(event,event.eventId);
-      tx.objectStore('meta').put(summary,'learner-summary');
-      tx.objectStore('session').put(session,'active');
+      const owner=tx.objectStore('session'),state=tx.objectStore('learner'),meta=tx.objectStore('meta');
+      const a=owner.get('active'),b=state.get('state-v1'),c=meta.get('learner-summary');
+      const d=practiceOnly?null:tx.objectStore('srs').get(previous.id);
+      guardedReads(tx,[a,b,c,...(d?[d]:[])],()=>{
+        const stored=normalizeStudySession(a.result,timestamp);
+        if(!stored||!sameSession(stored,active)||!sameValue(b.result,learner)||
+           !sameValue(c.result??{},previousSummary)||
+           (d&&!sameValue(d.result,previous)))throw sessionConflict();
+        state.put(updatedLearner,'state-v1');
+        if(!practiceOnly)tx.objectStore('srs').put(next,next.id);
+        tx.objectStore('activity').put(event,event.eventId);
+        meta.put(summary,'learner-summary');
+        owner.put(session,'active');
+      },reject);
       tx.oncomplete=()=>resolve();
       tx.onerror=()=>reject(tx.error??new Error('Study-session review transaction failed.'));
       tx.onabort=()=>reject(tx.error??new Error('Study-session review transaction was aborted.'));
@@ -565,22 +696,45 @@ export async function recordStudySessionReview(
 
   return{next,event,session};
 }
-export async function skipStudySessionItem(now=Date.now()):Promise<StudySessionStateV1|null>{
+export async function skipStudySessionItem(
+  now=Date.now(),expectedSession?:StudySessionStateV1
+):Promise<StudySessionStateV1|null>{
   const active=await readActiveStudySession(now);
   if(!active)return null;
+  if(active.cursor>=active.queueIds.length||
+     (expectedSession&&!sameSession(active,expectedSession)))throw sessionConflict();
   const stats=cloneSessionStats(active);stats.skipped++;
   const next=advanceSession({...active,stats},now);
-  await writeActiveStudySession(next);
+  const db=await openFrenchDatabase();
+  try{
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction('session','readwrite'),owner=tx.objectStore('session');
+      const current=owner.get('active');
+      guardedReads(tx,[current],()=>{
+        const stored=normalizeStudySession(current.result,now);
+        if(!stored||!sameSession(stored,active))throw sessionConflict();
+        owner.put(next,'active');
+      },reject);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error??Error('Skip transaction failed'));
+      tx.onabort=()=>reject(tx.error??Error('Skip transaction aborted'));
+    });
+  }finally{db.close();}
   return next;
 }
 
-export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySessionStateV1|null>{
+export async function undoLastStudySessionReview(
+  now=Date.now(),expectedSession?:StudySessionStateV1
+):Promise<StudySessionStateV1|null>{
   const active=await readActiveStudySession(now);
   const undo=active?.undo.at(-1);
   if(!active||!undo)return null;
+  if(expectedSession&&!sameSession(active,expectedSession))throw sessionConflict();
 
   const learner=await readCanonicalLearnerState();
   if(!learner)throw new Error('Learner state is unavailable.');
+  const summary=await readMetaValue<unknown>('learner-summary');
+  const latestSrs=await readSrsById(undo.srsId);
 
   const restoredLearner={...learner,studyDays:[...undo.previousStudyDays],profile:{...undo.previousProfile}};
   const restored:StudySessionStateV1={
@@ -599,11 +753,24 @@ export async function undoLastStudySessionReview(now=Date.now()):Promise<StudySe
   try{
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction(['learner','srs','activity','meta','session'],'readwrite');
-      tx.objectStore('learner').put(restoredLearner,'state-v1');
-      tx.objectStore('srs').put(undo.previousRecord,undo.srsId);
-      tx.objectStore('activity').delete(undo.eventId);
-      tx.objectStore('meta').put(undo.previousSummary,'learner-summary');
-      tx.objectStore('session').put(restored,'active');
+      const owner=tx.objectStore('session'),state=tx.objectStore('learner'),
+        srs=tx.objectStore('srs'),events=tx.objectStore('activity'),meta=tx.objectStore('meta');
+      const a=owner.get('active'),b=state.get('state-v1'),c=meta.get('learner-summary'),
+        d=srs.get(undo.srsId),e=events.get(undo.eventId);
+      guardedReads(tx,[a,b,c,d,e],()=>{
+        const current=normalizeStudySession(a.result,now);
+        const review=e.result as CanonicalReviewEventV1|undefined;
+        if(!current||!sameSession(current,active)||!sameValue(b.result,learner)||
+           !sameValue(c.result,summary)||!sameValue(d.result,latestSrs)||
+           !review||review.eventId!==undo.eventId||
+           (!review.practiceOnly&&(d.result as CanonicalSrsRecordV1|undefined)?.lastReviewedAt!==review.t))
+          throw sessionConflict();
+        state.put(restoredLearner,'state-v1');
+        srs.put(undo.previousRecord,undo.srsId);
+        events.delete(undo.eventId);
+        meta.put(undo.previousSummary,'learner-summary');
+        owner.put(restored,'active');
+      },reject);
       tx.oncomplete=()=>resolve();
       tx.onerror=()=>reject(tx.error??new Error('Undo transaction failed.'));
       tx.onabort=()=>reject(tx.error??new Error('Undo transaction was aborted.'));
@@ -966,6 +1133,45 @@ export async function compareAndSetOriginalCourseCheckpoint(
    tx.oncomplete=()=>resolve(outcome);
    tx.onerror=()=>reject(tx.error??new Error('Original course checkpoint write failed.'));
    tx.onabort=()=>reject(tx.error??new Error('Original course checkpoint write was aborted.'));
+  });
+ }finally{db.close();}
+}
+
+
+/**
+ * U65 B2 original learner-row CAS. The receipt is sanitized by the B2
+ * evaluator before this write; no secondary store, profile, grade, event
+ * or SRS mutation is permitted. A stale tab cannot overwrite newer evidence.
+ */
+export async function compareAndSetB2Evidence(expectedToken:string,nextValue:unknown):Promise<'saved'|'conflict'>{
+ const incoming=nextValue as {schema?:unknown;token?:unknown;history?:unknown}|null;
+ if(incoming?.schema!=='thiepn-french-u65-b2-evidence-v1'||
+    typeof incoming.token!=='string'||incoming.token.length<8||
+    !Array.isArray(incoming.history)||incoming.history.length>24)
+  throw Error('B2_INVALID_STATE');
+ const db=await openFrenchDatabase();
+ try{
+  return await new Promise<'saved'|'conflict'>((resolve,reject)=>{
+   const tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner');
+   let result:'saved'|'conflict'='conflict';
+   const request=store.get('state-v1');
+   request.onsuccess=()=>{
+    const learner=request.result as CanonicalLearnerStateV1|undefined;
+    if(!learner)return;
+    const raw=learner.featureState['vU65B2StructuralEvidence'];
+    const saved=raw===undefined?'':raw&&typeof raw==='object'&&!Array.isArray(raw)&&
+     (raw as Record<string,unknown>).schema==='thiepn-french-u65-b2-evidence-v1'&&
+     typeof (raw as Record<string,unknown>).token==='string'?
+      (raw as Record<string,string>).token:null;
+    if(saved===null||saved!==expectedToken||incoming.token===expectedToken)return;
+    store.put({...learner,featureState:{
+     ...learner.featureState,vU65B2StructuralEvidence:nextValue
+    }} satisfies CanonicalLearnerStateV1,'state-v1');
+    result='saved';
+   };
+   tx.oncomplete=()=>resolve(result);
+   tx.onerror=()=>reject(tx.error??Error('B2 evidence save failed'));
+   tx.onabort=()=>reject(tx.error??Error('B2 evidence transaction aborted'));
   });
  }finally{db.close();}
 }

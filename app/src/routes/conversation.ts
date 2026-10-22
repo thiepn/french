@@ -10,14 +10,16 @@ import {
 import {loadConversationState,persistConversationState} from '../core/conversation/storage';
 import {partnerWording} from '../core/conversation/variants';
 import {getP35SourceScenario,P35_SOURCE_SCENARIOS} from '../core/conversation/p35-graphs';
-import {P35_P18_MISSIONS} from '../core/conversation/source-parity';
-import {startSourceGraph,startSourceMission,sourceSupport,respondSourceGraph,cancelSourceGraph,
- sourcePrompt,type SourceGraphState} from '../core/conversation/p35-runtime';
-import {loadSourceGraphState,persistSourceGraphState} from '../core/conversation/p35-storage';
+import {P35_P18_MISSIONS,P35_P30_B2_SCENES,P35_P30_B2_PRACTICE_CHAINS,P35_LATER_B2_FUNCTIONS} from '../core/conversation/source-parity';
+import {startSourceGraph,startSourceMission,startB2SourceGraph,startB2SourcePracticeChain,
+ sourceSupport,respondSourceGraph,cancelSourceGraph,
+ sourcePrompt,matchingP35AuthoredExamples,type SourceGraphState} from '../core/conversation/p35-runtime';
+import {loadSourceGraphState,persistSourceGraphState,SourceGraphWriteConflictError} from '../core/conversation/p35-storage';
 import {createSourceHandoff,consumeSourceDraft,SOURCE_HANDOFF_KEY,type SourceHandoff} from '../core/conversation/source-transfer';
 import {originalRepairTargets,originalMissionRepairStages} from '../core/conversation/source-practice-review';
 import {rankSourceMissionContinuity} from '../core/conversation/source-mission-continuity';
 import {sourceFunctionPracticePlan} from '../core/conversation/source-function-practice';
+import {deriveB2ContextTransfer} from '../core/conversation/b2-context-transfer';
 import {P35_P20_FUNCTIONS,legacySceneId,legacyMissionId,originalScenarioGoal,inspectP35ConversationCoverage,auditSourceLinkedMissions} from '../core/conversation/source-parity';
 import {
   FUNCTION_CATALOG,functionProfiles,rankedNativeScenarios,rankNativeMissions,
@@ -52,8 +54,40 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   let lastResult:ConversationResult|null=null,lastMissionResult:MissionResult|null=null;
   let lastAdaptiveResult:AdaptiveResult|null=null;
   const saveOriginal=async(next:SourceGraphState)=>{
-    await persistSourceGraphState(next);
-    originalSource=next;
+    // The expected snapshot is the state this tab actually rendered.
+    // The original meta owner checks it atomically before any source write.
+    originalSource=await persistSourceGraphState(next,originalSource);
+  };
+  const recoverOriginalConflict=async(error:unknown,reply=''):Promise<boolean>=>{
+    if(!(error instanceof SourceGraphWriteConflictError))return false;
+    const previous=originalSource.active;
+    const latest=await loadSourceGraphState();
+    originalSource=latest;sourcePaused=false;
+    sourceNotice='Another tab saved a newer original dialogue. The latest checkpoint is loaded; your stale answer was not saved.';
+    if(signal.aborted)return true;
+    const sameTask=Boolean(previous&&latest.active&&
+      previous.runId===latest.active.runId&&previous.nodeId===latest.active.nodeId);
+    // The failed CAS is settled. Render fresh controls in enabled state.
+    busy=false;
+    if(sameTask&&reply){
+      // Safe to edit and retry only if the exact run AND node still match.
+      renderOriginalSource(reply);
+    }else{
+      render();
+      if(reply){
+        // Different node or mission: retain text only in this tab's DOM for
+        // copying. Never place a stale response in the new node's input.
+        const recovery=item('section','','source-conflict-reply');
+        recovery.append(item('p','Unsent reply from the previous source task (not submitted or stored). Copy it if needed.','conversation-feedback'));
+        const draft=item('textarea');draft.value=reply;draft.readOnly=true;
+        draft.setAttribute('aria-label','Unsent reply from outdated source task');
+        recovery.append(draft);stage.prepend(recovery);
+      }
+    }
+    // The source task or home already renders sourceNotice. Do not repeat
+    // the same conflict message in the shell-level status.
+    status.textContent='';
+    return true;
   };
   const canStartOriginal=()=>!busy&&!state.active&&!state.mission&&!state.adaptive&&!originalSource.active;
   const handoffOriginal=async(kind:SourceHandoff['kind'],level:1|2)=>{
@@ -66,10 +100,11 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       await saveOriginal(current);
       if(signal.aborted)return;
       sessionStorage.setItem(SOURCE_HANDOFF_KEY,JSON.stringify(
-        createSourceHandoff(current,kind,Date.now())));
+        createSourceHandoff(originalSource,kind,Date.now())));
       navigate(kind);
     }catch(error){
-      status.textContent='Source transfer was not opened; saved original dialogue remains available.';
+      if(!await recoverOriginalConflict(error))
+        status.textContent='Source transfer was not opened; saved original dialogue remains available.';
       console.error('Original source companion transfer failed',error);
     }finally{busy=false;}
   };
@@ -86,8 +121,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       if(preservedSourceReply!==undefined&&originalSource.active)
         renderOriginalSource(preservedSourceReply);
       else render();
-    }catch(error){status.textContent='Source practice was not saved. No new step has been credited. '+String(error);}
-    finally{busy=false;}
+    }catch(error){
+      if(!await recoverOriginalConflict(error,preservedSourceReply))
+        status.textContent='Source practice was not saved. No new step has been credited. '+String(error);
+    }finally{busy=false;}
   };
   const save=async(next:ConversationState)=>{
     await persistConversationState(next);
@@ -166,6 +203,70 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         originalDeck.append(repeatOriginal);
       }
     }
+    // P30 source-authored B2 graph practice. Exact P35 scene IDs/partner
+    // nodes and the original source matcher; neither B2 level promotion nor
+    // P28 B2 benchmark authority is exposed here.
+    const b2Deck=item('section','','source-b2-practice');
+    b2Deck.append(item('h3','Original B2 dialogue practice'));
+    b2Deck.append(item('h3','Original B2 function contexts:'));
+    const contrastRows=item('div','','source-b2-transfer');
+    for(const plan of deriveB2ContextTransfer(originalSource)){
+      const row=item('section','','source-b2-transfer-row');
+      row.append(item('h4',plan.label));
+      const context=plan.completedUnassistedContexts+' / '+plan.authoredContexts+
+        ' completed original settings with unassisted rule matches';
+      const details=[context,plan.unassistedRuleMatches+' first-try source-rule matches'];
+      if(plan.supportedOnlyContexts)
+        details.push(plan.supportedOnlyContexts+' settings with supported-only answers');
+      if(plan.unfinishedUnassistedContexts)
+        details.push(plan.unfinishedUnassistedContexts+' unfinished source settings');
+      const summary=item('p',details.join(' · '),'source-b2-transfer-data');
+      row.append(summary);
+      if(plan.nextSceneId&&plan.nextSceneTitle){
+        const reason=plan.nextAction==='different-context'?'Different original setting':
+          plan.nextAction==='retry-without-help'?'Retry source dialogue without help':
+          plan.nextAction==='new-original-variant'?'Other original prompt variant':
+          'First source dialogue';
+        const open=button('Practise B2 function · '+plan.label,'secondary-action compact-action');
+        open.disabled=!canStartOriginal();
+        const target=plan.nextSceneId;
+        open.onclick=()=>void commitOriginal(()=>
+          startB2SourceGraph(originalSource,target,Date.now()),
+          'Opened original P35 source graph; completed goal/rule matches remain practice only.');
+        row.append(item('p',reason+' · '+plan.nextSceneTitle,'source-b2-transfer-next'),open);
+      }
+      contrastRows.append(row);
+    }
+    b2Deck.append(contrastRows,item('h3','Original B2 source situations'));
+    for(const id of P35_P30_B2_SCENES){
+      const graph=getP35SourceScenario(id);
+      if(!graph||graph.level!=='B2')continue;
+      const recent=originalSource.history.filter(row=>row.scenarioId===id);
+      const control=button('Practise original B2 · '+graph.title,'secondary-action compact-action');
+      control.disabled=!canStartOriginal();
+      control.onclick=()=>void commitOriginal(()=>
+        startB2SourceGraph(originalSource,id,Date.now()),
+        'Opened original P35 B2 dialogue for practice. No benchmark or CEFR score.');
+      b2Deck.append(control);
+      const summary=item('p',graph.goal+' · '+recent.filter(row=>row.complete).length+
+        ' completed source-objective runs','source-b2-goal');
+      b2Deck.append(summary);
+    }
+    b2Deck.append(item('h3','B2 three-scenario practice sequences'));
+    for(const chain of P35_P30_B2_PRACTICE_CHAINS){
+      const earlier=(originalSource.missionHistory??[]).filter(row=>row.missionId===chain.id);
+      const start=button('Practise B2 sequence · '+chain.title,'secondary-action compact-action');
+      start.disabled=!canStartOriginal();
+      start.onclick=()=>void commitOriginal(()=>
+        startB2SourcePracticeChain(originalSource,chain.id,Date.now()),
+        'P30-informed practice sequence started using original source graphs. No P28 benchmark was created.');
+      b2Deck.append(start);
+      const detail=item('p',chain.scenarios.map(id=>getP35SourceScenario(id)?.title??id).join(' → ')+
+        ' · '+earlier.length+' completed practice runs','source-b2-goal');
+      b2Deck.append(detail);
+    }
+    b2Deck.append(item('p','Practice only. Original P35 P28 B2 qualification and P29 maintenance are not available in this runtime.','source-b2-boundary'));
+    originalDeck.append(b2Deck);
     originalDeck.append(item('h3','Source P18 missions'));
     const missionList=item('div','','source-graph-list');
     for(const recommendation of rankSourceMissionContinuity(originalSource)){
@@ -614,7 +715,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       item('p','Pinned source graph node '+active.nodeId+' · wording variant '+(active.variant+1)+'/'+graph.variantCount+
         ' · '+active.turns+' accepted steps · '+active.repairs+' clarification attempts. No automatic SRS, CEFR or true oral fluency award.','muted-copy'));
     if(originalSource.mission){
-      const mission=P35_P18_MISSIONS.find(m=>m.id===originalSource.mission?.id);
+      const mission=[...P35_P18_MISSIONS,...P35_P30_B2_PRACTICE_CHAINS].find(m=>m.id===originalSource.mission?.id);
       banner.append(item('p','Source mission '+(mission?.title??originalSource.mission.id)+
         ' · task '+(originalSource.mission.index+1)+'/3 · earlier tasks '+
         originalSource.mission.completed.length,'conversation-mission-banner'));
@@ -653,16 +754,16 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const returned=returnedSourceDraft;
     returnedSourceDraft=null;
     field.value=preservedText||returned||'';
+    const approvedExamples=matchingP35AuthoredExamples(graph,active.nodeId,active.slots);
     const assistance=item('p','','conversation-assistance');
     if(returned)assistance.append(item('span',
       'Explicit Write draft restored from same-tab memory only. Model support remains active; this reply cannot earn independent source evidence.'));
     if(active.support>=1)assistance.append(item('span','Source hint · '+(node.hint??'Respond in French.')));
-    if(active.support>=2)assistance.append(item('span','Source model · '+(node.phrases?.[0]??'No source example available')));
+    if(active.support>=2)assistance.append(item('span','Source model · '+(approvedExamples[0]??'No original exact-rule example available')));
     const authored=item('div','','source-authored-options');
     if(active.support>=2){
-      authored.append(item('p','Original P35 authored examples for this node · supported only. Select to edit; nothing is submitted or graded automatically.','muted-copy'));
-      const samples=[...new Set([...(node.phrases??[]),...(node.rules??[]).map(rule=>rule.sample)]
-        .filter(text=>Boolean(text&&text.trim())))].slice(0,8);
+      authored.append(item('p','Original P35 authored examples accepted by this node’s rule matcher · supported practice only.','muted-copy'));
+      const samples=approvedExamples.slice(0,8);
       for(const sample of samples){
         const choice=button('Use authored phrase · '+sample,'secondary-action compact-action');
         choice.onclick=()=>{field.value=sample;field.focus({preventScroll:true});};
@@ -675,7 +776,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
     const send=button('Check source rule','primary-action compact-action');send.type='submit';
     const hint=button('Show original hint');hint.onclick=()=>void commitOriginal(()=>
       sourceSupport(originalSource,1,Date.now()),'Original hint requested. Independent turn credit is reduced.',field.value);
-    const example=button('Show source example');example.onclick=()=>void commitOriginal(()=>
+    const example=button('Show source example');example.disabled=approvedExamples.length===0;example.onclick=()=>void commitOriginal(()=>
       sourceSupport(originalSource,2,Date.now()),'Source phrase revealed; independent credit withheld.',field.value);
     const repeat=button('Ask for clarification');repeat.onclick=()=>void commitOriginal(()=>
       respondSourceGraph(originalSource,'Pardon, pouvez-vous répéter ?',Date.now()).state,
@@ -713,8 +814,10 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
         sourcePaused=false;busy=false;
         if(outcome.outcome==='uncertain'||outcome.outcome==='repair')renderOriginalSource(reply);
         else render();
-      }catch(error){localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);}
-      finally{busy=false;}
+      }catch(error){
+        if(!await recoverOriginalConflict(error,reply))
+          localStatus.textContent='Source turn was not saved; no progress recorded. '+String(error);
+      }finally{busy=false;}
     };
     form.onsubmit=event=>{event.preventDefault();void submit(false);};
     field.addEventListener('keydown',event=>{

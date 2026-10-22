@@ -22,12 +22,6 @@ export interface BackupInspection{
   createdAt:number;
 }
 
-function requestResult<T>(request:IDBRequest<T>):Promise<T>{
-  return new Promise((resolve,reject)=>{
-    request.onsuccess=()=>resolve(request.result);
-    request.onerror=()=>reject(request.error??new Error('IndexedDB request failed.'));
-  });
-}
 async function sha256(text:string):Promise<string>{
   if(!crypto?.subtle)throw new Error('Web Crypto is required for backup integrity.');
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
@@ -37,14 +31,42 @@ function safeKey(value:IDBValidKey):JsonKey{
   if(typeof value==='string'||typeof value==='number')return value;
   throw new Error('French backup encountered an unsupported database key type.');
 }
-async function dumpStore(db:IDBDatabase,name:StoreName):Promise<BackupRow[]>{
-  const tx=db.transaction(name,'readonly');
-  const store=tx.objectStore(name);
-  const [keys,values]=await Promise.all([
-    requestResult(store.getAllKeys()),
-    requestResult(store.getAll())
-  ]);
-  return keys.map((key,index)=>({key:safeKey(key),value:values[index]}));
+
+/** All seven stores are read within the same IndexedDB transaction.
+ * For guarded recovery, the callback may queue replacement writes before commit.
+ */
+function readStores(
+  tx:IDBTransaction,
+  onReady:(stores:Record<StoreName,BackupRow[]>)=>void,
+  reject:(reason:unknown)=>void
+):void{
+  const rows={} as Record<StoreName,BackupRow[]>;
+  let pending=STORE_NAMES.length*2;
+  const fail=(error:unknown)=>{
+    reject(error);
+    try{tx.abort();}catch{/* Already settled. */}
+  };
+  const complete=()=>{
+    if(--pending===0){
+      try{onReady(rows);}catch(error){fail(error);}
+    }
+  };
+  for(const name of STORE_NAMES){
+    let keys:IDBValidKey[]=[],values:unknown[]=[];
+    let haveKeys=false,haveValues=false,stored=false;
+    const record=()=>{
+      if(stored||!haveKeys||!haveValues)return;
+      stored=true;
+      if(keys.length!==values.length)throw Error('Inconsistent backup store '+name);
+      rows[name]=keys.map((key,index)=>({key:safeKey(key),value:values[index]}));
+    };
+    const store=tx.objectStore(name);
+    const keyRequest=store.getAllKeys(),valueRequest=store.getAll();
+    keyRequest.onsuccess=()=>{try{keys=keyRequest.result;haveKeys=true;record();complete();}catch(error){fail(error);}};
+    valueRequest.onsuccess=()=>{try{values=valueRequest.result;haveValues=true;record();complete();}catch(error){fail(error);}};
+    keyRequest.onerror=()=>fail(keyRequest.error??Error('Backup key read failed'));
+    valueRequest.onerror=()=>fail(valueRequest.error??Error('Backup data read failed'));
+  }
 }
 function assertRows(value:unknown,name:StoreName):BackupRow[]{
   if(!Array.isArray(value))throw new Error('Backup store '+name+' is missing.');
@@ -59,9 +81,16 @@ function assertRows(value:unknown,name:StoreName):BackupRow[]{
 export async function createBackupPayload():Promise<BackupPayload>{
   const db=await openFrenchDatabase();
   try{
-    const stores={} as Record<StoreName,BackupRow[]>;
-    for(const name of STORE_NAMES)stores[name]=await dumpStore(db,name);
-    return{dbName:DB_NAME,dbVersion:DB_VERSION,stores};
+    return await new Promise<BackupPayload>((resolve,reject)=>{
+      const tx=db.transaction([...STORE_NAMES],'readonly');
+      let snapshot:Record<StoreName,BackupRow[]>|undefined;
+      readStores(tx,stores=>{snapshot=stores;},reject);
+      tx.oncomplete=()=>snapshot
+        ?resolve({dbName:DB_NAME,dbVersion:DB_VERSION,stores:snapshot})
+        :reject(Error('Incomplete French backup snapshot'));
+      tx.onerror=()=>reject(tx.error??Error('French backup snapshot failed'));
+      tx.onabort=()=>reject(tx.error??Error('French backup snapshot aborted'));
+    });
   }finally{db.close();}
 }
 export function validateBackupPayload(value:unknown):BackupPayload{
@@ -74,21 +103,41 @@ export function validateBackupPayload(value:unknown):BackupPayload{
   for(const name of STORE_NAMES)stores[name]=assertRows((storesRaw as Record<string,unknown>)[name],name);
   return{dbName:DB_NAME,dbVersion:Number(raw.dbVersion)||DB_VERSION,stores};
 }
-export async function restoreBackupPayload(value:unknown):Promise<void>{
-  const payload=validateBackupPayload(value);
+/** Compare all seven stores inside the active read-write transaction.
+ * Used by both native backup restoration and legacy Account import.
+ */
+export async function writeBackupStoresIfUnchanged(
+  expectedCurrent:unknown,apply:(tx:IDBTransaction)=>void
+):Promise<void>{
+  const expected=validateBackupPayload(expectedCurrent);
   const db=await openFrenchDatabase();
   try{
     await new Promise<void>((resolve,reject)=>{
       const tx=db.transaction([...STORE_NAMES],'readwrite');
-      for(const name of STORE_NAMES){
-        const store=tx.objectStore(name);store.clear();
-        for(const row of payload.stores[name])store.put(row.value,row.key);
-      }
+      readStores(tx,stores=>{
+        const present={dbName:DB_NAME,dbVersion:DB_VERSION,stores};
+        if(JSON.stringify(present)!==JSON.stringify(expected))
+          throw Error('FRENCH_RESTORE_LOCAL_CHANGED: Local French changed since review. Review the latest state before restoring.');
+        apply(tx);
+      },reject);
       tx.oncomplete=()=>resolve();
-      tx.onerror=()=>reject(tx.error??new Error('Backup restore failed.'));
-      tx.onabort=()=>reject(tx.error??new Error('Backup restore was aborted.'));
+      tx.onerror=()=>reject(tx.error??Error('Guarded local restore failed'));
+      tx.onabort=()=>reject(tx.error??Error('Guarded local restore aborted'));
     });
   }finally{db.close();}
+}
+
+/** A backup may replace records only after the entire reviewed local state
+ * still matches at the moment the write transaction owns the database.
+ */
+export async function restoreBackupPayload(value:unknown,expectedCurrent:unknown):Promise<void>{
+  const payload=validateBackupPayload(value);
+  await writeBackupStoresIfUnchanged(expectedCurrent,tx=>{
+    for(const name of STORE_NAMES){
+      const store=tx.objectStore(name);store.clear();
+      for(const row of payload.stores[name])store.put(row.value,row.key);
+    }
+  });
 }
 export async function createBackupArchive(now=Date.now()):Promise<{archive:FrenchBackupArchive;text:string;filename:string}>{
   const payload=await createBackupPayload();
@@ -117,8 +166,8 @@ export async function inspectBackupArchive(text:string):Promise<BackupInspection
   return{archive,totalRows,rowsByStore,createdAt};
 }
 
-export async function restoreBackupArchive(text:string):Promise<BackupInspection>{
+export async function restoreBackupArchive(text:string,expectedCurrent:BackupPayload):Promise<BackupInspection>{
   const inspection=await inspectBackupArchive(text);
-  await restoreBackupPayload(inspection.archive.payload);
+  await restoreBackupPayload(inspection.archive.payload,expectedCurrent);
   return inspection;
 }

@@ -1,6 +1,6 @@
 import type { RouteContext } from '../core/types';
 import {
-  clearActiveStudySession,
+  clearCompletedStudySession,
   readActiveStudySession,
   readCanonicalLearnerState,
   readSrsById,
@@ -56,7 +56,7 @@ function speakFrench(text:string):void{
   const utterance=new SpeechSynthesisUtterance(text);utterance.lang='fr-FR';window.speechSynthesis.speak(utterance);
 }
 function sessionLabel(session:StudySessionStateV1):string{
-  if(session.mode==='custom')return'Original lesson words · native due/new';
+  if(session.mode==='custom')return'Selected vocabulary · native due/new';
   if(session.mode==='learn')return'New-card learning';
   if(session.mode==='today')return"Today's session";
   return'Review';
@@ -98,15 +98,26 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
     const restart=document.createElement('button');restart.type='button';restart.className='secondary-action';restart.textContent='Check due reviews again';
     restart.addEventListener('click',async()=>{
       restart.disabled=true;
-      await clearActiveStudySession();
-      session=await createReviewStudySession(50);
-      refreshToolbar();
-      void renderCurrent();
+      try{
+        session=await createReviewStudySession(50); // Won't clear a competing tab's work.
+        refreshToolbar();void renderCurrent();
+      }catch(error){
+        restart.disabled=false;
+        status.textContent='Could not restart Review; saved work was preserved.';
+        console.error('Conditional Review restart failed',error);
+      }
     });
     card.append(h,p,restart);stage.append(card);
     status.textContent='Session complete · '+finalSession.stats.reviewed+' answers saved';
     undoButton.hidden=true;
-    await clearActiveStudySession();
+    try{
+      const removed=await clearCompletedStudySession(finalSession);
+      if(!removed&&finalSession.queueIds.length)
+        status.textContent='Another tab changed Review. The newer saved session was not cleared.';
+    }catch(error){
+      status.textContent='Completed Review cleanup failed; saved work was preserved.';
+      console.error('Conditional session cleanup failed',error);
+    }
   };
 
   const renderCurrent=async():Promise<void>=>{
@@ -115,9 +126,14 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
 
     const record=await readSrsById(session.currentId);
     if(!record){
-      const advanced=await skipStudySessionItem();
-      if(!advanced){await renderDone();return;}
-      session=advanced;refreshToolbar();void renderCurrent();return;
+      try{
+        const advanced=await skipStudySessionItem(Date.now(),session);
+        if(!advanced){await renderDone();return;}
+        session=advanced;refreshToolbar();void renderCurrent();return;
+      }catch(error){
+        status.textContent='Another tab advanced Review. Reload for the current saved work.';
+        console.warn('Conditional missing-record skip rejected',error);return;
+      }
     }
 
     stage.innerHTML='<article class="review-card"><p>Loading review content…</p></article>';
@@ -131,9 +147,16 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
       const p=document.createElement('p');p.textContent='The saved SRS record '+record.noteId+' is preserved, but its content is not in the current corpus or migrated user cards.';
       const skip=document.createElement('button');skip.type='button';skip.className='secondary-action';skip.textContent='Skip without changing progress';
       skip.addEventListener('click',async()=>{
-        const advanced=await skipStudySessionItem();
-        if(advanced)session=advanced;
-        refreshToolbar();void renderCurrent();
+        skip.disabled=true;
+        try{
+          const advanced=await skipStudySessionItem(Date.now(),session);
+          if(advanced)session=advanced;
+          refreshToolbar();void renderCurrent();
+        }catch(error){
+          skip.disabled=false;
+          status.textContent='Another tab advanced Review. Reload for the current saved work.';
+          console.warn('Conditional unresolved-card skip rejected',error);
+        }
       });
       card.append(h,p,skip);stage.append(card);refreshToolbar();return;
     }
@@ -221,11 +244,13 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
             level:word.level,pos:word.pos,direction:spec.direction,practice:spec.listening?'listening':'review',
             typed:Boolean(grade),typedQuality:grade?.quality??'none',correct:grade?.correct??rating!=='again',
             hasContext:Boolean(word.exampleFr&&word.exampleEn)
-          },Date.now(),responseMs,grade?.quality??'none');
+          },Date.now(),responseMs,grade?.quality??'none',session);
           session=saved.session;refreshToolbar();void renderCurrent();
         }catch(error){
           for(const control of ratings.querySelectorAll<HTMLButtonElement>('button'))control.disabled=false;
-          status.textContent='Could not save this answer. The previous SRS and session state remain intact.';
+          status.textContent=String(error).includes('STUDY_SESSION_CONFLICT')
+            ?'Another tab changed Review. This answer was not saved; reload to continue its current card.'
+            :'Could not save this answer. The previous SRS and session state remain intact.';
           console.error('French session review write failed',error);
         }
       });
@@ -240,8 +265,13 @@ export async function mount({main,signal}:RouteContext):Promise<void>{
   undoButton.addEventListener('click',async()=>{
     undoButton.disabled=true;
     try{
-      const restored=await undoLastStudySessionReview();
+      const restored=await undoLastStudySessionReview(Date.now(),session);
       if(restored){session=restored;refreshToolbar();await renderCurrent();}
+    }catch(error){
+      status.textContent=String(error).includes('STUDY_SESSION_CONFLICT')
+        ?'Another tab changed Review. Undo was not applied; reload for the current saved state.'
+        :'Undo could not be saved; previous progress is preserved.';
+      console.warn('Conditional Review undo rejected',error);
     }finally{undoButton.disabled=false;}
   });
 

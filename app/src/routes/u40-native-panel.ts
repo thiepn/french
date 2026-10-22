@@ -33,7 +33,7 @@ export async function mountU40NativeLesson(host:HTMLElement,lessonId:string,opts
   if(!live())return;
   const ids=[...new Set(mapped.links.flatMap(item=>item.native?[item.native.id]:[]))];
   const [records,currentSession]=await Promise.all([readSrsByNoteIds(ids),readActiveStudySession()]);
-  const active=Boolean(currentSession&&currentSession.cursor<currentSession.queueIds.length);
+  let active=Boolean(currentSession&&currentSession.cursor<currentSession.queueIds.length);
   if(!live())return;
   host.replaceChildren();
   const heading=el('h3','Native vocabulary connections');
@@ -50,7 +50,11 @@ export async function mountU40NativeLesson(host:HTMLElement,lessonId:string,opts
     if(out.kind==='empty'){
      result.textContent='No eligible matched cards under your current daily limits. Existing due dates remain unchanged.';
      start.disabled=false;
-    }else opts.onReview(); // Existing session, native grading, undo and resume.
+    }else if(out.kind==='resume'){
+     // A new session could have started in another tab since this lesson mounted.
+     active=true;start.textContent='Resume existing native session';start.disabled=false;
+     result.textContent='An unfinished native Review session was kept. Linked words were not scheduled; choose Resume existing native session to continue it.';
+    }else opts.onReview(); // Only a newly created lesson session auto-navigates.
    }).catch(error=>{
     if(live()){start.disabled=false;result.textContent='Could not start native study. No original exercise grade was imported.';}
     console.error('U40 native session start failed',error);

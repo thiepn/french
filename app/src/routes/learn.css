@@ -1,0 +1,27 @@
+/* U63 — one learning entry point without inventing new progress authority. */
+.learn-page{max-width:960px}
+.learn-path{display:grid;gap:.9rem;padding:clamp(1rem,2.5vw,1.5rem) 0 1.5rem;border-bottom:1px solid var(--line)}
+.learn-path:first-of-type{margin-top:1.6rem;border-top:1px solid var(--line)}
+.learn-path h2,.learn-skill-section h2{margin:.15rem 0 .55rem;font-size:clamp(1.25rem,3vw,1.65rem);letter-spacing:-.025em}
+.learn-path p,.learn-skill-section>p{max-width:66ch;line-height:1.55;color:var(--muted);margin:.4rem 0}
+.learn-kicker{font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.learn-path-note{font-size:.84rem}
+.learn-path [data-course]{justify-self:start;min-height:46px}
+.learn-start-actions{display:flex;gap:.65rem;flex-wrap:wrap}
+.learn-start-actions button{min-height:46px}
+.learn-start-actions button:disabled{opacity:.48;cursor:not-allowed}
+.learn-resume{display:flex;gap:1rem;align-items:center;justify-content:space-between;padding:.8rem 1rem;border:1px solid var(--line);background:var(--surface)}
+.learn-resume p{margin:0;font-weight:650;color:var(--text)}
+.learn-due{font-weight:650}
+.learn-skill-section{margin-top:1.5rem}
+.learn-skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:1rem}
+.learn-skill-grid button{display:grid;gap:.35rem;text-align:left;padding:.9rem 1rem;background:var(--surface);border:1px solid var(--line);color:var(--text);cursor:pointer;min-height:74px}
+.learn-skill-grid button strong{font-size:.95rem}
+.learn-skill-grid button span{font-size:.8rem;color:var(--muted);line-height:1.4}
+.learn-path button:focus-visible,.learn-skill-grid button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:580px){
+  .learn-start-actions{display:grid}
+  .learn-start-actions button,.learn-path [data-course]{width:100%}
+  .learn-resume{display:grid}
+  .learn-skill-grid{grid-template-columns:1fr}
+}

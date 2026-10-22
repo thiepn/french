@@ -1,7 +1,6 @@
-import { createBackupPayload,restoreBackupPayload } from '../backup/archive';
+import { createBackupPayload,restoreBackupPayload,type BackupPayload } from '../backup/archive';
 import { legacyEnvelopeToCanonical } from '../learner/from-legacy';
 import { writeCanonicalMigration } from '../learner/repository';
-import { openFrenchDatabase } from '../storage/idb';
 import type { LegacySnapshotEnvelope } from '../migration/legacy-contract';
 
 export { backupPayloadToFrenchCloudSnapshot,hashFrenchCloudSnapshot,snapshotHasMeaningfulState } from './cloud-format';
@@ -13,13 +12,17 @@ function object(value:unknown):Record<string,unknown>{return value&&typeof value
 export async function createFrenchCloudSnapshot():Promise<FrenchCloudSnapshot>{
   return backupPayloadToFrenchCloudSnapshot(await createBackupPayload());
 }
-async function clearSession():Promise<void>{
-  const db=await openFrenchDatabase();try{await new Promise<void>((resolve,reject)=>{const tx=db.transaction('session','readwrite');tx.objectStore('session').clear();tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error??new Error('Session clear failed.'));tx.onabort=()=>reject(tx.error??new Error('Session clear aborted.'));});}finally{db.close();}
-}
-export async function applyFrenchCloudSnapshot(snapshot:FrenchCloudSnapshot):Promise<void>{
+export async function applyFrenchCloudSnapshot(snapshot:FrenchCloudSnapshot,expectedLocal:FrenchCloudSnapshot):Promise<void>{
   const vnext=object(snapshot._vnext);
-  if(vnext.schema==='thiepn-french-cloud-vnext-v1'&&vnext.payload){await restoreBackupPayload(vnext.payload);return;}
+  const reviewed=object(expectedLocal._vnext);
+  if(reviewed.schema!=='thiepn-french-cloud-vnext-v1'||!reviewed.payload)
+    throw Error('FRENCH_RESTORE_EXPECTED_LOCAL_MISSING');
+  const baseline=reviewed.payload as BackupPayload;
+  if(vnext.schema==='thiepn-french-cloud-vnext-v1'&&vnext.payload){
+    await restoreBackupPayload(vnext.payload,baseline);
+    return;
+  }
   const hash=await hashFrenchCloudSnapshot(snapshot);
   const envelope:LegacySnapshotEnvelope={schema:'thiepn-french-legacy-import-v1',source:'local-storage',capturedAt:Date.now(),sourceUpdatedAt:Number(snapshot.updatedAt)||Date.now(),sourceVersion:String(snapshot.version??'cloud-legacy'),sourceSchema:Number(snapshot.schema)||0,fingerprint:'cloud:'+hash,payload:snapshot};
-  await writeCanonicalMigration(legacyEnvelopeToCanonical(envelope));await clearSession();
+  await writeCanonicalMigration(legacyEnvelopeToCanonical(envelope),baseline);
 }

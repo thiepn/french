@@ -1,6 +1,9 @@
 import type { RouteContext } from '../core/types';
 import { ensureCanonicalLearnerState,replaceCanonicalLearnerSettings } from '../core/learner/repository';
-import { createBackupArchive,inspectBackupArchive,restoreBackupArchive } from '../core/backup/archive';
+import { createBackupArchive,createBackupPayload,inspectBackupArchive,restoreBackupArchive,type BackupPayload } from '../core/backup/archive';
+import { inspectFrenchOfflineStorage,requestFrenchPersistentStorage,formatOfflineStorageHealth } from '../core/offline/storage-health';
+import { inspectFrenchOfflineEssentials,prepareFrenchOfflineEssentials } from '../core/offline/essentials';
+import { inspectFrenchShellReadiness,repairFrenchShell,formatFrenchShellReadiness } from '../core/offline/shell-recovery';
 
 function object(value:unknown):Record<string,unknown>{return value&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:{};}
 function number(value:unknown,fallback:number):number{const n=Number(value);return Number.isFinite(n)?n:fallback;}
@@ -17,7 +20,86 @@ export async function mount({main}:RouteContext):Promise<void>{
   const learner=await ensureCanonicalLearnerState();
   const current={...learner.settings};
   const session={...object(current.session)};
-  main.innerHTML='<section class="page settings-page"><p class="eyebrow">Study configuration</p><h1>Settings</h1><p class="lede">Tune workload, review behavior, and local data recovery without loading these tools during startup.</p><form class="settings-form" data-form><section class="data-panel"><h2>Daily workload</h2><div class="field-grid"><label><span>New words / day</span><input name="dailyNewLimit" type="number" min="0" max="100" step="1"></label><label><span>Reviews / day</span><input name="dailyReviewLimit" type="number" min="10" max="1000" step="10"></label><label><span>Desired retention</span><input name="desiredRetention" type="number" min="0.70" max="0.97" step="0.01"></label></div></section><section class="data-panel"><h2>Answer behavior</h2><div class="field-grid"><label><span>Grading mode</span><select name="gradingMode"><option value="strict">Strict</option><option value="learning">Learning</option><option value="lenient">Lenient</option></select></label><label class="toggle-row"><input name="typed" type="checkbox"><span>Prefer typed answers</span></label><label class="toggle-row"><input name="strictArticles" type="checkbox"><span>Require articles when applicable</span></label><label class="toggle-row"><input name="siblingSpacing" type="checkbox"><span>Space sibling skills apart</span></label></div></section><div class="settings-actions"><button class="primary-action compact-action" type="submit">Save settings</button><p class="inline-status" data-status>Ready.</p></div></form><section class="data-panel data-recovery"><h2>Data & recovery</h2><p class="muted-copy">Backups include learner state, SRS, review history, user content, active sessions and migration metadata. Import replaces local vNext data only after integrity validation and a safety export.</p><div class="data-actions"><button class="secondary-action compact-action" data-export type="button">Export backup</button><label class="file-action"><span>Choose backup</span><input data-import type="file" accept="application/json,.json"></label></div><div class="backup-preview" data-preview hidden></div><label class="restore-confirm" data-confirm hidden><input type="checkbox" data-confirm-check><span>I understand that restoring replaces current local vNext data.</span></label><button class="secondary-action compact-action danger-action" data-restore type="button" hidden disabled>Restore selected backup</button><p class="inline-status" data-data-status>Local-first · no cloud connection is required.</p></section><section class="data-panel account-panel" data-account-panel><h2>THIEPN Account</h2><p class="muted-copy">Loading account boundary…</p></section></section>';
+  main.innerHTML='<section class="page settings-page"><p class="eyebrow">Study configuration</p><h1>Settings</h1><p class="lede">Tune workload, review behavior, and local data recovery without loading these tools during startup.</p><form class="settings-form" data-form><section class="data-panel"><h2>Daily workload</h2><div class="field-grid"><label><span>New words / day</span><input name="dailyNewLimit" type="number" min="0" max="100" step="1"></label><label><span>Reviews / day</span><input name="dailyReviewLimit" type="number" min="10" max="1000" step="10"></label><label><span>Desired retention</span><input name="desiredRetention" type="number" min="0.70" max="0.97" step="0.01"></label></div></section><section class="data-panel"><h2>Answer behavior</h2><div class="field-grid"><label><span>Grading mode</span><select name="gradingMode"><option value="strict">Strict</option><option value="learning">Learning</option><option value="lenient">Lenient</option></select></label><label class="toggle-row"><input name="typed" type="checkbox"><span>Prefer typed answers</span></label><label class="toggle-row"><input name="strictArticles" type="checkbox"><span>Require articles when applicable</span></label><label class="toggle-row"><input name="siblingSpacing" type="checkbox"><span>Space sibling skills apart</span></label></div></section><div class="settings-actions"><button class="primary-action compact-action" type="submit">Save settings</button><p class="inline-status" data-status>Ready.</p></div></form><section class="data-panel data-recovery"><h2>Data & recovery</h2><p class="muted-copy">Backups include learner state, SRS, review history, user content, active sessions and migration metadata. Import replaces local vNext data only after integrity validation and a safety export.</p><div class="data-actions"><button class="secondary-action compact-action" data-export type="button">Export backup</button><label class="file-action"><span>Choose backup</span><input data-import type="file" accept="application/json,.json"></label></div><div class="backup-preview" data-preview hidden></div><label class="restore-confirm" data-confirm hidden><input type="checkbox" data-confirm-check><span>I understand that restoring replaces current local vNext data.</span></label><button class="secondary-action compact-action danger-action" data-restore type="button" hidden disabled>Restore selected backup</button><p class="inline-status" data-data-status>Local-first · no cloud connection is required.</p></section><section class="data-panel" data-offline-storage><h2>Offline storage</h2><p class="muted-copy">Check browser storage capacity and whether offline French data is protected against automatic eviction. This does not inspect private study content or delete P35 or vNext caches.</p><div class="data-actions"><button class="secondary-action compact-action" data-offline-check type="button">Check offline storage</button><button class="secondary-action compact-action" data-offline-persist type="button">Request persistent storage</button></div><p class="inline-status" data-offline-status aria-live="polite">No storage changes requested.</p><h3>Offline learning essentials</h3><p class="muted-copy">Verify or explicitly prepare the public vocabulary search index, first A1 vocabulary pack, original readings, sentence exercises and usage frames. This is not a full offline course download. Private study records and P35 caches are never changed.</p><div class="data-actions"><button class="secondary-action compact-action" data-essentials-check type="button">Check offline lessons</button><button class="secondary-action compact-action" data-essentials-prepare type="button">Prepare offline essentials</button></div><p class="inline-status" data-essentials-status aria-live="polite">Not checked. No lessons downloaded.</p><h3>Offline app restart</h3><p class="muted-copy">Downloaded lessons alone cannot start French offline if the installed app files have been evicted. Inspect the installed vNext shell or explicitly repair only its source-verified public app files while connected. Neither action deletes P35, backups or private study data.</p><div class="data-actions"><button class="secondary-action compact-action" data-shell-check type="button">Check offline app</button><button class="secondary-action compact-action" data-shell-repair type="button">Repair offline app</button></div><p class="inline-status" data-shell-status aria-live="polite">App restart has not been checked.</p></section><section class="data-panel account-panel" data-account-panel><h2>THIEPN Account</h2><p class="muted-copy">Loading account boundary…</p></section></section>';
+  const offlineStatus=main.querySelector<HTMLElement>('[data-offline-status]');
+  const checkOffline=main.querySelector<HTMLButtonElement>('[data-offline-check]');
+  const requestPersist=main.querySelector<HTMLButtonElement>('[data-offline-persist]');
+  checkOffline?.addEventListener('click',async()=>{
+    checkOffline.disabled=true;
+    if(offlineStatus)offlineStatus.textContent='Checking local storage…';
+    try{
+      const health=await inspectFrenchOfflineStorage();
+      if(offlineStatus)offlineStatus.textContent=formatOfflineStorageHealth(health);
+    }catch(error){
+      if(offlineStatus)offlineStatus.textContent='Storage details are unavailable. Export a backup before relying on offline-only learning.';
+      console.warn('French storage inspection unavailable',error);
+    }finally{checkOffline.disabled=false;}
+  });
+  requestPersist?.addEventListener('click',async()=>{
+    requestPersist.disabled=true;
+    if(offlineStatus)offlineStatus.textContent='Requesting browser storage protection…';
+    try{
+      const result=await requestFrenchPersistentStorage();
+      if(offlineStatus)offlineStatus.textContent=result==='granted'
+        ?'Persistent storage granted by this browser. Keep a separate backup; browser data can still be cleared manually.'
+        :result==='denied'
+          ?'Persistent storage was not granted. Export a backup and check storage space before offline study.'
+          :'This browser does not support requesting persistent storage. Export a backup for offline recovery.';
+    }catch(error){
+      if(offlineStatus)offlineStatus.textContent='Persistent storage could not be requested. Existing learning data remains unchanged.';
+      console.warn('French storage persistence request failed',error);
+    }finally{requestPersist.disabled=false;}
+  });
+  const essentialsStatus=main.querySelector<HTMLElement>('[data-essentials-status]');
+  const essentialsCheck=main.querySelector<HTMLButtonElement>('[data-essentials-check]');
+  const essentialsPrepare=main.querySelector<HTMLButtonElement>('[data-essentials-prepare]');
+  essentialsCheck?.addEventListener('click',async()=>{
+    if(essentialsPrepare)essentialsPrepare.disabled=true;
+    essentialsCheck.disabled=true;
+    if(essentialsStatus)essentialsStatus.textContent='Checking exact-source offline lessons…';
+    try{
+      const report=await inspectFrenchOfflineEssentials();
+      if(essentialsStatus)essentialsStatus.textContent=report.ready+'/'+report.total+
+        ' verified public essentials available on this device.'+
+        (report.missing.length?' Missing: '+report.missing.join(', ')+'.':' Lesson files alone do not confirm offline restart. Check offline app separately. Other lessons may require internet.');
+    }catch(error){
+      if(essentialsStatus)essentialsStatus.textContent=error instanceof Error?error.message:'Offline lesson check unavailable.';
+    }finally{essentialsCheck.disabled=false;if(essentialsPrepare)essentialsPrepare.disabled=false;}
+  });
+  essentialsPrepare?.addEventListener('click',async()=>{
+    essentialsPrepare.disabled=true;if(essentialsCheck)essentialsCheck.disabled=true;
+    if(essentialsStatus)essentialsStatus.textContent='Preparing source-verified public lessons…';
+    try{
+      const report=await prepareFrenchOfflineEssentials(message=>{
+        if(essentialsStatus)essentialsStatus.textContent=message;
+      });
+      if(essentialsStatus)essentialsStatus.textContent=report.ready+'/'+report.total+
+        ' verified public essentials are prepared. Lesson files are prepared; check the offline app shell before depending on a restart. Other content may require internet.';
+    }catch(error){
+      if(essentialsStatus)essentialsStatus.textContent=(error instanceof Error?error.message:'Offline preparation failed.')+
+        ' Existing verified lessons and private learning data were not deleted.';
+    }finally{essentialsPrepare.disabled=false;if(essentialsCheck)essentialsCheck.disabled=false;}
+  });
+  const shellStatus=main.querySelector<HTMLElement>('[data-shell-status]');
+  const shellCheck=main.querySelector<HTMLButtonElement>('[data-shell-check]');
+  const shellRepair=main.querySelector<HTMLButtonElement>('[data-shell-repair]');
+  async function runShellAction(repair:boolean):Promise<void>{
+    if(shellCheck)shellCheck.disabled=true;
+    if(shellRepair)shellRepair.disabled=true;
+    if(shellStatus)shellStatus.textContent=repair?'Verifying installed app assets before repair…':'Checking installed app integrity…';
+    try{
+      const status=repair?await repairFrenchShell():await inspectFrenchShellReadiness();
+      if(shellStatus)shellStatus.textContent=formatFrenchShellReadiness(status);
+    }catch(error){
+      if(shellStatus)shellStatus.textContent=(error instanceof Error?error.message:'Offline app inspection unavailable.')+
+        ' No personal data or P35 caches were deleted.';
+    }finally{
+      if(shellCheck)shellCheck.disabled=false;
+      if(shellRepair)shellRepair.disabled=false;
+    }
+  }
+  shellCheck?.addEventListener('click',()=>{void runShellAction(false);});
+  shellRepair?.addEventListener('click',()=>{void runShellAction(true);});
   const accountPanel=main.querySelector<HTMLElement>('[data-account-panel]');
   if(accountPanel)void import('../core/account/settings-ui').then(module=>module.mountFrenchAccountSettings(accountPanel)).catch(error=>{accountPanel.innerHTML='<h2>THIEPN Account</h2><p class="muted-copy">Account controls are unavailable in this build.</p>';console.warn(error);});
   const form=main.querySelector<HTMLFormElement>('[data-form]');
@@ -60,6 +142,7 @@ export async function mount({main}:RouteContext):Promise<void>{
   const restoreButton=main.querySelector<HTMLButtonElement>('[data-restore]');
   const dataStatus=main.querySelector<HTMLElement>('[data-data-status]');
   let selectedText='';
+  let selectedBaseline:BackupPayload|null=null;
 
   exportButton?.addEventListener('click',async()=>{
     exportButton.disabled=true;if(dataStatus)dataStatus.textContent='Building complete backup…';
@@ -71,31 +154,32 @@ export async function mount({main}:RouteContext):Promise<void>{
   });
 
   fileInput?.addEventListener('change',async()=>{
-    selectedText='';if(preview)preview.hidden=true;if(confirmRow)confirmRow.hidden=true;if(restoreButton){restoreButton.hidden=true;restoreButton.disabled=true;}if(confirmCheck)confirmCheck.checked=false;
+    selectedText='';selectedBaseline=null;if(preview)preview.hidden=true;if(confirmRow)confirmRow.hidden=true;if(restoreButton){restoreButton.hidden=true;restoreButton.disabled=true;}if(confirmCheck)confirmCheck.checked=false;
     const file=fileInput.files?.[0];if(!file)return;
     if(dataStatus)dataStatus.textContent='Validating '+file.name+'…';
     try{
       const text=await file.text();
       const inspection=await inspectBackupArchive(text);
+      selectedBaseline=await createBackupPayload();
       selectedText=text;
       if(preview){
         preview.hidden=false;
         preview.textContent=new Date(inspection.createdAt).toLocaleString()+' · '+inspection.totalRows+' database rows · '+inspection.rowsByStore.activity+' activity events · '+inspection.rowsByStore.srs+' SRS records';
       }
       if(confirmRow)confirmRow.hidden=false;if(restoreButton)restoreButton.hidden=false;
-      if(dataStatus)dataStatus.textContent='Backup validated. Review the preview before restoring.';
+      if(dataStatus)dataStatus.textContent='Backup validated. Review the preview before restoring. Changes made on this device afterward require another review.';
     }catch(error){
       if(dataStatus)dataStatus.textContent=error instanceof Error?error.message:'Backup validation failed.';
     }
   });
   confirmCheck?.addEventListener('change',()=>{if(restoreButton)restoreButton.disabled=!confirmCheck.checked||!selectedText;});
   restoreButton?.addEventListener('click',async()=>{
-    if(!selectedText||!confirmCheck?.checked)return;
+    if(!selectedText||!selectedBaseline||!confirmCheck?.checked)return;
     restoreButton.disabled=true;if(dataStatus)dataStatus.textContent='Creating mandatory safety backup…';
     try{
       const safety=await createBackupArchive();downloadText(safety.text,'pre-restore-'+safety.filename);
       if(dataStatus)dataStatus.textContent='Safety backup exported. Restoring validated data…';
-      await restoreBackupArchive(selectedText);
+      await restoreBackupArchive(selectedText,selectedBaseline);
       if(dataStatus)dataStatus.textContent='Restore complete. Reloading French…';
       setTimeout(()=>location.reload(),250);
     }catch(error){

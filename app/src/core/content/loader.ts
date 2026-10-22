@@ -1,4 +1,4 @@
-import { loadContentManifest,type ContentPackDescriptor } from './manifest';
+import { loadContentManifest,waitForContent,type ContentPackDescriptor } from './manifest';
 import { verifySha256 } from './verify';
 
 export interface VocabularyWord {
@@ -45,21 +45,61 @@ const memory=new Map<string,unknown>();
 let searchIndexPromise:Promise<VocabularySearchIndex>|null=null;
 let searchMap:Map<string,VocabularySearchRow>|null=null;
 
-async function fetchVerifiedJson<T>(path:string,sha256?:string,signal?:AbortSignal):Promise<T>{
-  const response=await fetch(path,{cache:'force-cache',signal});
+/** A reusable public path can name different bytes across releases.
+ * Pin every verified copy by the manifest's SHA, so an older open tab cannot
+ * replace content selected by a newer manifest on this device.
+ */
+function pinnedContentPath(path:string,sha256:string):string{
+  if(!path.startsWith('/content/')||path.includes('..')||
+     !/^[0-9a-f]{64}$/.test(sha256))
+    throw new Error('French content descriptor has no valid source digest.');
+  return path+(path.includes('?')?'&':'?')+'verifiedSha256='+sha256;
+}
+async function decodeVerified<T>(response:Response,sha256:string):Promise<T>{
   if(!response.ok)throw new Error('Content HTTP '+response.status);
-  const cachedCopy=response.clone();
   const bytes=await response.arrayBuffer();
   await verifySha256(bytes,sha256);
-  const decoded=JSON.parse(new TextDecoder().decode(bytes)) as T;
-  // The content index/packs are public bundled files. Prewarm only requested,
-  // SHA-256-verified content even before the first SW takes control. No
-  // personal French text, SRS, or study-state data is put in Cache Storage.
-  if('caches' in globalThis)try{
-    const storage=await caches.open('french-vnext-shell-v1');
-    await storage.put(path,cachedCopy);
-  }catch(error){console.warn('Verified French content could not be cached for offline use',error);}
-  return decoded;
+  return JSON.parse(new TextDecoder().decode(bytes)) as T;
+}
+async function fetchVerifiedJson<T>(path:string,sha256?:string,signal?:AbortSignal):Promise<T>{
+  // The manifest owns the revision; never silently accept an unpinned pack.
+  const key=pinnedContentPath(path,sha256??'');
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  let storage:Cache|undefined;
+  if('caches' in globalThis)try{storage=await caches.open('french-vnext-content-v1');}
+  catch(error){console.warn('French public content cache unavailable',error);}
+  const pinned=await storage?.match(key);
+  if(pinned){
+    try{return await decodeVerified<T>(pinned,sha256!);}
+    catch(error){
+      // Damaged Cache Storage must never become SRS or study source data.
+      await storage?.delete(key).catch(()=>false);
+      console.warn('Corrupted verified French cache entry rejected',error);
+    }
+  }
+  // Compatibility with pre-U57 vNext: those bytes had already been verified
+  // but were stored under an unversioned public path.
+  const legacy=await storage?.match(path);
+  if(legacy){
+    try{
+      const decoded=await decodeVerified<T>(legacy.clone(),sha256!);
+      await storage?.put(key,legacy.clone()).catch(()=>undefined);
+      return decoded;
+    }catch{/* A different build's path or damaged data: fetch exact revision. */}
+  }
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  // Avoid browser HTTP force-cache reusing stale bytes when deployed content
+  // changes under the same filename. The service worker still falls back to
+  // verified public content when genuinely offline.
+  const response=await fetch(path,{cache:'no-store',signal});
+  const verified=await decodeVerified<T>(response.clone(),sha256!);
+  if(storage)try{
+    // The SHA-keyed record is authoritative. Maintain the old public-path
+    // cache for installed pre-U57 tabs and the existing offline SW fallback.
+    await storage.put(key,response.clone());
+    await storage.put(path,response.clone());
+  }catch(error){console.warn('Verified French content could not be cached',error);}
+  return verified;
 }
 
 export async function listContentPacks(signal?:AbortSignal):Promise<ContentPackDescriptor[]>{
@@ -74,16 +114,20 @@ export async function loadContentPack<T=unknown>(id:string,signal?:AbortSignal):
   memory.set(id,value);
   return value;
 }
-export async function loadVocabularySearchIndex(signal?:AbortSignal):Promise<VocabularySearchIndex>{
-  searchIndexPromise??=(async()=>{
-    const manifest=await loadContentManifest(signal);
-    const descriptor=manifest.indexes?.vocabulary;
-    if(!descriptor)throw new Error('Vocabulary search index is unavailable.');
-    const index=await fetchVerifiedJson<VocabularySearchIndex>(descriptor.path,descriptor.sha256,signal);
-    if(index.schema!=='thiepn-french-vocabulary-search-v1'||!Array.isArray(index.rows))throw new Error('Vocabulary search index schema mismatch.');
-    return index;
-  })();
-  return searchIndexPromise;
+export function loadVocabularySearchIndex(signal?:AbortSignal):Promise<VocabularySearchIndex>{
+  if(!searchIndexPromise){
+    const request=(async()=>{
+      const manifest=await loadContentManifest();
+      const descriptor=manifest.indexes?.vocabulary;
+      if(!descriptor)throw new Error('Vocabulary search index is unavailable.');
+      const index=await fetchVerifiedJson<VocabularySearchIndex>(descriptor.path,descriptor.sha256);
+      if(index.schema!=='thiepn-french-vocabulary-search-v1'||!Array.isArray(index.rows))
+        throw new Error('Vocabulary search index schema mismatch.');
+      return index;
+    })();
+    searchIndexPromise=request.catch(error=>{searchIndexPromise=null;throw error;});
+  }
+  return waitForContent(searchIndexPromise,signal);
 }
 export async function findVocabularyReference(id:string,signal?:AbortSignal):Promise<VocabularySearchRow|null>{
   if(!searchMap){

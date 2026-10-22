@@ -100,3 +100,38 @@
 .source-authored-options p{flex-basis:100%;line-height:1.5}
 .source-authored-options button{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere;min-height:44px}
 @media(max-width:550px){.source-authored-options{display:grid;grid-template-columns:minmax(0,1fr)}.source-repair-row button{width:100%}}
+
+
+/* Mobile conversation exit controls must remain above the fixed global nav.
+   The original graph and adaptive set share this action row. */
+@media(max-width:760px){
+ .conversation-workspace .conversation-bottom{
+  position:sticky;
+  bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  z-index:5;
+  background:var(--bg);
+  padding:.75rem 0;
+ }
+ .conversation-workspace .conversation-stage{
+  padding-bottom:calc(2rem + env(safe-area-inset-bottom,0px));
+ }
+}
+
+/* U70 original B2 source practice: five P35 scenario choices, not new grades. */
+.source-b2-practice{border-top:1px solid var(--line);padding:1rem 0;display:grid;gap:.6rem;min-width:0}
+.source-b2-practice h3{margin:.3rem 0;font-size:1.06rem}
+.source-b2-practice button{min-height:44px;text-align:left;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.source-b2-practice button:disabled{opacity:.55;cursor:not-allowed}
+.source-b2-goal,.source-b2-boundary{line-height:1.55;margin:0 0 .3rem;color:var(--muted);font-size:.89rem}
+.source-b2-coverage{line-height:1.6;margin:.25rem 0;font-size:.9rem;overflow-wrap:anywhere}
+.source-b2-boundary{padding-top:.6rem;border-top:1px solid var(--line)}
+@media(max-width:680px){.source-b2-practice button{width:100%}}
+
+/* U71 original P35 B2 cross-context actions, not proficiency ratings. */
+.source-b2-transfer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1rem;min-width:0}
+.source-b2-transfer-row{min-width:0;padding:.8rem 0;border-top:1px solid var(--line);display:flex;flex-direction:column;align-items:flex-start;gap:.4rem}
+.source-b2-transfer-row h4{font-size:1rem;line-height:1.4;margin:0}
+.source-b2-transfer-row p{margin:0;font-size:.88rem;line-height:1.5;overflow-wrap:anywhere}
+.source-b2-transfer-next{color:var(--muted)}
+.source-b2-transfer-row button{margin-top:auto;width:100%;min-height:44px;white-space:normal;overflow-wrap:anywhere;text-align:left}
+@media(max-width:680px){.source-b2-transfer{grid-template-columns:minmax(0,1fr)}}

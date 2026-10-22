@@ -74,6 +74,27 @@ export const P35_LATER_B2_FUNCTIONS=[
 export interface LegacyMission{
  id:string;title:string;scenarios:readonly [string,string,string];
 }
+/**
+ * U70 composes the exact five pinned P35/P30 B2 source scenario IDs into the
+ * two documented P30 sequences. The u70-* identifiers denote NEW vNext
+ * practice compositions, NOT an assertion about original P35 V590 mission IDs,
+ * original P28 benchmark attempts, P25 progression or P29 maintenance.
+ */
+export const P35_P30_B2_SCENES=[
+ 'work-policy-debate','civic-transport-debate','project-crisis','media-claim','team-conflict'
+] as const;
+export interface B2PracticeChain extends LegacyMission{
+ readonly provenance:'u70-p30-practice-composition';
+ readonly benchmarkEligible:false;
+}
+export const P35_P30_B2_PRACTICE_CHAINS:readonly B2PracticeChain[]=[
+ {id:'u70-workplace-practice',title:'Advanced workplace decision',
+  scenarios:['project-crisis','work-policy-debate','team-conflict'],
+  provenance:'u70-p30-practice-composition',benchmarkEligible:false},
+ {id:'u70-public-issue-practice',title:'Contested public issue',
+  scenarios:['media-claim','civic-transport-debate','team-conflict'],
+  provenance:'u70-p30-practice-composition',benchmarkEligible:false}
+];
 export const P35_P18_MISSIONS:readonly LegacyMission[]=[
  {id:'daily-errands',title:'Morning in town',scenarios:['bakery-buy','cafe-order','opening-hours']},
  {id:'arrival-day',title:'Arrival day',scenarios:['train-ticket','ask-directions','hotel-problem']},
