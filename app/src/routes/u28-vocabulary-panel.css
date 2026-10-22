@@ -49,3 +49,6 @@
 .u28-result button{min-height:44px;white-space:normal}
 .u28-discovery-search :is(button,input,select,summary):focus-visible{outline:2px solid var(--accent,#666);outline-offset:3px}
 @media(max-width:560px){.u28-vocabulary-results{grid-template-columns:minmax(0,1fr)}}
+/* Source-owned U28 illustrations are optional and never reserve an empty failed-image card. */
+.u28-shared-visual{margin:0;max-width:184px;min-width:0}
+.u28-shared-visual img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain}
