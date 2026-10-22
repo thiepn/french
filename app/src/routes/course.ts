@@ -4,18 +4,11 @@ import {SOURCES} from '../core/unified/source';
 import {preflightLegacyJson,type LegacySource} from '../core/unified/preflight';
 import './unified.css';
 import './unified-u39.css';
+import './course-focus.css';
 
 export function mount({main,signal,navigate}:RouteContext):void {
-  main.innerHTML=`<section class="page unified-page">
-    <p class="eyebrow">French curriculum · original teaching</p><h1>Course</h1>
-    <p class="lede">One original lesson at a time: understand the grammar, learn its vocabulary, read, listen, recall, and write. Continue your source-verified lesson position when available.</p>
-    <div class="unified-alert" role="note">Course exercises are formative, not FSRS or CEFR grades. Only native Learn and Review schedule vocabulary.</div>
-    <div class="u39-course-actions" role="group" aria-label="Original lesson and native review">
-      <button class="primary-action" type="button" data-course-continue disabled>Loading the original lessons…</button>
-      <button class="secondary-action" type="button" data-course-review>Open scheduled Review</button>
-      <button class="secondary-action" type="button" data-course-new>Learn new vocabulary</button>
-    </div>
-    <p class="u39-course-status" data-course-status role="status">Preparing original teaching materials…</p>
+  main.innerHTML=`<section class="page unified-page course-workspace">
+    <header class="course-page-head"><h1>Course</h1></header>
     <section data-u6-a1 aria-label="Original A1 through early B2 full lesson Course"></section>
     <details class="u25-supplementary" data-u25-supplementary>
       <summary>Other original teaching, source positions and export preflight</summary>
@@ -46,6 +39,9 @@ export function mount({main,signal,navigate}:RouteContext):void {
     </section>
     </details>
   </section>`;
+  const auxiliary=main.querySelector<HTMLDetailsElement>('[data-u25-supplementary]');
+  const pageHead=main.querySelector<HTMLElement>('.course-page-head');
+  if(auxiliary&&pageHead)pageHead.append(auxiliary);
   const select=main.querySelector<HTMLSelectElement>('[data-position]')!;
   const grid=main.querySelector<HTMLElement>('[data-grid]')!;
   const detail=main.querySelector<HTMLElement>('[data-detail]')!;

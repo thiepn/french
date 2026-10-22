@@ -4,6 +4,9 @@ import { countDueSrs,readActiveStudySession,readCanonicalLearnerState,readRecent
 import { rankNativeActivities,type CoachAction,type CoachInput } from '../core/learner/study-coach';
 import {loadConversationState} from '../core/conversation/storage';
 import {replaceCanonicalFeatureState} from '../core/learner/repository';
+import {ORIGINAL_PATHWAYS} from '../core/unified/u25-pathways';
+import {getOriginalCatalogEntry,handoffOriginalLesson} from '../core/unified/u23-registry';
+import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import {composeAdaptiveBlock,launchAdaptiveStep,observeNativeCompletion,normalizeAdaptiveBlock,type CompletionCounts,type AdaptiveBlock} from '../core/learner/adaptive-block';
 
 const DAY=86_400_000;
@@ -47,6 +50,29 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const heading=node('h1','Continue French');
   const date=node('time',new Date().toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}));
   top.append(heading,date);
+  const courseLaunch=node('section','','home-course-launcher');
+  courseLaunch.setAttribute('aria-label','Choose a French course');
+  const courseIntro=node('div','','home-course-intro');
+  const courseTitle=node('h2','Continue your course');
+  const coursePosition=node('p','Original teaching · saved position checked on open','home-course-position');
+  courseIntro.append(courseTitle,coursePosition);
+  const goCourse=node('button','Continue lesson','home-course-continue');
+  goCourse.type='button';
+  goCourse.addEventListener('click',()=>navigate('course'));
+  const courseTop=node('div','','home-course-top');courseTop.append(courseIntro,goCourse);
+  const levelRow=node('div','','home-level-row');
+  levelRow.setAttribute('role','group');levelRow.setAttribute('aria-label','Start a French level');
+  for(const path of ORIGINAL_PATHWAYS){
+    if(!path.firstId)continue;
+    const level=node('button',path.level,'home-level-option');
+    level.type='button';level.setAttribute('aria-label','Start '+path.level+' course');
+    level.title='Open the first original '+path.level+' lesson';
+    level.addEventListener('click',()=>{
+      if(handoffOriginalLesson('course',path.firstId,'understand'))navigate('course');
+    });
+    levelRow.append(level);
+  }
+  courseLaunch.append(courseTop,levelRow);
   const mainGrid=node('div','','home-study-grid');
   const focus=node('section','','home-focus');
   focus.setAttribute('aria-label','Next action');
@@ -56,7 +82,7 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
   const footer=node('section','','home-evidence');
   footer.setAttribute('aria-label','Learning snapshot');
   footer.append(node('p','Loading your saved learning activity…','home-loading'));
-  host.append(top,mainGrid,footer);main.replaceChildren(host);
+  host.append(top,courseLaunch,mainGrid,footer);main.replaceChildren(host);
 
   const now=Date.now();
   try{
@@ -64,6 +90,22 @@ export async function mount({main,signal,navigate}:RouteContext):Promise<void>{
       countDueSrs(now),readActiveStudySession(now),readCanonicalLearnerState(),readRecentReviewEvents(400),loadConversationState()
     ]);
     if(signal.aborted)return;
+    try{
+      const position=await readOriginalContinuity();
+      if(signal.aborted)return;
+      if(position.status==='ready'&&position.checkpoint){
+        const entry=getOriginalCatalogEntry(position.checkpoint.id);
+        if(entry){
+          courseTitle.textContent='Continue '+entry.level;
+          coursePosition.textContent=entry.title+' · '+position.checkpoint.stage;
+        }
+      }else if(position.status==='stale'||position.status==='blocked'){
+        coursePosition.textContent='Saved lesson needs review. Your position will not be overwritten.';
+        goCourse.textContent='Review lesson position';
+      }
+    }catch{
+      coursePosition.textContent='Open your original French lessons';
+    }
     const remaining=session?Math.max(0,session.queueIds.length-session.cursor):0;
     const recent=summarize(events,now);
     const newLimit=quantity(learner?.settings?.dailyNewLimit,20);

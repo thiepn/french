@@ -685,6 +685,9 @@ test('U58 active mixed-version tabs preserve all prior native shell caches acros
 test('U58 offline storage diagnostics show low quota and never delete original caches',async({page})=>{
   await page.goto('/#home');
   await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+  // Snapshot cache ownership only after the app's original worker install;
+  // the test protects against deletion, not the worker's first creation.
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
   const before=await page.evaluate(async()=>{
     await caches.open('french-shell-v35');
     await caches.open('french-vnext-content-v1');
@@ -1062,7 +1065,7 @@ test('P37I-C5 genuinely different contexts earn independent metadata-only eviden
   await page.getByRole('button',{name:'Contexts (1)'}).click();
   await expect(page.getByText('Write in French: I am learning to read in French.')).toBeVisible();
   await expect(page.getByText(/VOCABULARY LINK/)).toBeVisible();
-  await expect(page.getByText(/Contextual practice|production|dictionary|vocabulary|lemma/i).first()).toBeVisible();
+  await expect(page.locator('.route-host').getByText(/Contextual practice|production|dictionary|vocabulary|lemma/i).first()).toBeVisible();
   await expect(page.getByRole('link',{name:'Open vocabulary'})).toHaveAttribute('href','#words');
   await solve("J'apprends à lire en français.",1,'context');
   await expect(page.getByText('Write in French: She is learning to cook.')).toBeVisible();
