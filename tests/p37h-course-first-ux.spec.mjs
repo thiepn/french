@@ -16,7 +16,7 @@ test('French primary navigation is four stable destinations, and original tools 
  await page.getByLabel('Open additional French learning tools').click();
  await page.getByRole('button',{name:'Progress',exact:true}).click();
  await expect(page).toHaveURL(/#progress$/);
- await expect(nav.getByRole('button',{name:'Me'})).toHaveAttribute('aria-current','page');
+ await expect(nav.getByRole('button',{name:'Me',exact:true})).toHaveAttribute('aria-current','page');
 });
 
 test('One tap on an original level from Home opens its real lesson, without intro-redirects',async({page})=>{
@@ -93,7 +93,7 @@ test('Original checkpoint resumes automatically after reload; advanced source fe
  await expect(page.locator('[data-u6-stage="words"]')).toBeVisible({timeout:45000});
  await expect(page.locator('.course-lesson-picker select')).toHaveValue('a1-01');
  const tools=page.locator('.course-extra-tools');
- await tools.locator('summary').click();
+ await tools.locator(':scope > summary').click();
  await expect(tools.getByRole('heading',{name:'Choose where to learn'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Main navigation'}).locator('button')).toHaveCount(4);
 });
