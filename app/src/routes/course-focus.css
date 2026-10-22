@@ -25,7 +25,7 @@
 .course-extra-content .u25-pathway-list{grid-template-columns:repeat(2,minmax(0,1fr))}
 .course-extra-content .u25-pathway{min-height:64px}
 .course-extra-content .u25-hero{margin:.7rem 0}
-.course-workspace .u6-full-course .u6-layout{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:.65rem;overflow:hidden;padding:.45rem 0 0}
+.course-workspace .u6-full-course .u6-layout{flex:1 1 auto;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch!important;gap:.65rem;overflow:hidden;padding:.45rem 0 0}
 .course-workspace .u6-full-course .u6-layout.u25-browse-open{grid-template-columns:minmax(210px,265px) minmax(0,1fr)}
 .course-workspace .u25-index-details:not([open]){display:none}
 .course-workspace .u25-index-details[open]{min-height:0;max-height:100%;overflow:auto;border-radius:3px}
@@ -81,6 +81,13 @@
  .course-workspace .u6-stage-footer{min-height:48px;padding:.2rem 0}
  .course-workspace .u6-stage-button{min-height:32px}
 }
+/* Fixed application workspace is independent of legacy page/min-height rules.
+   Source text scrolls inside the center panel; Next/Previous stay in the dock. */
+.route-host.course-host{position:relative;min-height:0;overflow:hidden}
+.route-host.course-host>.course-workspace{position:absolute;inset:0;height:100%!important;max-height:100%;max-width:none!important;width:100%!important;overflow:hidden;min-height:0}
+.course-workspace .u6-full-course .u6-layout>.u6-lesson-content{align-self:stretch!important;height:100%;max-height:100%;min-height:0;overflow:hidden}
+.course-workspace .u6-full-course .u6-layout>.u25-index-details{min-height:0;max-height:100%;overflow-y:auto}
+@media(max-width:760px){.route-host.course-host>.course-workspace{inset:0;bottom:0}}
 @media(prefers-reduced-motion:reduce){
  .course-workspace *{scroll-behavior:auto!important;transition:none!important}
 }
