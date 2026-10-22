@@ -1062,7 +1062,7 @@ test('P37I-C5 genuinely different contexts earn independent metadata-only eviden
   await page.getByRole('button',{name:'Contexts (1)'}).click();
   await expect(page.getByText('Write in French: I am learning to read in French.')).toBeVisible();
   await expect(page.getByText(/VOCABULARY LINK/)).toBeVisible();
-  await expect(page.getByText(/Contextual practice|production|dictionary|vocabulary|lemma/i).first()).toBeVisible();
+  await expect(page.locator('.route-host').getByText(/Contextual practice|production|dictionary|vocabulary|lemma/i).first()).toBeVisible();
   await expect(page.getByRole('link',{name:'Open vocabulary'})).toHaveAttribute('href','#words');
   await solve("J'apprends à lire en français.",1,'context');
   await expect(page.getByText('Write in French: She is learning to cook.')).toBeVisible();
