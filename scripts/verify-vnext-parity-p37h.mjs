@@ -260,7 +260,12 @@ for(const term of ['safeConversationState','manual continuations','independenceP
   if(term!=='manual continuations')need(missionTests,term,'Mission tests '+term);
 
 for(const token of ["params.has('state')","params.has('code')","params.has('error')","!location.hash&&!oauthReturn"])need(router,token,'preserved OAuth callback '+token);
-need(shell,"read:'Read'",'Read navigation');
+need(shell,"{route:'read',label:'Reading'}",'Read remains accessible in the secondary learning menu');
+need(shell,"tools.append(trigger,panel)",'non-primary routes are accessible from More');
+need(shell,"{route:'home',label:'Home'}",'Home primary destination');
+need(shell,"{route:'course',label:'Course'}",'Course primary destination');
+need(shell,"{route:'review',label:'Review'}",'Review primary destination');
+need(shell,"{route:'settings',label:'Me'}",'Me primary destination');
 for(const token of ['createThiepnAccountSession','authorizationUrl','completeCallback','getAccessToken','authPolicy'])need(accountSessionVendor,token,'shared Account session '+token);
 for(const token of ['https://account.thiepn.dev','https://french.thiepn.dev/','bf2e7fca-98dd-4833-9fee-306ecd6fc7d7'])need(accountConfig,token,'Account config '+token);
 reject(accountConfig,'__PENDING_FRENCH_OAUTH_CLIENT_ID__','stale OAuth registration blocker');
