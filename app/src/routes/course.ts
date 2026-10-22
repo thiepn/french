@@ -4,6 +4,7 @@ import {SOURCES} from '../core/unified/source';
 import {preflightLegacyJson,type LegacySource} from '../core/unified/preflight';
 import './unified.css';
 import './unified-u39.css';
+import './course-focus.css';
 
 export function mount({main,signal,navigate}:RouteContext):void {
   main.innerHTML=`<section class="page unified-page course-workspace">
