@@ -685,6 +685,9 @@ test('U58 active mixed-version tabs preserve all prior native shell caches acros
 test('U58 offline storage diagnostics show low quota and never delete original caches',async({page})=>{
   await page.goto('/#home');
   await expect(page.getByRole('heading',{name:'Continue French'})).toBeVisible();
+  // Snapshot cache ownership only after the app's original worker install;
+  // the test protects against deletion, not the worker's first creation.
+  await page.evaluate(async()=>navigator.serviceWorker.ready);
   const before=await page.evaluate(async()=>{
     await caches.open('french-shell-v35');
     await caches.open('french-vnext-content-v1');
