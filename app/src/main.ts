@@ -1,7 +1,7 @@
 import './styles/base.css';
 // Preload the focused shell styling before painting the application without
 // inflating the critical initial CSS payload.
-await import('./styles/app-shell.css');
+void import('./styles/app-shell.css');
 import { createShell } from './core/shell';
 import { createRouter } from './core/router';
 import { beginBackgroundStartup } from './core/startup';
