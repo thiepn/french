@@ -89,11 +89,11 @@ test('Phase 5 — all five original SVGs retain identical Japanese provenance, n
  assert.equal(new Set(expected.map(row=>row.asset)).size,5);
  for(const asset of new Set(expected.map(row=>row.asset))){
   const bytes=readFileSync(new URL('../app/public/visual-lexicon/assets/'+asset,import.meta.url));
-  const gitBlob=createHash('sha1').update('blob '+bytes.length+'\\0').update(bytes).digest('hex');
+  const gitBlob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
   assert.equal(gitBlob,expected.find(row=>row.asset===asset).sha);
   const svg=bytes.toString('utf8');
-  assert.match(svg,/<svg\\b/);
-  assert.doesNotMatch(svg,/<script\\b|<foreignObject\\b|<image\\b|\\son[a-z]+\\s*=|\\shref\\s*=|url\\s*\\(/i);
+  assert.match(svg,/<svg\b/);
+  assert.doesNotMatch(svg,/<script\b|<foreignObject\b|<image\b|\son[a-z]+\s*=|\shref\s*=|url\s*\(/i);
  }
 });
 test('Phase 5 — visual is only mounted in discovery and has text-preserving failure fallback',()=>{
@@ -101,12 +101,12 @@ test('Phase 5 — visual is only mounted in discovery and has text-preserving fa
  const discover=route.slice(route.indexOf('const renderDiscover='),route.indexOf('const renderRetrieve='));
  const recall=route.slice(route.indexOf('const renderRetrieve='),route.indexOf('const renderTransfer='));
  const transfer=route.slice(route.indexOf('const renderTransfer='),route.indexOf('function draw(){'));
- assert.match(discover,/originalFrenchReferenceImage\\(item\\.key\\)/);
- assert.match(discover,/image\\.addEventListener\\('error',\\(\\)=>figure\\.remove\\(\\)/);
+ assert.match(discover,/originalFrenchReferenceImage\(item\.key\)/);
+ assert.match(discover,/image\.addEventListener\('error',\(\)=>figure\.remove\(\)/);
  assert.doesNotMatch(recall,/originalFrenchReferenceImage|u28-shared-visual/);
  assert.doesNotMatch(transfer,/originalFrenchReferenceImage|u28-shared-visual/);
- assert.match(discover,/pane\\.append\\(show,gloss\\)/);
+ assert.match(discover,/pane\.append\(show,gloss\)/);
  const builder=readFileSync(new URL('../scripts/build-vnext-service-worker.mjs',import.meta.url),'utf8');
- assert.match(builder,/files=\\(await walk\\(rootPath\\)\\)/);
+ assert.match(builder,/files=\(await walk\(rootPath\)\)/);
  assert.match(builder,/APP_SHELL=/);
 });
