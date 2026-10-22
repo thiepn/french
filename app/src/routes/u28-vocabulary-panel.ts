@@ -5,6 +5,7 @@ import {
  type OriginalLexeme
 } from '../core/unified/u28-vocabulary.ts';
 import {getOriginalCatalogEntry,neighboringOriginalLessons,type OriginalSurface} from '../core/unified/u23-registry.ts';
+import {originalFrenchReferenceImage} from './u28-shared-visuals.ts';
 import './u28-vocabulary-panel.css';
 
 type Mode='course'|'read'|'listen'|'write';
@@ -93,6 +94,16 @@ export function appendOriginalVocabularyJourney(host:HTMLElement,id:string,opts:
   const pane=el('div','','u28-discovery');
   const word=el('h4',item.french,'u28-headword');word.lang='fr';
   pane.append(el('p',entry.level+' · original expression '+item.order+'/'+words.length,'u28-eyebrow'),word);
+  // Illustration is a read-only discovery reference, never a recall/answer hint.
+  const visual=originalFrenchReferenceImage(item.key);
+  if(visual){
+   const figure=el('figure','','u28-shared-visual');
+   const image=el('img');image.src=visual.src;image.alt=visual.alt;
+   image.width=visual.width;image.height=visual.height;
+   image.loading=visual.loading;image.decoding=visual.decoding;
+   image.addEventListener('error',()=>figure.remove(),{once:true});
+   figure.append(image);pane.append(figure);
+  }
   const gloss=el('p','','u28-gloss');gloss.hidden=true;
   gloss.textContent=item.english;
   const show=button('Reveal English gloss',()=>{
