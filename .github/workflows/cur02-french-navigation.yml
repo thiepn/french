@@ -1,0 +1,26 @@
+name: CUR-02 French Course Navigation
+on:
+  push:
+    branches: [feature/cur02-six-level-french-course-20261026]
+permissions:
+  contents: read
+jobs:
+  course:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - name: Execute native source-preserving navigation checks
+        run: node --experimental-strip-types --test tests/cur02-level-navigation.test.mjs
+      - name: Install public toolchain
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check French TypeScript
+        run: npm run typecheck:vnext
+      - name: Build French candidate without deployment
+        run: npm run build:vnext
+ 
