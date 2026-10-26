@@ -20,6 +20,11 @@ try{
  await page.locator('.course-level-choices [data-course-level="A1"]').click();
  await page.locator('.cur02-level-lesson-list button').first().click();
  assert.match(page.url(),/#course\/A1\//);
+ // A different deep-linked unit starts at its own understanding section;
+ // never inherit a saved lesson's later-stage checkpoint.
+ await page.goto('http://127.0.0.1:4173/#course/B1/b1-01',{waitUntil:'domcontentloaded'});
+ await page.locator('.u6-unit-header h3').waitFor({timeout:30000});
+ assert.match(page.url(),/#course\/B1\/b1-01/);
  const title=await page.locator('.u6-unit-header h3').innerText();
  assert.ok(title.length>2);
  console.log('French CUR-02 Chromium mobile course navigation PASS');

@@ -58,7 +58,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const incoming=takeOriginalHandoff('course');
   const saved=continuity.status==='ready'?continuity.checkpoint:null;
   let current=getOriginalUnit(incoming?.id??requestedCourse?.id??saved?.id??'')??lessons[0],
-    stage:Stage=incoming?.stage??saved?.stage??'understand',
+    stage:Stage=incoming?.stage??(requestedCourse?.id?'understand':saved?.stage??'understand'),
     taskIndex=(!incoming&&saved?.id===current.id)?saved.taskIndex:0;
   let selectedCourseLevel:Cur02Level=requestedCourse?.level??navLevelForOriginalBand(getOriginalCatalogEntry(current.id)?.level??'A1');
   let stopAudio:(()=>void)|null=null;
