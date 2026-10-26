@@ -3,6 +3,10 @@ import {chromium} from '@playwright/test';
 const browser=await chromium.launch({headless:true});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844}});
+ await page.goto('http://127.0.0.1:4173/#course/C2',{waitUntil:'domcontentloaded'});
+ await page.locator('.course-level-choices [data-course-level="C2"]').waitFor({timeout:30000});
+ assert.match(page.url(),/#course\/C2$/);
+ assert.match(await page.locator('.u6-lesson-content').innerText(),/C2 curriculum planned/);
  await page.goto('http://127.0.0.1:4173/#course/B1',{waitUntil:'domcontentloaded'});
  await page.locator('.course-level-choices [data-course-level="B1"]').waitFor({timeout:30000});
  assert.equal(await page.locator('.course-level-choice').count(),6);

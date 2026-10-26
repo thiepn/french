@@ -904,8 +904,18 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    stopAudio?.();window.removeEventListener('beforeunload',beforeUnload);
   },{once:true});
   levelFilter.value=getOriginalCatalogEntry(current.id)?.level??'all';
-  open(current.id,stage);
-  if(requestedCourse&&!requestedCourse.id)selectCourseLevel(requestedCourse.level);
+  const startingLevel=requestedCourse&&!requestedCourse.id
+    ?levelCatalog.find(item=>item.level===requestedCourse.level):null;
+  if(startingLevel&&startingLevel.availability==='planned'){
+    // Reading a planned deep link must not call the source checkpoint writer.
+    selectedCourseLevel=startingLevel.level;
+    updateSixLevelList();
+    article.replaceChildren(el('h3',startingLevel.level+' curriculum planned'),
+      el('p','No original source-approved lessons are available for this level.'));
+    lessonSelect.hidden=true;
+  }else if(startingLevel?.lessons[0]){
+    open(startingLevel.lessons[0].id,'understand');
+  }else open(current.id,stage);
  }catch(error){
   if(signal.aborted)return;
   host.replaceChildren(el('p','Original French lessons unavailable. Existing native Learn and Review remain unaffected.'));
