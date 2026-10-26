@@ -1,4 +1,5 @@
 import type {RouteId} from '../core/types';
+import {CUR02_LEVELS,buildFrenchCourseNavigation,navLevelForOriginalBand,parseFrenchCourseLocation,frenchCourseLocation,type Cur02Level} from '../core/unified/cur02-level-nav';
 import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
  type ContinuityReview} from '../core/unified/u24-continuity';
 import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
@@ -43,6 +44,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
  host.replaceChildren(el('p','Loading the original French full Course…'));
  try{
   const lessons=await loadU22OriginalFrenchCourse();
+  const levelCatalog=buildFrenchCourseNavigation(ORIGINAL_PATHWAYS.flatMap(path=>path.sections.flatMap(section=>section.entries)));
+  const requestedCourse=parseFrenchCourseLocation(location.hash,levelCatalog);
   if(signal.aborted||!host.isConnected)return;
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
@@ -54,9 +57,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   if(signal.aborted||!host.isConnected)return;
   const incoming=takeOriginalHandoff('course');
   const saved=continuity.status==='ready'?continuity.checkpoint:null;
-  let current=getOriginalUnit(incoming?.id??saved?.id??'')??lessons[0],
+  let current=getOriginalUnit(incoming?.id??requestedCourse?.id??saved?.id??'')??lessons[0],
     stage:Stage=incoming?.stage??saved?.stage??'understand',
     taskIndex=(!incoming&&saved?.id===current.id)?saved.taskIndex:0;
+  let selectedCourseLevel:Cur02Level=requestedCourse?.level??navLevelForOriginalBand(getOriginalCatalogEntry(current.id)?.level??'A1');
   let stopAudio:(()=>void)|null=null;
   // Existing source-verified CAS, not another learner progress model.
   // Stale, blocked and unavailable positions are never overwritten automatically.
@@ -96,12 +100,15 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const levelChoices=el('div',undefined,'course-level-choices');
   levelChoices.setAttribute('role','group');
   levelChoices.setAttribute('aria-label','Choose your French level');
-  for(const pathway of ORIGINAL_PATHWAYS){
-    const choice=button(pathway.level,()=>openPath(pathway.level),'course-level-choice');
-    choice.dataset.courseLevel=pathway.level;
-    choice.title='Start the original '+pathway.level+' course';
+  for(const record of levelCatalog){
+    const choice=button(record.level,()=>selectCourseLevel(record.level),'course-level-choice');
+    choice.dataset.courseLevel=record.level;
+    choice.title=record.availability==='planned'?record.level+' curriculum planned':'Open '+record.level+' course units';
+    choice.setAttribute('aria-label',record.level+(record.coverage?' · '+record.coverage:'')+(record.availability==='planned'?' · planned':''));
     levelChoices.append(choice);
   }
+  const levelLessonList=el('ol',undefined,'cur02-level-lesson-list');
+  levelLessonList.setAttribute('aria-label','Numbered lessons in selected level');
   const lessonLabel=el('label','Lesson','course-lesson-picker');
   const lessonSelect=el('select');
   lessonSelect.setAttribute('aria-label','Choose an original lesson');
@@ -179,8 +186,41 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const extraContent=el('div',undefined,'course-extra-content');
   extraContent.append(header,hero,pathways,vocabularyDiscovery,placement,activities,recovery,status,discovery);
   extra.append(extraSummary,extraContent);
-  focusBar.append(levelChoices,lessonLabel,browseButton,extra);
+  focusBar.append(levelChoices,levelLessonList,lessonLabel,browseButton,extra);
   host.append(focusBar,layout);
+  function updateSixLevelList(){
+    levelLessonList.replaceChildren();
+    const selected=levelCatalog.find(item=>item.level===selectedCourseLevel);
+    for(const btn of levelChoices.querySelectorAll<HTMLButtonElement>('[data-course-level]')){
+      const active=btn.dataset.courseLevel===selectedCourseLevel;
+      btn.classList.toggle('is-selected',active);btn.setAttribute('aria-pressed',String(active));
+    }
+    if(!selected||!selected.lessons.length){
+      levelLessonList.append(el('li',selectedCourseLevel+' curriculum planned · no source-approved original lessons yet.'));
+      return;
+    }
+    if(selected.coverage)levelLessonList.append(el('li',selected.coverage+' · no full-level proficiency claim.'));
+    for(const entry of selected.lessons){
+      const row=el('li');
+      row.append(button(String(entry.number).padStart(2,'0')+' · '+entry.title,
+        ()=>open(entry.id,'understand',undefined,true),'cur02-lesson-link'));
+      levelLessonList.append(row);
+    }
+  }
+  function selectCourseLevel(level:Cur02Level){
+    const selected=levelCatalog.find(item=>item.level===level);
+    if(!selected)return;
+    if(!allowExit())return;
+    selectedCourseLevel=level;
+    window.history.replaceState(window.history.state,'',frenchCourseLocation(level));
+    if(selected.lessons.length)open(selected.lessons[0]!.id,'understand',undefined,true);
+    else {
+      updateSixLevelList();
+      article.replaceChildren(el('h3',level+' curriculum planned'),
+        el('p','No original source-approved lessons are available for this level.'));
+      lessonSelect.hidden=true;
+    }
+  }
   function focusCourseLesson(){
    const body=article.querySelector<HTMLElement>('.u6-stage-body');
    if(body)body.scrollTop=0;
@@ -714,11 +754,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    article.replaceChildren();
    lessonSelect.value=current.id;
    const currentLevel=getOriginalCatalogEntry(current.id)?.level;
-   for(const choice of levelChoices.querySelectorAll<HTMLButtonElement>('button[data-course-level]')){
-    const active=choice.dataset.courseLevel===currentLevel;
-    choice.classList.toggle('is-selected',active);
-    choice.setAttribute('aria-pressed',String(active));
-   }
+   updateSixLevelList();
+   lessonSelect.hidden=false;
    const head=el('header',undefined,'u6-unit-header');
    const lessonKind=current.id.startsWith('transfer-')?'TRANSFER SCENARIO':'LESSON';
    const lessonNumber=current.id.startsWith('transfer-')?current.id.slice(9):current.id.slice(3);
@@ -837,6 +874,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
    current=lesson;stage=next;
+   selectedCourseLevel=navLevelForOriginalBand(getOriginalCatalogEntry(id)?.level??'A1');
+   window.history.replaceState(window.history.state,'',frenchCourseLocation(selectedCourseLevel,id));
    // Browsing is a temporary selector, not an extra destination after tapping a lesson.
    if(indexDetails.open)indexDetails.open=false;
    renderIndex();render();renderLearningEntry();schedulePosition(current.id,stage,taskIndex);
@@ -866,6 +905,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   },{once:true});
   levelFilter.value=getOriginalCatalogEntry(current.id)?.level??'all';
   open(current.id,stage);
+  if(requestedCourse&&!requestedCourse.id)selectCourseLevel(requestedCourse.level);
  }catch(error){
   if(signal.aborted)return;
   host.replaceChildren(el('p','Original French lessons unavailable. Existing native Learn and Review remain unaffected.'));

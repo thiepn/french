@@ -91,3 +91,5 @@
 @media(prefers-reduced-motion:reduce){
  .course-workspace *{scroll-behavior:auto!important;transition:none!important}
 }
+
+.cur02-level-lesson-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px;max-height:270px;overflow:auto;padding:0;margin:8px 0 16px}.cur02-level-lesson-list li{margin:0}.cur02-level-lesson-list .cur02-lesson-link{width:100%;text-align:left;min-height:42px;padding:10px;font-size:14px;border-radius:3px}.course-level-choices{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.course-level-choices button{min-height:46px;font-size:17px;font-weight:700}.course-level-choices button:focus-visible,.cur02-level-lesson-list button:focus-visible{outline:3px solid currentColor;outline-offset:2px}@media(max-width:640px){.course-level-choices{grid-template-columns:repeat(3,minmax(0,1fr))}.cur02-level-lesson-list{grid-template-columns:1fr;max-height:240px}}
