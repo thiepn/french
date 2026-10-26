@@ -23,4 +23,13 @@ jobs:
         run: npm run typecheck:vnext
       - name: Build French candidate without deployment
         run: npm run build:vnext
+      - name: Install isolated browser runner
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @playwright/test@1.63.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify actual mobile course navigation in Chromium
+        run: |
+          npx vite preview --config vite.config.ts --host 127.0.0.1 --port 4173 &
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          node tests/cur02-browser.mjs
  
