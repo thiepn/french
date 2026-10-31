@@ -99,12 +99,36 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
   const focusBar=el('div',undefined,'course-focus-bar');
-  const courseChooser=el('details',undefined,'course-directory');
-  const chooserTrigger=el('summary','All lessons');
-  chooserTrigger.setAttribute('aria-label','Choose course level or original lesson');
-  const directoryPanel=el('div',undefined,'course-directory-panel');
-  courseChooser.addEventListener('keydown',event=>{
-   if(event.key==='Escape'&&courseChooser.open){event.preventDefault();courseChooser.open=false;chooserTrigger.focus();}
+  const courseChooser=el('div',undefined,'course-directory');
+  const chooserTrigger=button('All lessons',()=>openCourseDirectory(),'course-directory-trigger');
+  chooserTrigger.setAttribute('aria-haspopup','dialog');
+  chooserTrigger.setAttribute('aria-controls','original-french-directory');
+  const directoryPanel=el('dialog',undefined,'course-directory-panel');
+  directoryPanel.id='original-french-directory';
+  directoryPanel.setAttribute('aria-labelledby','original-french-directory-title');
+  const directoryHeading=el('h2','Browse original French lessons');
+  directoryHeading.id='original-french-directory-title';
+  const directoryClose=button('Close lesson browser',()=>closeCourseDirectory(),'course-directory-close');
+  const directoryHeader=el('div',undefined,'course-directory-header');
+  directoryHeader.append(directoryHeading,directoryClose);
+  let returnFocusFromDirectory=true;
+  function closeCourseDirectory(restoreFocus=true){
+    returnFocusFromDirectory=restoreFocus;
+    if(directoryPanel.open)directoryPanel.close();
+  }
+  function openCourseDirectory(){
+    if(directoryPanel.open)return;
+    directoryPanel.showModal();
+    directoryHeading.tabIndex=-1;
+    directoryHeading.focus({preventScroll:true});
+  }
+  directoryPanel.addEventListener('close',()=>{
+    if(returnFocusFromDirectory&&!signal.aborted)chooserTrigger.focus({preventScroll:true});
+    returnFocusFromDirectory=true;
+  });
+  directoryPanel.addEventListener('click',event=>{
+    // Clicking the native dialog backdrop has the dialog itself as the event target.
+    if(event.target===directoryPanel)closeCourseDirectory();
   });
   const levelChoices=el('div',undefined,'course-level-choices');
   levelChoices.setAttribute('role','group');
@@ -182,9 +206,12 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    },
    onNativeReview:()=>navigateSafely('review')
   }));
-  const browseButton=button('Browse',()=>{
-    indexDetails.open=!indexDetails.open;
-    browseButton.setAttribute('aria-expanded',String(indexDetails.open));
+  const browseButton=button('Browse groups',()=>{
+    closeCourseDirectory(false);
+    indexDetails.open=true;
+    browseButton.setAttribute('aria-expanded','true');
+    const heading=indexDetails.querySelector<HTMLElement>('summary');
+    if(heading){heading.tabIndex=0;heading.focus({preventScroll:true});}
   },'course-browse-button');
   browseButton.setAttribute('aria-expanded','false');
   indexDetails.addEventListener('toggle',()=>{
@@ -195,7 +222,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const extraContent=el('div',undefined,'course-extra-content');
   extraContent.append(header,hero,pathways,vocabularyDiscovery,placement,activities,recovery,status,discovery);
   extra.append(extraSummary,extraContent);
-  directoryPanel.append(levelChoices,levelLessonList,lessonLabel,browseButton);
+  directoryPanel.append(directoryHeader,levelChoices,levelLessonList,lessonLabel,browseButton);
   courseChooser.append(chooserTrigger,directoryPanel);
   focusBar.append(courseChooser,extra);
   host.append(focusBar,layout);
@@ -231,7 +258,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
       'Choose a lesson from the directory. Your existing saved position has not changed.':
       'No original source-approved lessons are available for this level.'));
     lessonSelect.hidden=true;
-    courseChooser.open=true;
+    openCourseDirectory();
   }
   function focusCourseLesson(){
    const body=article.querySelector<HTMLElement>('.u6-stage-body');
@@ -915,7 +942,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    window.history.replaceState(window.history.state,'',frenchCourseLocation(selectedCourseLevel,id));
    // Browsing is a temporary selector, not an extra destination after tapping a lesson.
    if(indexDetails.open)indexDetails.open=false;
-   courseChooser.open=false;
+   closeCourseDirectory(false);
    renderIndex();render();renderLearningEntry();
    if(!different&&persist)void schedulePosition(current.id,stage,taskIndex);
    if(focus)focusCourseLesson();
