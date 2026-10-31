@@ -96,27 +96,36 @@
 
 
 /* R4: the original catalog remains source-owned, but is out of the permanent lesson viewport. */
+
+/* R7: native modal, labelled original course directory.  No persistent browser state. */
 .course-focus-bar{min-height:48px;align-items:center;flex-wrap:nowrap}
-.course-directory{position:relative;flex:0 0 auto;z-index:46}
-.course-directory>summary{list-style:none;cursor:pointer;display:flex;align-items:center;min-height:44px;padding:.55rem .85rem;border:1px solid var(--line);border-radius:3px;background:var(--bg);font-weight:700;font-size:.9rem}
-.course-directory>summary::-webkit-details-marker{display:none}
-.course-directory>summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.course-directory[open]>summary{background:var(--surface)}
+.course-directory{position:relative;flex:0 0 auto}
+.course-directory-trigger{min-height:44px;padding:.55rem .85rem;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--text);font-weight:700;font-size:.9rem;cursor:pointer}
+.course-directory-trigger:focus-visible,.course-directory-close:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .course-directory-panel{display:none}
-.course-directory[open]>.course-directory-panel{display:flex;flex-direction:column;gap:.7rem;position:absolute;top:calc(100% + .3rem);left:0;width:min(680px,calc(100vw - 1.2rem));max-height:min(74dvh,620px);overflow-y:auto;overscroll-behavior:contain;background:var(--bg);border:1px solid var(--line);box-shadow:0 16px 34px #0002;padding:.9rem;z-index:50}
+.course-directory-panel[open]{display:flex;flex-direction:column;gap:.7rem;position:fixed;inset:auto;margin:auto;width:min(680px,calc(100vw - 24px));max-width:none;max-height:min(76dvh,660px);overflow-y:auto;overscroll-behavior:contain;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:5px;box-shadow:0 16px 45px #0006;padding:.95rem;z-index:100}
+.course-directory-panel::backdrop{background:rgba(0,0,0,.6)}
+.course-directory-header{display:flex;align-items:center;justify-content:space-between;gap:.7rem}
+.course-directory-header h2{font-size:1.1rem;margin:0}
+.course-directory-close{min-height:44px;padding:.5rem .8rem;background:var(--surface);border:1px solid var(--line);cursor:pointer}
 .course-directory-panel .course-level-choices{flex:none;grid-template-columns:repeat(6,minmax(0,1fr))}
-.course-directory-panel .cur02-level-lesson-list{flex:none;max-height:42dvh;overflow-y:auto;margin:0;padding:0}
+.course-directory-panel .cur02-level-lesson-list{flex:none;max-height:36dvh;overflow-y:auto;margin:0;padding:0}
 .course-directory-panel .course-lesson-picker{display:grid;flex:none;max-width:100%;min-width:0}
-.course-directory-panel .course-browse-button{align-self:flex-start}
+.course-directory-panel .course-browse-button{align-self:flex-start;min-height:44px}
 .course-activation-notice{flex:0 0 auto;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.55rem;border:1px solid var(--line);background:var(--bg);font-size:.83rem}
 .course-activation-notice p{margin:0;flex:1 1 100%}
 .course-activation-notice button{min-height:44px}
 @media(max-width:760px){
  .course-focus-bar{min-height:46px;flex-wrap:nowrap;padding:.2rem 0 .35rem}
- .course-directory[open]>.course-directory-panel{width:calc(100vw - 1.1rem);left:0;max-height:min(65dvh,490px);padding:.65rem}
+ .course-directory-panel[open]{inset:auto 0 0 0;margin:0;width:100%;max-height:min(76dvh,620px);border-radius:12px 12px 0 0;padding:.7rem .7rem calc(.7rem + env(safe-area-inset-bottom,0px))}
  .course-directory-panel .course-level-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
- .course-directory-panel .cur02-level-lesson-list{grid-template-columns:1fr;max-height:32dvh}
+ .course-directory-panel .cur02-level-lesson-list{grid-template-columns:1fr;max-height:37dvh}
  .course-directory-panel .course-lesson-picker{font-size:.9rem;grid-template-columns:auto minmax(0,1fr);gap:.5rem}
  .course-workspace .u6-full-course .u6-layout{min-height:0}
+ /* Keep the six real stage buttons for existing keyboard, AT, and P37H contracts.
+    On narrow phones, reveal them with a readable, scrollable native tab strip. */
+ .course-workspace .u6-stage-nav{display:flex;flex-wrap:nowrap;align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:48px;scroll-snap-type:x proximity;padding:.15rem 0}
+ .course-workspace .u6-stage-button{flex:0 0 auto;min-width:74px;min-height:44px;font-size:.84rem;line-height:1.2;white-space:nowrap;padding:.55rem .5rem;scroll-snap-align:start}
 }
-@media(max-height:625px){.course-directory[open]>.course-directory-panel{max-height:55dvh}}
+@media(max-height:625px){.course-directory-panel[open]{max-height:64dvh}}
+@media(prefers-reduced-motion:reduce){.course-workspace .u6-stage-nav{scroll-behavior:auto}}
