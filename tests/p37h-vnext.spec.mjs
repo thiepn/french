@@ -358,7 +358,7 @@ test('U54 offline cold-start precaches public manifest without loading any priva
   try{
     await page.reload();
     await page.goto('/#learn');
-    await expect(page.getByRole('heading',{name:'Learn'})).toBeVisible({timeout:30_000});
+    await expect(page.locator('.route-host h1')).toHaveText('Learn French',{timeout:30_000});
     await expect(page.locator('[data-status]')).toContainText('vocabulary records',{timeout:30_000});
     expect(await page.evaluate(async()=>{
       const response=await fetch('/content/manifest.json');
