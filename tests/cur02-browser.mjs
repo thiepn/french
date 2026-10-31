@@ -9,8 +9,8 @@ try{
  assert.match(page.url(),/#course\/C2$/);
  assert.match(await page.locator('.u6-lesson-content').innerText(),/C2 curriculum planned/);
  await page.goto(base+'/#course/B1',{waitUntil:'domcontentloaded'});
- await page.locator('.course-directory > summary').waitFor({timeout:30000});
- await page.locator('.course-directory > summary').click();
+ await page.locator('.course-directory-trigger').waitFor({timeout:30000});
+ await page.locator('.course-directory-trigger').click();
  await page.locator('.course-level-choices [data-course-level="B1"]').waitFor({timeout:30000});
  assert.equal(await page.locator('.course-level-choice').count(),6);
  await page.locator('.course-level-choices [data-course-level="B2"]').click();
