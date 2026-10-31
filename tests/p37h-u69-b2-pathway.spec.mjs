@@ -14,6 +14,9 @@ async function stored(page){
  }));
 }
 async function seed(page,options={}){
+ // Original fixture is allowed to write only after the real v5 learner baseline
+ // is initialized. An empty read cannot be interpreted as a completed migration.
+ await expect.poll(async()=>Boolean((await stored(page)).learner?.featureState),{timeout:15_000}).toBe(true);
  await page.evaluate(async(opts)=>{
   const manifest=await(await fetch('/content/manifest.json')).json();
   const digest=manifest.packs.find(p=>p.id==='reading-stable-p35')?.sha256;
@@ -21,11 +24,19 @@ async function seed(page,options={}){
   await new Promise((resolve,reject)=>{
    const open=indexedDB.open('thiepn-french-vnext',5);
    open.onerror=()=>reject(open.error);
+   open.onblocked=()=>reject(Error('U69 fixture open blocked'));
    open.onsuccess=()=>{
-    const db=open.result,tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner');
+    const db=open.result;
+    let tx,store;
+    try{
+     tx=db.transaction('learner','readwrite');
+     store=tx.objectStore('learner');
+    }catch(error){db.close();reject(error);return;}
     const get=store.get('state-v1');
-    get.onsuccess=()=>{
+    get.onerror=()=>reject(get.error);
+    get.onsuccess=()=>{try{
      const original=get.result,at=Date.now();
+     if(!original?.featureState)throw Error('U69 seed blocked: canonical learner baseline unavailable');
      const actualDigest=opts.sourceChanged?'e'.repeat(64):digest;
      const task=(id,modality='argument')=>({
       taskId:id,...(modality!=='argument'?{sourceId:id}:{}),
@@ -69,9 +80,11 @@ async function seed(page,options={}){
        ...(oralHistory?{oralHistory}:{}),...(oralSession?{oralSession}:{})
       }};
      store.put({...original,featureState},'state-v1');
+    }catch(error){try{tx.abort();}catch{}reject(error);}
     };
     tx.oncomplete=()=>{db.close();resolve()};
-    tx.onerror=()=>reject(tx.error);
+    tx.onerror=()=>{db.close();reject(tx.error)};
+    tx.onabort=()=>{db.close();reject(tx.error??Error('U69 fixture write aborted'))};
    };
   });
  },options);
