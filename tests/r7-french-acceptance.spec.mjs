@@ -17,7 +17,21 @@ for(const [width,height] of [[320,568],[360,720],[390,844],[568,320]]){
     stageHeight:rect('.u6-stage-nav')?.height};
   });
   expect(m.doc).toBeLessThanOrEqual(m.width+2);
-  expect(m.footer).toBeLessThanOrEqual(m.nav+2);
+  if(height<=400){
+   // A short landscape viewport cannot show the full six-stage lesson on one
+   // screen. Require genuine scrolling to make the footer fully reachable
+   // ABOVE the fixed application navigation, never underneath it.
+   const host=page.locator('.route-host.course-host');
+   await expect(host).toHaveCSS('overflow-y','auto');
+   await host.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+   const after=await page.evaluate(()=>({
+    footer:document.querySelector('.u6-stage-footer')?.getBoundingClientRect().bottom,
+    nav:document.querySelector('.primary-nav')?.getBoundingClientRect().top,
+    scroll:document.querySelector('.route-host.course-host')?.scrollTop
+   }));
+   expect(after.scroll).toBeGreaterThan(0);
+   expect(after.footer).toBeLessThanOrEqual(after.nav+2);
+  }else expect(m.footer).toBeLessThanOrEqual(m.nav+2);
   expect(m.content).toBeGreaterThan(55);
   expect(m.stageHeight).toBeLessThanOrEqual(65);
   await expect(page.locator('.u6-stage-footer .primary-action')).toBeVisible();
@@ -68,7 +82,7 @@ test('R7 six real stages remain keyboard reachable and readable at 320px',async(
  }));
  expect(measurements.sizes.every(b=>b.height>=44&&b.font>=13)).toBe(true);
  expect(measurements.scrollWidth).toBeGreaterThan(measurements.clientWidth);
- await nav.getByRole('button',{name:'Words',exact:false}).click();
+ await nav.getByRole('button',{name:'2. Vocabulary',exact:true}).click();
  await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
 });
 test('R7 cancelled unsent writing navigation retains private draft',async({page})=>{
@@ -98,10 +112,15 @@ test.describe('R7 missing asynchronous route asset',()=>{
  test('original Learn module failure is honest and offers full reload retry',async({page})=>{
   await page.goto('/#home');
   await expect(page.locator('.route-host h1')).toHaveText('Continue French',{timeout:45_000});
-  await page.route(/\/assets\/learn-[^/]+\.js/,route=>route.abort('failed'));
+  const failingAsset=/\/assets\/learn-[^/]+\.js/;
+  await page.route(failingAsset,route=>route.abort('failed'));
   await page.evaluate(()=>{location.hash='#learn';});
   const error=page.locator('.route-error');
   await expect(error.getByRole('heading',{name:'Could not open this section'})).toBeVisible({timeout:15_000});
-  await expect(error.getByRole('button',{name:'Retry this section'})).toBeVisible();
+  const retry=error.getByRole('button',{name:'Retry this section'});
+  await expect(retry).toBeVisible();
+  await page.unroute(failingAsset);
+  await retry.click();
+  await expect(page.locator('.route-host h1')).toHaveText('Learn French',{timeout:30_000});
  });
 });
