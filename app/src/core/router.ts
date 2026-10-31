@@ -12,7 +12,11 @@ export function createRouter(shell:ShellApi){
     shell.setActiveRoute(route);shell.main.setAttribute('aria-busy','true');
     shell.main.innerHTML='<section class="route-skeleton"><div class="skeleton-line skeleton-title"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-short"></div></section>';
     try{const module=await loaders[route]();if(routeController.signal.aborted)return;const context:RouteContext={main:shell.main,route,signal:routeController.signal,navigate};await module.mount(context);if(routeController.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.focus({preventScroll:true});}
-    catch(error){if(routeController.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.innerHTML='<section class="route-error"><h1>Could not open this section</h1><p>The route failed without taking down the rest of French.</p></section>';console.error('French vNext route failed',route,error);}
+    catch(error){if(routeController.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.innerHTML='<section class="route-error"><h1>Could not open this section</h1><p>That section could not load, possibly because its downloaded module is unavailable. Reconnect if offline, then retry. Your original learner records are unchanged.</p><button type="button" class="secondary-action compact-action" data-retry-route>Retry this section</button></section>';
+    // A failed dynamic import may remain rejected in this page's module graph.
+    // Reloading the same route is safer than repeated import() in the same document.
+    shell.main.querySelector<HTMLButtonElement>('[data-retry-route]')?.addEventListener('click',()=>window.location.reload());
+    console.error('French vNext route failed',route,error);}
   };
   return{start(){
     window.addEventListener('hashchange',()=>void render(current()));

@@ -112,10 +112,11 @@ test('R4 directory does not occupy the live lesson workspace or alter its stage'
  await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45000});
  const before=await page.locator('.u6-unit-header h3').textContent();
  await expect(page.locator('.course-directory-panel')).toBeHidden();
- await page.locator('.course-directory > summary').click();
+ await page.locator('.course-directory-trigger').click();
  await expect(page.locator('.cur02-level-lesson-list button').first()).toBeVisible();
- await page.locator('.course-directory > summary').focus();
+ await expect(page.locator('.course-directory-panel')).toHaveAttribute('open','');
  await page.keyboard.press('Escape');
+ await expect(page.locator('.course-directory-trigger')).toBeFocused();
  await expect(page.locator('.course-directory-panel')).toBeHidden();
  await expect(page.locator('.u6-unit-header h3')).toHaveText(before);
 });
@@ -141,7 +142,7 @@ test('R4 same lesson directory reselection restores verified stage without chang
  await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
  await expect.poll(async()=>(await r4ReadOriginalCheckpoint(page))?.stage).toBe('words');
  const before=await r4ReadOriginalCheckpoint(page);
- await page.locator('.course-directory > summary').click();
+ await page.locator('.course-directory-trigger').click();
  await page.locator('.cur02-level-lesson-list button').first().click();
  await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
  expect(await r4ReadOriginalCheckpoint(page)).toEqual(before);
