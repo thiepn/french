@@ -107,6 +107,36 @@ test('R7 hash history returns from course to Home and forward to lesson',async({
  await expect(page.locator('.u6-unit-header h3')).toBeVisible({timeout:45_000});
  await expect(page).toHaveURL(/#course\/A1\/a1-01$/);
 });
+
+async function originalCheckpoint(page){
+ return page.evaluate(async()=>new Promise(resolve=>{
+  const req=indexedDB.open('thiepn-french-vnext',5);
+  req.onerror=()=>resolve(null);
+  req.onsuccess=()=>{
+   const db=req.result;
+   try{
+    const tx=db.transaction('learner','readonly');
+    const get=tx.objectStore('learner').get('state-v1');
+    get.onsuccess=()=>resolve(get.result?.featureState?.vU24OriginalCourse??null);
+    get.onerror=()=>resolve(null);
+    tx.oncomplete=()=>db.close();
+    tx.onerror=()=>{db.close();resolve(null);};
+   }catch{db.close();resolve(null);}
+  };
+ }));
+}
+test('R7 real two-tab U24 CAS rejects stale preview writes without losing saved owner',async({page,context})=>{
+ const other=await context.newPage();
+ await Promise.all([openA1(page),openA1(other)]);
+ await page.locator('.u6-stage-footer .primary-action').click();
+ await expect.poll(async()=>(await originalCheckpoint(page))?.stage).toBe('words');
+ const before=await originalCheckpoint(page);
+ await other.locator('.u6-stage-footer .primary-action').click();
+ await expect(other.locator('.u24-recovery')).toContainText('A newer checkpoint exists',{timeout:15_000});
+ expect(await originalCheckpoint(page)).toEqual(before);
+ await other.close();
+});
+
 test.describe('R7 missing asynchronous route asset',()=>{
  test.use({serviceWorkers:'block'});
  test('original Learn module failure is honest and offers full reload retry',async({page})=>{
