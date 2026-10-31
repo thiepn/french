@@ -719,17 +719,30 @@ test('U53 first-boot P35 depth database migrates once without touching original 
   return legacy;
  });
  await page.goto('/#home');
- await expect.poll(async()=>page.evaluate(()=>new Promise((resolve,reject)=>{
-  const req=indexedDB.open('thiepn-french-vnext');
-  req.onerror=()=>reject(req.error);
-  req.onsuccess=()=>{
-   const db=req.result,tx=db.transaction('meta','readonly');
-   const get=tx.objectStore('meta').get('canonical-migration-v1');
-   get.onsuccess=()=>resolve(typeof get.result==='string'&&get.result.length>0);
-   get.onerror=()=>reject(get.error);
-   tx.oncomplete=()=>db.close();
-  };
- })),{timeout:45_000}).toBe(true);
+ await expect.poll(async()=>page.evaluate(async()=>{
+  // A versionless open can create an empty v1 DB and race the real version-5 upgrade.
+  const databases=await indexedDB.databases();
+  if(!databases.some(row=>row.name==='thiepn-french-vnext'&&row.version===5))return false;
+  return new Promise(resolve=>{
+   const req=indexedDB.open('thiepn-french-vnext',5);
+   req.onupgradeneeded=()=>{req.transaction?.abort();resolve(false);};
+   req.onerror=()=>resolve(false);
+   req.onblocked=()=>resolve(false);
+   req.onsuccess=()=>{
+    const db=req.result;
+    if(!db.objectStoreNames.contains('meta')){db.close();resolve(false);return;}
+    try{
+     const tx=db.transaction('meta','readonly');
+     const get=tx.objectStore('meta').get('canonical-migration-v1');
+     get.onsuccess=()=>resolve(typeof get.result==='string'&&get.result.length>0);
+     get.onerror=()=>resolve(false);
+     tx.oncomplete=()=>db.close();
+     tx.onerror=()=>{db.close();resolve(false);};
+     tx.onabort=()=>{db.close();resolve(false);};
+    }catch{db.close();resolve(false);}
+   };
+  });
+ }),{timeout:45_000}).toBe(true);
  const state=await page.evaluate(()=>new Promise((resolve,reject)=>{
   const req=indexedDB.open('thiepn-french-vnext');
   req.onerror=()=>reject(req.error);
