@@ -925,12 +925,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function open(id:string,next:Stage,resumeIndex?:number,focus=false,persist=true){
    const lesson=getOriginalUnit(id);if(!lesson)return;
-   if((id!==current.id||next!==stage)&&
-      (host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
-       host.querySelector<HTMLTextAreaElement>('.u29-summary-label textarea')?.value.trim()||
-       host.querySelector<HTMLTextAreaElement>('.u30-interpretation textarea')?.value.trim()||
-       host.querySelector<HTMLElement>('.u31-oral[data-has-private-draft="true"]'))&&
-      !window.confirm('Your temporary vocabulary or reading summary draft is unsent. Leave this learning stage and discard its text?'))return;
+   // U6's own Write editor uses the temporary drafts Map; the prior guard
+   // only inspected auxiliary U28–U31 editors and silently lost U6 text.
+   if((id!==current.id||next!==stage)&&hasPrivateDrafts()&&
+      !window.confirm('Your temporary writing or reading draft is unsent. Leave this stage and discard its text?'))return;
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
