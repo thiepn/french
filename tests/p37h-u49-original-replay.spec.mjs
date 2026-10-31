@@ -254,7 +254,12 @@ test('U49 complete original partner Listen to supported Write to Conversation pr
  await page.getByRole('button',{name:'Listen to this original partner turn'}).click();
  await expect(page).toHaveURL(/#listen$/);
  const listen=page.getByRole('region',{name:'Original P35 dialogue · partner listening'});
- await listen.getByRole('textbox',{name:'Transcribe original partner'}).fill('Bonjour, qu’est-ce que vous prenez ?');
+ const transcription=listen.getByRole('textbox',{name:'Transcribe original partner'});
+ const originalWords='Bonjour, qu’est-ce que vous prenez ?';
+ await transcription.fill(originalWords);
+ // Expose any asynchronous route remount before the result can be mistaken for
+ // a failed transcription. Do not alter text, authority or grading expectations.
+ await expect(transcription).toHaveValue(originalWords);
  await listen.getByRole('button',{name:'Check original transcription'}).click();
  await expect(listen.getByRole('status')).toContainText('Written-source only');
  await listen.getByRole('button',{name:'Continue original conversation in Write'}).click();

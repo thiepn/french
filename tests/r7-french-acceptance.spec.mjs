@@ -37,18 +37,44 @@ for(const [width,height] of [[320,568],[360,720],[390,844],[568,320]]){
   await expect(page.locator('.u6-stage-footer .primary-action')).toBeVisible();
  });
 }
-test('R7 200% CSS zoom proxy at 320x568 — not native browser zoom sign-off',async({page})=>{
- await page.setViewportSize({width:320,height:568});
- await openA1(page);
- await page.evaluate(()=>{document.documentElement.style.zoom='200%';});
- const m=await page.evaluate(()=>({
-  doc:document.documentElement.scrollWidth,width:innerWidth,
-  footer:document.querySelector('.u6-stage-footer')?.getBoundingClientRect().bottom,
-  nav:document.querySelector('.primary-nav')?.getBoundingClientRect().top
- }));
- expect(m.doc).toBeLessThanOrEqual(m.width+2);
- expect(m.footer).toBeLessThanOrEqual(m.nav+2);
-});
+// The old R7 320px + root CSS zoom 200% test produced ~160 effective CSS px.
+// Preserve its failed trace in R7 evidence. These tests exercise the normative
+// WCAG 2.2 1.4.10 equivalent-width reflow contract. A native browser-UI 200%
+// zoom session is a distinct manual acceptance item, NOT asserted here.
+for(const [width,height,scenario] of [
+ [640,900,'1280px desktop at 200%-equivalent content width'],
+ [320,800,'320 CSS px normative reflow width (1280 at 400%-equivalent)']
+]){
+ test('R8 WCAG-equivalent reflow '+scenario,async({page})=>{
+  await page.setViewportSize({width,height});
+  await openA1(page);
+  const geom=await page.evaluate(()=>{
+   const el=(s)=>document.querySelector(s);
+   const rect=(s)=>el(s)?.getBoundingClientRect();
+   return {
+    docWidth:document.documentElement.scrollWidth,viewport:innerWidth,
+    titleWidth:el('.u6-unit-header h3')?.scrollWidth,
+    titleViewport:el('.u6-unit-header h3')?.clientWidth,
+    footer:rect('.u6-stage-footer')?.bottom,
+    nav:rect('.primary-nav')?.top,
+    bodyHeight:el('.u6-stage-body')?.clientHeight
+   };
+  });
+  expect(geom.docWidth).toBeLessThanOrEqual(geom.viewport+2);
+  expect(geom.titleWidth).toBeLessThanOrEqual(geom.titleViewport+2);
+  expect(geom.footer).toBeLessThanOrEqual(geom.nav+2);
+  expect(geom.bodyHeight).toBeGreaterThan(55);
+  const stages=page.locator('.u6-stage-nav .u6-stage-button');
+  await expect(stages).toHaveCount(6);
+  for(let i=0;i<6;i++)await stages.nth(i).scrollIntoViewIfNeeded();
+  await expect(page.locator('.u6-stage-footer .primary-action')).toBeVisible();
+  const chooser=page.getByRole('button',{name:'All lessons'});
+  await chooser.click();
+  await expect(page.getByRole('dialog',{name:'Browse original French lessons'})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(chooser).toBeFocused();
+ });
+}
 test('R7 native modal: labelled, backdrop/inert, Tab trap, Escape/close and return focus',async({page})=>{
  await page.setViewportSize({width:320,height:568});
  await openA1(page);

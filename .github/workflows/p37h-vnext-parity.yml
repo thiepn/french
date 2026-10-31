@@ -82,10 +82,31 @@ jobs:
         env:
           CUR02_BASE_URL: http://127.0.0.1:4175
         run: node tests/cur02-browser.mjs
+      - name: R8 isolated U49/U69 flake qualification (three repetitions, no retries)
+        id: r8_flakes
+        continue-on-error: true
+        env:
+          P37H_BASE_URL: http://127.0.0.1:4175
+        run: |
+          npx playwright test --config tests/playwright.p37h.config.mjs --project="${{ matrix.project }}" \
+            tests/p37h-u49-original-replay.spec.mjs tests/p37h-u69-b2-pathway.spec.mjs \
+            --grep 'U49 complete original partner|U69 legitimate P33 interrupted' \
+            --repeat-each=3 --retries=0
+      - name: Preserve R8 targeted replay failures before full suite
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: french-r8-targeted-${{ matrix.project }}-${{ github.sha }}
+          path: test-results/p37h
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Run P37H parity acceptance
         env:
           P37H_BASE_URL: http://127.0.0.1:4175
         run: npx playwright test --config tests/playwright.p37h.config.mjs --project="${{ matrix.project }}"
+      - name: Enforce R8 targeted repeat qualification
+        if: always()
+        run: test "${{ steps.r8_flakes.outcome }}" = "success"
       - name: Preserve real browser screenshots and failure evidence
         if: always()
         uses: actions/upload-artifact@v4
