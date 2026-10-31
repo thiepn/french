@@ -8,10 +8,11 @@ export function createRouter(shell:ShellApi){
   let controller:AbortController|null=null;
   const navigate=(route:RouteId)=>{location.hash='#'+route;};
   const render=async(route:RouteId)=>{
-    controller?.abort();controller=new AbortController();shell.setActiveRoute(route);shell.main.setAttribute('aria-busy','true');
+    controller?.abort();const routeController=new AbortController();controller=routeController;
+    shell.setActiveRoute(route);shell.main.setAttribute('aria-busy','true');
     shell.main.innerHTML='<section class="route-skeleton"><div class="skeleton-line skeleton-title"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-short"></div></section>';
-    try{const module=await loaders[route]();if(controller.signal.aborted)return;const context:RouteContext={main:shell.main,route,signal:controller.signal,navigate};await module.mount(context);if(controller.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.focus({preventScroll:true});}
-    catch(error){if(controller.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.innerHTML='<section class="route-error"><h1>Could not open this section</h1><p>The route failed without taking down the rest of French.</p></section>';console.error('French vNext route failed',route,error);}
+    try{const module=await loaders[route]();if(routeController.signal.aborted)return;const context:RouteContext={main:shell.main,route,signal:routeController.signal,navigate};await module.mount(context);if(routeController.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.focus({preventScroll:true});}
+    catch(error){if(routeController.signal.aborted)return;shell.main.removeAttribute('aria-busy');shell.main.innerHTML='<section class="route-error"><h1>Could not open this section</h1><p>The route failed without taking down the rest of French.</p></section>';console.error('French vNext route failed',route,error);}
   };
   return{start(){
     window.addEventListener('hashchange',()=>void render(current()));

@@ -24,6 +24,8 @@ jobs:
           node-version: 24
       - name: Install pinned vNext toolchain
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run exact-head CUR-02 source navigation contract
+        run: node --experimental-strip-types --test tests/cur02-level-navigation.test.mjs
       - name: Run full vNext qualification
         run: npm run qualify:vnext
       - name: Upload qualified build
@@ -68,6 +70,10 @@ jobs:
           done
           cat /tmp/french-p37h-server.log
           exit 1
+      - name: Run focused CUR-02 browser navigation against the same qualified build
+        env:
+          CUR02_BASE_URL: http://127.0.0.1:4175
+        run: node tests/cur02-browser.mjs
       - name: Run P37H parity acceptance
         env:
           P37H_BASE_URL: http://127.0.0.1:4175

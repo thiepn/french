@@ -24,7 +24,7 @@ test('One tap on an original level from Home opens its real lesson, without intr
  await page.goto('/#home');
  await expect(page.getByRole('button',{name:'Start A2 course'})).toBeVisible({timeout:45000});
  await page.getByRole('button',{name:'Start A2 course'}).click();
- await expect(page).toHaveURL(/#course$/);
+ await expect(page).toHaveURL(/#course\/A2\/[A-Za-z0-9-]+$/);
  await expect(page.getByRole('heading',{name:'Course',exact:true})).toBeVisible();
  await expect(page.locator('.u6-lesson-content .u6-unit-header h3')).toBeVisible({timeout:45000});
  await expect(page.locator('.course-level-choice.is-selected')).toContainText('A2');
@@ -52,13 +52,13 @@ test('Original lesson stays on one screen with fixed Next and six reversible ori
  const initial=await page.locator('.u6-unit-header h3').textContent();
  await page.locator('.u6-stage-footer .primary-action').click();
  await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
- await expect(page).toHaveURL(/#course$/);
+ await expect(page).toHaveURL(/#course\/A1\/a1-01$/);
  await expect(page.locator('.u6-unit-header h3')).toHaveText(initial);
  const footer=page.locator('.u6-stage-footer');
  await expect(footer.getByRole('button',{name:/3\. Read/})).toBeVisible();
  await footer.getByRole('button',{name:/3\. Read/}).click();
  await expect(page.locator('[data-u6-stage="dialogue"]')).toBeVisible();
- await expect(page).toHaveURL(/#course$/);
+ await expect(page).toHaveURL(/#course\/A1\/a1-01$/);
  const measurements=await page.evaluate(()=>{
   const main=document.querySelector('.route-host');
   const body=document.querySelector('.u6-stage-body');
@@ -96,4 +96,79 @@ test('Original checkpoint resumes automatically after reload; advanced source fe
  await tools.locator(':scope > summary').click();
  await expect(tools.getByRole('heading',{name:'Choose where to learn'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Main navigation'}).locator('button')).toHaveCount(4);
+});
+
+ 
+test('R4 invalid or mismatched original lesson URLs fail closed without an A1 fallback',async({page})=>{
+ for(const location of ['#course/C7','#course/B1/a1-01','#course/A1/not-real']){
+  await page.goto('/'+location);
+  await expect(page.locator('.u6-lesson-content h3')).toHaveText('This course link is unavailable',{timeout:45000});
+  await expect(page.locator('.u6-stage-body')).toHaveCount(0);
+ }
+});
+test('R4 directory does not occupy the live lesson workspace or alter its stage',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/#course/A1/a1-01');
+ await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45000});
+ const before=await page.locator('.u6-unit-header h3').textContent();
+ await expect(page.locator('.course-directory-panel')).toBeHidden();
+ await page.locator('.course-directory > summary').click();
+ await expect(page.locator('.cur02-level-lesson-list button').first()).toBeVisible();
+ await page.locator('.course-directory > summary').focus();
+ await page.keyboard.press('Escape');
+ await expect(page.locator('.course-directory-panel')).toBeHidden();
+ await expect(page.locator('.u6-unit-header h3')).toHaveText(before);
+});
+
+async function r4ReadOriginalCheckpoint(page){
+ return page.evaluate(async()=>await new Promise(resolve=>{
+  const request=indexedDB.open('thiepn-french-vnext',5);
+  request.onerror=()=>resolve(null);
+  request.onsuccess=()=>{
+   const db=request.result,tx=db.transaction('learner','readonly');
+   const row=tx.objectStore('learner').get('state-v1');
+   row.onsuccess=()=>resolve(row.result?.featureState?.vU24OriginalCourse??null);
+   row.onerror=()=>resolve(null);
+   tx.oncomplete=()=>db.close();
+  };
+ }));
+}
+test('R4 same lesson directory reselection restores verified stage without changing the U24 CAS token',async({page})=>{
+ await page.goto('/#course/A1/a1-01');
+ await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45000});
+ expect(await r4ReadOriginalCheckpoint(page)).toBeNull();
+ await page.locator('.u6-stage-footer .primary-action').click();
+ await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
+ await expect.poll(async()=>(await r4ReadOriginalCheckpoint(page))?.stage).toBe('words');
+ const before=await r4ReadOriginalCheckpoint(page);
+ await page.locator('.course-directory > summary').click();
+ await page.locator('.cur02-level-lesson-list button').first().click();
+ await expect(page.locator('[data-u6-stage="words"]')).toBeVisible();
+ expect(await r4ReadOriginalCheckpoint(page)).toEqual(before);
+ await page.reload();
+ await expect(page.locator('[data-u6-stage="words"]')).toBeVisible({timeout:45000});
+ expect(await r4ReadOriginalCheckpoint(page)).toEqual(before);
+});
+test('R4 different lesson previews without writes; explicit activation uses original CAS',async({page})=>{
+ await page.goto('/#course/A1/a1-01');
+ await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45000});
+ await page.locator('.u6-stage-footer .primary-action').click();
+ await expect.poll(async()=>(await r4ReadOriginalCheckpoint(page))?.stage).toBe('words');
+ const before=await r4ReadOriginalCheckpoint(page);
+ await page.goto('/#course/B1/b1-01');
+ await expect(page.locator('.course-activation-notice')).toBeVisible({timeout:45000});
+ expect(await r4ReadOriginalCheckpoint(page)).toEqual(before);
+ page.once('dialog',dialog=>dialog.dismiss());
+ await page.getByRole('button',{name:'Start this lesson instead'}).click();
+ expect(await r4ReadOriginalCheckpoint(page)).toEqual(before);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.getByRole('button',{name:'Start this lesson instead'}).click();
+ await expect.poll(async()=>(await r4ReadOriginalCheckpoint(page))?.id).toBe('b1-01');
+ const after=await r4ReadOriginalCheckpoint(page);
+ expect(after.schema).toBe(before.schema);
+ expect(after.navigationOnly).toBe(true);
+ expect(after.token).not.toBe(before.token);
+ await page.reload();
+ await expect(page.locator('.u6-unit-header h3')).toBeVisible({timeout:45000});
+ expect(await r4ReadOriginalCheckpoint(page)).toEqual(after);
 });

@@ -46,6 +46,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const lessons=await loadU22OriginalFrenchCourse();
   const levelCatalog=buildFrenchCourseNavigation(ORIGINAL_PATHWAYS.flatMap(path=>path.sections.flatMap(section=>section.entries)));
   const requestedCourse=parseFrenchCourseLocation(location.hash,levelCatalog);
+  const invalidCoursePath=location.hash.startsWith('#course/')&&!requestedCourse;
   if(signal.aborted||!host.isConnected)return;
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
@@ -57,14 +58,15 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   if(signal.aborted||!host.isConnected)return;
   const incoming=takeOriginalHandoff('course');
   const saved=continuity.status==='ready'?continuity.checkpoint:null;
-  let current=getOriginalUnit(incoming?.id??requestedCourse?.id??saved?.id??'')??lessons[0],
-    stage:Stage=incoming?.stage??(requestedCourse?.id?'understand':saved?.stage??'understand'),
-    taskIndex=(!incoming&&saved?.id===current.id)?saved.taskIndex:0;
+  let current=getOriginalUnit(incoming?.id??requestedCourse?.id??saved?.id??'')??lessons[0];
+  const matchingSaved=saved?.id===current.id;
+  let stage:Stage=incoming?.stage??(matchingSaved?saved!.stage:'understand'),
+    taskIndex=(!incoming&&matchingSaved)?saved!.taskIndex:0;
   let selectedCourseLevel:Cur02Level=requestedCourse?.level??navLevelForOriginalBand(getOriginalCatalogEntry(current.id)?.level??'A1');
   let stopAudio:(()=>void)|null=null;
   // Existing source-verified CAS, not another learner progress model.
   // Stale, blocked and unavailable positions are never overwritten automatically.
-  let tracking=continuity.status==='ready'||continuity.status==='empty',
+  let tracking=continuity.status==='ready'&&matchingSaved&&!invalidCoursePath,
     reviewBusy=false,recoveryError='',saveChain=Promise.resolve();
   const hasPrivateDrafts=()=>[...drafts.values()].some(text=>text.trim().length>0)||
    !!host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
@@ -97,6 +99,13 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   activities.setAttribute('aria-label','Available original practice for the selected lesson');
   const layout=el('div',undefined,'u6-layout');
   const focusBar=el('div',undefined,'course-focus-bar');
+  const courseChooser=el('details',undefined,'course-directory');
+  const chooserTrigger=el('summary','All lessons');
+  chooserTrigger.setAttribute('aria-label','Choose course level or original lesson');
+  const directoryPanel=el('div',undefined,'course-directory-panel');
+  courseChooser.addEventListener('keydown',event=>{
+   if(event.key==='Escape'&&courseChooser.open){event.preventDefault();courseChooser.open=false;chooserTrigger.focus();}
+  });
   const levelChoices=el('div',undefined,'course-level-choices');
   levelChoices.setAttribute('role','group');
   levelChoices.setAttribute('aria-label','Choose your French level');
@@ -119,7 +128,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     }
     lessonSelect.append(group);
   }
-  lessonSelect.addEventListener('change',()=>open(lessonSelect.value,'understand',undefined,true));
+  lessonSelect.addEventListener('change',()=>openFromDirectory(lessonSelect.value));
   lessonLabel.append(lessonSelect);
   const sidebar=el('nav',undefined,'u6-lesson-index');sidebar.setAttribute('aria-label','Filterable original French course lesson index');
   const article=el('article',undefined,'u6-lesson-content');article.dataset.u6LessonContent='';
@@ -186,7 +195,9 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const extraContent=el('div',undefined,'course-extra-content');
   extraContent.append(header,hero,pathways,vocabularyDiscovery,placement,activities,recovery,status,discovery);
   extra.append(extraSummary,extraContent);
-  focusBar.append(levelChoices,levelLessonList,lessonLabel,browseButton,extra);
+  directoryPanel.append(levelChoices,levelLessonList,lessonLabel,browseButton);
+  courseChooser.append(chooserTrigger,directoryPanel);
+  focusBar.append(courseChooser,extra);
   host.append(focusBar,layout);
   function updateSixLevelList(){
     levelLessonList.replaceChildren();
@@ -203,7 +214,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     for(const entry of selected.lessons){
       const row=el('li');
       row.append(button(String(entry.number).padStart(2,'0')+' · '+entry.title,
-        ()=>open(entry.id,'understand',undefined,true),'cur02-lesson-link'));
+        ()=>openFromDirectory(entry.id),'cur02-lesson-link'));
       levelLessonList.append(row);
     }
   }
@@ -213,13 +224,14 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     if(!allowExit())return;
     selectedCourseLevel=level;
     window.history.replaceState(window.history.state,'',frenchCourseLocation(level));
-    if(selected.lessons.length)open(selected.lessons[0]!.id,'understand',undefined,true);
-    else {
-      updateSixLevelList();
-      article.replaceChildren(el('h3',level+' curriculum planned'),
-        el('p','No original source-approved lessons are available for this level.'));
-      lessonSelect.hidden=true;
-    }
+    updateSixLevelList();
+    article.replaceChildren(
+     el('h3',selected.lessons.length?'Choose an original '+level+' lesson':level+' curriculum planned'),
+     el('p',selected.lessons.length?
+      'Choose a lesson from the directory. Your existing saved position has not changed.':
+      'No original source-approved lessons are available for this level.'));
+    lessonSelect.hidden=true;
+    courseChooser.open=true;
   }
   function focusCourseLesson(){
    const body=article.querySelector<HTMLElement>('.u6-stage-body');
@@ -232,7 +244,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(!selected?.firstId)return;
    levelFilter.value=level;materialFilter.value='all';search.value='';
    visible=60;openedGroups.clear();indexDetails.open=false;
-   open(selected.firstId,'understand',undefined,true);
+   openFromDirectory(selected.firstId);
   }
   function renderLearningEntry(){
    const saved=continuity.status==='ready'&&!tracking?continuity.checkpoint:null;
@@ -247,7 +259,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     current.id==='a1-01'&&stage==='understand'?'Start from A1':'Continue selected lesson',()=>{
     if(saved){
      tracking=true;recoveryError='';
-     open(saved.id,saved.stage,saved.taskIndex,true);drawRecovery();
+     open(saved.id,saved.stage,saved.taskIndex,true,false);drawRecovery();
     }else open(current.id,stage,taskIndex,true);
    },'primary-action compact-action');
    const actions=el('div',undefined,'u25-hero-actions');
@@ -301,14 +313,17 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(continuity.status==='ready'&&!tracking&&checkpoint)
     add('Resume saved lesson',()=>{
      tracking=true;recoveryError='';
-     open(checkpoint.id,checkpoint.stage,checkpoint.taskIndex);
+     open(checkpoint.id,checkpoint.stage,checkpoint.taskIndex,false,false);
      const title=article.querySelector<HTMLElement>('.u6-unit-header h3');
      if(title){title.tabIndex=-1;title.focus({preventScroll:true});}
     });
    if((continuity.status==='empty'||continuity.status==='ready')&&!tracking)
     add(continuity.status==='ready'?'Save this position instead':'Remember my lesson position',()=>{
+     if(continuity.status==='ready'&&continuity.checkpoint?.id!==current.id&&
+        !window.confirm('Replace the saved position in another original lesson? Only the navigation checkpoint will change.'))return;
      tracking=true;recoveryError='';
-     schedulePosition(current.id,stage,taskIndex);drawRecovery();
+     void schedulePosition(current.id,stage,taskIndex).then(()=>render());
+     drawRecovery();
     });
    if(tracking){
     add('Save position now',()=>schedulePosition(current.id,stage,taskIndex));
@@ -328,7 +343,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    renderLearningEntry();
   }
   const schedulePosition=(id:string,next:Stage,index:number)=>{
-   if(!tracking||signal.aborted)return;
+   if(!tracking||signal.aborted)return Promise.resolve();
    saveChain=saveChain.then(async()=>{
     if(!tracking)return;
     const result=await saveOriginalContinuity(continuity,id,next,index);
@@ -344,6 +359,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     tracking=false;recoveryError='Saving failed. Course practice remains usable; do not rely on this position until it is saved.';
     if(!signal.aborted)drawRecovery();
    });
+   return saveChain;
   };
   async function refreshReview(){
    reviewBusy=true;drawRecovery();await saveChain;
@@ -390,7 +406,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const pinned=getOriginalCatalogEntry(current.id);
     if(pinned){
      const selected=button('Current lesson · '+pinned.title,
-      ()=>open(pinned.id,'understand',undefined,true),'u6-unit-button selected');
+      ()=>openFromDirectory(pinned.id),'u6-unit-button selected');
      selected.dataset.u6Unit=pinned.id;
      selected.setAttribute('aria-current','true');
      sidebar.append(selected);
@@ -817,6 +833,20 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(neighbors.previous)cross.append(button('← Previous lesson',()=>open(neighbors.previous!.id,'understand',undefined,true)));
    if(neighbors.next)cross.append(button('Next lesson →',()=>open(neighbors.next!.id,'understand',undefined,true)));
    lessonReferences.append(cross);head.append(lessonReferences);article.append(head);
+   if(continuity.status==='ready'&&continuity.checkpoint&&continuity.checkpoint.id!==current.id){
+    const saved=continuity.checkpoint;
+    const notice=el('section',undefined,'course-activation-notice');
+    notice.setAttribute('role','status');
+    notice.append(el('p','Preview only. Your saved position in '+(getOriginalCatalogEntry(saved.id)?.title??saved.id)+' is unchanged.'));
+    notice.append(button('Resume saved lesson',()=>open(saved.id,saved.stage,saved.taskIndex,true,false),'secondary-action compact-action'));
+    notice.append(button('Start this lesson instead',()=>{
+     if(!window.confirm('Replace your saved lesson position? Graded review history and original source data remain unchanged.'))return;
+     tracking=true;recoveryError='';
+     void schedulePosition(current.id,stage,taskIndex).then(()=>{if(!signal.aborted)render();});
+    },'primary-action compact-action'));
+    if(recoveryError)notice.append(el('p',recoveryError,'u24-recovery-warning'));
+    article.append(notice);
+   }
    const stageNav=el('div',undefined,'u6-stage-nav');stageNav.setAttribute('role','group');stageNav.setAttribute('aria-label','Lesson learning stages');
    for(const [id,title] of STAGES){
     const tab=button(title,()=>open(current.id,id,undefined,true),'u6-stage-button');
@@ -862,7 +892,11 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     ' · original-owned. Course exercise results are temporary, not native FSRS/CEFR grades.','u6-provenance');
    article.append(trace);
   }
-  function open(id:string,next:Stage,resumeIndex?:number,focus=false){
+  function openFromDirectory(id:string){
+   const matching=continuity.status==='ready'&&continuity.checkpoint?.id===id?continuity.checkpoint:null;
+   open(id,matching?.stage??'understand',matching?.taskIndex,true,false);
+  }
+  function open(id:string,next:Stage,resumeIndex?:number,focus=false,persist=true){
    const lesson=getOriginalUnit(id);if(!lesson)return;
    if((id!==current.id||next!==stage)&&
       (host.querySelector<HTMLTextAreaElement>('.u28-writing textarea')?.value.trim()||
@@ -873,12 +907,17 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    stopAudio?.();stopAudio=null;
    if(id!==current.id)taskIndex=0;
    if(resumeIndex!==undefined)taskIndex=Math.min(Math.max(0,resumeIndex),lesson.tasks.length-1);
+   const different=id!==current.id;
+   if(different)tracking=continuity.status==='ready'&&continuity.checkpoint?.id===id;
+   else if(continuity.status==='empty'&&persist)tracking=true;
    current=lesson;stage=next;
    selectedCourseLevel=navLevelForOriginalBand(getOriginalCatalogEntry(id)?.level??'A1');
    window.history.replaceState(window.history.state,'',frenchCourseLocation(selectedCourseLevel,id));
    // Browsing is a temporary selector, not an extra destination after tapping a lesson.
    if(indexDetails.open)indexDetails.open=false;
-   renderIndex();render();renderLearningEntry();schedulePosition(current.id,stage,taskIndex);
+   courseChooser.open=false;
+   renderIndex();render();renderLearningEntry();
+   if(!different&&persist)void schedulePosition(current.id,stage,taskIndex);
    if(focus)focusCourseLesson();
   }
   sidebar.addEventListener('keydown',event=>{
@@ -892,7 +931,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const selected=event.key==='Home'?0:event.key==='End'?buttons.length-1:
     (at+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;
    const chosen=getOriginalUnit(buttons[selected]?.dataset.u6Unit??'');
-   if(chosen){open(chosen.id,'understand');
+   if(chosen){openFromDirectory(chosen.id);
     sidebar.querySelector<HTMLButtonElement>('[data-u6-unit="'+chosen.id+'"]')?.focus();}
   });
   const beforeUnload=(event:BeforeUnloadEvent)=>{
@@ -906,16 +945,25 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   levelFilter.value=getOriginalCatalogEntry(current.id)?.level??'all';
   const startingLevel=requestedCourse&&!requestedCourse.id
     ?levelCatalog.find(item=>item.level===requestedCourse.level):null;
-  if(startingLevel&&startingLevel.availability==='planned'){
-    // Reading a planned deep link must not call the source checkpoint writer.
+  if(invalidCoursePath){
+    tracking=false;
+    article.replaceChildren(el('h3','This course link is unavailable'),
+      el('p','The requested level or original lesson ID is invalid. Choose a verified original lesson using All lessons.'));
+    lessonSelect.hidden=true;
+  }else if(startingLevel){
+    tracking=false;
     selectedCourseLevel=startingLevel.level;
     updateSixLevelList();
-    article.replaceChildren(el('h3',startingLevel.level+' curriculum planned'),
-      el('p','No original source-approved lessons are available for this level.'));
+    article.replaceChildren(
+      el('h3',startingLevel.lessons.length?'Choose an original '+startingLevel.level+' lesson':startingLevel.level+' curriculum planned'),
+      el('p',startingLevel.lessons.length?'Select a lesson using All lessons. Your saved position remains unchanged.':
+        'No original source-approved lessons are available for this level.'));
     lessonSelect.hidden=true;
-  }else if(startingLevel?.lessons[0]){
-    open(startingLevel.lessons[0].id,'understand');
-  }else open(current.id,stage);
+  }else {
+    // Read-only mount: show matching saved stage without mutating the original CAS record.
+    if(incoming)window.history.replaceState(window.history.state,'',frenchCourseLocation(selectedCourseLevel,current.id));
+    renderIndex();render();renderLearningEntry();
+  }
  }catch(error){
   if(signal.aborted)return;
   host.replaceChildren(el('p','Original French lessons unavailable. Existing native Learn and Review remain unaffected.'));
