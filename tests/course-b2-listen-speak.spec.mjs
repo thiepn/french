@@ -73,3 +73,48 @@ test('New B2 cases have source-anchored independent seven-stage speaking rather 
   await expect(discovery.locator('.u31-task')).toContainText('Your partner misunderstands');
  }
 });
+
+test('B2 original listening requires reconciling two attributed French turns and offers independent oral follow-up',async({page})=>{
+ const lab=await openB2Listening(page);
+ await lab.getByRole('button',{name:/Interpret what was said/}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ const source=lab.locator('.u30-question');
+ await expect(source.locator('.u30-source')).toContainText('compare original spoken turns 2 and 3');
+ await expect(source.getByRole('button',{name:'Replay both original turns (synthetic French TTS)'})).toBeVisible();
+ await expect(source.locator('.u45-oral-transfer')).toBeHidden();
+ await source.getByRole('button',{name:'Reveal both original French turns'}).click();
+ await expect(lab.locator('.u30-excerpt')).toContainText('Marc: Le questionnaire indique');
+ await expect(lab.locator('.u30-excerpt')).toContainText('Nadia: Nous ne pouvons donc pas');
+ await source.locator('select').selectOption({index:1});
+ await source.getByRole('button',{name:'Check against authored key'}).click();
+ await expect(source.locator('.u45-oral-transfer')).toBeVisible();
+ await expect(source.locator('.u45-oral-prompt')).toContainText('les répondants et tout le lycée');
+ await expect(source.locator('.u45-oral-criteria li')).toHaveCount(3);
+ await expect(source.locator('.u45-oral-transfer')).toContainText('not a recorded performance');
+});
+test('Cancelled synthesized French replay cannot unlock an unverified listening claim after a stale onend',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__utterances=[];
+  class FakeUtterance{
+   constructor(text){this.text=text;this.lang='';this.rate=1;this.onend=null;this.onerror=null;}
+  }
+  Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,value:FakeUtterance});
+  Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+   getVoices:()=>[{lang:'fr-FR',name:'Mock voice'}],
+   cancel:()=>{},speak:u=>window.__utterances.push(u)
+  }});
+ });
+ const lab=await openB2Listening(page);
+ await lab.getByRole('button',{name:/Interpret what was said/}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await lab.getByRole('button',{name:'Replay both original turns (synthetic French TTS)'}).click();
+ await expect.poll(()=>page.evaluate(()=>window.__utterances.length)).toBe(2);
+ await lab.getByRole('button',{name:'Stop audio'}).click();
+ await page.evaluate(()=>window.__utterances.at(-1)?.onend?.());
+ const confirm=lab.getByRole('button',{name:'I heard the device audio for this question (self-report)'});
+ await expect(confirm).toBeDisabled();
+ await expect(lab.locator('.u30-evidence-mode')).toContainText('Audio has not been confirmed');
+ await expect(lab.locator('.u30-status')).toContainText('Playback stopped; completion cannot be claimed');
+});
