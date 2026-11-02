@@ -16,6 +16,7 @@ export interface U30Decision{
  readonly errors:Readonly<Record<string,string>>;
  readonly documentLabel?:string;
  readonly contextualTurns?:readonly [number,number];
+ readonly oralPrompt?:string;readonly oralCriteria?:readonly [string,string,string];
 }
 export interface U30Lesson{
  readonly id:string;readonly title:string;readonly level:OriginalLevel;
@@ -112,14 +113,15 @@ function unique(values:readonly string[]):string[]{
 function create(id:string,kind:U30Kind,question:string,answer:string,
  options:readonly string[],turnIndex:number|null,evidence:string,translation:string,
  explanation:string,hint:string,errors:Readonly<Record<string,string>>={},
- documentLabel?:string,contextualTurns?:readonly [number,number]):U30Decision|null{
+ documentLabel?:string,contextualTurns?:readonly [number,number],
+ oralPrompt?:string,oralCriteria?:readonly [string,string,string]):U30Decision|null{
  const choices=unique([answer,...options]);
  if(!answer||choices.length<2)return null;
  // Stable authored-key-preserving rotation avoids always showing the answer first.
  const offset=[...id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)%choices.length;
  const ordered=[...choices.slice(offset),...choices.slice(0,offset)];
  return Object.freeze({id,kind,question,answer,options:Object.freeze(ordered),
-  turnIndex,evidence,translation,explanation,hint,errors,documentLabel,contextualTurns});
+  turnIndex,evidence,translation,explanation,hint,errors,documentLabel,contextualTurns,oralPrompt,oralCriteria});
 }
 function push(tasks:U30Decision[],task:U30Decision|null):void{
  if(task&&!tasks.some(x=>x.id===task.id))tasks.push(task);
@@ -213,7 +215,7 @@ export function originalU30Listening(id:string):U30Lesson|null{
   push(tasks,create('u30:'+id+':paired-'+comparison.id,'interpretation',
    comparison.question,comparison.answer,comparison.distractors,b,
    turns[b].fr,turns[b].en,comparison.explanation,comparison.hint,
-   errors,undefined,Object.freeze([a,b] as const)));
+   errors,undefined,Object.freeze([a,b] as const),comparison.oralPrompt,comparison.oralCriteria));
  }
  // Documentary comparison is visibly *written* evidence, never claimed audio.
  const documents=(material.evidence?.sources??[]).map(d=>({label:d.label,type:d.type,fr:d.french}));
@@ -264,7 +266,9 @@ export function validateU30SourceModel():readonly string[]{
   if(first<0||second<0||first===second)
    errors.push('Missing distinct B2 original dialog sources: '+pair.lesson+'/'+pair.id);
   if(pair.question.length<55||pair.explanation.length<85||
-   pair.distractors.length!==2||pair.corrections.length!==2)
+   pair.distractors.length!==2||pair.corrections.length!==2||
+   pair.oralPrompt.length<95||pair.oralCriteria.length!==3||
+   pair.oralCriteria.some(text=>text.length<45))
    errors.push('Insufficient authored B2 listening comparison: '+pair.lesson+'/'+pair.id);
  }
  return errors;
