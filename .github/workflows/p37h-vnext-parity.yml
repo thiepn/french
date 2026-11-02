@@ -38,6 +38,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-writing.mts
       - name: Verify original B2 oral source anchors, decisions and stages
         run: node --experimental-strip-types scripts/test-vnext-b2-oral-continuation.mts
+      - name: Verify six source-anchored B2 listening comparisons and oral transfers
+        run: node --experimental-strip-types scripts/test-vnext-b2-listening-pairs.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
