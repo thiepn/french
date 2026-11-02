@@ -1164,8 +1164,10 @@ export async function compareAndSetOriginalCourseStudy(
      typeof (previous as Record<string,unknown>).token==='string'?
       (previous as Record<string,string>).token:'invalid';
     if(token!==expectedToken)return;
-    store.put({...learner,featureState:{...learner.featureState,[key]:nextValue}}
-     satisfies CanonicalLearnerStateV1,'state-v1');
+    const updated:CanonicalLearnerStateV1={
+     ...learner,featureState:{...learner.featureState,[key]:nextValue}
+    };
+    store.put(updated,'state-v1');
     outcome='saved';
    };
    get.onerror=()=>reject(get.error??Error('Could not read course study markers.'));
