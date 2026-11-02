@@ -165,3 +165,23 @@ test('TTS request on one B2 question does not mislabel another question as liste
  await lab.getByRole('button',{name:'Check against authored key'}).click();
  await expect(lab.locator('.u30-feedback')).toContainText('TTS was requested for this question');
 });
+
+test('Moving to another listening question cancels stale TTS and never confirms hearing',async({page})=>{
+ await page.addInitScript(()=>{
+  window.__b2Utterances=[];
+  class FakeUtterance{constructor(text){this.text=text;this.lang='';this.rate=1;}}
+  Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,value:FakeUtterance});
+  Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+   getVoices:()=>[{lang:'fr-FR',name:'Mock'}],
+   cancel:()=>{},speak:u=>window.__b2Utterances.push(u)
+  }});
+ });
+ const lab=await openB2Listening(page);
+ await lab.getByRole('button',{name:'Play selected turn'}).click();
+ await expect.poll(()=>page.evaluate(()=>window.__b2Utterances.length)).toBe(1);
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await page.evaluate(()=>window.__b2Utterances[0]?.onend?.());
+ await expect(lab.locator('.u30-evidence-mode')).toContainText('Audio has not been confirmed');
+ await expect(lab.getByRole('button',{name:'I heard the device audio for this question (self-report)'})).toBeDisabled();
+ await expect(lab.locator('.u30-status')).not.toContainText('Browser reported TTS sequence ended');
+});
