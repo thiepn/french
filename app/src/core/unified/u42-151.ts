@@ -38,7 +38,7 @@ const story:U21OriginalSourceStory={
   'Le conseil retient finalement un essai de quatre semaines dans quelques classes volontaires. Une procédure explicite protège les outils d’accessibilité, et aucune donnée privée n’est collectée. Avant l’essai, les participants définiront ce qu’ils entendent par interruption, les conditions de comparaison et les moyens de signaler un problème. Le bilan devra décrire les changements et leurs limites sans attribuer automatiquement une amélioration à une cause unique. Une décision permanente sera envisagée seulement après discussion des résultats avec élèves, enseignants et familles.'
  ],
  evidence:[
-  {label:'Fictional student-council questionnaire summary',type:'survey',french:'Parmi les élèves ayant répondu au questionnaire sur les téléphones, 72 % déclarent ressentir une distraction liée aux notifications. Le document ne donne ni le nombre des sollicités ni le taux de réponse. Il ne permet pas de généraliser le pourcentage à tous les élèves.'},
+  {label:'Fictional student-council questionnaire summary',type:'data',french:'Parmi les élèves ayant répondu au questionnaire sur les téléphones, 72 % déclarent ressentir une distraction liée aux notifications. Le document ne donne ni le nombre des sollicités ni le taux de réponse. Il ne permet pas de généraliser le pourcentage à tous les élèves.'},
   {label:'Fictional classroom pilot observation note',type:'minutes',french:'Pendant trois semaines, une classe observe moins d’interruptions après la fermeture des écrans. Le même jour, l’équipe change également la disposition des tables et la longueur des séances. Aucune comparaison contrôlée ne permet d’isoler l’effet des téléphones.'}
  ],
  reading:[
