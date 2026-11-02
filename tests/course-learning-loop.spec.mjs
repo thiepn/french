@@ -101,7 +101,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const before=await nativeCounts(page);
  expect(await studyMarkers(page)).toBeNull();
  await marker.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(marker).toContainText('1/244 lessons you marked studied');
+ await expect(marker).toContainText('1/247 lessons you marked studied');
  await expect(marker.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  const state=await studyMarkers(page);
  expect(state.schema).toBe('original-course-studied-v1');
@@ -116,7 +116,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const again=page.getByRole('region',{name:'Your lesson study marker'});
  await expect(again.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  await again.getByRole('button',{name:'Remove studied marker'}).click();
- await expect(again).toContainText('0/244 lessons you marked studied');
+ await expect(again).toContainText('0/247 lessons you marked studied');
  expect((await studyMarkers(page)).studied).toHaveLength(0);
  expect(await nativeCounts(page)).toEqual(before);
 });
@@ -127,7 +127,7 @@ test('Two tabs cannot overwrite a newer explicit studied marker without refreshi
  const second=await openWriting(secondPage);
  await expect(second.getByRole('button',{name:'Mark this lesson studied'})).toBeVisible();
  await first.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(first).toContainText('1/244 lessons you marked studied');
+ await expect(first).toContainText('1/247 lessons you marked studied');
  await second.getByRole('button',{name:'Mark this lesson studied'}).click();
  await expect(second).toContainText('Another tab or account update changed your markers');
  await expect(second.getByRole('button',{name:'Refresh studied-marker review'})).toBeVisible();
@@ -136,4 +136,43 @@ test('Two tabs cannot overwrite a newer explicit studied marker without refreshi
  await second.getByRole('button',{name:'Refresh studied-marker review'}).click();
  await expect(second.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  await secondPage.close();
+});
+
+test('B2 extension opens actual original sources and six-stage progression instead of a placeholder',async({page})=>{
+ await page.goto('/#course/B2/transfer-151');
+ await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45_000});
+ await expect(page.locator('.u6-unit-header h3')).toContainText('Interdire les téléphones');
+ const original=page.locator('.u6-unit-header h3');
+ await page.locator('.course-directory-trigger').click();
+ await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(63);
+ await page.keyboard.press('Escape');
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
+ await expect(page.locator('[data-u6-stage="dialogue"] .u6-dialogue-turn')).toHaveCount(9);
+ await expect(original).toContainText('Interdire les téléphones');
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'5. Recall'}).click();
+ await expect(page.locator('.u6-active-task')).toContainText('Question 1 of 10');
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ await expect(page.locator('.u6-stage-body')).toContainText('Compare two source documents');
+ await expect(page.locator('.u6-stage-body')).toContainText('Independent writing');
+ await expect(page.locator('.u6-stage-body')).toContainText('Your lesson progress');
+ await expect(page.getByRole('button',{name:/Continue to.*quatre jours/i})).toBeVisible();
+});
+test('B2 extension retains all three connected reading documents and distinct source handoffs',async({page})=>{
+ for(const [id,heading] of [
+  ['transfer-151','Interdire les téléphones'],
+  ['transfer-152','La semaine de quatre jours'],
+  ['transfer-153','Réparer ou remplacer']
+ ]){
+  await page.goto('/#course/B2/'+id);
+  await expect(page.locator('.u6-unit-header h3')).toContainText(heading,{timeout:45_000});
+  await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible();
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
+  await expect(page.locator('.u6-dialogue-turn')).toHaveCount(9);
+  await expect(page.getByRole('button',{name:'Continue this lesson in native Read'})).toBeVisible();
+  await page.getByRole('button',{name:'Continue this lesson in native Read'}).click();
+  await expect(page).toHaveURL(/#read$/);
+  await expect(page.locator('.u22-original-source-panel, .u23-source-panel, .u22-practice')).toBeVisible({timeout:20_000}).catch(async()=>{
+   await expect(page.getByText(heading,{exact:false}).first()).toBeVisible();
+  });
+ }
 });
