@@ -51,6 +51,16 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
   const mistakes=new Map<string,Set<string>>();
+  // Temporary, per-page recall evidence. Never written to learner/FSRS/Account.
+  // Distinguishes a correct independent first try from correction after
+  // wrong answers or an exposed model answer.
+  type RecallAttempt={tries:number;independentFirstTry:boolean;hintUsed:boolean;hadError:boolean};
+  const recallAttempts=new Map<string,Map<string,RecallAttempt>>();
+  const attemptMap=(id:string)=>{
+   let found=recallAttempts.get(id);
+   if(!found){found=new Map<string,RecallAttempt>();recallAttempts.set(id,found);}
+   return found;
+  };
   const drafts=new Map<string,string>();
   // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
   const revisionSnapshots=new Map<string,string>();
@@ -608,8 +618,23 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const record=answerMap(unit.id);
    const practicedCount=u22PracticeStatus(unit.id,record)!;
    const errors=mistakes.get(unit.id)??new Set<string>();
-   container.append(el('p',practicedCount.correct+'/'+practicedCount.total+
-    ' correct tasks during this temporary page visit. No FSRS or CEFR score is recorded.','u6-practice-status'));
+   const history=attemptMap(unit.id);
+   const weakTasks=()=>unit.tasks.filter(task=>{
+    const attempt=history.get(task.id);
+    return !!attempt&&(attempt.hadError||attempt.hintUsed);
+   });
+   const recap=()=>{
+    const values=[...history.values()];
+    const independent=values.filter(v=>v.independentFirstTry).length;
+    const repaired=values.filter(v=>(v.hadError||v.hintUsed)).length;
+    return 'Independent first tries: '+independent+'/'+unit.tasks.length+
+     ' · Correct now: '+u22PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
+     ' · Needed repair or model: '+repaired+
+     '. Practice only: no FSRS, CEFR or lasting lesson completion.';
+   };
+   const recapNode=el('p',recap(),'u6-practice-status');
+   recapNode.setAttribute('role','status');
+   container.append(recapNode);
    const nav=el('div',undefined,'u6-task-navigation');nav.setAttribute('role','group');nav.setAttribute('aria-label','Practice task navigation');
    unit.tasks.forEach((task,i)=>{
     const b=button(String(i+1)+(record.get(task.id)?' ✓':''),()=>{taskIndex=i;render();schedulePosition(current.id,stage,taskIndex);},'u6-task-button');
@@ -618,6 +643,19 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     nav.append(b);
    });
    container.append(nav);
+   const retryWeak=button('Retry missed or assisted questions',()=>{
+    const weak=weakTasks();
+    if(!weak.length)return;
+    // Retake only vulnerable questions: do not reset unrelated correct answers.
+    // Prior mistakes and hint use remain visible for this page visit and cannot
+    // be retroactively reclassified as an independent first attempt.
+    for(const missed of weak)record.delete(missed.id);
+    taskIndex=unit.tasks.findIndex(task=>task.id===weak[0].id);
+    render();void schedulePosition(current.id,stage,taskIndex);
+    article.querySelector<HTMLInputElement>('.u6-answer-form input, .u6-answer-form select')?.focus({preventScroll:true});
+   },'secondary-action compact-action');
+   retryWeak.hidden=weakTasks().length===0;
+   container.append(retryWeak);
    const task=unit.tasks[taskIndex],card=el('section',undefined,'u6-active-task');
    const kind=task.type==='reading'?'Reading comprehension':task.type==='order'?'Sentence order':
     task.type==='choice'?'Choose in context':'Complete the French';
@@ -659,11 +697,20 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const value=getAnswer().trim();
     if(!value){result.textContent='Enter or select an answer before checking.';return;}
     const passed=checkPracticeAnswer(value,task.answer);
+    const prior=history.get(task.id)??{tries:0,independentFirstTry:false,hintUsed:false,hadError:false};
+    history.set(task.id,{
+     tries:prior.tries+1,
+     independentFirstTry:prior.independentFirstTry||
+      (prior.tries===0&&!prior.hintUsed&&passed),
+     hintUsed:prior.hintUsed,
+     hadError:prior.hadError||!passed
+    });
     if(passed){
      record.set(task.id,true);
      result.textContent='Correct. '+task.explanation;
      help.replaceChildren();
     }else{
+     record.delete(task.id); // A later wrong answer cannot leave a stale green tick.
      errors.add(task.focus);mistakes.set(unit.id,errors);
      const authoredMistake=task.misconceptionFeedback?.[value];
      result.textContent=authoredMistake?
@@ -674,13 +721,16 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     // Refresh counters and side navigation without removing typed answer or feedback.
     renderIndex();
     const label=nav.querySelector<HTMLButtonElement>('button:nth-child('+(taskIndex+1)+')');
-    if(label&&passed)label.textContent=String(taskIndex+1)+' ✓';
-    container.querySelector<HTMLElement>('.u6-practice-status')!.textContent=
-     u22PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
-     ' correct tasks this visit · ungraded and not saved.';
+    if(label)label.textContent=String(taskIndex+1)+(record.get(task.id)?' ✓':'');
+    recapNode.textContent=recap();
+    retryWeak.hidden=weakTasks().length===0;
    });
    const reveal=button('Show worked answer (assisted)',()=>{
-    help.replaceChildren(el('p','Model answer: '+task.answer+'. '+task.explanation));
+    const prior=history.get(task.id)??{tries:0,independentFirstTry:false,hintUsed:false,hadError:false};
+    history.set(task.id,{...prior,hintUsed:true});
+    help.replaceChildren(el('p','Model answer: '+task.answer+'. '+task.explanation),
+     el('p','This task now counts as assisted practice, not an independent first attempt.','u6-small'));
+    recapNode.textContent=recap();retryWeak.hidden=false;
    });
    const next=button(taskIndex===unit.tasks.length-1?'Return to first question':'Next question →',()=>{
     taskIndex=(taskIndex+1)%unit.tasks.length;render();schedulePosition(current.id,stage,taskIndex);
@@ -688,7 +738,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    form.append(submit,reveal,result,help,next);card.append(form);container.append(card);
    if(errors.size)container.append(el('p','Recommended review topics from your attempts: '+[...errors].join(', ')+'.','u6-recommendation'));
    const resetAll=button('Clear this lesson’s temporary answers',()=>{
-    answers.delete(unit.id);mistakes.delete(unit.id);taskIndex=0;reset();render();
+    answers.delete(unit.id);mistakes.delete(unit.id);recallAttempts.delete(unit.id);
+    taskIndex=0;reset();render();
    });
    container.append(resetAll);
   }
