@@ -4,7 +4,7 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 import {ORIGINAL_FRENCH_U42_COURSE,validateU42Course} from '../app/src/core/unified/u42-course.ts';
 import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
 assert.deepEqual(validateU42Course(),[]);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,247);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,250);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.equal(countFrenchWritingWords('L’école n’est pas fermée ; vingt-deux élèves l’ont dit.'),8);
 assert.equal(countFrenchWritingWords(" \n ...  "),0);
@@ -14,7 +14,10 @@ const cases:readonly [string,B2WritingMode,number|null,number|null][]=[
  ['transfer-151','fromDebate',180,220],['transfer-152','fromListening',160,220],
  ['transfer-152','fromSources',170,230],['transfer-152','fromDebate',null,null],
  ['transfer-153','fromListening',150,210],['transfer-153','fromSources',170,220],
- ['transfer-153','fromDebate',170,220]
+ ['transfer-153','fromDebate',170,220],
+ ['transfer-154','fromListening',150,200],['transfer-154','fromSources',170,220],['transfer-154','fromDebate',180,220],
+ ['transfer-155','fromListening',150,200],['transfer-155','fromSources',170,220],['transfer-155','fromDebate',180,220],
+ ['transfer-156','fromListening',160,220],['transfer-156','fromSources',180,230],['transfer-156','fromDebate',190,240]
 ];
 for(const [id,mode,min,max] of cases){
  const material=getOriginalMaterial(id);
@@ -38,4 +41,4 @@ for(const [id,mode,min,max] of cases){
 }
 assert.equal(b2WritingTarget('a1-01','fromSources'),null);
 assert.equal(b2WritingLengthReview('a1-01','fromSources','Bonjour.').status,'unbounded');
-console.log('B2 writing: 247 source IDs immutable, nine mode targets, French word counting and 2 original documents per advanced case: PASS');
+console.log('B2 writing: 250 source IDs immutable, eighteen mode targets, French word counting and 2 original documents per advanced case: PASS');
