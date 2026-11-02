@@ -36,6 +36,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-extension.mts
       - name: Verify original B2 source-backed writing and word ranges
         run: node --experimental-strip-types scripts/test-vnext-b2-writing.mts
+      - name: Verify original B2 oral source anchors, decisions and stages
+        run: node --experimental-strip-types scripts/test-vnext-b2-oral-continuation.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
