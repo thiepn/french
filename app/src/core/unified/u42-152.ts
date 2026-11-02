@@ -37,7 +37,7 @@ const story:U21OriginalSourceStory={
   'Les représentants proposent un nouvel accord de six semaines. Il définirait les rotations de l’accueil, la compensation des contraintes, un plafond transparent d’heures supplémentaires et deux familles de mesures: volume de travail et qualité de service. Une consultation accessible aux personnes absentes complèterait le premier sondage. Si la charge ou les écarts entre métiers augmentent, le dispositif serait revu; si les résultats restent équilibrés, l’accord pourrait être prolongé. Le comité veut préserver la possibilité de changer d’avis à la lumière des données plutôt que défendre un slogan séduisant.'
  ],
  evidence:[
-  {label:'Fictional management output dashboard',type:'report',french:'La direction annonce une hausse de 8 % du nombre de dossiers traités durant l’essai de quatre jours. Le tableau ne comptabilise ni les heures supplémentaires informelles ni les dossiers renvoyés pour correction. Les trente-cinq heures contractuelles restent inchangées.'},
+  {label:'Fictional management output dashboard',type:'data',french:'La direction annonce une hausse de 8 % du nombre de dossiers traités durant l’essai de quatre jours. Le tableau ne comptabilise ni les heures supplémentaires informelles ni les dossiers renvoyés pour correction. Les trente-cinq heures contractuelles restent inchangées.'},
   {label:'Fictional staff-representative meeting note',type:'minutes',french:'L’accueil demeure ouvert le vendredi grâce à un roulement contraint. Certains salariés ont perdu le choix de leur repos. Le sondage ne concernait que les personnes présentes pendant l’essai; aucun taux de participation général n’a été communiqué. Les représentants demandent un suivi de qualité et une compensation.'}
  ],
  reading:[
