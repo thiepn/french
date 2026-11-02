@@ -353,7 +353,74 @@ const AUTHORED:readonly AuthoredJourney[]=[
    corrections:['The dialogue explicitly says actual local consumption is not known.','Residents still need safe storage during the spare-part delay.'],
    why:'The proposal respects both the unknown usage and immediate safety requirement rather than generalizing one promotional percentage.'}
  ]
+ },
+ {
+ id:'transfer-154',speaker:'Hugo',anchor:'1 200 entrées en octobre',
+ situation:'Explain unreliable denominators at the first fictional library consultation',
+ counterview:'A fictional councillor insists that 1,200 entries means 1,200 separate residents. This is a constructed counterview, not quoted source.',
+ misunderstanding:'A listener treats repeated library visits as unique residents and assumes an on-site poll reflects all absent residents.',
+ register:'Measured public-consultation opening, accessible to non-specialists',
+ objective:'Attribute the register and survey separately, acknowledge missing non-users and invite broader evidence before scheduling.',
+ repair:'The register counts passages, while the reception survey represents respondents who could attend during existing hours.',
+ structure:'Selon le registre… → toutefois… → le sondage… → avant de décider…',
+ decisions:[
+  {kind:'fidelity',prompt:'What does Hugo actually establish in the first library case?',
+   answer:'The register shows 1,200 entries, which need not mean 1,200 different residents.',
+   distractors:['Exactly 1,200 separate residents used the library.','No library entries occurred in October.'],
+   corrections:['Repeat visits are possible; the register does not count unique residents.','Hugo explicitly reports 1,200 recorded passages.'],
+   why:'The source distinguishes entries from people; the denominator for unique residents is unknown.'},
+  {kind:'objection',prompt:'A hypothetical official says that 68% of the entire neighborhood voted for Thursday. How should a mediator respond?',
+   answer:'« Selon les répondants présents à l’accueil, le jeudi semble intéressant ; consultons aussi ceux qui ne viennent pas. »',
+   distractors:['« Les 68 % prouvent que la population entière a voté. »','« Les habitants absents ne peuvent pas avoir de besoins. »'],
+   corrections:['The survey sample excludes many non-users and was not a neighborhood vote.','Current absence may signal access barriers, not lack of need.'],
+   why:'The response attributes the sample correctly and proposes broader consultation.'}
+ ]
+ },
+ {
+ id:'transfer-155',speaker:'Claire',anchor:'aucun accord sur les heures supplémentaires n’a encore été signé',
+ situation:'Mediate a consultation where families, workers and staff favor different library opening times',
+ counterview:'A fictional councillor declares that possible funding means the committee must open immediately. This is an invented challenge.',
+ misunderstanding:'A participant confuses tentative six-week funding with a signed staff agreement and a final council decision.',
+ register:'Respectful civic mediation of unequal practical constraints',
+ objective:'Answer Nora and Yanis separately, protect Claire’s working conditions and formulate a real condition for postponing the proposal.',
+ repair:'The municipality has reported possible funding but paid rotations, safe staffing and late transport are not confirmed.',
+ structure:'Nora demande… → Yanis souhaite… → Claire rappelle… → à condition que…',
+ decisions:[
+  {kind:'fidelity',prompt:'What does Claire explicitly state about the work agreement?',
+   answer:'No agreement on overtime has been signed yet, despite the proposed six-week financing.',
+   distractors:['The workforce has signed a permanent agreement.','The library does not require personnel on additional evenings.'],
+   corrections:['Claire names an unsigned agreement, not a completed one.','The additional staffed evenings require a paid rota and safety coverage.'],
+   why:'The dialogue distinguishes a potential funding statement from a signed staffing safeguard.'},
+  {kind:'objection',prompt:'What is a proportionate answer to the claim that the library must open immediately?',
+   answer:'« Nous pourrions essayer deux créneaux, à condition que les transports et le roulement payé soient confirmés. »',
+   distractors:['« Un budget annoncé remplace tout accord de sécurité. »','« Les familles et les salariés ont exactement le même besoin. »'],
+   corrections:['A tentative envelope does not replace safety and employment agreements.','Families and workers request different hours and transport arrangements.'],
+   why:'The conditional proposal respects each stakeholder and does not invent an approval.'}
+ ]
+ },
+ {
+ id:'transfer-156',speaker:'Maya',anchor:'l’ouverture définitive fera l’objet d’une autre décision publique',
+ situation:'Present a cumulative recommendation using the library survey, consultation and conditional resolution',
+ counterview:'An invented newspaper headline announces that the six-week experiment has already proved permanent success.',
+ misunderstanding:'A public speaker mistakes authorization to prepare a trial for a completed trial and a permanent opening.',
+ register:'Precise public report by the chair of a municipal consultation',
+ objective:'Use three stages of the dossier, state pre-launch safeguards and show how the council could revise the decision.',
+ repair:'The council authorizes conditional preparation only; measures at three and six weeks have not occurred.',
+ structure:'Nous avons d’abord observé… → puis consulté… → le conseil prévoit… → si les conditions…',
+ decisions:[
+  {kind:'fidelity',prompt:'What decision does Maya announce at the conclusion of the library dossier?',
+   answer:'Only preparation for a conditional trial was authorized; permanent opening needs another public decision.',
+   distractors:['The six-week trial has finished and proved success.','Every revised opening hour has already become permanent.'],
+   corrections:['Maya discusses an experiment that has not yet been assessed.','The final line requires a separate future public decision.'],
+   why:'The source explicitly reserves permanent opening for a later decision based on observed results.'},
+  {kind:'objection',prompt:'How should a public spokesperson repair the inaccurate headline claiming proven success?',
+   answer:'« Le conseil prépare un essai sous conditions ; les résultats seront examinés après trois et six semaines. »',
+   distractors:['« Le sondage et les 1 200 entrées prouvent une réussite définitive. »','« Aucun indicateur ni accord préalable ne sera nécessaire. »'],
+   corrections:['The initial count and nonrepresentative poll cannot prove an as-yet-unrun trial.','The resolution requires advance safety, transport and accessible-participation conditions.'],
+   why:'The reformulation names the decision stage and specific review schedule without inventing results.'}
+ ]
  }
+
 
 ];
 function normalize(text:string):string{
