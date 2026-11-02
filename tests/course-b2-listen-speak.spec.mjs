@@ -59,7 +59,7 @@ test('New B2 cases have source-anchored independent seven-stage speaking rather 
  const discovery=page.getByRole('region',{name:'Source-qualified original oral learning'});
  await expect(discovery).toBeVisible({timeout:45_000});
  const query=discovery.getByPlaceholder('Lesson topic or vocabulary');
- for(const [id,part] of [['transfer-151','phone policy'],['transfer-152','four-day work'],['transfer-153','repair']]){
+ for(const [id,part] of [['transfer-151','phone policy'],['transfer-152','four-day work'],['transfer-153','repair'],['transfer-154','library evidence'],['transfer-155','library mediation'],['transfer-156','library decision']]){
   await query.fill(id);
   const source=discovery.getByRole('combobox',{name:'Select original French oral source'});
   await expect(source).toHaveValue(id,{timeout:25_000});
