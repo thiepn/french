@@ -178,3 +178,52 @@ test('B2 extension retains all three connected reading documents and distinct so
   await expect(page.locator('.u22-source-note').filter({hasText:id}).first()).toBeVisible();
  }
 });
+
+test('B2 source writing displays both actual documents, honest length and preserves separate draft modes',async({page})=>{
+ await page.goto('/#course/B2/transfer-151');
+ await expect(page.locator('.u6-stage-nav')).toBeVisible({timeout:45_000});
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ const body=page.locator('[data-u6-stage="write"]');
+ const editor=body.getByRole('textbox',{name:'Independent original French writing response'});
+ await expect(body.locator('.u43-original-source-document')).toHaveCount(2);
+ await expect(body.locator('.u43-original-source-document').first()).toContainText('questionnaire');
+ await expect(body.locator('.u43-original-source-document').last()).toContainText('classroom');
+ await expect(body.locator('.u43-writing-word-count')).toContainText('target 170–220');
+ await expect(body.locator('.u6-model')).toBeHidden();
+ await editor.fill('Le questionnaire décrit les répondants et ne prouve pas une cause.');
+ await expect(body.locator('.u43-writing-word-count')).toContainText('Below the authored range');
+ await body.getByRole('button',{name:'Review supporting sources'}).click();
+ await expect(body.locator('.u43-source-details')).toHaveAttribute('open','');
+ await expect(editor).toHaveValue('Le questionnaire décrit les répondants et ne prouve pas une cause.');
+ const mode=body.getByRole('combobox',{name:'Choose evidence-to-writing transfer mode'});
+ await mode.selectOption('fromListening');
+ await expect(body.locator('.u43-original-source-document')).toHaveCount(0);
+ await expect(body).toContainText('Written source documents are not audio evidence');
+ await expect(body.locator('.u43-writing-word-count')).toContainText('target 150–200');
+ await mode.selectOption('fromSources');
+ await expect(editor).toHaveValue('Le questionnaire décrit les répondants et ne prouve pas une cause.');
+ await expect(body.locator('.u43-original-source-document')).toHaveCount(2);
+});
+test('Native Write handoff offers source-backed B2 drafting without grading or source duplication',async({page})=>{
+ await page.goto('/#course/B2/transfer-153');
+ await expect(page.locator('.u6-stage-nav')).toBeVisible({timeout:45_000});
+ await page.locator('.course-lesson-references summary').first().click();
+ await page.getByRole('navigation',{name:'Open this lesson in another workspace'}).getByRole('button',{name:'Open Write'}).click();
+ await expect(page).toHaveURL(/#write$/);
+ const panel=page.locator('.u22-source-panel');
+ await expect(panel).toBeVisible();
+ await panel.getByRole('button',{name:'Source comparison'}).click();
+ const source=panel.locator('.u22-source-content');
+ await expect(source.locator('.u43-original-source-document')).toHaveCount(2);
+ await expect(source.locator('.u43-original-source-document').first()).toContainText('technician');
+ await expect(source.locator('.u43-writing-word-count')).toContainText('target 170–220');
+ const editor=source.getByRole('textbox',{name:'Write your own answer in French'});
+ await editor.fill('Le devis reste provisoire et la consommation réelle est inconnue.');
+ await expect(source.locator('.u43-writing-word-count')).toContainText('Below the authored range');
+ await expect(source.locator('article.u22-source-document')).toBeHidden();
+ await panel.getByRole('button',{name:'Debate response'}).click();
+ await expect(source.locator('.u43-original-source-document')).toHaveCount(2);
+ await expect(source.locator('.u43-writing-word-count')).toContainText('target 170–220');
+ await panel.getByRole('button',{name:'Source comparison'}).click();
+ await expect(source.getByRole('textbox',{name:'Write your own answer in French'})).toHaveValue('Le devis reste provisoire et la consommation réelle est inconnue.');
+});
