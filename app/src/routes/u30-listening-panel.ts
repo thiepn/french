@@ -247,13 +247,13 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   const counts=[...new Set(decisions.map(d=>d.kind))] as U30Kind[];
   for(const kind of counts){
    const button=action(LABELS[kind]+' · '+decisions.filter(d=>d.kind===kind).length,()=>{
-    category=kind;index=0;drawTabs();draw();
+    stop();category=kind;index=0;drawTabs();draw();
    });
    if(category===kind)button.setAttribute('aria-current','true');
    tabs.append(button);
   }
   tabs.prepend(action('All decisions · '+decisions.length,()=>{
-   category=null;index=0;drawTabs();draw();
+   stop();category=null;index=0;drawTabs();draw();
   }));
  }
  function draw(shouldFocus=false):void{
@@ -379,8 +379,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    form.append(compareNotes);
   }
   questionHost.append(form);
-  const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw(true);});
-  const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw(true);});
+  const prev=action('Previous question',()=>{stop();index=Math.max(0,index-1);draw(true);});
+  const next=action('Next question',()=>{stop();index=Math.min(pool.length-1,index+1);draw(true);});
   prev.disabled=index===0;next.disabled=index===pool.length-1;
   navigation.append(prev,next);
   const key=action('Show correct source and explanation',()=>{
