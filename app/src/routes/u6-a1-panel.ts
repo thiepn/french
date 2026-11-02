@@ -8,11 +8,12 @@ import {
  browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
  neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
 } from '../core/unified/u23-registry';
-import {u22ProductionChoices} from '../core/unified/u22-material';
+import {u42ProductionChoices} from '../core/unified/u42-material';
 import {ORIGINAL_PATHWAYS,originalPathSectionFor,originalNextActions} from '../core/unified/u25-pathways.ts';
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides';
+import {U42_REVISION_GUIDES} from '../core/unified/u42-revision-guides';
 import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
 import {appendOriginalOralJourney} from './u31-oral-panel';
@@ -575,7 +576,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   function renderDialogue(unit:A1Unit,container:HTMLElement){
    const translated=new Set([
     'transfer-91','transfer-92','transfer-93','transfer-106','transfer-107','transfer-108',
-    'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150'
+    'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150',
+    'transfer-151','transfer-152','transfer-153'
    ]);
    const teachingSummary=unit.id.startsWith('transfer-')&&!translated.has(unit.id);
    const showText=teachingSummary?'Show English study note':'Show translation';
@@ -800,7 +802,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    container.append(marker);draw();
   }
   function renderWrite(unit:A1Unit,container:HTMLElement){
-   const variants=u22ProductionChoices(unit.id);
+   const variants=u42ProductionChoices(unit.id);
    let onWritingModeChanged=()=>{};
    let mode:'fromSources'|'fromListening'|'fromDebate'='fromSources';
    const chosen=()=>variants?(variants[mode]??variants.fromSources):unit.writing;
@@ -860,7 +862,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    });
    container.append(heading,prompt,items,editor,check,compare,clear,result,model,
     el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
-   const revisionPrompts=U22_REVISION_GUIDES[unit.id]??U21_REVISION_GUIDES[unit.id]??U20_REVISION_GUIDES[unit.id];
+   const revisionPrompts=U42_REVISION_GUIDES[unit.id]??U22_REVISION_GUIDES[unit.id]??U21_REVISION_GUIDES[unit.id]??U20_REVISION_GUIDES[unit.id];
    if(revisionPrompts){
     const studio=el('section',undefined,'u20-revision-studio');
     studio.append(el('h4','Revise your argument · ungraded'));
