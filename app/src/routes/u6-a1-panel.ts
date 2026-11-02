@@ -763,7 +763,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const message=el('p',feedback||study.message,'u6-small');
     message.setAttribute('role','status');
     marker.append(state,message);
-    if(study.status==='empty'||study.status==='ready'){
+    if((study.status==='empty'||study.status==='ready')&&!feedback.includes('Another tab')){
      const action=button(isStudied?'Remove studied marker':'Mark this lesson studied',()=>{
       if(busy)return;
       // Explicit opt-in, not inferred from visits or assisted exercises.
