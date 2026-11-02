@@ -38,7 +38,7 @@ const story:U21OriginalSourceStory={
  ],
  evidence:[
   {label:'Fictional technician conditional repair estimate',type:'data',french:'Devis préliminaire de 180 euros pour remplacer une pièce accessible. Le coût définitif dépend de l’inspection de la carte électronique. Pièce disponible sous quinze jours; l’appareil actuel ne doit pas servir à conserver des aliments sensibles avant la réparation.'},
-  {label:'Fictional manufacturer and reseller comparison note',type:'advertisement',french:'Le nouveau modèle pourrait consommer 25 % d’électricité en moins dans un test standardisé, sans estimation vérifiée pour la résidence. Un appareil reconditionné est proposé avec une garantie portant sur certaines pannes, mais son historique d’utilisation est incomplet.'}
+  {label:'Fictional manufacturer and reseller comparison note',type:'poster',french:'Le nouveau modèle pourrait consommer 25 % d’électricité en moins dans un test standardisé, sans estimation vérifiée pour la résidence. Un appareil reconditionné est proposé avec une garantie portant sur certaines pannes, mais son historique d’utilisation est incomplet.'}
  ],
  reading:[
   ['What prevents treating the repair quote as a guaranteed final price?','un diagnostic supplémentaire','un paiement déjà encaissé','une garantie absolue','The technician has not ruled out a circuit-board problem, so the quoted price is explicitly conditional.'],
