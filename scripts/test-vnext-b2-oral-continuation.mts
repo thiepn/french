@@ -4,7 +4,7 @@ import {originalU30Listening} from '../app/src/core/unified/u30-listening.ts';
 import {ORIGINAL_REGISTRY_ENTRIES,getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 assert.deepEqual(validateU31SourceAnchors(),[],'all source anchors must resolve to exact French turns and speakers');
 assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,250);
-for(const id of ['transfer-151','transfer-152','transfer-153']){
+for(const id of ['transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156']){
  const oral=originalU31OralJourney(id),listening=originalU30Listening(id);
  assert.ok(oral&&listening,id+' must exist in both existing oral/listening paths');
  assert.equal(oral.curated,true,id+' needs authored B2 interaction, not generic fallback');
@@ -26,4 +26,4 @@ for(const id of ['transfer-151','transfer-152','transfer-153']){
    assert.equal(evaluateU31Decision(d,wrong).supported,false);
  }
 }
-console.log('Original B2 oral 151–153: three curated seven-stage source-anchored journeys; nine authored/attested decisions; 250 existing catalog identities unchanged');
+console.log('Original B2 oral 151–153: six curated seven-stage source-anchored journeys; eighteen authored/attested decisions; 250 existing catalog identities unchanged');
