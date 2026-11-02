@@ -136,7 +136,7 @@ function renderWrite(host:HTMLElement,s:Material,drafts:Map<string,string>){
   const checks=el('ul');for(const criterion of item.criteria)checks.append(el('li',criterion));content.append(checks);
   const label=el('label','Write your own answer in French');
   const input=el('textarea');input.rows=8;input.maxLength=12000;input.spellcheck=true;input.lang='fr';
-  const hasB2Range=/^transfer-15[1-3]$/.test(s.unit.id)&&!!expanded;
+  const hasB2Range=/^transfer-15[1-6]$/.test(s.unit.id)&&!!expanded;
   const length=el('p','','u43-writing-word-count');length.setAttribute('role','status');
   const updateLength=()=>{
    if(hasB2Range)length.textContent=b2WritingLengthReview(s.unit.id,selectedMode,input.value).message+
