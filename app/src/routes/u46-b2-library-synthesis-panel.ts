@@ -14,7 +14,7 @@ function button(text:string,onClick:()=>void):HTMLButtonElement{
  result.addEventListener('click',onClick);return result;
 }
 /** Disposable cumulative source study on the existing U30/U31 surfaces; never stores learner or voice data. */
-export function appendLibrarySynthesis(host:HTMLElement,lessonId:string,signal:AbortSignal,mode:Mode):()=>void{
+export function appendLibrarySynthesis(host:HTMLElement,lessonId:string,signal:AbortSignal,mode:Mode,onPrivateChange?:()=>void):()=>void{
  if(lessonId!=='transfer-156'||validateLibrarySynthesis().length)return()=>{};
  const root=node('section','','u46-library-synthesis');
  root.setAttribute('aria-label','Three-lesson B2 library listening and oral synthesis');
@@ -44,6 +44,7 @@ export function appendLibrarySynthesis(host:HTMLElement,lessonId:string,signal:A
  };
  const updateDraftFlag=()=>{
   root.dataset.hasPrivateDraft=String([...drafts.values()].some(d=>d.trim().length>0));
+  onPrivateChange?.();
  };
  function makeOriginalTurn(turn:ResolvedLibraryTurn):HTMLElement{
   const card=node('article','','u46-source-card');
