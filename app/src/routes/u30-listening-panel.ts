@@ -184,7 +184,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  });
  const handoffs=el('div','','u30-handoffs');
  if(opts.onOpenSurface){
-  for(const [surface,label] of [['read','Continue to original reading'],['write','Continue to independent writing']] as const){
+  for(const [surface,label] of [['read','Continue to original reading'],['write','Continue to independent writing'],['speak','Continue to original speaking workshop']] as const){
    if(surface==='read'&&!source.reading)continue;
    if(surface==='write'&&!source.unit.writing.prompt)continue;
    handoffs.append(action(label,()=>{
@@ -292,9 +292,22 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    completedForQuestion=null;confirmHearing.disabled=true;
    evidenceState.textContent='Written/transcript-led practice selected; no hearing or pronunciation claim.';
   });
+  const oralTransfer=el('section','','u45-oral-transfer');oralTransfer.hidden=true;
+  if(d.oralPrompt&&d.oralCriteria){
+   const question=el('p',d.oralPrompt,'u45-oral-prompt');question.lang='fr';
+   const criteria=el('ol','','u45-oral-criteria');
+   for(const criterion of d.oralCriteria){
+    const item=el('li',criterion);item.lang='fr';criteria.append(item);
+   }
+   oralTransfer.append(el('h5','Independent French oral response · after comprehension'),
+    el('p','Before reading the original transcript, give your own French response aloud. Then use the three authored self-checks; these do not check or record your speech.','u30-note'),
+    question,criteria,
+    el('p','This is a speaking task, not a recorded performance or validated proficiency.','u30-note'));
+  }
   const feedback=el('p','','u30-feedback');feedback.setAttribute('role','status');
   const submit=el('button','Check against authored key','primary-action compact-action');submit.type='submit';
   if(prior){
+   oralTransfer.hidden=false;
    picker.value=prior.chosen;feedback.textContent=(prior.correct?'Supported. ':'Needs correction. ')+evaluateU30Answer(d,prior.chosen).feedback+
     ' Earlier support level: '+prior.support+'.'+
     (prior.heardSelfReported?' Learner reported hearing synthetic output; no recording or audibility verification.':
@@ -305,6 +318,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    event.preventDefault();
    if(!picker.value){feedback.textContent='Choose an answer before checking.';return;}
    const checked=evaluateU30Answer(d,picker.value);
+   if(d.oralPrompt)oralTransfer.hidden=false;
    responses.set(d.id,{chosen:picker.value,correct:checked.correct,support:supportLevel,
     ttsRequested:requestCount>0,heardSelfReported:heardSelfReports.has(d.id),
     transcriptAssisted});
@@ -316,7 +330,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
     (transcriptAssisted?' Written support/hints were exposed.':'');
    progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' decisions attempted locally; no Practice event recorded.';
   });
-  form.append(selectLabel,confirmHearing,transcriptOnly,evidenceState,submit,hintButton,hint,feedback);
+  form.append(selectLabel,confirmHearing,transcriptOnly,evidenceState,submit,hintButton,hint,feedback,oralTransfer);
   questionHost.append(form);
   const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw(true);});
   const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw(true);});
