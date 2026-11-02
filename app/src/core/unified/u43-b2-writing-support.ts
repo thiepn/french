@@ -30,9 +30,9 @@ export function b2WritingLengthReview(id:string,mode:B2WritingMode,raw:string):R
  const words=countFrenchWritingWords(raw),target=b2WritingTarget(id,mode);
  if(!words)return{words,target,status:'empty',message:target?
   '0 words · authored target '+target.min+'–'+target.max+'. Start with your own French argument.':
-  '0 words · no fixed authored word range for this mode.'};
+  '0 words · no encoded word target in this helper; follow the authored task prompt for this mode.'};
  if(!target)return{words,target,status:'unbounded',
-  message:words+' words · no fixed authored word range. Check the task and its source-specific revision requirements.'};
+  message:words+' words · no encoded word target in this helper; follow the authored task prompt. Check the task and its source-specific revision requirements.'};
  const status=words<target.min?'short':words>target.max?'long':'within';
  const hint=status==='short'?'Below the authored range; develop your sourced reasoning.':
   status==='long'?'Above the authored range; remove repetition without losing key evidence.':
