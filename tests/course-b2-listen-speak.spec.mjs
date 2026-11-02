@@ -118,3 +118,50 @@ test('Cancelled synthesized French replay cannot unlock an unverified listening 
  await expect(lab.locator('.u30-evidence-mode')).toContainText('Audio has not been confirmed');
  await expect(lab.locator('.u30-status')).toContainText('Playback stopped; completion cannot be claimed');
 });
+
+test('B2 paired inference drafts survive question navigation and remain ungraded with authored comparison',async({page})=>{
+ const lab=await openB2Listening(page);
+ await lab.getByRole('button',{name:/Interpret what was said/}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ const note=lab.getByRole('textbox',{name:'Private French two-turn inference notes'});
+ const initial='Marc cite les répondants, tandis que Nadia conteste une généralisation à tout le lycée.';
+ await note.fill(initial);
+ await expect(lab.locator('.u46-inference-review')).toBeHidden();
+ await lab.getByRole('button',{name:'Show listening hint'}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await expect(lab.getByRole('textbox',{name:'Private French two-turn inference notes'})).toBeEmpty();
+ await lab.locator('.u30-question select').selectOption({index:1});
+ await lab.getByRole('button',{name:'Check against authored key'}).click();
+ await expect(lab.locator('.u30-feedback')).toContainText('No audio claim: text-led comprehension');
+ await expect(lab.locator('.u30-feedback')).not.toContainText('Written support/hints were exposed');
+ await lab.getByRole('button',{name:'Previous question'}).click();
+ await expect(lab.getByRole('textbox',{name:'Private French two-turn inference notes'})).toHaveValue(initial);
+ await lab.locator('.u30-question select').selectOption({index:1});
+ await lab.getByRole('button',{name:'Check against authored key'}).click();
+ await expect(lab.locator('.u30-feedback')).toContainText('Written support/hints were exposed');
+ await lab.getByRole('button',{name:'Compare your inference notes with authored source explanation'}).click();
+ await expect(lab.locator('.u46-inference-feedback')).toContainText(initial);
+ await expect(lab.locator('.u46-inference-feedback')).toContainText('not a grade for your notes');
+ await expect(lab.locator('.u46-inference-feedback')).toContainText('attribute both speakers');
+});
+test('TTS request on one B2 question does not mislabel another question as listened',async({page})=>{
+ await page.addInitScript(()=>{
+  class Utterance{constructor(text){this.text=text;this.lang='';this.rate=1;}}
+  Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,value:Utterance});
+  Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
+   getVoices:()=>[{lang:'fr-FR',name:'Mock'}],cancel:()=>{},speak:()=>{}
+  }});
+ });
+ const lab=await openB2Listening(page);
+ await lab.getByRole('button',{name:'Play selected turn'}).click();
+ await lab.getByRole('button',{name:'Next question'}).click();
+ await lab.locator('.u30-question select').selectOption({index:1});
+ await lab.getByRole('button',{name:'Check against authored key'}).click();
+ await expect(lab.locator('.u30-feedback')).toContainText('No audio claim: text-led comprehension');
+ await expect(lab.locator('.u30-feedback')).not.toContainText('TTS was requested');
+ await lab.getByRole('button',{name:'Previous question'}).click();
+ await lab.locator('.u30-question select').selectOption({index:1});
+ await lab.getByRole('button',{name:'Check against authored key'}).click();
+ await expect(lab.locator('.u30-feedback')).toContainText('TTS was requested for this question');
+});
