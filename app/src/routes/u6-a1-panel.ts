@@ -2,6 +2,7 @@ import type {RouteId} from '../core/types';
 import {CUR02_LEVELS,buildFrenchCourseNavigation,navLevelForOriginalBand,parseFrenchCourseLocation,frenchCourseLocation,type Cur02Level} from '../core/unified/cur02-level-nav';
 import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
  type ContinuityReview} from '../core/unified/u24-continuity';
+import {readOriginalCourseStudy,setOriginalCourseStudied,type StudyReview} from '../core/unified/u41-course-study';
 import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
 import {
  browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
@@ -65,6 +66,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
   const revisionSnapshots=new Map<string,string>();
   let continuity:ContinuityReview=await readOriginalContinuity();
+  let study:StudyReview=await readOriginalCourseStudy();
   if(signal.aborted||!host.isConnected)return;
   const incoming=takeOriginalHandoff('course');
   const saved=continuity.status==='ready'?continuity.checkpoint:null;
@@ -420,6 +422,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(!found){found=new Map();answers.set(id,found);}
    return found;
   };
+  const studied=(id:string)=>study.status==='ready'&&
+   !!study.record?.studied.some(row=>row.id===id);
   const practiced=()=>{
    const passed=new Set<string>();
    for(const [id,record] of answers)if(u22PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
@@ -427,8 +431,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   };
   function renderIndex(){
    const done=practiced(),next=suggestedU22OriginalUnit(done);
-   status.textContent=done.size+'/'+lessons.length+
-    ' lesson exercise sets practiced in this page visit. '+
+   const marked=study.status==='ready'?study.record!.studied.length:0;
+   status.textContent=marked+'/'+lessons.length+' lessons self-marked studied on this device (not CEFR mastery). '+
+    done.size+'/'+lessons.length+
+    ' exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
    const matches=browseOriginalMaterials({
     query:search.value,level:levelFilter.value as OriginalLevel|'all',
@@ -470,7 +476,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const record=answers.get(unit.id);
     const practice=record?u22PracticeStatus(unit.id,record):null;
     const label=String(unit.order).padStart(3,'0')+' · '+unit.title+
-     (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'');
+     (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'')+
+     (studied(unit.id)?' · studied':'');
     const item=button(label,()=>open(unit.id,'understand',undefined,true),'u6-unit-button');
     item.dataset.u6Unit=unit.id;
     if(current.id===unit.id){item.classList.add('selected');item.setAttribute('aria-current','true');}
@@ -743,6 +750,55 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    });
    container.append(resetAll);
   }
+  function appendStudyMarker(container:HTMLElement,unit:A1Unit){
+   const marker=el('section',undefined,'u6-grammar-block u41-study-marker');
+   marker.setAttribute('aria-label','Your lesson study marker');
+   let busy=false,feedback='';
+   const draw=()=>{
+    marker.replaceChildren(el('h4','Your lesson progress'));
+    const count=study.status==='ready'?study.record!.studied.length:0;
+    const isStudied=studied(unit.id);
+    const state=el('p',count+'/'+lessons.length+
+     ' lessons you marked studied. This is a personal checklist only, not a quiz grade, review event or CEFR certificate.','u6-small');
+    const message=el('p',feedback||study.message,'u6-small');
+    message.setAttribute('role','status');
+    marker.append(state,message);
+    if(study.status==='empty'||study.status==='ready'){
+     const action=button(isStudied?'Remove studied marker':'Mark this lesson studied',()=>{
+      if(busy)return;
+      // Explicit opt-in, not inferred from visits or assisted exercises.
+      busy=true;feedback='Saving your study marker…';draw();
+      void setOriginalCourseStudied(study,unit.id,!isStudied).then(result=>{
+       study=result.review;
+       feedback=result.outcome==='saved'?
+        (isStudied?'Your personal studied marker was removed.':'Lesson self-marked studied. Review scheduling and grades are unchanged.'):
+        result.outcome==='conflict'?
+         'Another tab or account update changed your markers. Refresh before retrying.':
+         'Cannot safely update these markers.';
+      }).catch(()=>{
+       feedback='Study marker was not saved. Existing learner records are unchanged.';
+      }).finally(()=>{
+       busy=false;
+       if(signal.aborted)return;
+       if(marker.isConnected)draw();
+       renderIndex();
+      });
+     },'secondary-action compact-action');
+     action.disabled=busy;marker.append(action);
+    }
+    if(study.status==='blocked'||study.status==='unavailable'||feedback.includes('Another tab')){
+     const refresh=button('Refresh studied-marker review',()=>{
+      if(busy)return;
+      busy=true;feedback='Checking canonical learner state…';draw();
+      void readOriginalCourseStudy().then(next=>{study=next;feedback='';})
+       .catch(()=>{feedback='Could not read canonical learner state.';})
+       .finally(()=>{busy=false;if(!signal.aborted){if(marker.isConnected)draw();renderIndex();}});
+     });
+     refresh.disabled=busy;marker.append(refresh);
+    }
+   };
+   container.append(marker);draw();
+  }
   function renderWrite(unit:A1Unit,container:HTMLElement){
    const variants=u22ProductionChoices(unit.id);
    let onWritingModeChanged=()=>{};
@@ -842,6 +898,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     onWritingModeChanged();
    }
    updatePrompt();
+   appendStudyMarker(container,unit);
   }
   function render(){
    if(signal.aborted)return;
