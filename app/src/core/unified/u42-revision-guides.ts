@@ -15,5 +15,20 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Mark which figures are estimates or standardized advertisements, rather than guaranteed actual prices, consumption or lifecycle impact.',
   'Distinguish the immediate food-safety constraint from the longer-term repair and environmental comparison. Propose a realistic temporary solution.',
   'State a conditional recommendation and at least one fact (additional fault, unavailable part, or verified cost) that would reverse your preference.'
+ ]),
+ 'transfer-154':Object.freeze([
+  'Separate the 1,200 entries from the unknown number of distinct visitors; identify the population behind the 68% preference.',
+  'Name two groups missed by the on-site survey and show how an accessible consultation could reach them.',
+  'Propose an experiment with transport, staffing and inclusion measures decided before the results are collected.'
+ ]),
+ 'transfer-155':Object.freeze([
+  'Attribute each consultation position to Nora, Yanis or Claire; do not claim that the meeting approved a permanent schedule.',
+  'Explain the difference between a potential six-week budget, the last-bus problem and an unsigned staffing agreement.',
+  'Write a compromise with a concrete concession and a condition that would postpone the trial.'
+ ]),
+ 'transfer-156':Object.freeze([
+  'Use both previous lessons to distinguish entries, survey respondents, missing users and competing consultation needs.',
+  'State each pre-launch condition and separate the three-week interim review from the six-week final review.',
+  'Name a specific indicator and a suspension rule; do not turn conditional authorization into proof of success.'
  ])
 });
