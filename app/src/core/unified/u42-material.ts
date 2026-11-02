@@ -2,12 +2,12 @@ import {
  ORIGINAL_U22_CONNECTED_READINGS,u22OriginalEvidence,
  listeningQuestionsForU22,originalOralResponseU22,u22ProductionChoices
 } from './u22-material.ts';
-import {U42_B2_CASES} from './u42-course.ts';
+import {U42_B2_CASES,U46_B2_SEQUENCE} from './u42-course.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 
-const byId=new Map(U42_B2_CASES.map(s=>[s.unit.id,s] as const));
+const byId=new Map([...U42_B2_CASES,...U46_B2_SEQUENCE].map(s=>[s.unit.id,s] as const));
 export const ORIGINAL_U42_CONNECTED_READINGS=Object.freeze([
- ...ORIGINAL_U22_CONNECTED_READINGS,...U42_B2_CASES.map(s=>s.reading)
+ ...ORIGINAL_U22_CONNECTED_READINGS,...U42_B2_CASES.map(s=>s.reading),...U46_B2_SEQUENCE.map(s=>s.reading)
 ]);
 export function u42OriginalEvidence(id:string){
  const story=byId.get(id);
