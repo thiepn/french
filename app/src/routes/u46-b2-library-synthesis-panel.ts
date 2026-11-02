@@ -20,7 +20,7 @@ export function appendLibrarySynthesis(host:HTMLElement,lessonId:string,signal:A
  root.setAttribute('aria-label','Three-lesson B2 library listening and oral synthesis');
  root.dataset.hasPrivateDraft='false';
  const disclosure=node('details');
- disclosure.open=mode==='speak';
+ disclosure.open=true; // Visible from both native Listen and Speak; user may collapse it.
  disclosure.append(node('summary','Cumulative library dossier · lessons 154–156 · listen and speak'));
  const body=node('div','','u46-library-body');disclosure.append(body);root.append(disclosure);host.append(root);
  body.append(node('h4','From the register to the council decision'),
