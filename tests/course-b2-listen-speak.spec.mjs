@@ -10,7 +10,7 @@ async function openB2Listening(page){
  await deep.locator('summary').click();
  const lab=page.getByRole('region',{name:'Original multi-speaker listening and interpretation lab'});
  await expect(lab).toBeVisible();
- await lab.locator('.u30-disclosure summary').click();
+ await lab.locator('.u30-disclosure > summary').click();
  return lab;
 }
 test('B2 listening remains explicitly text-led when no synthesized audio is heard',async({page})=>{
