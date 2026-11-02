@@ -227,3 +227,40 @@ test('Native Write handoff offers source-backed B2 drafting without grading or s
  await panel.getByRole('button',{name:'Source comparison'}).click();
  await expect(source.getByRole('textbox',{name:'Write your own answer in French'})).toHaveValue('Le devis reste provisoire et la consommation réelle est inconnue.');
 });
+
+test('Connected B2 library sequence 154–156 progresses through original six-stage lessons and reading evidence',async({page})=>{
+ for(const [id,heading] of [
+  ['transfer-154','lire des chiffres avant de décider'],
+  ['transfer-155','négocier des horaires sans exclure'],
+  ['transfer-156','défendre une décision révisable']
+ ]){
+  await page.goto('/#course/B2/'+id);
+  await expect(page.locator('.u6-unit-header h3')).toContainText(heading,{timeout:45_000});
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
+  await expect(page.locator('.u6-dialogue-turn')).toHaveCount(9);
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'5. Recall'}).click();
+  await expect(page.locator('.u6-active-task')).toContainText('Question 1 of 10');
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+  const writing=page.locator('[data-u6-stage="write"]');
+  await expect(writing.locator('.u43-original-source-document')).toHaveCount(2);
+  await expect(writing.locator('.u43-writing-word-count')).toContainText('target');
+  await expect(writing.locator('.u6-model')).toBeHidden();
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
+  await page.getByRole('button',{name:'Continue this lesson in native Read'}).click();
+  await expect(page).toHaveURL(/#read$/);
+  await expect(page.locator('.u22-source-paragraph')).toHaveCount(3,{timeout:30_000});
+  await expect(page.locator('.u22-source-document')).toHaveCount(2);
+  await expect(page.locator('.u22-source-question')).toHaveCount(5);
+  await expect(page.locator('.u22-source-note').filter({hasText:id}).first()).toBeVisible();
+ }
+});
+test('B2 civic dossier has connected lesson adjacency and preserved public source identities',async({page})=>{
+ await page.goto('/#course/B2/transfer-154');
+ await expect(page.locator('.u6-unit-header h3')).toContainText('Bibliothèque du quartier',{timeout:45_000});
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ await expect(page.getByRole('button',{name:/Continue to.*négocier des horaires/i})).toBeVisible();
+ await page.goto('/#course/B2/transfer-155');
+ await expect(page.locator('.u6-unit-header h3')).toContainText('négocier des horaires');
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ await expect(page.getByRole('button',{name:/Continue to.*défendre une décision/i})).toBeVisible();
+});
