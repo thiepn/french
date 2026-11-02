@@ -171,8 +171,9 @@ test('B2 extension retains all three connected reading documents and distinct so
   await expect(page.getByRole('button',{name:'Continue this lesson in native Read'})).toBeVisible();
   await page.getByRole('button',{name:'Continue this lesson in native Read'}).click();
   await expect(page).toHaveURL(/#read$/);
-  await expect(page.locator('.u22-original-source-panel, .u23-source-panel, .u22-practice')).toBeVisible({timeout:20_000}).catch(async()=>{
-   await expect(page.getByText(heading,{exact:false}).first()).toBeVisible();
-  });
+  await expect(page.locator('.u22-source-paragraph')).toHaveCount(3,{timeout:30_000});
+  await expect(page.locator('.u22-source-document')).toHaveCount(2);
+  await expect(page.locator('.u22-source-question')).toHaveCount(5);
+  await expect(page.locator('.u22-source-note').first()).toContainText(id);
  }
 });
