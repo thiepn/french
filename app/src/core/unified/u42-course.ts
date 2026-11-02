@@ -3,11 +3,17 @@ import {U42_151} from './u42-151.ts';
 import {U42_152} from './u42-152.ts';
 import {U42_153} from './u42-153.ts';
 import {SOURCES} from './source.ts';
+import {U42_B2_GRAMMAR} from './u42-b2-grammar.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
 /** Exactly 244 preceding units are immutable; new B2 cases are additive. */
-export const U42_B2_CASES:readonly U21Scenario[]=Object.freeze([...U42_151,...U42_152,...U42_153]);
+const ORIGINAL_U42_CASES:readonly U21Scenario[]=[...U42_151,...U42_152,...U42_153];
+export const U42_B2_CASES:readonly U21Scenario[]=Object.freeze(ORIGINAL_U42_CASES.map(story=>
+ Object.freeze({...story,unit:Object.freeze({...story.unit,
+  grammar:U42_B2_GRAMMAR[story.unit.id]??story.unit.grammar
+ })})
+));
 export const ORIGINAL_FRENCH_U42_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit)
 ]);
@@ -40,6 +46,10 @@ export function validateU42Course():readonly string[]{
      unit.source.sourceRevision!==SOURCES.original.revision||
      !unit.source.qualifiedId.endsWith(':session:u42-'+id))
    issues.push(id+' source/provenance invalid');
+  if(unit.grammar!==U42_B2_GRAMMAR[id]||
+     unit.grammar.some(g=>g.explanation.length<150||g.examples.length!==2||
+      !g.correction[0]||!g.correction[1]||g.correction[2].length<40))
+   issues.push(id+' missing B2-authored reasoning and grammatical contrasts');
   if(unit.grammar.length!==2||unit.vocabulary.length!==12||unit.dialogue.length!==9||
      unit.tasks.length!==10||new Set(unit.tasks.map(x=>x.id)).size!==10)
    issues.push(id+' insufficient lesson substance');
