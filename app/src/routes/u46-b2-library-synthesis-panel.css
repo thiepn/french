@@ -6,6 +6,7 @@
 .u46-case-sources, .u46-case-choice, .u46-case-oral { display: grid; gap: .7rem; }
 .u46-case-sources > button { justify-self: start; }
 .u46-source-list { display: grid; gap: .8rem; }
+.u46-library-synthesis [hidden] { display: none !important; }
 .u46-source-card { border-inline-start: 3px solid currentColor; padding: .45rem .8rem; background: var(--surface, transparent); }
 .u46-source-card p { white-space: pre-wrap; }
 .u46-library-synthesis label { display: grid; gap: .4rem; }
