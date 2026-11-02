@@ -152,7 +152,8 @@ test('B2 extension opens actual original sources and six-stage progression inste
  await page.locator('.u6-stage-nav').getByRole('button',{name:'5. Recall'}).click();
  await expect(page.locator('.u6-active-task')).toContainText('Question 1 of 10');
  await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
- await expect(page.locator('.u6-stage-body')).toContainText('Compare two source documents');
+ await expect(page.locator('select[aria-label="Choose evidence-to-writing transfer mode"] option[value="fromSources"]')).toHaveText('Compare two source documents');
+ await expect(page.locator('.u6-stage-body')).toContainText('Compare the two fictional sources');
  await expect(page.locator('.u6-stage-body')).toContainText('Independent writing');
  await expect(page.locator('.u6-stage-body')).toContainText('Your lesson progress');
  await expect(page.getByRole('button',{name:/Continue to.*quatre jours/i})).toBeVisible();
@@ -174,6 +175,6 @@ test('B2 extension retains all three connected reading documents and distinct so
   await expect(page.locator('.u22-source-paragraph')).toHaveCount(3,{timeout:30_000});
   await expect(page.locator('.u22-source-document')).toHaveCount(2);
   await expect(page.locator('.u22-source-question')).toHaveCount(5);
-  await expect(page.locator('.u22-source-note').first()).toContainText(id);
+  await expect(page.locator('.u22-source-note').filter({hasText:id}).first()).toBeVisible();
  }
 });
