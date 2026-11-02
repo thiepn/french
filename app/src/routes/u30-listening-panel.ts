@@ -55,7 +55,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  turnLabel.append(turnSelect);
  audioControls.append(speedLabel,turnLabel);
  const supported='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
- let active=false,requestCount=0,usedSlow=false,destroyed=false;
+ let active=false,requestCount=0,usedSlow=false,destroyed=false,playbackEpoch=0;
  // A completed browser TTS callback proves only that the browser reported
  // completion. It does not establish that speech was audible, in French,
  // or understood. Only an explicit learner statement can record claimed use.
@@ -63,13 +63,16 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  const heardSelfReports=new Set<string>();
  let transcriptAssisted=false;
  const stop=()=>{
+  playbackEpoch++;
   if(supported&&active){window.speechSynthesis.cancel();active=false;}
+  completedForQuestion=null;
  };
  function speak(indices:readonly number[]):void{
   if(!supported||destroyed||opts.signal.aborted||!wrapper.isConnected){
    voiceStatus.textContent='Device French TTS unavailable. Use transcript-led comprehension; no listening success can be inferred.';return;
   }
-  stop();completedForQuestion=null;
+  stop();
+  const epoch=playbackEpoch;
   const questionId=visibleDecisions()[index]?.id??null;
   const synth=window.speechSynthesis;
   const voices=synth.getVoices(),french=voices.find(v=>v.lang.toLowerCase()==='fr-fr')??
@@ -87,6 +90,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    utterance.lang='fr-FR';utterance.rate=rate;if(french)utterance.voice=french;
    if(i===valid.length-1){
     utterance.onend=()=>{
+     if(epoch!==playbackEpoch||destroyed||!wrapper.isConnected)return;
      active=false;
      if(!destroyed&&wrapper.isConnected){
       if(questionId&&visibleDecisions()[index]?.id===questionId)
@@ -95,11 +99,14 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
       draw();
      }
     };
-    utterance.onerror=()=>{active=false;completedForQuestion=null;
-     if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS encountered an error. Use the original transcript.';};
+    utterance.onerror=()=>{
+     if(epoch!==playbackEpoch)return;
+     active=false;completedForQuestion=null;
+     if(!destroyed&&wrapper.isConnected){voiceStatus.textContent='TTS encountered an error. Use the original transcript.';draw();}
+    };
    }
    try{synth.speak(utterance);}catch{
-    active=false;voiceStatus.textContent='TTS could not start. Use transcript-led practice.';
+    stop();voiceStatus.textContent='TTS could not start. Use transcript-led practice.';draw();
    }
   });
   voiceStatus.textContent=french?'Requested French TTS using '+french.name+'.':
@@ -107,7 +114,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  }
  const playAll=action('Play full original exchange',()=>speak(lesson.turns.map((_,i)=>i)));
  const playTurn=action('Play selected turn',()=>speak([Number(turnSelect.value)]));
- const stopButton=action('Stop audio',()=>{stop();voiceStatus.textContent='Playback stopped.';});
+ const stopButton=action('Stop audio',()=>{stop();voiceStatus.textContent='Playback stopped; completion cannot be claimed.';draw();});
  if(!supported){playAll.disabled=true;playTurn.disabled=true;voiceStatus.textContent='TTS unavailable. You can study the transcript and take the same source-based questions without an audio claim.';}
  audioControls.append(playAll,playTurn,stopButton);
  const support=el('div','','u30-support');
@@ -197,6 +204,11 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  const visibleDecisions=()=>category?decisions.filter(d=>d.kind===category):decisions;
  function updateExcerpt(){
   const d=visibleDecisions()[index],turn=d?.turnIndex;
+  if(d?.contextualTurns){
+   excerpt.textContent=d.contextualTurns.map(i=>
+    'Turn '+(i+1)+' · '+lesson.turns[i].speaker+': '+lesson.turns[i].fr).join('\n');
+   return;
+  }
   if(turn==null){excerpt.textContent='Written documentary excerpt · '+(d?.evidence??'');return;}
   excerpt.textContent='Turn '+(turn+1)+' · '+lesson.turns[turn].fr;
  }
@@ -235,7 +247,24 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' attempted in this page · '+LABELS[d.kind]+
    ' · TTS requests '+requestCount+(usedSlow?' · slow playback used':'')+'. No formal grades.';
   const heading=el('h4',d.question);heading.tabIndex=-1;
-  questionHost.append(el('p',LABELS[d.kind]+' · original turn '+(d.turnIndex===null?'written source':d.turnIndex+1),'u30-source'),heading);
+  questionHost.append(el('p',LABELS[d.kind]+' · '+
+   (d.contextualTurns?
+    'compare original spoken turns '+d.contextualTurns.map(i=>i+1).join(' and '):
+    'original turn '+(d.turnIndex===null?'written source':d.turnIndex+1)),'u30-source'),heading);
+  if(d.contextualTurns){
+   const pair=action('Replay both original turns (synthetic French TTS)',()=>
+    speak(d.contextualTurns!));
+   pair.disabled=!supported;
+   pair.title=supported?
+    'Device TTS is synthetic and not a recording. Replay alone does not prove hearing.':
+    'Device TTS unavailable; use the written two-turn source comparison.';
+   const readPair=action('Reveal both original French turns',()=>{
+    transcriptAssisted=true;supportLevel=Math.max(supportLevel,2);
+    updateExcerpt();excerpt.hidden=false;
+    supportState.textContent='Two exact original dialogue turns revealed; subsequent answers are transcript-assisted.';
+   });
+   questionHost.append(pair,readPair);
+  }
   const form=el('form','','u30-answer');
   const selectLabel=el('label','Choose the answer supported by the original source');
   const picker=el('select');picker.setAttribute('aria-label','Answer '+d.id);
