@@ -24,7 +24,7 @@ export const U42_B2_GRAMMAR:Readonly<Record<string,readonly A1Grammar[]>>=Object
    ],
    correction:['Le téléphone a causé la baisse des interruptions.','La baisse coïncide avec la consigne; sa cause reste à vérifier.','A concurrent change in room layout prevents a causal conclusion from this observation.']
   }
- ]),
+ ] as const),
  'transfer-152':Object.freeze([
   {
    heading:'Real and hypothetical conditions in collective negotiation',
@@ -44,7 +44,7 @@ export const U42_B2_GRAMMAR:Readonly<Record<string,readonly A1Grammar[]>>=Object
    ],
    correction:['À condition que les heures sont enregistrées, nous signerons.','À condition que les heures soient enregistrées, nous signerons.','À condition que requires the subjunctive soient; the indicative sont is not appropriate here.']
   }
- ]),
+ ] as const),
  'transfer-153':Object.freeze([
   {
    heading:'Comparative claims require a common criterion',
@@ -64,5 +64,5 @@ export const U42_B2_GRAMMAR:Readonly<Record<string,readonly A1Grammar[]>>=Object
    ],
    correction:['Nous prévoyons un prêt pour que les habitants peuvent conserver les aliments.','Nous prévoyons un prêt pour que les habitants puissent conserver les aliments.','Pour que takes the subjunctive puissent, not the indicative peuvent.']
   }
- ])
+ ] as const)
 });
