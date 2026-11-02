@@ -71,3 +71,67 @@ test('Course independent recall evidence stays in page memory and is not present
  await expect(page.locator('.u6-practice-status')).toContainText('Independent first tries: 0/10');
  await expect(page.locator('.u6-practice-status')).toContainText('Correct now: 0/10');
 });
+
+async function studyMarkers(page){
+ return page.evaluate(async()=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open('thiepn-french-vnext',5);
+  req.onerror=()=>reject(req.error);
+  req.onsuccess=()=>{
+   const db=req.result,tx=db.transaction('learner','readonly');
+   const row=tx.objectStore('learner').get('state-v1');
+   row.onsuccess=()=>resolve(row.result?.featureState?.vU41OriginalCourseStudy??null);
+   row.onerror=()=>reject(row.error);
+   tx.oncomplete=()=>db.close();
+  };
+ }));
+}
+async function openWriting(page){
+ await page.goto('/#course/A1/a1-01');
+ await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45_000});
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ await expect(page.locator('[data-u6-stage="write"]')).toBeVisible();
+ const marker=page.getByRole('region',{name:'Your lesson study marker'});
+ await expect(marker).toBeVisible();
+ return marker;
+}
+test('Opt-in studied marker survives reload without native SRS writes or false CEFR evidence',async({page})=>{
+ const marker=await openWriting(page);
+ const before=await nativeCounts(page);
+ expect(await studyMarkers(page)).toBeNull();
+ await marker.getByRole('button',{name:'Mark this lesson studied'}).click();
+ await expect(marker).toContainText('1/244 lessons you marked studied');
+ await expect(marker.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
+ const state=await studyMarkers(page);
+ expect(state.schema).toBe('original-course-studied-v1');
+ expect(state.studied).toHaveLength(1);
+ expect(state.studied[0].id).toBe('a1-01');
+ expect(state.studied[0].qualifiedId).toContain(':session:');
+ expect(JSON.stringify(state)).not.toContain('Bonjour,');
+ expect(await nativeCounts(page)).toEqual(before);
+ await page.reload();
+ await expect(page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'})).toBeVisible({timeout:45_000});
+ await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ const again=page.getByRole('region',{name:'Your lesson study marker'});
+ await expect(again.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
+ await again.getByRole('button',{name:'Remove studied marker'}).click();
+ await expect(again).toContainText('0/244 lessons you marked studied');
+ expect((await studyMarkers(page)).studied).toHaveLength(0);
+ expect(await nativeCounts(page)).toEqual(before);
+});
+
+test('Two tabs cannot overwrite a newer explicit studied marker without refreshing owner state',async({page,context})=>{
+ const first=await openWriting(page);
+ const secondPage=await context.newPage();
+ const second=await openWriting(secondPage);
+ await expect(second.getByRole('button',{name:'Mark this lesson studied'})).toBeVisible();
+ await first.getByRole('button',{name:'Mark this lesson studied'}).click();
+ await expect(first).toContainText('1/244 lessons you marked studied');
+ await second.getByRole('button',{name:'Mark this lesson studied'}).click();
+ await expect(second).toContainText('Another tab or account update changed your markers');
+ await expect(second.getByRole('button',{name:'Refresh studied-marker review'})).toBeVisible();
+ await expect(second.getByRole('button',{name:'Mark this lesson studied'})).toHaveCount(0);
+ expect((await studyMarkers(secondPage)).studied).toHaveLength(1);
+ await second.getByRole('button',{name:'Refresh studied-marker review'}).click();
+ await expect(second.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
+ await secondPage.close();
+});
