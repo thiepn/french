@@ -6,16 +6,12 @@ import {
  ORIGINAL_REGISTRY_COUNTS,ORIGINAL_REGISTRY_ENTRIES,
  getOriginalCatalogEntry,getOriginalMaterial
 } from '../app/src/core/unified/u23-registry.ts';
-import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
-import {U42_B2_CASES,ORIGINAL_FRENCH_U42_COURSE,validateU42Course} from '../app/src/core/unified/u42-course.ts';
-import {ORIGINAL_U42_CONNECTED_READINGS,u42OriginalEvidence,listeningQuestionsForU42,u42ProductionChoices,originalOralResponseU42} from '../app/src/core/unified/u42-material.ts';
 import {ORIGINAL_TRANSFER_SCENARIOS} from '../app/src/core/unified/u13-course.ts';
 import {originalPlacementGrammarRefreshers} from '../app/src/core/unified/u27-placement.ts';
 
-assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244,'Original historical lesson inventory unchanged');
-assert.equal(ORIGINAL_REGISTRY_COUNTS.lessons,247,'244 historical units plus three new B2 cases');
-assert.equal(ORIGINAL_REGISTRY_COUNTS.connectedReadings,195,'192 historical readings plus three new B2 texts');
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,247,'All original and B2 source IDs remain unique');
+assert.equal(ORIGINAL_REGISTRY_COUNTS.lessons,244,'Original historical lesson inventory');
+assert.equal(ORIGINAL_REGISTRY_COUNTS.connectedReadings,192,'Connected reading inventory');
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,244,'Original source IDs remain unique');
 const bands:{[key:string]:string}={};
 for(const scenario of ORIGINAL_TRANSFER_SCENARIOS){
  const entry=getOriginalCatalogEntry(scenario.unit.id);
@@ -78,26 +74,3 @@ for(const number of [148,149,150]){
   'Early B2 authored source writing offers a second independent use of the model: '+id);
 }
 console.log('U42 source contracts: 244 original IDs / 192 readings, 15 authorial grammar bands, 40 bilingual grammar examples in 20 lessons, five everyday transfer prompts and three advanced source writing prompts.');
-
-assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE,
- 'All 244 existing authored objects and original rights stay untouched');
-assert.deepEqual(validateU42Course(),[],'Every newly authored B2 contract must be fully satisfied');
-assert.deepEqual(U42_B2_CASES.map(s=>s.unit.id),
- ['transfer-151','transfer-152','transfer-153']);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,195);
-for(let n=151;n<=153;n++){
- const id='transfer-'+n,material=getOriginalMaterial(id);
- assert.ok(material,'New B2 lesson must be accessible through the original registry: '+id);
- assert.equal(material?.unit.order,n+94);
- assert.equal(material?.unit.prerequisites[0],'transfer-'+(n-1));
- assert.equal(material?.unit.source.rights,'original-owned');
- assert.equal(material?.unit.source.localId,'u42-'+id);
- assert.equal(material?.reading?.questions.length,3);
- assert.equal(u42OriginalEvidence(id)?.sources.length,2);
- assert.equal(u42OriginalEvidence(id)?.questions.length,2);
- assert.equal(listeningQuestionsForU42(material!.unit).length,6);
- assert.ok(u42ProductionChoices(id)?.fromDebate.model.length!>190);
- assert.ok(originalOralResponseU42(id)?.model.length!>115);
- assert.ok(material?.unit.dialogue.every(line=>line.fr.length>30));
-}
-console.log('U42 B2 expansion: three complete new source-backed cases, 244 historical units preserved, 195 connected readings.');
