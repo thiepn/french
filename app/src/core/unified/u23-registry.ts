@@ -1,9 +1,9 @@
-import {ORIGINAL_FRENCH_U22_COURSE} from './u22-course.ts';
+import {ORIGINAL_FRENCH_U42_COURSE} from './u42-course.ts';
 import {ORIGINAL_TRANSFER_SCENARIOS} from './u13-course.ts';
 import {
- ORIGINAL_U22_CONNECTED_READINGS,u22OriginalEvidence,listeningQuestionsForU22,
- originalOralResponseU22,u22ProductionChoices
-} from './u22-material.ts';
+ ORIGINAL_U42_CONNECTED_READINGS,u42OriginalEvidence,listeningQuestionsForU42,
+ originalOralResponseU42,u42ProductionChoices
+} from './u42-material.ts';
 import {SOURCES,sourceId} from './source.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {B1Reading} from './u10-readings-01-07.ts';
@@ -48,10 +48,10 @@ export interface OriginalBrowseResult {
 export type OriginalMaterial=Readonly<{
  unit:A1Unit;
  reading:B1Reading|null;
- evidence:ReturnType<typeof u22OriginalEvidence>;
- listening:ReturnType<typeof listeningQuestionsForU22>;
- oral:ReturnType<typeof originalOralResponseU22>;
- writingChoices:ReturnType<typeof u22ProductionChoices>;
+ evidence:ReturnType<typeof u42OriginalEvidence>;
+ listening:ReturnType<typeof listeningQuestionsForU42>;
+ oral:ReturnType<typeof originalOralResponseU42>;
+ writingChoices:ReturnType<typeof u42ProductionChoices>;
 }>;
 
 const u13Bands=new Map(ORIGINAL_TRANSFER_SCENARIOS.map(s=>[s.unit.id,s.level] as const));
@@ -87,7 +87,7 @@ const searchText=new Map<string,string>();
 const entries:OriginalCatalogEntry[]=[];
 const materialCache=new Map<string,OriginalMaterial>();
 
-for(const unit of ORIGINAL_FRENCH_U22_COURSE){
+for(const unit of ORIGINAL_FRENCH_U42_COURSE){
  const p=unit.source;
  if(p.source!=='original'||p.rights!=='original-owned'||
     p.sourceRevision!==SOURCES.original.revision||p.kind!=='session'||
@@ -97,14 +97,14 @@ for(const unit of ORIGINAL_FRENCH_U22_COURSE){
   throw Error('U23 duplicate lesson identity or source custody: '+unit.id);
  lessons.set(unit.id,unit);byQualifiedId.set(p.qualifiedId,unit.id);
 }
-for(const reading of ORIGINAL_U22_CONNECTED_READINGS){
+for(const reading of ORIGINAL_U42_CONNECTED_READINGS){
  if(!lessons.has(reading.unitId)||readings.has(reading.unitId))
   throw Error('U23 orphan or duplicate original connected reading: '+reading.unitId);
  readings.set(reading.unitId,reading);
 }
-for(const unit of ORIGINAL_FRENCH_U22_COURSE){
+for(const unit of ORIGINAL_FRENCH_U42_COURSE){
  const reading=readings.get(unit.id);
- const evidence=u22OriginalEvidence(unit.id);
+ const evidence=u42OriginalEvidence(unit.id);
  const entry:OriginalCatalogEntry=Object.freeze({
   id:unit.id,order:unit.order,title:unit.title,goal:unit.goal,
   level:levelOf(unit.id),qualifiedId:unit.source.qualifiedId,
@@ -140,10 +140,10 @@ export function getOriginalMaterial(id:string):OriginalMaterial|null {
  const unit=lessons.get(id);if(!unit)return null;
  const cached=materialCache.get(id);if(cached)return cached;
  const material=Object.freeze({
-  unit,reading:readings.get(id)??null,evidence:u22OriginalEvidence(id),
-  listening:listeningQuestionsForU22(unit),
-  oral:originalOralResponseU22(id),
-  writingChoices:u22ProductionChoices(id)
+  unit,reading:readings.get(id)??null,evidence:u42OriginalEvidence(id),
+  listening:listeningQuestionsForU42(unit),
+  oral:originalOralResponseU42(id),
+  writingChoices:u42ProductionChoices(id)
  });
  materialCache.set(id,material);return material;
 }
