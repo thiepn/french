@@ -3,7 +3,7 @@ import {CUR02_LEVELS,buildFrenchCourseNavigation,navLevelForOriginalBand,parseFr
 import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
  type ContinuityReview} from '../core/unified/u24-continuity';
 import {readOriginalCourseStudy,setOriginalCourseStudied,type StudyReview} from '../core/unified/u41-course-study';
-import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
+import {loadU42OriginalFrenchCourse,suggestedU42OriginalUnit,u42PracticeStatus} from '../core/unified/u42-course';
 import {
  browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
  neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
@@ -44,7 +44,7 @@ function button(label:string,action:()=>void,classes='secondary-action compact-a
 export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId)=>void,signal:AbortSignal):Promise<void>{
  host.replaceChildren(el('p','Loading the original French full Course…'));
  try{
-  const lessons=await loadU22OriginalFrenchCourse();
+  const lessons=await loadU42OriginalFrenchCourse();
   const levelCatalog=buildFrenchCourseNavigation(ORIGINAL_PATHWAYS.flatMap(path=>path.sections.flatMap(section=>section.entries)));
   const requestedCourse=parseFrenchCourseLocation(location.hash,levelCatalog);
   const invalidCoursePath=location.hash.startsWith('#course/')&&!requestedCourse;
@@ -92,7 +92,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
     el('h2','Choose where to learn'),
-    el('p','244 original lessons from foundations to early B2. Learn in sequence, follow an authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
+    el('p','247 original course units: 244 established lessons and transfer scenarios, plus three new advanced B2 cases. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const hero=el('section',undefined,'u25-hero');
   hero.setAttribute('aria-label','Start or continue original French');
@@ -170,7 +170,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const article=el('article',undefined,'u6-lesson-content');article.dataset.u6LessonContent='';
   const finder=el('section',undefined,'u23-course-finder');
   finder.setAttribute('role','search');finder.setAttribute('aria-label','Find original French lessons');
-  const searchLabel=el('label','Search 244 original lessons');
+  const searchLabel=el('label','Search original French lessons');
   const search=el('input');search.type='search';search.autocomplete='off';
   search.placeholder='Title, French word, topic or grammar';
   search.setAttribute('aria-label','Search original course lessons');searchLabel.append(search);
@@ -426,11 +426,11 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    !!study.record?.studied.some(row=>row.id===id);
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const [id,record] of answers)if(u22PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
+   for(const [id,record] of answers)if(u42PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
    return passed;
   };
   function renderIndex(){
-   const done=practiced(),next=suggestedU22OriginalUnit(done);
+   const done=practiced(),next=suggestedU42OriginalUnit(done);
    const marked=study.status==='ready'?study.record!.studied.length:0;
    status.textContent=marked+'/'+lessons.length+' lessons self-marked studied on this device (not CEFR mastery). '+
     done.size+'/'+lessons.length+
@@ -474,7 +474,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      details.append(chapter);sidebar.append(details);
     }
     const record=answers.get(unit.id);
-    const practice=record?u22PracticeStatus(unit.id,record):null;
+    const practice=record?u42PracticeStatus(unit.id,record):null;
     const label=String(unit.order).padStart(3,'0')+' · '+unit.title+
      (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'')+
      (studied(unit.id)?' · studied':'');
@@ -623,7 +623,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
-   const practicedCount=u22PracticeStatus(unit.id,record)!;
+   const practicedCount=u42PracticeStatus(unit.id,record)!;
    const errors=mistakes.get(unit.id)??new Set<string>();
    const history=attemptMap(unit.id);
    const weakTasks=()=>unit.tasks.filter(task=>{
@@ -635,7 +635,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const independent=values.filter(v=>v.independentFirstTry).length;
     const repaired=values.filter(v=>(v.hadError||v.hintUsed)).length;
     return 'Independent first tries: '+independent+'/'+unit.tasks.length+
-     ' · Correct now: '+u22PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
+     ' · Correct now: '+u42PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
      ' · Needed repair or model: '+repaired+
      '. Practice only: no FSRS, CEFR or lasting lesson completion.';
    };
