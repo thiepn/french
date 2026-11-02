@@ -3,6 +3,7 @@ import {
 } from '../core/unified/u30-listening.ts';
 import {getOriginalMaterial,type OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u30-listening-panel.css';
+import {appendLibrarySynthesis} from './u46-b2-library-synthesis-panel.ts';
 
 interface Options{
  readonly signal:AbortSignal;readonly mode:'course'|'listen';
@@ -202,6 +203,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  transfer.append(taskPrompt,editorLabel,el('h5','Self-review checklist'),revision,modelToggle,selfModel,handoffs,
   el('p','Speaking preparation and written summary are ungraded visits. Practice history, native due reviews, FSRS and CEFR estimates remain unchanged.','u30-note'));
  content.append(title,notice,provenance,speakers,audio,tabs,progress,questionHost,navigation,written,transfer);
+ const stopCumulative=appendLibrarySynthesis(content,id,opts.signal,'listen');
  let index=0,category:U30Kind|null=null;
  const markSupport=(level:number,transcript=true)=>{
   const id=visibleDecisions()[index]?.id;
@@ -391,7 +393,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   navigation.append(key);
   if(shouldFocus)heading.focus({preventScroll:true});
  }
- const cleanup=()=>{if(destroyed)return;destroyed=true;stop();opts.signal.removeEventListener('abort',cleanup);};
+ const cleanup=()=>{if(destroyed)return;destroyed=true;stop();stopCumulative();opts.signal.removeEventListener('abort',cleanup);};
  opts.signal.addEventListener('abort',cleanup,{once:true});
  showWrittenEvidence();drawTabs();draw();
  return cleanup;
