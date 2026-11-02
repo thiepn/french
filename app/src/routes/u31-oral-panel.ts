@@ -180,7 +180,7 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
   el('p','All transfers preserve the original source identity. Revisiting a route is not a completed Practice session or review grade.','u31-notice'));
  const discourseHost=el('div','','u32-integration');
  body.append(head,context,stageNav,counter,stage,challenges,quote,discourseHost,transfer);
- const stopCumulative=appendLibrarySynthesis(body,lessonId,opts.signal,'speak');
+ const stopCumulative=appendLibrarySynthesis(body,lessonId,opts.signal,'speak',syncDraftFlag);
  let phaseIndex=0,decisionIndex=0,support=0;
  const privateNotes=new Map<U31Stage,string>(),snapshots=new Map<U31Stage,string>();
  const selfReported=new Set<U31Stage>(),checksByStage=new Map<U31Stage,Set<number>>();
