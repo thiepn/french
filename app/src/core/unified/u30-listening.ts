@@ -75,7 +75,7 @@ const AUTHORED:readonly Authored[]=[
   explanation:'A record of alternatives does not prove an absent author’s preference.',
   hint:'Listen for « deux versions » and « aucun document ne prouve ».',
   corrections:['Sequence in a notebook is not formal approval.','There is no statement that the author rejected both.']},
- {id:'negation-reversal',lesson:'transfer-148',anchor:'a supprimé « ne »',
+ {id:'negation-reversal',lesson:'transfer-148',anchor:'a supprimé « ne ... pas »',
   prompt:'What risk does Malik identify in the automatic caption?',
   answer:'Dropping a negation can reverse the perceived decision',
   distractors:['The caption became a more emphatic refusal','The change affected only the actor’s name'],
