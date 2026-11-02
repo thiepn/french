@@ -32,6 +32,8 @@ jobs:
         run: node --experimental-strip-types --test tests/cur02-level-navigation.test.mjs
       - name: Run full vNext qualification
         run: npm run qualify:vnext
+      - name: Verify new original B2 course content and immutable prior lesson identities
+        run: node --experimental-strip-types scripts/test-vnext-b2-extension.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
