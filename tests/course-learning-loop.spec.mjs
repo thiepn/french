@@ -87,8 +87,10 @@ async function studyMarkers(page){
 }
 async function openWriting(page){
  await page.goto('/#course/A1/a1-01');
- await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45_000});
- await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
+ await expect(page.locator('.u6-stage-nav')).toBeVisible({timeout:45_000});
+ // Existing canonical navigation may already point at Write in a second tab.
+ if(await page.locator('[data-u6-stage="write"]').count()===0)
+  await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
  await expect(page.locator('[data-u6-stage="write"]')).toBeVisible();
  const marker=page.getByRole('region',{name:'Your lesson study marker'});
  await expect(marker).toBeVisible();
