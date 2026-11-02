@@ -28,7 +28,7 @@ for(const [id,mode,min,max] of cases){
  assert.equal(short.words,3);
  if(min===null){
   assert.equal(short.status,'unbounded');
-  assert.match(short.message,/no fixed authored word range/);
+  assert.match(short.message,/no encoded word target in this helper/);
  }else{
   assert.equal(short.status,'short');
   assert.equal(b2WritingLengthReview(id,mode,Array(min).fill('mot').join(' ')).status,'within');
