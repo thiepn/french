@@ -51,8 +51,9 @@ export function reviewOriginalCourseStudy(value:unknown,now=Date.now()):StudyRev
 export async function readOriginalCourseStudy():Promise<StudyReview>{
  try{
   const learner=await readCanonicalLearnerState();
-  if(!learner)return{status:'unavailable',record:null,expectedToken:null,
-    message:'Canonical learner storage not initialized; studied markers unavailable.'};
+  // A new guest can opt in without opening native Review first. Reading
+  // Course never initializes storage; only the explicit Mark action does.
+  if(!learner)return reviewOriginalCourseStudy(null);
   return reviewOriginalCourseStudy(learner.featureState?.[KEY]);
  }catch{
   return{status:'unavailable',record:null,expectedToken:null,
