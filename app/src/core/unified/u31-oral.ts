@@ -287,7 +287,74 @@ const AUTHORED:readonly AuthoredJourney[]=[
    corrections:['Projection permission does not imply a general internet licence.','The original explicitly permits on-site display.'],
    why:'Malik distinguishes existing display authorization from online release rights.'}
  ]
+ } ,
+ {
+ id:'transfer-151',speaker:'Marc',anchor:'nous ignorons combien d’élèves ont répondu',
+ situation:'Debating a reversible school phone policy without treating a response percentage as school-wide proof',
+ counterview:'A fictional school-board member says: « Les 72 % prouvent que tous les élèves veulent une interdiction. » This is an invented objection, not an original quotation.',
+ misunderstanding:'A participant confuses survey respondents with all pupils and assumes the observed improvement is causal.',
+ register:'Formal, respectful consultation with pupils and staff',
+ objective:'Attribute the survey precisely, explain the confounded classroom observation, protect accessibility needs and offer a reversible evidence-based trial.',
+ repair:'Clarify that 72 % refers only to respondents, the response rate is unknown, and a simultaneously changed table layout prevents a single-cause conclusion.',
+ structure:'Selon les répondants… → toutefois, le taux… → même si… → à condition que… → réévaluons…',
+ decisions:[
+  {kind:'fidelity',prompt:'Which reading of Marc’s statement about the questionnaire is justified by the original exchange?',
+   answer:'72 % of respondents reported distraction; the number of pupils who answered is not known.',
+   distractors:['72 % of the entire school approved a permanent ban.','The survey proved the phone restriction caused fewer interruptions.'],
+   corrections:['The missing response rate prevents generalizing from respondents to the whole school.','A self-report questionnaire cannot isolate a causal effect.'],
+   why:'Marc explicitly identifies an unknown number of survey respondents; this limits the population claim.'},
+  {kind:'objection',prompt:'An imagined council member demands an immediate blanket ban. Which French response is proportionate and source-faithful?',
+   answer:'« Je comprends l’inquiétude, mais la cause reste incertaine ; essayons une mesure limitée avec des exceptions accessibles. »',
+   distractors:['« Les 72 % prouvent que tous les élèves souhaitent une interdiction définitive. »','« La disposition des tables n’a pas changé, donc les téléphones sont la seule cause. »'],
+   corrections:['The percentage refers to respondents only, without a known response rate.','The dialogue explicitly mentions a simultaneous change in table arrangement.'],
+   why:'The proposal acknowledges concern, preserves the evidence limits and provides an inclusive, reversible next action.'}
+ ]
+ },
+ {
+ id:'transfer-152',speaker:'Aïcha',anchor:'pas de trente-deux heures',
+ situation:'Negotiating a proposed four-day work schedule without confusing compressed hours with shorter working time',
+ counterview:'A fictional manager says: « L’augmentation de 8 % prouve que tous les services bénéficient de la réforme. » This objection is constructed, not a transcript.',
+ misunderstanding:'A colleague calls a thirty-five-hour compressed week a thirty-two-hour reduction and treats volume as a complete quality measure.',
+ register:'Professional and balanced workplace negotiation',
+ objective:'Distinguish thirty-five compressed hours from reduced hours, respond fairly to reception staff and negotiate observable conditions with a six-week review.',
+ repair:'The total contractual hours remain thirty-five; case counts omit correction quality and overtime, and Friday reception needs a negotiated rotation.',
+ structure:'Il s’agit de trente-cinq heures… → pourtant… → à l’accueil… → si le bilan… → révisons…',
+ decisions:[
+  {kind:'fidelity',prompt:'What distinction does Aïcha make in the published workplace exchange?',
+   answer:'The four-day schedule redistributes thirty-five hours, not a thirty-two-hour week.',
+   distractors:['The reform reduces everyone’s working hours to thirty-two.','The company shuts reception on every Friday.'],
+   corrections:['Aïcha explicitly says the contractual thirty-five hours remain.','Mélanie says reception must still provide Friday coverage.'],
+   why:'The original speaker contrasts thirty-five hours redistributed with thirty-two hours, a different policy.'},
+  {kind:'objection',prompt:'A manager argues that 8 % more processed cases means the trial is a complete success. Choose a careful French response.',
+   answer:'« C’est encourageant, mais vérifions les heures supplémentaires, la qualité des dossiers et l’équité du roulement. »',
+   distractors:['« Huit pour cent de dossiers en plus signifient huit pour cent de bien-être en plus. »','« Nous pouvons supprimer la permanence du vendredi sans consulter l’accueil. »'],
+   corrections:['Throughput does not measure wellbeing, correction costs or overtime.','Reception explicitly needs Friday coverage and fair negotiation.'],
+   why:'A source-grounded reply acknowledges the reported output gain while naming missing operational and equity evidence.'}
+ ]
+ },
+ {
+ id:'transfer-153',speaker:'Sofia',anchor:'sous réserve du diagnostic final',
+ situation:'Defending a conditional repair-or-replace recommendation under uncertain costs, environmental claims and immediate safety needs',
+ counterview:'A fictional resident claims: « Vingt-cinq pour cent d’électricité en moins prouve que l’achat neuf est toujours le meilleur choix. » This is an invented challenge.',
+ misunderstanding:'A resident treats the provisional repair quote as guaranteed and a standardized efficiency difference as verified annual savings.',
+ register:'Clear, respectful recommendation to an association of residents',
+ objective:'Describe conditional repair costs, distinguish standardized energy claims from observed use and propose safe short-term food storage.',
+ repair:'The €180 quote depends on further diagnosis; the 25 % figure is a standardized comparison, not an absolute environmental result.',
+ structure:'Le devis indique… → toutefois… → en attendant… → si le diagnostic… → sinon…',
+ decisions:[
+  {kind:'fidelity',prompt:'What caveat does Sofia state with the 180-euro repair estimate?',
+   answer:'The initial 180-euro estimate is provisional and depends on the final diagnosis.',
+   distractors:['The technician has guaranteed a fixed all-inclusive price.','The manufacturer has already paid for the repair.'],
+   corrections:['Sofia says the estimate remains subject to final diagnosis.','No manufacturer payment is mentioned in the original dialogue.'],
+   why:'Sofia explicitly qualifies the estimate with « sous réserve du diagnostic final ».'},
+  {kind:'objection',prompt:'A resident insists the 25 % efficiency claim proves a new appliance is always environmentally best. Which response is justified?',
+   answer:'« Le chiffre vient d’un essai standard ; comparons notre usage réel, le coût total et la sécurité avant de décider. »',
+   distractors:['« La consommation réelle de la résidence est déjà connue avec certitude. »','« Nous n’avons pas besoin de conserver les aliments pendant les quinze jours d’attente. »'],
+   corrections:['The dialogue explicitly says actual local consumption is not known.','Residents still need safe storage during the spare-part delay.'],
+   why:'The proposal respects both the unknown usage and immediate safety requirement rather than generalizing one promotional percentage.'}
+ ]
  }
+
 ];
 function normalize(text:string):string{
  return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
