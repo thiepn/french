@@ -56,6 +56,12 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  audioControls.append(speedLabel,turnLabel);
  const supported='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
  let active=false,requestCount=0,usedSlow=false,destroyed=false;
+ // A completed browser TTS callback proves only that the browser reported
+ // completion. It does not establish that speech was audible, in French,
+ // or understood. Only an explicit learner statement can record claimed use.
+ let completedForQuestion:string|null=null;
+ const heardSelfReports=new Set<string>();
+ let transcriptAssisted=false;
  const stop=()=>{
   if(supported&&active){window.speechSynthesis.cancel();active=false;}
  };
@@ -63,7 +69,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   if(!supported||destroyed||opts.signal.aborted||!wrapper.isConnected){
    voiceStatus.textContent='Device French TTS unavailable. Use transcript-led comprehension; no listening success can be inferred.';return;
   }
-  stop();
+  stop();completedForQuestion=null;
+  const questionId=visibleDecisions()[index]?.id??null;
   const synth=window.speechSynthesis;
   const voices=synth.getVoices(),french=voices.find(v=>v.lang.toLowerCase()==='fr-fr')??
    voices.find(v=>v.lang.toLowerCase().startsWith('fr'));
@@ -79,8 +86,17 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    const utterance=new SpeechSynthesisUtterance(lesson.turns[index].fr);
    utterance.lang='fr-FR';utterance.rate=rate;if(french)utterance.voice=french;
    if(i===valid.length-1){
-    utterance.onend=()=>{active=false;if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS sequence ended. Audio quality and audibility were not measured.';};
-    utterance.onerror=()=>{active=false;if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS encountered an error. Use the original transcript.';};
+    utterance.onend=()=>{
+     active=false;
+     if(!destroyed&&wrapper.isConnected){
+      if(questionId&&visibleDecisions()[index]?.id===questionId)
+       completedForQuestion=questionId;
+      voiceStatus.textContent='Browser reported TTS sequence ended. No claim of audibility or French speech quality; confirm what you actually heard.';
+      draw();
+     }
+    };
+    utterance.onerror=()=>{active=false;completedForQuestion=null;
+     if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS encountered an error. Use the original transcript.';};
    }
    try{synth.speak(utterance);}catch{
     active=false;voiceStatus.textContent='TTS could not start. Use transcript-led practice.';
@@ -108,11 +124,11 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  let supportLevel=0;
  const supportState=el('p','Support: transcript hidden.','u30-support-state');
  const showTurn=action('Reveal question evidence',()=>{
-  supportLevel=Math.max(supportLevel,1);updateExcerpt();excerpt.hidden=false;
+  supportLevel=Math.max(supportLevel,1);transcriptAssisted=true;updateExcerpt();excerpt.hidden=false;
   supportState.textContent='Support: one original French turn revealed.';
  });
  const showAll=action('Reveal full attributed transcript',()=>{
-  supportLevel=Math.max(supportLevel,2);
+  supportLevel=Math.max(supportLevel,2);transcriptAssisted=true;
   transcript.hidden=!transcript.hidden;
   showAll.textContent=transcript.hidden?'Reveal full attributed transcript':'Hide full attributed transcript';
   showAll.setAttribute('aria-expanded',String(!transcript.hidden));
@@ -120,7 +136,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  });
  showAll.setAttribute('aria-expanded','false');
  const showEnglish=action('Reveal original English explanations',()=>{
-  supportLevel=Math.max(supportLevel,3);english.hidden=!english.hidden;
+  supportLevel=Math.max(supportLevel,3);transcriptAssisted=true;english.hidden=!english.hidden;
   showEnglish.textContent=english.hidden?'Reveal original English explanations':'Hide English explanations';
   showEnglish.setAttribute('aria-expanded',String(!english.hidden));
   supportState.textContent='Support: original English explanations have been revealed.';
@@ -176,7 +192,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   el('p','Speaking preparation and written summary are ungraded visits. Practice history, native due reviews, FSRS and CEFR estimates remain unchanged.','u30-note'));
  content.append(title,notice,provenance,speakers,audio,tabs,progress,questionHost,navigation,written,transfer);
  let index=0,category:U30Kind|null=null;
- const responses=new Map<string,{correct:boolean;chosen:string;support:number;ttsRequested:boolean}>();
+ const responses=new Map<string,{correct:boolean;chosen:string;support:number;ttsRequested:boolean;
+  heardSelfReported:boolean;transcriptAssisted:boolean}>();
  const visibleDecisions=()=>category?decisions.filter(d=>d.kind===category):decisions;
  function updateExcerpt(){
   const d=visibleDecisions()[index],turn=d?.turnIndex;
@@ -226,31 +243,58 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   d.options.forEach(value=>{const option=el('option',value);option.value=value;picker.append(option);});
   selectLabel.append(picker);
   const hint=el('p',d.hint,'u30-hint');hint.hidden=true;
-  const hintButton=action('Show listening hint',()=>{hint.hidden=false;supportLevel=Math.max(supportLevel,1);});
+  const hintButton=action('Show listening hint',()=>{
+   hint.hidden=false;supportLevel=Math.max(supportLevel,1);transcriptAssisted=true;
+  });
+  const evidenceState=el('p','','u30-evidence-mode');evidenceState.setAttribute('role','status');
+  const confirmHearing=action('I heard the device audio for this question (self-report)',()=>{
+   if(completedForQuestion!==d.id)return;
+   heardSelfReports.add(d.id);
+   evidenceState.textContent='Self-reported audio listening after browser TTS completion; audibility, language quality and comprehension remain unverified.';
+  });
+  confirmHearing.disabled=completedForQuestion!==d.id;
+  evidenceState.textContent=heardSelfReports.has(d.id)?
+   'You reported hearing synthesized audio for this question; no independent audio verification.':
+   completedForQuestion===d.id?
+    'Browser playback ended. Confirm hearing only if you actually heard the French output; otherwise use the transcript.':
+    'Audio has not been confirmed for this question. Written/transcript practice is available.';
+  const transcriptOnly=action('Use written/transcript practice instead',()=>{
+   transcriptAssisted=true;heardSelfReports.delete(d.id);
+   completedForQuestion=null;confirmHearing.disabled=true;
+   evidenceState.textContent='Written/transcript-led practice selected; no hearing or pronunciation claim.';
+  });
   const feedback=el('p','','u30-feedback');feedback.setAttribute('role','status');
   const submit=el('button','Check against authored key','primary-action compact-action');submit.type='submit';
   if(prior){
    picker.value=prior.chosen;feedback.textContent=(prior.correct?'Supported. ':'Needs correction. ')+evaluateU30Answer(d,prior.chosen).feedback+
-    ' Earlier support level: '+prior.support+'.'+(prior.ttsRequested?' TTS was requested, not verified.':' Text-only attempt.');
+    ' Earlier support level: '+prior.support+'.'+
+    (prior.heardSelfReported?' Learner reported hearing synthetic output; no recording or audibility verification.':
+     prior.ttsRequested?' TTS requested but hearing not confirmed.':' No TTS requested.')+
+    (prior.transcriptAssisted?' Written or hint support was exposed.':'');
   }
   form.addEventListener('submit',event=>{
    event.preventDefault();
    if(!picker.value){feedback.textContent='Choose an answer before checking.';return;}
    const checked=evaluateU30Answer(d,picker.value);
    responses.set(d.id,{chosen:picker.value,correct:checked.correct,support:supportLevel,
-    ttsRequested:requestCount>0});
+    ttsRequested:requestCount>0,heardSelfReported:heardSelfReports.has(d.id),
+    transcriptAssisted});
    feedback.textContent=(checked.correct?'Supported. ':'Needs correction. ')+checked.feedback+
-    (requestCount?' TTS was requested; audio reception is unverified.':' No TTS requested: this was text-based comprehension.');
+    (heardSelfReports.has(d.id)?
+      ' Learner reported hearing the synthetic audio; actual audibility is unverified.':
+      requestCount?' TTS was requested, but hearing was not confirmed.':
+      ' No audio claim: text-led comprehension.')+
+    (transcriptAssisted?' Written support/hints were exposed.':'');
    progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' decisions attempted locally; no Practice event recorded.';
   });
-  form.append(selectLabel,submit,hintButton,hint,feedback);
+  form.append(selectLabel,confirmHearing,transcriptOnly,evidenceState,submit,hintButton,hint,feedback);
   questionHost.append(form);
   const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw(true);});
   const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw(true);});
   prev.disabled=index===0;next.disabled=index===pool.length-1;
   navigation.append(prev,next);
   const key=action('Show correct source and explanation',()=>{
-   excerpt.hidden=false;updateExcerpt();supportLevel=Math.max(supportLevel,2);
+   excerpt.hidden=false;updateExcerpt();supportLevel=Math.max(supportLevel,2);transcriptAssisted=true;
    const note=el('p','Correct authored answer: '+d.answer+'. '+d.explanation,'u30-feedback');
    questionHost.append(note);
   });
