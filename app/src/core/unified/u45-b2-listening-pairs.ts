@@ -49,7 +49,7 @@ export const ORIGINAL_B2_LISTENING_PAIRS:readonly B2ListeningPair[]=Object.freez
   corrections:['Aïcha expressly names missing overtime and correction information.','The first claim reports a positive count change, not a zero volume.'],
   explanation:'Throughput is one reported quantity; the second speaker identifies potentially costly quality and labor dimensions that are not established by it.',
   oralPrompt:'Présentez les résultats de l’essai au comité en distinguant les dossiers traités, la qualité et les heures supplémentaires.',
-  oralCriteria:['Attribuez la hausse de 8 % à Thomas.','N’affirmez pas que les corrections et les heures supplémentaires sont connues.','Proposez des mesures complémentaires vérifiables.'],
+  oralCriteria:['Attribuez la hausse de 8 % à Thomas, et non à Aïcha.','N’affirmez pas que les corrections et les heures supplémentaires sont connues.','Proposez des mesures complémentaires vérifiables.'],
   hint:'Hear Thomas’s positive figure and Aïcha’s double exclusion « ni… ni… ».'
  },
  {
@@ -88,7 +88,7 @@ export const ORIGINAL_B2_LISTENING_PAIRS:readonly B2ListeningPair[]=Object.freez
   corrections:['Clara explicitly says safe food storage is needed now; a temporary loan addresses the gap.','The repair quote remains conditional, and Amine suggests borrowing before deciding in haste.'],
   explanation:'The speakers combine a present safety constraint with a provisional response that preserves future decision options.',
   oralPrompt:'Défendez une solution provisoire qui protège les aliments et laisse la décision finale ouverte pendant les quinze jours.',
-  oralCriteria:['Mentionnez le délai de la pièce détachée.','Expliquez le besoin immédiat de conservation sûre.','Proposez le prêt temporaire sans garantir la réparation.'],
+  oralCriteria:['Mentionnez le délai de quinze jours de la pièce détachée.','Expliquez le besoin immédiat de conservation sûre.','Proposez le prêt temporaire sans garantir la réparation.'],
   hint:'Connect Clara’s « maintenant » with Amine’s « provisoire » and « plutôt que ».'
  }
 ]);
