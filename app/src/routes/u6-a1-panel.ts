@@ -5,10 +5,11 @@ import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
 import {readOriginalCourseStudy,setOriginalCourseStudied,type StudyReview} from '../core/unified/u41-course-study';
 import {loadU42OriginalFrenchCourse,suggestedU42OriginalUnit,u42PracticeStatus} from '../core/unified/u42-course';
 import {
- browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
+ browseOriginalMaterials,getOriginalUnit,getOriginalMaterial,getOriginalCatalogEntry,handoffOriginalLesson,
  neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
 } from '../core/unified/u23-registry';
 import {u42ProductionChoices} from '../core/unified/u42-material';
+import {b2WritingLengthReview,type B2WritingMode} from '../core/unified/u43-b2-writing-support';
 import {ORIGINAL_PATHWAYS,originalPathSectionFor,originalNextActions} from '../core/unified/u25-pathways.ts';
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
@@ -810,6 +811,42 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const heading=el('h4','Independent writing');
    const prompt=el('p',chosen().prompt,'u14-production-prompt');
    const items=el('ul',undefined,'u6-write-criteria');
+   const sourceBox=el('div',undefined,'u43-original-writing-sources');
+   const wordProgress=el('p',undefined,'u43-writing-word-count');
+   wordProgress.setAttribute('role','status');
+   const sources=getOriginalMaterial(unit.id)?.evidence?.sources??[];
+   let showCurrentSources=()=>{};
+   const updateSourceContext=()=>{
+    sourceBox.replaceChildren();
+    if(!variants||!sources.length)return;
+    if(mode==='fromListening'){
+     sourceBox.append(el('p','For a listening-based response, listen to the original French dialogue in stage 4 before drafting. Written source documents are not audio evidence.','u6-small'));
+     showCurrentSources=()=>open(unit.id,'listen');
+     return;
+    }
+    const details=el('details',undefined,'u43-source-details');
+    details.open=mode==='fromSources';
+    details.append(el('summary',mode==='fromSources'?
+     'Two original documents for source comparison':'Optional original documents for your argument'));
+    details.append(el('p','Fictional, source-attributed French texts. Compare their claims and limitations yourself; a visible source does not establish that your writing cites it correctly.','u6-small'));
+    sources.forEach((source,index)=>{
+     const document=el('article',undefined,'u43-original-source-document');
+     document.append(el('h5','Document '+(index+1)+' · '+source.label+' ('+source.type+')'));
+     const text=el('p',source.french);text.lang='fr';document.append(text);
+     details.append(document);
+    });
+    sourceBox.append(details);
+    showCurrentSources=()=>{
+     details.open=true;
+     details.scrollIntoView({block:'nearest'});
+    };
+   };
+   const updateLength=()=>{
+    if(!variants){wordProgress.textContent='';return;}
+    const note=b2WritingLengthReview(unit.id,mode,editor.value);
+    wordProgress.textContent=note.message+
+     ' Word count checks length only, not grammar, meaning, evidence or CEFR.';
+   };
    const editor=el('textarea');editor.rows=8;editor.lang='fr';editor.maxLength=3500;
    editor.setAttribute('aria-label','Independent original French writing response');
    const result=el('p','Your text remains in memory only until this Course view closes.','u6-small');
@@ -829,7 +866,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     model.textContent=choice.model;model.hidden=true;
     compare.textContent='Reveal original sample answer';compare.setAttribute('aria-expanded','false');
     result.textContent='Your text stays in this Course page memory only. The selected task is not graded or uploaded.';
-    onWritingModeChanged();
+    updateSourceContext();updateLength();onWritingModeChanged();
    };
    if(variants){
     const options=el('div',undefined,'u14-writing-mode');
@@ -845,22 +882,21 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      updatePrompt();
     });
     label.append(select);
-    const revisit=button('Review supporting sources',()=>{
-     open(unit.id,mode==='fromListening'?'listen':'dialogue');
-    });
+    const revisit=button('Review supporting sources',()=>showCurrentSources());
     options.append(label,el('p','Choose original source synthesis, dialogue-to-writing, or—where available—an independent argument with an explicit counterpoint. Each has a distinct prompt, rubric and model; no proficiency is automatically graded.','u6-small'),revisit);
     container.append(options);
    }
-   editor.addEventListener('input',()=>drafts.set(draftKey(),editor.value));
+   editor.addEventListener('input',()=>{drafts.set(draftKey(),editor.value);updateLength();});
    const check=button('Check structure (not grammar grading)',()=>{
-    result.textContent=inspectDraftStructure(editor.value).join(' ')+
+    const length=variants?b2WritingLengthReview(unit.id,mode,editor.value):null;
+    result.textContent=(length?length.message+' ':'')+inspectDraftStructure(editor.value).join(' ')+
      ' Meaning, grammar and source fidelity require your own comparison; no automatic grade is awarded.';
    });
    const clear=button('Clear selected writing draft',()=>{
-    editor.value='';drafts.delete(draftKey());
+    editor.value='';drafts.delete(draftKey());updateLength();
     result.textContent='Only the currently selected temporary draft was cleared. No account data changed.';
    });
-   container.append(heading,prompt,items,editor,check,compare,clear,result,model,
+   container.append(heading,prompt,items,sourceBox,wordProgress,editor,check,compare,clear,result,model,
     el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
    const revisionPrompts=U42_REVISION_GUIDES[unit.id]??U22_REVISION_GUIDES[unit.id]??U21_REVISION_GUIDES[unit.id]??U20_REVISION_GUIDES[unit.id];
    if(revisionPrompts){
