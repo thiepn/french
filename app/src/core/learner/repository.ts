@@ -1139,6 +1139,45 @@ export async function compareAndSetOriginalCourseCheckpoint(
 
 
 /**
+ * Explicit Course self-study markers live in the canonical learner featureState
+ * transaction, never in a shadow progress store. Compare against the user's
+ * last reviewed token so another tab or Account replacement cannot be silently
+ * overwritten. This does NOT change scheduled reviews or CEFR authority.
+ */
+export async function compareAndSetOriginalCourseStudy(
+ expectedToken:string|null,nextValue:unknown
+):Promise<'saved'|'conflict'>{
+ await ensureCanonicalLearnerState();
+ const db=await openFrenchDatabase();
+ const key='vU41OriginalCourseStudy';
+ try{
+  return await new Promise<'saved'|'conflict'>((resolve,reject)=>{
+   const tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner');
+   let outcome:'saved'|'conflict'='conflict';
+   const get=store.get('state-v1');
+   get.onsuccess=()=>{
+    const learner=get.result as CanonicalLearnerStateV1|undefined;
+    if(!learner)return;
+    const previous=learner.featureState?.[key];
+    const token=previous==null?null:
+     typeof previous==='object'&&!Array.isArray(previous)&&
+     typeof (previous as Record<string,unknown>).token==='string'?
+      (previous as Record<string,string>).token:'invalid';
+    if(token!==expectedToken)return;
+    store.put({...learner,featureState:{...learner.featureState,[key]:nextValue}}
+     satisfies CanonicalLearnerStateV1,'state-v1');
+    outcome='saved';
+   };
+   get.onerror=()=>reject(get.error??Error('Could not read course study markers.'));
+   tx.oncomplete=()=>resolve(outcome);
+   tx.onerror=()=>reject(tx.error??Error('Could not save course study markers.'));
+   tx.onabort=()=>reject(tx.error??Error('Course study-marker save aborted.'));
+  });
+ }finally{db.close();}
+}
+
+
+/**
  * U65 B2 original learner-row CAS. The receipt is sanitized by the B2
  * evaluator before this write; no secondary store, profile, grade, event
  * or SRS mutation is permitted. A stale tab cannot overwrite newer evidence.
