@@ -21,7 +21,9 @@ const TARGETS:Readonly<Record<string,Readonly<Record<B2WritingMode,TargetRange|n
  'transfer-158':Object.freeze({fromListening:{min:170,max:230},fromSources:{min:180,max:240},fromDebate:{min:190,max:250}}),
  'transfer-159':Object.freeze({fromListening:{min:170,max:230},fromSources:{min:190,max:250},fromDebate:{min:200,max:260}}),
  'transfer-160':Object.freeze({fromListening:{min:180,max:230},fromSources:{min:190,max:250},fromDebate:{min:210,max:260}}),
- 'transfer-161':Object.freeze({fromListening:{min:180,max:230},fromSources:{min:190,max:250},fromDebate:{min:210,max:270}})
+ 'transfer-161':Object.freeze({fromListening:{min:180,max:230},fromSources:{min:190,max:250},fromDebate:{min:210,max:270}}),
+ 'transfer-162':Object.freeze({fromListening:{min:190,max:240},fromSources:{min:200,max:260},fromDebate:{min:220,max:280}}),
+ 'transfer-163':Object.freeze({fromListening:{min:190,max:240},fromSources:{min:200,max:260},fromDebate:{min:220,max:280}})
 });
 export function b2WritingTarget(id:string,mode:B2WritingMode):TargetRange|null{
  return TARGETS[id]?.[mode]??null;
