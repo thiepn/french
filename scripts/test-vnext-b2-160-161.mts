@@ -106,7 +106,7 @@ assert.ok(first.unit.dialogue.some(x=>x.fr.includes('je me suis sentie mise à l
 assert.ok(first.unit.dialogue.some(x=>x.fr.includes('je préfère ne pas en détailler')));
 assert.ok(first.reading.french.includes('Nour'));
 assert.ok(first.evidence[0].french.includes('non envoyé'));
-assert.ok(first.evidence[1].french.includes('vie privée'));
+assert.ok(first.evidence[1].french.includes('sans devoir exposer les raisons'));
 assert.ok(second.unit.dialogue.some(x=>x.fr.includes('Si j’avais demandé')));
 assert.ok(second.unit.dialogue.some(x=>x.fr.includes('Je suis d’accord pour cette tâche')));
 assert.ok(second.evidence[1].french.includes('ne peuvent pas être partagées'));
