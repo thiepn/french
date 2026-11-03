@@ -17,7 +17,7 @@ for(const item of cases){
   await expect(page.locator('[data-u6-stage="understand"]')).toBeVisible({timeout:45000});
   await expect(page.locator('.u6-unit-header h3')).toContainText(item.title);
   await page.locator('.course-directory-trigger').click();
-  await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(73);
+  await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(75);
   await page.keyboard.press('Escape');
   await page.locator('.u6-stage-nav').getByRole('button',{name:'2. Vocabulary'}).click();
   await expect(page.locator('.u6-stage-body')).toContainText(item.lexeme);
