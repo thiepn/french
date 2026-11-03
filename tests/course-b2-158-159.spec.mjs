@@ -1,10 +1,10 @@
 import {test,expect} from '@playwright/test';
 
 const cases=[
- {id:'transfer-158',title:'La carte officielle et le terrain',reading:'Quand un document récent',first:'transport-operator',second:'field observation',
+ {id:'transfer-158',title:'La carte officielle et le terrain',reading:'Quand un document récent',first:'transport-operator',second:'field observation',lexeme:'un plan actualisé',
   listening:'170–230',source:'180–240',debate:'190–250',anchor:'des barrières bloquaient cette rampe',
   wrong:'The route operator formally cancelled T7 permanently.',feedback:'not a transit-service cancellation',speaker:'Élodie'},
- {id:'transfer-159',title:'Corriger sa propre rectification',reading:'Une rectification responsable',first:'operational update',second:'independent step-free',
+ {id:'transfer-159',title:'Corriger sa propre rectification',reading:'Une rectification responsable',first:'operational update',second:'independent step-free',lexeme:'un correctif daté',
   listening:'170–230',source:'190–250',debate:'200–260',anchor:'je conserve l’heure',wrong:'Delete the Thursday observation and tell readers the original evidence was fabricated.',
   feedback:'preserves the timestamp',speaker:'Malik'}
 ];
@@ -17,7 +17,7 @@ for(const item of cases){
   await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(69);
   await page.keyboard.press('Escape');
   await page.locator('.u6-stage-nav').getByRole('button',{name:'2. Words'}).click();
-  await expect(page.locator('.u6-stage-body')).toContainText('source');
+  await expect(page.locator('.u6-stage-body')).toContainText(item.lexeme);
   await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
   await expect(page.locator('.u6-dialogue-turn')).toHaveCount(9);
   await page.locator('.u6-stage-nav').getByRole('button',{name:'5. Recall'}).click();
@@ -32,7 +32,7 @@ for(const item of cases){
   const panel=page.locator('.u22-source-panel');
   await expect(panel).toBeVisible({timeout:30000});
   await expect(panel.locator('.u22-source-paragraph')).toHaveCount(3);
-  await expect(panel.locator('h3')).toContainText(item.reading);
+  await expect(panel.locator('h3').filter({hasText:item.reading}).first()).toBeVisible();
   await expect(panel.locator('.u22-source-document')).toHaveCount(2);
   await expect(panel.locator('.u22-source-document').first()).toContainText(item.first);
   await expect(panel.locator('.u22-source-document').last()).toContainText(item.second);
