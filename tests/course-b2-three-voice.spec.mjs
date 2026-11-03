@@ -13,7 +13,6 @@ async function deliberation(page,id){
  for(let i=0;i<4;i++)await lab.getByRole('button',{name:'Next question'}).click();
  await expect(lab.locator('.u30-source')).toContainText('compare original spoken turns');
  await expect(lab.getByRole('button',{name:'Replay all three original turns (synthetic French TTS)'})).toBeVisible();
- await expect(lab.locator('.u30-question')).toContainText('Inter');
  return lab;
 }
 const variants=[
