@@ -19,11 +19,11 @@ import {U42_REVISION_GUIDES} from '../app/src/core/unified/u42-revision-guides.t
 
 assert.deepEqual(validateU42Course(),[],'Entire original Course source contract');
 assert.deepEqual(validateU31SourceAnchors(),[],'Original French U31 anchors');
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,257);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,205);
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,257);
-assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:257,connectedReadings:205});
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(x=>x.qualifiedId)).size,257);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207);
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,259);
+assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:259,connectedReadings:207});
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(x=>x.qualifiedId)).size,259);
 const historicalLessons=[...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(x=>x.unit),
  ...U46_B2_SEQUENCE.map(x=>x.unit),...U49_B2_EXTENSION.map(x=>x.unit),...U50_B2_SEQUENCE.map(x=>x.unit)];
 const historicalReadings=[...ORIGINAL_U22_CONNECTED_READINGS,...U42_B2_CASES.map(x=>x.reading),
@@ -36,7 +36,7 @@ for(let i=0;i<201;i++)assert.equal(ORIGINAL_U42_CONNECTED_READINGS[i],historical
  'Historical 201 original reading object changed at '+i);
 assert.deepEqual(U51_B2_INTERPERSONAL.map(s=>s.unit.id),['transfer-160','transfer-161']);
 const nav=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
-assert.equal(nav.find(x=>x.level==='B2')?.lessons.length,73);
+assert.equal(nav.find(x=>x.level==='B2')?.lessons.length,75);
 assert.equal(ORIGINAL_FRENCH_U42_COURSE[252].id,'transfer-159');
 assert.equal(ORIGINAL_U42_CONNECTED_READINGS[200].unitId,'transfer-159');
 for(const [i,story] of U51_B2_INTERPERSONAL.entries()){
