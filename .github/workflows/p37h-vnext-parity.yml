@@ -44,6 +44,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-library-synthesis.mts
       - name: Verify original three-voice B2 source and speaking contracts
         run: node --experimental-strip-types scripts/test-vnext-b2-deliberation.mts
+      - name: Verify 151–153 original branching French negotiation and oral evidence boundaries
+        run: node --experimental-strip-types scripts/test-vnext-b2-negotiation.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
