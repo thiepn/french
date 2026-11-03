@@ -30,5 +30,10 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Use both previous lessons to distinguish entries, survey respondents, missing users and competing consultation needs.',
   'State each pre-launch condition and separate the three-week interim review from the six-week final review.',
   'Name a specific indicator and a suspension rule; do not turn conditional authorization into proof of success.'
+ ]),
+ 'transfer-157':Object.freeze([
+  'Compare the undated, truncated screenshot with the dated municipal notice; identify the exact claim that the notice contradicts and the part still unresolved.',
+  'Rewrite any sentence that treats 62 % of social-media respondents as the opinion of all route users or as proof of a transit decision.',
+  'Construct a dated public correction in French: refute the permanent-cancellation headline, explain the conditional weekend detour, retain the accessibility question, and state what you will verify before an update.'
  ])
 });
