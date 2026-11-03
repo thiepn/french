@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
 import {
- ORIGINAL_FRENCH_U42_COURSE,U42_B2_CASES,U46_B2_SEQUENCE,U49_B2_EXTENSION,U50_B2_SEQUENCE,U51_B2_INTERPERSONAL,U52_B2_PROFESSIONAL,validateU42Course
+ ORIGINAL_FRENCH_U42_COURSE,U42_B2_CASES,U46_B2_SEQUENCE,U49_B2_EXTENSION,U50_B2_SEQUENCE,U51_B2_INTERPERSONAL,U52_B2_PROFESSIONAL,U53_B2_NARRATIVE,validateU42Course
 } from '../app/src/core/unified/u42-course.ts';
 import {
  ORIGINAL_U42_CONNECTED_READINGS,u42OriginalEvidence,
@@ -18,7 +18,7 @@ assert.deepEqual(validateU42Course(),[],'New B2 lesson authoring and source guar
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,247),U42_B2_CASES.map(s=>s.unit),
  'Prior 247 original IDs and lesson objects remain unchanged');
 assert.deepEqual(U46_B2_SEQUENCE.map(s=>s.unit.id),['transfer-154','transfer-155','transfer-156']);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207,'Historical 203 plus new original 162–163 professional readings');
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207,'Historical 205 plus new original 164–165 narrative readings');
 assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,259);
 assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,259);
 const levels=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
@@ -28,19 +28,20 @@ assert.deepEqual(U49_B2_EXTENSION.map(s=>s.unit.id),['transfer-157']);
 assert.deepEqual(U50_B2_SEQUENCE.map(s=>s.unit.id),['transfer-158','transfer-159']);
 assert.deepEqual(U51_B2_INTERPERSONAL.map(s=>s.unit.id),['transfer-160','transfer-161']);
 assert.deepEqual(U52_B2_PROFESSIONAL.map(s=>s.unit.id),['transfer-162','transfer-163']);
+assert.deepEqual(U53_B2_NARRATIVE.map(s=>s.unit.id),['transfer-164','transfer-165']);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(251,253),U50_B2_SEQUENCE.map(s=>s.unit),'Past 158–159 source lessons preserved');
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,251).map(s=>s.id),[...U42_B2_CASES,...U46_B2_SEQUENCE,...U49_B2_EXTENSION].map(s=>s.unit.id),'The historical seven advanced original sources stay in their positions');
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,250).map(s=>s.id),[...U42_B2_CASES,...U46_B2_SEQUENCE].map(s=>s.unit.id),
  'All six original 151–156 source objects stay in their historical positions');
 assert.equal(ORIGINAL_U42_CONNECTED_READINGS[198].unitId,'transfer-157');
-for(let n=151;n<=163;n++){
+for(let n=151;n<=165;n++){
  const id='transfer-'+n,lesson=getOriginalMaterial(id),entry=getOriginalCatalogEntry(id);
  assert.ok(lesson&&entry,'New B2 source unavailable '+id);
  assert.equal(entry.level,'Early B2');
  assert.equal(entry.id,id);
  assert.equal(lesson.unit.order,n+94);
  assert.equal(lesson.unit.source.rights,'original-owned');
- assert.equal(lesson.unit.source.localId,(n<=153?'u42-':n<=156?'u46-':n===157?'u49-':n<=159?'u50-':n<=161?'u51-':'u52-')+id);
+ assert.equal(lesson.unit.source.localId,(n<=153?'u42-':n<=156?'u46-':n===157?'u49-':n<=159?'u50-':n<=161?'u51-':n<=163?'u52-':'u53-')+id);
  assert.equal(lesson.unit.prerequisites.join(),'transfer-'+(n-1));
  assert.equal(lesson.unit.vocabulary.length,12);
  assert.equal(lesson.unit.dialogue.length,9);
