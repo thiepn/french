@@ -488,6 +488,56 @@ const AUTHORED:readonly AuthoredJourney[]=[
     why:'The corrected statement preserves chronology, the confirmed physical improvement and the unresolved inclusive-access constraints.'}
   ]
  }
+ ,
+ {
+  id:'transfer-160',speaker:'Camille',anchor:'je me suis sentie mise à l’écart',
+  situation:'Explain a missed shared event and emotional injury without assigning unverified personal motives',
+  counterview:'A fictional friend argues that expressing hurt necessarily requires accusing Samir of deliberate cruelty or demanding all his private reasons.',
+  misunderstanding:'A listener treats Camille’s first-person feeling as proof of Samir’s intention and mistakes her unsent draft for a message Samir received.',
+  register:'Respectful French first-person vulnerability with specific requests, interpersonal boundaries and no forced forgiveness',
+  objective:'Distinguish what happened, what was inferred and what was felt; acknowledge harm without demanding an intimate explanation.',
+  repair:'Camille felt excluded when she welcomed guests alone; she cannot know whether Samir intended to reject her, and she can request a brief future notice while respecting his privacy.',
+  structure:'Quand je suis arrivée… → je me suis sentie… → je ne sais pas pourquoi… → j’aurais aimé que tu…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'What exactly can Camille claim without pretending to know Samir’s motives?',
+    answer:'She arrived alone, felt excluded and can request an advance message; this does not prove he intended to hurt her.',
+    distractors:['Her painful feeling proves that Samir deliberately wanted her to suffer.','The unsent accusation proves Samir read and agreed with her interpretation.'],
+    corrections:['Camille explicitly says her feeling does not establish that Samir intended to avoid her; she knows the impact, not his hidden motives.','The original account says she drafted but did not send the accusation; private writing cannot be treated as received correspondence.'],
+    why:'The exact original turn distinguishes emotional impact from inferred intention while making a practical request possible.'},
+   {kind:'objection',
+    prompt:'How should a friend express hurt while respecting Samir’s right not to disclose private circumstances?',
+    answer:'« Je me suis sentie seule et j’aurais aimé que tu me préviennes; tu n’es pas obligé de raconter ta situation personnelle. »',
+    distractors:['« Si tu ne racontes pas tous tes problèmes, je sais que tu me méprises. »','« Puisque tu avais besoin de recul, mon sentiment n’a aucune importance. »'],
+    corrections:['Demanding intimate details assigns motives and violates a clearly stated boundary; neither friendship nor a missed event authorizes forced disclosure.','The private boundary does not erase Camille’s experienced hurt or the useful request for practical advance notice.'],
+    why:'The original conversation combines a first-person impact statement with a bounded request, leaving both people autonomous.'}
+  ]
+ },
+ {
+  id:'transfer-161',speaker:'Samir',anchor:'Je suis d’accord pour cette tâche',
+  situation:'Retell a past misunderstanding with genuine counterfactual regret and propose strictly limited voluntary cooperation',
+  counterview:'A fictional visitor insists that agreeing to a Thursday proofreading task proves full forgiveness and permission to publish everyone’s personal reasons.',
+  misunderstanding:'A listener confuses a limited agreement to proofread photo captions with restored trust, unconditional attendance and consent to share private conversation.',
+  register:'Nuanced B2 retrospective narrative and careful interpersonal agreement respecting free consent',
+  objective:'Use counterfactual past without blame, identify exactly what was agreed, protect privacy and leave later contact voluntary.',
+  repair:'Samir offers Thursday proofreading only, Camille arranges a confirmed alternative for welcoming guests, and their private conversation and future trust remain outside the agreement.',
+  structure:'Si j’avais… j’aurais peut-être… → aujourd’hui, je peux… → je préfère ne pas… → nous pourrons faire le point si…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'What is Samir’s explicit agreement at the end of the conversation?',
+    answer:'He agrees to the specific proofreading task and asks that their personal conversation and his reasons remain private.',
+    distractors:['He guarantees he will attend all future exhibition openings.','He authorizes Camille to publish every personal detail from their exchange.'],
+    corrections:['Samir says he cannot promise attendance; the agreed task is limited to sending photo-caption corrections by Thursday.','Samir explicitly requests confidentiality and does not grant permission to publish the reasons for his earlier absence.'],
+    why:'The original French dialogue names a narrow accepted task and an independent privacy boundary.'},
+   {kind:'objection',
+    prompt:'How should a narrator answer someone who treats the limited task as proof that all trust has returned?',
+    answer:'« Même s’ils ont accepté une relecture avant jeudi, ils n’ont pas déclaré leur confiance rétablie ni autorisé la diffusion de détails privés. »',
+    distractors:['« Un seul accord pratique oblige les amis à se pardonner entièrement. »','« Puisque Samir ne révèle pas ses raisons, leur accord de relecture est impossible. »'],
+    corrections:['The original Nour turn rejects the inference of fully restored trust; optional cooperation is not forced intimacy or complete forgiveness.','The task is explicitly accepted without requiring disclosure of reasons; a personal limit does not make all cooperation impossible.'],
+    why:'The accepted scope and future optional review are the only warranted conclusions; interpersonal repair is not a scored outcome.'}
+  ]
+ }
+
 ];
 function normalize(text:string):string{
  return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
