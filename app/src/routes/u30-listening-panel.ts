@@ -91,8 +91,8 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   const valid=indices.filter(i=>i>=0&&i<lesson.turns.length);
   if(!valid.length){active=false;return;}
   if(questionId)requestedByQuestion.add(questionId);
-  valid.forEach((index,i)=>{
-   const utterance=new SpeechSynthesisUtterance(lesson.turns[index].fr);
+  valid.forEach((turnIndex,i)=>{
+   const utterance=new SpeechSynthesisUtterance(lesson.turns[turnIndex].fr);
    utterance.lang='fr-FR';utterance.rate=rate;if(french)utterance.voice=french;
    if(i===valid.length-1){
     utterance.onend=()=>{
