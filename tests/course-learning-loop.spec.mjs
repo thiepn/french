@@ -101,7 +101,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const before=await nativeCounts(page);
  expect(await studyMarkers(page)).toBeNull();
  await marker.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(marker).toContainText('1/250 lessons you marked studied');
+ await expect(marker).toContainText('1/251 lessons you marked studied');
  await expect(marker.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  const state=await studyMarkers(page);
  expect(state.schema).toBe('original-course-studied-v1');
@@ -116,7 +116,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const again=page.getByRole('region',{name:'Your lesson study marker'});
  await expect(again.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  await again.getByRole('button',{name:'Remove studied marker'}).click();
- await expect(again).toContainText('0/250 lessons you marked studied');
+ await expect(again).toContainText('0/251 lessons you marked studied');
  expect((await studyMarkers(page)).studied).toHaveLength(0);
  expect(await nativeCounts(page)).toEqual(before);
 });
@@ -127,7 +127,7 @@ test('Two tabs cannot overwrite a newer explicit studied marker without refreshi
  const second=await openWriting(secondPage);
  await expect(second.getByRole('button',{name:'Mark this lesson studied'})).toBeVisible();
  await first.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(first).toContainText('1/250 lessons you marked studied');
+ await expect(first).toContainText('1/251 lessons you marked studied');
  await second.getByRole('button',{name:'Mark this lesson studied'}).click();
  await expect(second).toContainText('Another tab or account update changed your markers');
  await expect(second.getByRole('button',{name:'Refresh studied-marker review'})).toBeVisible();
