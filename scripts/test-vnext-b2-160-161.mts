@@ -111,5 +111,6 @@ assert.ok(second.unit.dialogue.some(x=>x.fr.includes('Si j’avais demandé')));
 assert.ok(second.unit.dialogue.some(x=>x.fr.includes('Je suis d’accord pour cette tâche')));
 assert.ok(second.evidence[1].french.includes('ne peuvent pas être partagées'));
 assert.ok(second.reading.french.includes('Nour'));
-assert.ok(second.writingChoices.fromDebate.prompt.includes('confidential')===false);
+assert.ok(second.writingChoices.fromDebate.prompt.includes('free consent'));
+assert.ok(second.writingChoices.fromDebate.prompt.includes('counterfactual regret'));
 console.log('Original interpersonal B2 160–161 PASS: historical 253 lessons and 201 readings preserved; 2 substantive French narratives, 4 private/consent-bounded texts, 18 original dialogue turns, 12 source-specific listening questions, 6 long independent French writing tasks and 2 original curated seven-stage oral continuations, no fabricated recording or CEFR claim.');
