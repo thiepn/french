@@ -10,7 +10,7 @@ import {
 import {ORIGINAL_REGISTRY_ENTRIES,getOriginalMaterial,getOriginalCatalogEntry} from '../app/src/core/unified/u23-registry.ts';
 import {CUR02_LEVELS,buildFrenchCourseNavigation,parseFrenchCourseLocation} from '../app/src/core/unified/cur02-level-nav.ts';
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244,'244 existing authored lesson identities remain intact');
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,261);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE,
  'Original historical teaching material must not be modified');
 assert.deepEqual(U42_B2_CASES.map(s=>s.unit.id),['transfer-151','transfer-152','transfer-153']);
@@ -18,12 +18,12 @@ assert.deepEqual(validateU42Course(),[],'New B2 lesson authoring and source guar
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,247),U42_B2_CASES.map(s=>s.unit),
  'Prior 247 original IDs and lesson objects remain unchanged');
 assert.deepEqual(U46_B2_SEQUENCE.map(s=>s.unit.id),['transfer-154','transfer-155','transfer-156']);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207,'Historical 205 plus new original 164–165 narrative readings');
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,259);
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,259);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,209,'Historical 205 plus new original 164–165 narrative readings');
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,261);
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,261);
 const levels=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
 assert.deepEqual(levels.map(x=>x.level),CUR02_LEVELS);
-assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,75);
+assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,77);
 assert.deepEqual(U49_B2_EXTENSION.map(s=>s.unit.id),['transfer-157']);
 assert.deepEqual(U50_B2_SEQUENCE.map(s=>s.unit.id),['transfer-158','transfer-159']);
 assert.deepEqual(U51_B2_INTERPERSONAL.map(s=>s.unit.id),['transfer-160','transfer-161']);
