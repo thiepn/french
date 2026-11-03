@@ -45,5 +45,15 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Create a dated chronology connecting lesson 157’s incorrect closure claim, lesson 158’s Thursday eight-o’clock obstruction and Friday’s operator notice and independent 17:30 check.',
   'Correct obsolete present-tense statements without erasing accurate historical records. Distinguish a ramp observed clear from guaranteed service for every time and traveler.',
   'Revise the public notice for residents unable to book by phone before Friday 18:00; state a measurable test for nighttime safety and an inclusive alternative booking channel.'
+ ]),
+ 'transfer-160':Object.freeze([
+  'Separate the observable exhibition event, Camille’s real feeling, her inferred motive and Samir’s unspoken situation; remove any sentence that claims to know deliberate harm.',
+  'Reframe « tu as voulu me blesser » into a first-person description of impact and a concrete respectful request, using « j’aurais aimé que » with the subjunctive.',
+  'Protect both unsent private notes and preserve the difference between a possible later conversation, voluntary reconciliation and compelled disclosure.'
+ ]),
+ 'transfer-161':Object.freeze([
+  'Use « si + plus-que-parfait » and « conditionnel passé » to express a past alternative without certifying the imagined result or assigning all responsibility to one person.',
+  'Separate each person’s private reflection from the jointly accepted work recap: proofreading by Thursday, confirmed event attendance by another person, privacy and no blanket promise.',
+  'Conclude with an optional follow-up and explicit possibility of refusal; do not write that limited teamwork proves full forgiveness, trust or consent to publish personal details.'
  ])
 });
