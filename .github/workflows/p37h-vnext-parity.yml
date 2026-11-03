@@ -50,6 +50,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-157.mts
       - name: Verify original linked B2 158–159 chronology, 251/199 historical source immutability and deep French teaching
         run: node --experimental-strip-types scripts/test-vnext-b2-158-159.mts
+      - name: Verify original interpersonal B2 160–161 and immutable historical 253/201 source contract
+        run: node --experimental-strip-types scripts/test-vnext-b2-160-161.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
