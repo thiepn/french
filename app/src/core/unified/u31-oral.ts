@@ -638,7 +638,7 @@ const AUTHORED:readonly AuthoredJourney[]=[
  {
   id:'transfer-166',speaker:'Noé',anchor:'Je te propose « Les Quatre Passerelles »',
   situation:'Teach a completely fictional cooperative table game without reading rules mechanically or doing the novice’s next move for them',
-  counterview:'The novice believes that the first legal link means any later link may be repeated, or that a diagonal saves time and should count.',
+  counterview:'An invented novice believes that the first legal link means any later link may be repeated, or that a diagonal saves time and should count.',
   misunderstanding:'A listener thinks A–C is an allowed first move and that a second A–B link makes the network progress because two sticks were placed.',
   register:'Patient, clear B2 instructional French: cooperative purpose, ordered constraints, real questions and respectful repair',
   objective:'Explain the four-card square and three-link goal, state the first-turn exception, and verify the student can choose a later valid side independently.',
@@ -662,7 +662,7 @@ const AUTHORED:readonly AuthoredJourney[]=[
  {
   id:'transfer-167',speaker:'Mina',anchor:'Tu as raison : commençons par tourner la feuille',
   situation:'Guide a paper-folding beginner across a table, make spatial directions intelligible from their viewpoint and adapt after a wrong fold',
-  counterview:'The learner says they should always force a misaligned fold and that the teacher’s right automatically equals their own right.',
+  counterview:'An invented learner says they should always force a misaligned fold and that the teacher’s right automatically equals their own right.',
   misunderstanding:'A partner interprets « droite » from Mina’s rather than Éloi’s side of the table and believes any fold will permanently seal the envelope.',
   register:'Empathetic but precise B2 practical instructions: orientation, condition, reversible repair and complete learner teach-back',
   objective:'Establish the learner’s right/left and diamond orientation, sequence corners and flap, explain an undo-last-fold repair and state the unsealed-envelope limitation.',
