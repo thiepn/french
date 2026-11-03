@@ -6,8 +6,8 @@ import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts'
 import {ORIGINAL_FRENCH_U42_COURSE} from '../app/src/core/unified/u42-course.ts';
 import {ORIGINAL_U42_CONNECTED_READINGS} from '../app/src/core/unified/u42-material.ts';
 
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,250);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,198);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,251);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,199);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.deepEqual(validateU30SourceModel(),[]);
 assert.equal(ORIGINAL_B2_DELIBERATIONS.length,6);
@@ -48,4 +48,4 @@ for(const id of ['transfer-151','transfer-152','transfer-153']){
  assert.equal(pair?.length,2);
  assert.equal(triple?.length,2);
 }
-console.log('B2 151–153: six exact three-turn French deliberations, individual misconception feedback, six authored objections and six ungraded original oral models; 250 units and 198 readings unchanged.');
+console.log('B2 151–153: six exact three-turn French deliberations, individual misconception feedback, six authored objections and six ungraded original oral models; first 250 units/198 readings preserved, one original 157 lesson and reading added.');
