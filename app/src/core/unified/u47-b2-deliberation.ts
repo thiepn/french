@@ -65,7 +65,7 @@ export const ORIGINAL_B2_DELIBERATIONS:readonly B2Deliberation[]=Object.freeze([
    'Puisque les tables ont changé, Lina n’a pas observé de baisse des interruptions.'
   ],
   corrections:[
-   'Marc signale un changement simultané qui empêche d’isoler une cause unique.',
+   'Marc signale un changement simultané de la disposition des tables, qui empêche d’isoler une cause unique; le résultat observé ne prouve donc pas l’effet des écrans seuls.',
    'L’observation de Lina existe; c’est son interprétation causale, et non le constat, qui doit être nuancée.'
   ],
   explanation:'Lina constate moins d’interruptions, Marc rappelle la modification concomitante des tables et Nadia propose une règle limitée. L’essai doit comparer les situations sans inventer de lien causal établi.',
