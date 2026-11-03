@@ -8,9 +8,9 @@ import {ORIGINAL_U42_CONNECTED_READINGS} from '../app/src/core/unified/u42-mater
 import {originalU31OralJourney} from '../app/src/core/unified/u31-oral.ts';
 import {originalU30Listening} from '../app/src/core/unified/u30-listening.ts';
 
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,250);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,250);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,198);
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,251);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,251);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,199);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.deepEqual(validateB2Negotiations(),[],'each fictional challenge must bind to exact source-owned French turns');
 assert.equal(ORIGINAL_B2_NEGOTIATIONS.length,3);
@@ -51,4 +51,4 @@ for(const scene of ORIGINAL_B2_NEGOTIATIONS){
  assert.equal(u31.decisions.length,3);
  assert.equal(u30.decisions.filter(x=>x.contextualTurns?.length===3).length,2);
 }
-console.log('U48 original B2 151–153: three scenarios, six independent stakeholder priorities, 12 keyed negotiating consequences, six authored French final models, four exact original source turns per scene, immutable 250/198 source identities. No speech/CEFR grade or new persistence.');
+console.log('U48 original B2 151–153: three scenarios, six independent stakeholder priorities, 12 keyed negotiating consequences, six authored French final models, four exact original source turns per scene, historical 250/198 identities preserved, one additive 157 original unit/reading. No speech/CEFR grade or new persistence.');
