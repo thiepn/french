@@ -1,0 +1,19 @@
+.u46-library-synthesis { margin-block: 1.5rem; border: 1px solid var(--border, #aaa5); border-radius: 12px; padding: 1rem; }
+.u46-library-synthesis summary { cursor: pointer; font-weight: 650; }
+.u46-library-body { display: grid; gap: 1rem; margin-top: 1rem; }
+.u46-case-nav { display: flex; flex-wrap: wrap; gap: .5rem; }
+.u46-case-nav button[aria-current="step"] { outline: 2px solid currentColor; outline-offset: 2px; }
+.u46-case-sources, .u46-case-choice, .u46-case-oral { display: grid; gap: .7rem; }
+.u46-case-sources > button { justify-self: start; }
+.u46-source-list { display: grid; gap: .8rem; }
+.u46-library-synthesis [hidden] { display: none !important; }
+.u46-source-card { border-inline-start: 3px solid currentColor; padding: .45rem .8rem; background: var(--surface, transparent); }
+.u46-source-card p { white-space: pre-wrap; }
+.u46-library-synthesis label { display: grid; gap: .4rem; }
+.u46-library-synthesis textarea, .u46-library-synthesis select { box-sizing: border-box; width: 100%; max-width: 100%; font: inherit; min-height: 2.8rem; }
+.u46-library-synthesis textarea { min-height: 8rem; padding: .65rem; }
+.u46-library-synthesis .u46-oral-model { padding: .8rem; border-inline-start: 3px solid currentColor; }
+.u46-library-synthesis .u46-oral-criteria { padding-inline-start: 1.5rem; }
+.u46-library-synthesis .u46-oral-criteria li { margin-block: .35rem; }
+.u46-library-synthesis .u46-french { line-height: 1.65; }
+.u46-library-synthesis .u46-status, .u46-library-synthesis .u46-choice-feedback { min-height: 1.5em; }

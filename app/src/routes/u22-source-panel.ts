@@ -5,6 +5,8 @@ import {
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides.ts';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides.ts';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides.ts';
+import {U42_REVISION_GUIDES} from '../core/unified/u42-revision-guides.ts';
+import {b2WritingLengthReview,type B2WritingMode} from '../core/unified/u43-b2-writing-support';
 import type {RouteId} from '../core/types';
 import {readOriginalContinuity} from '../core/unified/u24-continuity';
 import {appendU26GrammarPractice} from './u26-grammar-panel';
@@ -111,12 +113,38 @@ function renderWrite(host:HTMLElement,s:Material,drafts:Map<string,string>){
   content.replaceChildren();
   buttons.forEach((b,i)=>b.setAttribute('aria-pressed',String(i===active)));
   const item=modes[active],key=s.unit.id+':'+active;
+  const selectedMode: B2WritingMode=active===0?'fromListening':active===1?'fromSources':'fromDebate';
   content.append(el('h4',item.label),el('p',item.prompt));
+  if(s.evidence?.sources.length){
+   if(selectedMode==='fromListening'){
+    content.append(el('p','Listen to the original dialogue in the Listen workspace before a listening-based response. A written document is not evidence of hearing the audio.','u22-source-note'));
+   }else{
+    const evidence=el('details','','u43-source-details');
+    evidence.open=selectedMode==='fromSources';
+    evidence.append(el('summary',selectedMode==='fromSources'?
+     'Two original source documents for comparison':'Optional source documents for a reasoned position'),
+     el('p','These attributed texts are fictional original lesson materials, not verified external evidence. Check the source of each claim yourself.','u22-source-note'));
+    s.evidence.sources.forEach((source,index)=>{
+     const article=el('article','','u43-original-source-document');
+     article.append(el('h5','Document '+(index+1)+' · '+source.label+' ('+source.type+')'));
+     const paragraph=el('p',source.french);paragraph.lang='fr';article.append(paragraph);
+     evidence.append(article);
+    });
+    content.append(evidence);
+   }
+  }
   const checks=el('ul');for(const criterion of item.criteria)checks.append(el('li',criterion));content.append(checks);
   const label=el('label','Write your own answer in French');
-  const input=el('textarea');input.rows=8;input.maxLength=12000;input.spellcheck=true;
-  input.value=drafts.get(key)??'';input.addEventListener('input',()=>drafts.set(key,input.value));
-  label.append(input);content.append(label);
+  const input=el('textarea');input.rows=8;input.maxLength=12000;input.spellcheck=true;input.lang='fr';
+  const hasB2Range=/^transfer-15[1-6]$/.test(s.unit.id)&&!!expanded;
+  const length=el('p','','u43-writing-word-count');length.setAttribute('role','status');
+  const updateLength=()=>{
+   if(hasB2Range)length.textContent=b2WritingLengthReview(s.unit.id,selectedMode,input.value).message+
+    ' Length only: not an evaluation of grammar, source accuracy or CEFR level.';
+  };
+  input.value=drafts.get(key)??'';
+  input.addEventListener('input',()=>{drafts.set(key,input.value);updateLength();});
+  label.append(input);content.append(label);if(hasB2Range){content.append(length);updateLength();}
   const model=el('article','','u22-source-document');model.hidden=true;
   model.append(el('h4','Original example, not the only valid response'));
   const example=el('p',item.model,'u22-source-paragraph');example.lang='fr';model.append(example);
@@ -124,7 +152,7 @@ function renderWrite(host:HTMLElement,s:Material,drafts:Map<string,string>){
    model.hidden=!model.hidden;reveal.textContent=model.hidden?'Show authored example':'Hide authored example';
    reveal.setAttribute('aria-expanded',String(!model.hidden));
   });reveal.setAttribute('aria-expanded','false');content.append(reveal,model);
-  const guide=U22_REVISION_GUIDES[s.unit.id]??
+  const guide=U42_REVISION_GUIDES[s.unit.id]??U22_REVISION_GUIDES[s.unit.id]??
    U21_REVISION_GUIDES[s.unit.id]??U20_REVISION_GUIDES[s.unit.id];
   if(guide){
    const details=el('details'),summary=el('summary','Source-specific revision guidance'),list=el('ol');

@@ -15,6 +15,9 @@ export interface U21OriginalSourceStory{
   listening:[string,string];sources:[string,string];debate:[string,string];
  };
  oral:[string,string];
+ /** Optional original task-specific guidance; the prior 257 source cases retain exact defaults. */
+ writingCriteria?:{listening:[string,string,string];sources:[string,string,string];debate:[string,string,string]};
+ oralPlan?:[string,string,string];
 }
 /** Content-only adapter: every response and explanation is authored in the individual story. */
 export function originalB2DebateProduction(spec:U21OriginalSourceStory,n:number){
@@ -22,9 +25,9 @@ export function originalB2DebateProduction(spec:U21OriginalSourceStory,n:number)
   [string,string,string[],string]=>[prompt,answer,[wrong1,answer,wrong2],explanation];
  const produce=(v:[string,string],lens:'listening'|'sources'|'debate'):
   [string,string[],string]=>[v[0],
-   lens==='listening'?['Retell what was actually heard and attribute the speaker.','Distinguish a proposal from a decision.','Include one practical next action without inventing information.']:
+   spec.writingCriteria?.[lens]??(lens==='listening'?['Retell what was actually heard and attribute the speaker.','Distinguish a proposal from a decision.','Include one practical next action without inventing information.']:
    lens==='sources'?['Attribute each document separately and precisely.','Identify which detail remains unknown or conditional.','Write a proportionate clarification or synthesis.']:
-   ['Give one defensible recommendation based on the known evidence.','Acknowledge a credible competing preference or interpretation.','Explain a condition under which your recommendation should change.'],
+   ['Give one defensible recommendation based on the known evidence.','Acknowledge a credible competing preference or interpretation.','Explain a condition under which your recommendation should change.']),
    v[1]];
  const specFull:U21AuthoredScenario={
   id:spec.id,title:spec.title,goal:spec.goal,grammarKeys:spec.grammarKeys,
@@ -38,7 +41,7 @@ export function originalB2DebateProduction(spec:U21OriginalSourceStory,n:number)
   writing:{fromListening:produce(spec.writing.listening,'listening'),
    fromSources:produce(spec.writing.sources,'sources'),
    fromDebate:produce(spec.writing.debate,'debate')},
-  oral:{prompt:spec.oral[0],plan:[
+  oral:{prompt:spec.oral[0],plan:spec.oralPlan??[
    'Present two concrete and accurately attributed facts.',
    'Acknowledge the counterpoint or unresolved evidence.',
    'Recommend a conditional practical next step.'

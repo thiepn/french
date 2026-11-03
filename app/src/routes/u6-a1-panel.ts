@@ -2,16 +2,19 @@ import type {RouteId} from '../core/types';
 import {CUR02_LEVELS,buildFrenchCourseNavigation,navLevelForOriginalBand,parseFrenchCourseLocation,frenchCourseLocation,type Cur02Level} from '../core/unified/cur02-level-nav';
 import {readOriginalContinuity,saveOriginalContinuity,discardOriginalContinuity,
  type ContinuityReview} from '../core/unified/u24-continuity';
-import {loadU22OriginalFrenchCourse,suggestedU22OriginalUnit,u22PracticeStatus} from '../core/unified/u22-course';
+import {readOriginalCourseStudy,setOriginalCourseStudied,type StudyReview} from '../core/unified/u41-course-study';
+import {loadU42OriginalFrenchCourse,suggestedU42OriginalUnit,u42PracticeStatus} from '../core/unified/u42-course';
 import {
- browseOriginalMaterials,getOriginalUnit,getOriginalCatalogEntry,handoffOriginalLesson,
+ browseOriginalMaterials,getOriginalUnit,getOriginalMaterial,getOriginalCatalogEntry,handoffOriginalLesson,
  neighboringOriginalLessons,takeOriginalHandoff,type OriginalLevel,type OriginalMaterialKind
 } from '../core/unified/u23-registry';
-import {u22ProductionChoices} from '../core/unified/u22-material';
+import {u42ProductionChoices} from '../core/unified/u42-material';
+import {b2WritingLengthReview,type B2WritingMode} from '../core/unified/u43-b2-writing-support';
 import {ORIGINAL_PATHWAYS,originalPathSectionFor,originalNextActions} from '../core/unified/u25-pathways.ts';
 import {U20_REVISION_GUIDES} from '../core/unified/u20-revision-guides';
 import {U21_REVISION_GUIDES} from '../core/unified/u21-revision-guides';
 import {U22_REVISION_GUIDES} from '../core/unified/u22-revision-guides';
+import {U42_REVISION_GUIDES} from '../core/unified/u42-revision-guides';
 import {appendOriginalB1Reading} from './u10-reading-panel';
 import {mountA1Listening} from './u7-listening-panel';
 import {appendOriginalOralJourney} from './u31-oral-panel';
@@ -43,7 +46,7 @@ function button(label:string,action:()=>void,classes='secondary-action compact-a
 export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId)=>void,signal:AbortSignal):Promise<void>{
  host.replaceChildren(el('p','Loading the original French full Course…'));
  try{
-  const lessons=await loadU22OriginalFrenchCourse();
+  const lessons=await loadU42OriginalFrenchCourse();
   const levelCatalog=buildFrenchCourseNavigation(ORIGINAL_PATHWAYS.flatMap(path=>path.sections.flatMap(section=>section.entries)));
   const requestedCourse=parseFrenchCourseLocation(location.hash,levelCatalog);
   const invalidCoursePath=location.hash.startsWith('#course/')&&!requestedCourse;
@@ -51,10 +54,21 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   // Ephemeral course practice, deliberately independent of the canonical native scheduler.
   const answers=new Map<string,Map<string,boolean>>();
   const mistakes=new Map<string,Set<string>>();
+  // Temporary, per-page recall evidence. Never written to learner/FSRS/Account.
+  // Distinguishes a correct independent first try from correction after
+  // wrong answers or an exposed model answer.
+  type RecallAttempt={tries:number;independentFirstTry:boolean;hintUsed:boolean;hadError:boolean};
+  const recallAttempts=new Map<string,Map<string,RecallAttempt>>();
+  const attemptMap=(id:string)=>{
+   let found=recallAttempts.get(id);
+   if(!found){found=new Map<string,RecallAttempt>();recallAttempts.set(id,found);}
+   return found;
+  };
   const drafts=new Map<string,string>();
   // Earlier draft snapshots for U20 self-revision; same page lifetime as original temporary drafts.
   const revisionSnapshots=new Map<string,string>();
   let continuity:ContinuityReview=await readOriginalContinuity();
+  let study:StudyReview=await readOriginalCourseStudy();
   if(signal.aborted||!host.isConnected)return;
   const incoming=takeOriginalHandoff('course');
   const saved=continuity.status==='ready'?continuity.checkpoint:null;
@@ -80,7 +94,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
     el('h2','Choose where to learn'),
-    el('p','244 original lessons from foundations to early B2. Learn in sequence, follow an authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
+    el('p','261 original course units: all preceding 259 source-owned lessons remain intact, with two independent early-B2 instructional mediation chapters on teaching a cooperative game and guiding reversible paper-folding steps. Earlier civic, interpersonal, workplace and narrative lessons remain intact. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const hero=el('section',undefined,'u25-hero');
   hero.setAttribute('aria-label','Start or continue original French');
@@ -158,7 +172,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const article=el('article',undefined,'u6-lesson-content');article.dataset.u6LessonContent='';
   const finder=el('section',undefined,'u23-course-finder');
   finder.setAttribute('role','search');finder.setAttribute('aria-label','Find original French lessons');
-  const searchLabel=el('label','Search 244 original lessons');
+  const searchLabel=el('label','Search original French lessons');
   const search=el('input');search.type='search';search.autocomplete='off';
   search.placeholder='Title, French word, topic or grammar';
   search.setAttribute('aria-label','Search original course lessons');searchLabel.append(search);
@@ -410,15 +424,19 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    if(!found){found=new Map();answers.set(id,found);}
    return found;
   };
+  const studied=(id:string)=>study.status==='ready'&&
+   !!study.record?.studied.some(row=>row.id===id);
   const practiced=()=>{
    const passed=new Set<string>();
-   for(const [id,record] of answers)if(u22PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
+   for(const [id,record] of answers)if(u42PracticeStatus(id,record)?.locallyPracticed)passed.add(id);
    return passed;
   };
   function renderIndex(){
-   const done=practiced(),next=suggestedU22OriginalUnit(done);
-   status.textContent=done.size+'/'+lessons.length+
-    ' lesson exercise sets practiced in this page visit. '+
+   const done=practiced(),next=suggestedU42OriginalUnit(done);
+   const marked=study.status==='ready'?study.record!.studied.length:0;
+   status.textContent=marked+'/'+lessons.length+' lessons self-marked studied on this device (not CEFR mastery). '+
+    done.size+'/'+lessons.length+
+    ' exercise sets practiced in this page visit. '+
     (next?'Suggested next: '+next.title+'.':'Every lesson exercise set has a correct response recorded locally.');
    const matches=browseOriginalMaterials({
     query:search.value,level:levelFilter.value as OriginalLevel|'all',
@@ -458,9 +476,10 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      details.append(chapter);sidebar.append(details);
     }
     const record=answers.get(unit.id);
-    const practice=record?u22PracticeStatus(unit.id,record):null;
+    const practice=record?u42PracticeStatus(unit.id,record):null;
     const label=String(unit.order).padStart(3,'0')+' · '+unit.title+
-     (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'');
+     (practice?.correct?' ('+practice.correct+'/'+practice.total+' here)':'')+
+     (studied(unit.id)?' · studied':'');
     const item=button(label,()=>open(unit.id,'understand',undefined,true),'u6-unit-button');
     item.dataset.u6Unit=unit.id;
     if(current.id===unit.id){item.classList.add('selected');item.setAttribute('aria-current','true');}
@@ -558,7 +577,8 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   function renderDialogue(unit:A1Unit,container:HTMLElement){
    const translated=new Set([
     'transfer-91','transfer-92','transfer-93','transfer-106','transfer-107','transfer-108',
-    'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150'
+    'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150',
+    'transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156','transfer-157','transfer-158','transfer-159','transfer-160','transfer-161','transfer-162','transfer-163','transfer-164','transfer-165','transfer-166','transfer-167'
    ]);
    const teachingSummary=unit.id.startsWith('transfer-')&&!translated.has(unit.id);
    const showText=teachingSummary?'Show English study note':'Show translation';
@@ -606,10 +626,25 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   }
   function renderPractice(unit:A1Unit,container:HTMLElement){
    const record=answerMap(unit.id);
-   const practicedCount=u22PracticeStatus(unit.id,record)!;
+   const practicedCount=u42PracticeStatus(unit.id,record)!;
    const errors=mistakes.get(unit.id)??new Set<string>();
-   container.append(el('p',practicedCount.correct+'/'+practicedCount.total+
-    ' correct tasks during this temporary page visit. No FSRS or CEFR score is recorded.','u6-practice-status'));
+   const history=attemptMap(unit.id);
+   const weakTasks=()=>unit.tasks.filter(task=>{
+    const attempt=history.get(task.id);
+    return !!attempt&&(attempt.hadError||attempt.hintUsed);
+   });
+   const recap=()=>{
+    const values=[...history.values()];
+    const independent=values.filter(v=>v.independentFirstTry).length;
+    const repaired=values.filter(v=>(v.hadError||v.hintUsed)).length;
+    return 'Independent first tries: '+independent+'/'+unit.tasks.length+
+     ' · Correct now: '+u42PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
+     ' · Needed repair or model: '+repaired+
+     '. Practice only: no FSRS, CEFR or lasting lesson completion.';
+   };
+   const recapNode=el('p',recap(),'u6-practice-status');
+   recapNode.setAttribute('role','status');
+   container.append(recapNode);
    const nav=el('div',undefined,'u6-task-navigation');nav.setAttribute('role','group');nav.setAttribute('aria-label','Practice task navigation');
    unit.tasks.forEach((task,i)=>{
     const b=button(String(i+1)+(record.get(task.id)?' ✓':''),()=>{taskIndex=i;render();schedulePosition(current.id,stage,taskIndex);},'u6-task-button');
@@ -618,6 +653,19 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     nav.append(b);
    });
    container.append(nav);
+   const retryWeak=button('Retry missed or assisted questions',()=>{
+    const weak=weakTasks();
+    if(!weak.length)return;
+    // Retake only vulnerable questions: do not reset unrelated correct answers.
+    // Prior mistakes and hint use remain visible for this page visit and cannot
+    // be retroactively reclassified as an independent first attempt.
+    for(const missed of weak)record.delete(missed.id);
+    taskIndex=unit.tasks.findIndex(task=>task.id===weak[0].id);
+    render();void schedulePosition(current.id,stage,taskIndex);
+    article.querySelector<HTMLInputElement>('.u6-answer-form input, .u6-answer-form select')?.focus({preventScroll:true});
+   },'secondary-action compact-action');
+   retryWeak.hidden=weakTasks().length===0;
+   container.append(retryWeak);
    const task=unit.tasks[taskIndex],card=el('section',undefined,'u6-active-task');
    const kind=task.type==='reading'?'Reading comprehension':task.type==='order'?'Sentence order':
     task.type==='choice'?'Choose in context':'Complete the French';
@@ -659,11 +707,20 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     const value=getAnswer().trim();
     if(!value){result.textContent='Enter or select an answer before checking.';return;}
     const passed=checkPracticeAnswer(value,task.answer);
+    const prior=history.get(task.id)??{tries:0,independentFirstTry:false,hintUsed:false,hadError:false};
+    history.set(task.id,{
+     tries:prior.tries+1,
+     independentFirstTry:prior.independentFirstTry||
+      (prior.tries===0&&!prior.hintUsed&&passed),
+     hintUsed:prior.hintUsed,
+     hadError:prior.hadError||!passed
+    });
     if(passed){
      record.set(task.id,true);
      result.textContent='Correct. '+task.explanation;
      help.replaceChildren();
     }else{
+     record.delete(task.id); // A later wrong answer cannot leave a stale green tick.
      errors.add(task.focus);mistakes.set(unit.id,errors);
      const authoredMistake=task.misconceptionFeedback?.[value];
      result.textContent=authoredMistake?
@@ -674,13 +731,16 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     // Refresh counters and side navigation without removing typed answer or feedback.
     renderIndex();
     const label=nav.querySelector<HTMLButtonElement>('button:nth-child('+(taskIndex+1)+')');
-    if(label&&passed)label.textContent=String(taskIndex+1)+' ✓';
-    container.querySelector<HTMLElement>('.u6-practice-status')!.textContent=
-     u22PracticeStatus(unit.id,record)!.correct+'/'+unit.tasks.length+
-     ' correct tasks this visit · ungraded and not saved.';
+    if(label)label.textContent=String(taskIndex+1)+(record.get(task.id)?' ✓':'');
+    recapNode.textContent=recap();
+    retryWeak.hidden=weakTasks().length===0;
    });
    const reveal=button('Show worked answer (assisted)',()=>{
-    help.replaceChildren(el('p','Model answer: '+task.answer+'. '+task.explanation));
+    const prior=history.get(task.id)??{tries:0,independentFirstTry:false,hintUsed:false,hadError:false};
+    history.set(task.id,{...prior,hintUsed:true});
+    help.replaceChildren(el('p','Model answer: '+task.answer+'. '+task.explanation),
+     el('p','This task now counts as assisted practice, not an independent first attempt.','u6-small'));
+    recapNode.textContent=recap();retryWeak.hidden=false;
    });
    const next=button(taskIndex===unit.tasks.length-1?'Return to first question':'Next question →',()=>{
     taskIndex=(taskIndex+1)%unit.tasks.length;render();schedulePosition(current.id,stage,taskIndex);
@@ -688,12 +748,62 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    form.append(submit,reveal,result,help,next);card.append(form);container.append(card);
    if(errors.size)container.append(el('p','Recommended review topics from your attempts: '+[...errors].join(', ')+'.','u6-recommendation'));
    const resetAll=button('Clear this lesson’s temporary answers',()=>{
-    answers.delete(unit.id);mistakes.delete(unit.id);taskIndex=0;reset();render();
+    answers.delete(unit.id);mistakes.delete(unit.id);recallAttempts.delete(unit.id);
+    taskIndex=0;reset();render();
    });
    container.append(resetAll);
   }
+  function appendStudyMarker(container:HTMLElement,unit:A1Unit){
+   const marker=el('section',undefined,'u6-grammar-block u41-study-marker');
+   marker.setAttribute('aria-label','Your lesson study marker');
+   let busy=false,feedback='';
+   const draw=()=>{
+    marker.replaceChildren(el('h4','Your lesson progress'));
+    const count=study.status==='ready'?study.record!.studied.length:0;
+    const isStudied=studied(unit.id);
+    const state=el('p',count+'/'+lessons.length+
+     ' lessons you marked studied. This is a personal checklist only, not a quiz grade, review event or CEFR certificate.','u6-small');
+    const message=el('p',feedback||study.message,'u6-small');
+    message.setAttribute('role','status');
+    marker.append(state,message);
+    if((study.status==='empty'||study.status==='ready')&&!feedback.includes('Another tab')){
+     const action=button(isStudied?'Remove studied marker':'Mark this lesson studied',()=>{
+      if(busy)return;
+      // Explicit opt-in, not inferred from visits or assisted exercises.
+      busy=true;feedback='Saving your study marker…';draw();
+      void setOriginalCourseStudied(study,unit.id,!isStudied).then(result=>{
+       study=result.review;
+       feedback=result.outcome==='saved'?
+        (isStudied?'Your personal studied marker was removed.':'Lesson self-marked studied. Review scheduling and grades are unchanged.'):
+        result.outcome==='conflict'?
+         'Another tab or account update changed your markers. Refresh before retrying.':
+         'Cannot safely update these markers.';
+      }).catch(()=>{
+       feedback='Study marker was not saved. Existing learner records are unchanged.';
+      }).finally(()=>{
+       busy=false;
+       if(signal.aborted)return;
+       if(marker.isConnected)draw();
+       renderIndex();
+      });
+     },'secondary-action compact-action');
+     action.disabled=busy;marker.append(action);
+    }
+    if(study.status==='blocked'||study.status==='unavailable'||feedback.includes('Another tab')){
+     const refresh=button('Refresh studied-marker review',()=>{
+      if(busy)return;
+      busy=true;feedback='Checking canonical learner state…';draw();
+      void readOriginalCourseStudy().then(next=>{study=next;feedback='';})
+       .catch(()=>{feedback='Could not read canonical learner state.';})
+       .finally(()=>{busy=false;if(!signal.aborted){if(marker.isConnected)draw();renderIndex();}});
+     });
+     refresh.disabled=busy;marker.append(refresh);
+    }
+   };
+   container.append(marker);draw();
+  }
   function renderWrite(unit:A1Unit,container:HTMLElement){
-   const variants=u22ProductionChoices(unit.id);
+   const variants=u42ProductionChoices(unit.id);
    let onWritingModeChanged=()=>{};
    let mode:'fromSources'|'fromListening'|'fromDebate'='fromSources';
    const chosen=()=>variants?(variants[mode]??variants.fromSources):unit.writing;
@@ -701,6 +811,42 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const heading=el('h4','Independent writing');
    const prompt=el('p',chosen().prompt,'u14-production-prompt');
    const items=el('ul',undefined,'u6-write-criteria');
+   const sourceBox=el('div',undefined,'u43-original-writing-sources');
+   const wordProgress=el('p',undefined,'u43-writing-word-count');
+   wordProgress.setAttribute('role','status');
+   const sources=getOriginalMaterial(unit.id)?.evidence?.sources??[];
+   let showCurrentSources=()=>{};
+   const updateSourceContext=()=>{
+    sourceBox.replaceChildren();
+    if(!variants||!sources.length)return;
+    if(mode==='fromListening'){
+     sourceBox.append(el('p','For a listening-based response, listen to the original French dialogue in stage 4 before drafting. Written source documents are not audio evidence.','u6-small'));
+     showCurrentSources=()=>open(unit.id,'listen');
+     return;
+    }
+    const details=el('details',undefined,'u43-source-details');
+    details.open=mode==='fromSources';
+    details.append(el('summary',mode==='fromSources'?
+     'Two original documents for source comparison':'Optional original documents for your argument'));
+    details.append(el('p','Fictional, source-attributed French texts. Compare their claims and limitations yourself; a visible source does not establish that your writing cites it correctly.','u6-small'));
+    sources.forEach((source,index)=>{
+     const document=el('article',undefined,'u43-original-source-document');
+     document.append(el('h5','Document '+(index+1)+' · '+source.label+' ('+source.type+')'));
+     const text=el('p',source.french);text.lang='fr';document.append(text);
+     details.append(document);
+    });
+    sourceBox.append(details);
+    showCurrentSources=()=>{
+     details.open=true;
+     details.scrollIntoView({block:'nearest'});
+    };
+   };
+   const updateLength=()=>{
+    if(!variants){wordProgress.textContent='';return;}
+    const note=b2WritingLengthReview(unit.id,mode,editor.value);
+    wordProgress.textContent=note.message+
+     ' Word count checks length only, not grammar, meaning, evidence or CEFR.';
+   };
    const editor=el('textarea');editor.rows=8;editor.lang='fr';editor.maxLength=3500;
    editor.setAttribute('aria-label','Independent original French writing response');
    const result=el('p','Your text remains in memory only until this Course view closes.','u6-small');
@@ -720,7 +866,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     model.textContent=choice.model;model.hidden=true;
     compare.textContent='Reveal original sample answer';compare.setAttribute('aria-expanded','false');
     result.textContent='Your text stays in this Course page memory only. The selected task is not graded or uploaded.';
-    onWritingModeChanged();
+    updateSourceContext();updateLength();onWritingModeChanged();
    };
    if(variants){
     const options=el('div',undefined,'u14-writing-mode');
@@ -736,24 +882,23 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
      updatePrompt();
     });
     label.append(select);
-    const revisit=button('Review supporting sources',()=>{
-     open(unit.id,mode==='fromListening'?'listen':'dialogue');
-    });
+    const revisit=button('Review supporting sources',()=>showCurrentSources());
     options.append(label,el('p','Choose original source synthesis, dialogue-to-writing, or—where available—an independent argument with an explicit counterpoint. Each has a distinct prompt, rubric and model; no proficiency is automatically graded.','u6-small'),revisit);
     container.append(options);
    }
-   editor.addEventListener('input',()=>drafts.set(draftKey(),editor.value));
+   editor.addEventListener('input',()=>{drafts.set(draftKey(),editor.value);updateLength();});
    const check=button('Check structure (not grammar grading)',()=>{
-    result.textContent=inspectDraftStructure(editor.value).join(' ')+
+    const length=variants?b2WritingLengthReview(unit.id,mode,editor.value):null;
+    result.textContent=(length?length.message+' ':'')+inspectDraftStructure(editor.value).join(' ')+
      ' Meaning, grammar and source fidelity require your own comparison; no automatic grade is awarded.';
    });
    const clear=button('Clear selected writing draft',()=>{
-    editor.value='';drafts.delete(draftKey());
+    editor.value='';drafts.delete(draftKey());updateLength();
     result.textContent='Only the currently selected temporary draft was cleared. No account data changed.';
    });
-   container.append(heading,prompt,items,editor,check,compare,clear,result,model,
+   container.append(heading,prompt,items,sourceBox,wordProgress,editor,check,compare,clear,result,model,
     el('p','Review your answer against the source and dialogue. Writing remains independent and session-only.','u6-small'));
-   const revisionPrompts=U22_REVISION_GUIDES[unit.id]??U21_REVISION_GUIDES[unit.id]??U20_REVISION_GUIDES[unit.id];
+   const revisionPrompts=U42_REVISION_GUIDES[unit.id]??U22_REVISION_GUIDES[unit.id]??U21_REVISION_GUIDES[unit.id]??U20_REVISION_GUIDES[unit.id];
    if(revisionPrompts){
     const studio=el('section',undefined,'u20-revision-studio');
     studio.append(el('h4','Revise your argument · ungraded'));
@@ -791,6 +936,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
     onWritingModeChanged();
    }
    updatePrompt();
+   appendStudyMarker(container,unit);
   }
   function render(){
    if(signal.aborted)return;

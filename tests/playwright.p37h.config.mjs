@@ -4,7 +4,7 @@ const baseURL=process.env.P37H_BASE_URL||'http://127.0.0.1:4175';
 
 export default defineConfig({
   testDir:'.',
-  testMatch:['p37h-vnext.spec.mjs','p37h-account-integration.spec.mjs','p37h-u47-a1-course.spec.mjs','p37h-u48-audio-journey.spec.mjs','p37h-u49-words.spec.mjs','p37h-u49-original-replay.spec.mjs','p37h-u63-learn-entry.spec.mjs','p37h-u64-b2-studio.spec.mjs','p37h-u65-b2-assessment.spec.mjs','p37h-u66-source-transfer.spec.mjs','p37h-u67-p33-oral.spec.mjs','p37h-u69-b2-pathway.spec.mjs','p37h-u70-b2-communicative.spec.mjs','p37h-u71-b2-context-transfer.spec.mjs','p37h-u72-source-cas.spec.mjs','p37h-course-first-ux.spec.mjs','r7-french-acceptance.spec.mjs'],
+  testMatch:['p37h-vnext.spec.mjs','p37h-account-integration.spec.mjs','p37h-u47-a1-course.spec.mjs','p37h-u48-audio-journey.spec.mjs','p37h-u49-words.spec.mjs','p37h-u49-original-replay.spec.mjs','p37h-u63-learn-entry.spec.mjs','p37h-u64-b2-studio.spec.mjs','p37h-u65-b2-assessment.spec.mjs','p37h-u66-source-transfer.spec.mjs','p37h-u67-p33-oral.spec.mjs','p37h-u69-b2-pathway.spec.mjs','p37h-u70-b2-communicative.spec.mjs','p37h-u71-b2-context-transfer.spec.mjs','p37h-u72-source-cas.spec.mjs','p37h-course-first-ux.spec.mjs','r7-french-acceptance.spec.mjs','course-learning-loop.spec.mjs','course-b2-listen-speak.spec.mjs','course-b2-library-synthesis.spec.mjs','course-b2-three-voice.spec.mjs','course-b2-negotiation.spec.mjs','course-b2-157.spec.mjs','course-b2-158-159.spec.mjs','course-b2-160-161.spec.mjs','course-b2-162-163.spec.mjs','course-b2-164-165.spec.mjs','course-b2-166-167.spec.mjs'],
   timeout:60_000,
   expect:{timeout:15_000},
   retries:1,

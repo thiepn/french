@@ -29,3 +29,27 @@
  .u30-audio-controls,.u30-tabs,.u30-navigation,.u30-support-controls,.u30-handoffs{align-items:stretch}
  .u30-audio-controls button,.u30-tabs button,.u30-navigation button,.u30-support-controls button,.u30-handoffs button{flex:1 1 100%;width:100%;text-align:left}
 }
+
+/* B2 paired-turn reasoning belongs to the same native listening question. */
+.u46-inference-label{display:grid;gap:.4rem;line-height:1.55}
+.u46-inference-label textarea{width:100%;min-height:6rem;max-width:100%;resize:vertical;
+ font:inherit;line-height:1.55;padding:.65rem;border:1px solid var(--line,#8d98a5);
+ background:var(--surface,#fff);color:var(--text,#1a2130)}
+.u46-inference-review{border-inline-start:3px solid var(--accent,#64748b);
+ padding:.65rem .85rem;background:var(--surface-muted,#f5f6f8);
+ overflow-wrap:anywhere}
+.u46-inference-review button{min-height:2.65rem}
+.u46-inference-feedback{white-space:pre-wrap;line-height:1.55}
+
+/* Source-based French oral deliberation uses the existing U30 lab, no new progress store. */
+.u30-listening .u47-oral-label{display:grid;gap:.45rem;line-height:1.55}
+.u30-listening .u47-oral-notes{width:100%;max-width:100%;min-height:7rem;box-sizing:border-box;
+ font:inherit;line-height:1.6;padding:.7rem;resize:vertical;
+ color:var(--text,#1a2130);background:var(--surface,#fff);
+ border:1px solid var(--line,#8d98a5)}
+.u30-listening .u47-oral-challenge,.u30-listening .u47-french-model{line-height:1.65}
+.u30-listening .u47-oral-challenge{border-inline-start:3px solid var(--accent,#64748b);padding-inline-start:.8rem}
+.u30-listening .u47-model{border-inline-start:3px solid var(--accent,#64748b);padding:.8rem;
+ background:var(--surface-muted,#f5f6f8)}
+.u30-listening .u45-oral-criteria{padding-inline-start:1.5rem;line-height:1.65}
+.u30-listening .u47-model[hidden],.u30-listening .u45-oral-transfer[hidden]{display:none!important}

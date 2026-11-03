@@ -302,7 +302,7 @@ test('U62 pausing during a pending cloud read prevents the delayed upload',async
   await page.getByRole('button',{name:'Sync this device'}).click();
   await expect.poll(()=>api.cloud?.revision,{timeout:30_000}).toBe(1);
   await expect(page.getByRole('button',{name:'Sync now'})).toBeVisible({timeout:30_000});
-  const initialUploads=api.uploads,initialReads=api.readStarted;
+  const initialReads=api.readStarted;
   await page.locator('input[name="dailyNewLimit"]').fill('42');
   await page.getByRole('button',{name:'Save settings'}).click();
   await expect(page.locator('[data-status]')).toContainText('Saved on this device.');
@@ -316,15 +316,20 @@ test('U62 pausing during a pending cloud read prevents the delayed upload',async
   await expect.poll(async()=>page.evaluate(()=>
     JSON.parse(localStorage.getItem('french-thiepn-sync-v2')??'null')?.enabled
   ),{timeout:30_000}).toBe(false);
+  // A consented automatic sync can complete between Save and Pause. Compare
+  // after persisted pause so it is not mistaken for a post-pause upload.
+  await expect.poll(()=>api.writeStarted-api.uploads,{timeout:30_000}).toBe(0);
+  const uploadsAtPause=api.uploads,revisionAtPause=api.cloud?.revision;
+  const cloudLimitAtPause=api.cloud?.state?.settings?.dailyNewLimit;
   expect(api.releaseRead).toBeInstanceOf(Function);
   api.holdRead=false; api.releaseRead(); api.releaseRead=null;
   // Only the explicitly released held read is relevant; background
   // read-only reconciliations may finish in either order on Android.
   await expect.poll(()=>api.heldReadFinished,{timeout:30_000}).toBe(1);
   await expect(page.getByText(/No new transfer was started/i)).toBeVisible({timeout:30_000});
-  expect(api.uploads).toBe(initialUploads);
-  expect(api.cloud.revision).toBe(1);
-  expect(api.cloud.state.settings.dailyNewLimit).not.toBe(42);
+  expect(api.uploads).toBe(uploadsAtPause);
+  expect(api.cloud.revision).toBe(revisionAtPause);
+  expect(api.cloud.state.settings.dailyNewLimit).toBe(cloudLimitAtPause);
   await page.reload();
   await expect(page.locator('input[name="dailyNewLimit"]')).toHaveValue('42',{timeout:30_000});
   await expect(page.getByRole('button',{name:'Sync this device'})).toBeVisible();

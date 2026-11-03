@@ -3,6 +3,7 @@ import {
 } from '../core/unified/u30-listening.ts';
 import {getOriginalMaterial,type OriginalSurface} from '../core/unified/u23-registry.ts';
 import './u30-listening-panel.css';
+import {appendLibrarySynthesis} from './u46-b2-library-synthesis-panel.ts';
 
 interface Options{
  readonly signal:AbortSignal;readonly mode:'course'|'listen';
@@ -55,15 +56,29 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  turnLabel.append(turnSelect);
  audioControls.append(speedLabel,turnLabel);
  const supported='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
- let active=false,requestCount=0,usedSlow=false,destroyed=false;
+ let active=false,requestCount=0,usedSlow=false,destroyed=false,playbackEpoch=0;
+ // A completed browser TTS callback proves only that the browser reported
+ // completion. It does not establish that speech was audible, in French,
+ // or understood. Only an explicit learner statement can record claimed use.
+ let completedForQuestion:string|null=null;
+ const heardSelfReports=new Set<string>();
+ const requestedByQuestion=new Set<string>();
+ const supports=new Map<string,{level:number;transcript:boolean}>();
+ const inferenceNotes=new Map<string,string>();
+ const oralRehearsals=new Map<string,string>();
+ let transcriptAssisted=false;
  const stop=()=>{
+  playbackEpoch++;
   if(supported&&active){window.speechSynthesis.cancel();active=false;}
+  completedForQuestion=null;
  };
  function speak(indices:readonly number[]):void{
   if(!supported||destroyed||opts.signal.aborted||!wrapper.isConnected){
    voiceStatus.textContent='Device French TTS unavailable. Use transcript-led comprehension; no listening success can be inferred.';return;
   }
   stop();
+  const epoch=playbackEpoch;
+  const questionId=visibleDecisions()[index]?.id??null;
   const synth=window.speechSynthesis;
   const voices=synth.getVoices(),french=voices.find(v=>v.lang.toLowerCase()==='fr-fr')??
    voices.find(v=>v.lang.toLowerCase().startsWith('fr'));
@@ -75,15 +90,29 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   active=true;
   const valid=indices.filter(i=>i>=0&&i<lesson.turns.length);
   if(!valid.length){active=false;return;}
-  valid.forEach((index,i)=>{
-   const utterance=new SpeechSynthesisUtterance(lesson.turns[index].fr);
+  if(questionId)requestedByQuestion.add(questionId);
+  valid.forEach((turnIndex,i)=>{
+   const utterance=new SpeechSynthesisUtterance(lesson.turns[turnIndex].fr);
    utterance.lang='fr-FR';utterance.rate=rate;if(french)utterance.voice=french;
    if(i===valid.length-1){
-    utterance.onend=()=>{active=false;if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS sequence ended. Audio quality and audibility were not measured.';};
-    utterance.onerror=()=>{active=false;if(!destroyed&&wrapper.isConnected)voiceStatus.textContent='TTS encountered an error. Use the original transcript.';};
+    utterance.onend=()=>{
+     if(epoch!==playbackEpoch||destroyed||!wrapper.isConnected)return;
+     active=false;
+     if(!destroyed&&wrapper.isConnected){
+      if(questionId&&visibleDecisions()[index]?.id===questionId)
+       completedForQuestion=questionId;
+      voiceStatus.textContent='Browser reported TTS sequence ended. No claim of audibility or French speech quality; confirm what you actually heard.';
+      draw();
+     }
+    };
+    utterance.onerror=()=>{
+     if(epoch!==playbackEpoch)return;
+     active=false;completedForQuestion=null;
+     if(!destroyed&&wrapper.isConnected){voiceStatus.textContent='TTS encountered an error. Use the original transcript.';draw();}
+    };
    }
    try{synth.speak(utterance);}catch{
-    active=false;voiceStatus.textContent='TTS could not start. Use transcript-led practice.';
+    stop();voiceStatus.textContent='TTS could not start. Use transcript-led practice.';draw();
    }
   });
   voiceStatus.textContent=french?'Requested French TTS using '+french.name+'.':
@@ -91,7 +120,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  }
  const playAll=action('Play full original exchange',()=>speak(lesson.turns.map((_,i)=>i)));
  const playTurn=action('Play selected turn',()=>speak([Number(turnSelect.value)]));
- const stopButton=action('Stop audio',()=>{stop();voiceStatus.textContent='Playback stopped.';});
+ const stopButton=action('Stop audio',()=>{stop();voiceStatus.textContent='Playback stopped; completion cannot be claimed.';draw();});
  if(!supported){playAll.disabled=true;playTurn.disabled=true;voiceStatus.textContent='TTS unavailable. You can study the transcript and take the same source-based questions without an audio claim.';}
  audioControls.append(playAll,playTurn,stopButton);
  const support=el('div','','u30-support');
@@ -108,11 +137,11 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  let supportLevel=0;
  const supportState=el('p','Support: transcript hidden.','u30-support-state');
  const showTurn=action('Reveal question evidence',()=>{
-  supportLevel=Math.max(supportLevel,1);updateExcerpt();excerpt.hidden=false;
+  markSupport(1);updateExcerpt();excerpt.hidden=false;
   supportState.textContent='Support: one original French turn revealed.';
  });
  const showAll=action('Reveal full attributed transcript',()=>{
-  supportLevel=Math.max(supportLevel,2);
+  markFullTranscript(2);
   transcript.hidden=!transcript.hidden;
   showAll.textContent=transcript.hidden?'Reveal full attributed transcript':'Hide full attributed transcript';
   showAll.setAttribute('aria-expanded',String(!transcript.hidden));
@@ -120,7 +149,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  });
  showAll.setAttribute('aria-expanded','false');
  const showEnglish=action('Reveal original English explanations',()=>{
-  supportLevel=Math.max(supportLevel,3);english.hidden=!english.hidden;
+  markFullTranscript(3);english.hidden=!english.hidden;
   showEnglish.textContent=english.hidden?'Reveal original English explanations':'Hide English explanations';
   showEnglish.setAttribute('aria-expanded',String(!english.hidden));
   supportState.textContent='Support: original English explanations have been revealed.';
@@ -161,7 +190,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  });
  const handoffs=el('div','','u30-handoffs');
  if(opts.onOpenSurface){
-  for(const [surface,label] of [['read','Continue to original reading'],['write','Continue to independent writing']] as const){
+  for(const [surface,label] of [['read','Continue to original reading'],['write','Continue to independent writing'],['speak','Continue to original speaking workshop']] as const){
    if(surface==='read'&&!source.reading)continue;
    if(surface==='write'&&!source.unit.writing.prompt)continue;
    handoffs.append(action(label,()=>{
@@ -175,11 +204,32 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  transfer.append(taskPrompt,editorLabel,el('h5','Self-review checklist'),revision,modelToggle,selfModel,handoffs,
   el('p','Speaking preparation and written summary are ungraded visits. Practice history, native due reviews, FSRS and CEFR estimates remain unchanged.','u30-note'));
  content.append(title,notice,provenance,speakers,audio,tabs,progress,questionHost,navigation,written,transfer);
+ const stopCumulative=appendLibrarySynthesis(content,id,opts.signal,'listen');
  let index=0,category:U30Kind|null=null;
- const responses=new Map<string,{correct:boolean;chosen:string;support:number;ttsRequested:boolean}>();
+ const markSupport=(level:number,transcript=true)=>{
+  const id=visibleDecisions()[index]?.id;
+  if(!id)return;
+  const old=supports.get(id)??{level:0,transcript:false};
+  const next={level:Math.max(old.level,level),transcript:old.transcript||transcript};
+  supports.set(id,next);supportLevel=next.level;transcriptAssisted=next.transcript;
+ };
+ const markFullTranscript=(level:number)=>{
+  for(const question of decisions){
+   const old=supports.get(question.id)??{level:0,transcript:false};
+   supports.set(question.id,{level:Math.max(old.level,level),transcript:true});
+  }
+  markSupport(level);
+ };
+ const responses=new Map<string,{correct:boolean;chosen:string;support:number;ttsRequested:boolean;
+  heardSelfReported:boolean;transcriptAssisted:boolean}>();
  const visibleDecisions=()=>category?decisions.filter(d=>d.kind===category):decisions;
  function updateExcerpt(){
   const d=visibleDecisions()[index],turn=d?.turnIndex;
+  if(d?.contextualTurns){
+   excerpt.textContent=d.contextualTurns.map(i=>
+    'Turn '+(i+1)+' · '+lesson.turns[i].speaker+': '+lesson.turns[i].fr).join('\n');
+   return;
+  }
   if(turn==null){excerpt.textContent='Written documentary excerpt · '+(d?.evidence??'');return;}
   excerpt.textContent='Turn '+(turn+1)+' · '+lesson.turns[turn].fr;
  }
@@ -200,13 +250,13 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   const counts=[...new Set(decisions.map(d=>d.kind))] as U30Kind[];
   for(const kind of counts){
    const button=action(LABELS[kind]+' · '+decisions.filter(d=>d.kind===kind).length,()=>{
-    category=kind;index=0;drawTabs();draw();
+    stop();category=kind;index=0;drawTabs();draw();
    });
    if(category===kind)button.setAttribute('aria-current','true');
    tabs.append(button);
   }
   tabs.prepend(action('All decisions · '+decisions.length,()=>{
-   category=null;index=0;drawTabs();draw();
+   stop();category=null;index=0;drawTabs();draw();
   }));
  }
  function draw(shouldFocus=false):void{
@@ -215,10 +265,30 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   if(!d)return;
   excerpt.hidden=true;
   const prior=responses.get(d.id);
+  const support=supports.get(d.id)??{level:0,transcript:false};
+  supportLevel=support.level;transcriptAssisted=support.transcript;
   progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' attempted in this page · '+LABELS[d.kind]+
    ' · TTS requests '+requestCount+(usedSlow?' · slow playback used':'')+'. No formal grades.';
   const heading=el('h4',d.question);heading.tabIndex=-1;
-  questionHost.append(el('p',LABELS[d.kind]+' · original turn '+(d.turnIndex===null?'written source':d.turnIndex+1),'u30-source'),heading);
+  questionHost.append(el('p',LABELS[d.kind]+' · '+
+   (d.contextualTurns?
+    'compare original spoken turns '+d.contextualTurns.map(i=>i+1).join(' and '):
+    'original turn '+(d.turnIndex===null?'written source':d.turnIndex+1)),'u30-source'),heading);
+  if(d.contextualTurns){
+   const count=d.contextualTurns.length;
+   const pair=action(count===2?'Replay both original turns (synthetic French TTS)':'Replay all three original turns (synthetic French TTS)',()=>
+    speak(d.contextualTurns!));
+   pair.disabled=!supported;
+   pair.title=supported?
+    'Device TTS is synthetic and not a recording. Replay alone does not prove hearing.':
+    'Device TTS unavailable; use the original written source turns.';
+   const readPair=action(count===2?'Reveal both original French turns':'Reveal all three original French turns',()=>{
+    markSupport(2);
+    updateExcerpt();excerpt.hidden=false;
+    supportState.textContent=count+' exact original dialogue turns revealed; subsequent answers are transcript-assisted.';
+   });
+   questionHost.append(pair,readPair);
+  }
   const form=el('form','','u30-answer');
   const selectLabel=el('label','Choose the answer supported by the original source');
   const picker=el('select');picker.setAttribute('aria-label','Answer '+d.id);
@@ -226,38 +296,127 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
   d.options.forEach(value=>{const option=el('option',value);option.value=value;picker.append(option);});
   selectLabel.append(picker);
   const hint=el('p',d.hint,'u30-hint');hint.hidden=true;
-  const hintButton=action('Show listening hint',()=>{hint.hidden=false;supportLevel=Math.max(supportLevel,1);});
+  const hintButton=action('Show listening hint',()=>{
+   hint.hidden=false;markSupport(1);
+  });
+  const evidenceState=el('p','','u30-evidence-mode');evidenceState.setAttribute('role','status');
+  const confirmHearing=action('I heard the device audio for this question (self-report)',()=>{
+   if(completedForQuestion!==d.id)return;
+   heardSelfReports.add(d.id);
+   evidenceState.textContent='Self-reported audio listening after browser TTS completion; audibility, language quality and comprehension remain unverified.';
+  });
+  confirmHearing.disabled=completedForQuestion!==d.id;
+  evidenceState.textContent=heardSelfReports.has(d.id)?
+   'You reported hearing synthesized audio for this question; no independent audio verification.':
+   completedForQuestion===d.id?
+    'Browser playback ended. Confirm hearing only if you actually heard the French output; otherwise use the transcript.':
+    'Audio has not been confirmed for this question. Written/transcript practice is available.';
+  const transcriptOnly=action('Use written/transcript practice instead',()=>{
+   markSupport(1);heardSelfReports.delete(d.id);
+   completedForQuestion=null;confirmHearing.disabled=true;
+   evidenceState.textContent='Written/transcript-led practice selected; no hearing or pronunciation claim.';
+  });
+  const oralTransfer=el('section','','u45-oral-transfer');oralTransfer.hidden=true;
+  if(d.oralPrompt&&(d.oralCriteria||d.oralSelfChecks)){
+   const question=el('p',d.oralPrompt,'u45-oral-prompt');question.lang='fr';
+   const criteria=el('ol','','u45-oral-criteria');
+   for(const criterion of d.oralSelfChecks??d.oralCriteria??[]){
+    const item=el('li',criterion);item.lang='fr';criteria.append(item);
+   }
+   oralTransfer.append(el('h5','Independent French oral response · after comprehension'),
+    el('p','Rehearse your own French explanation before revealing the model. Check authored criteria yourself; nothing here recognizes or grades speech.','u30-note'),question);
+   if(d.oralObjection&&d.oralModel){
+    const challenge=el('p',d.oralObjection,'u47-oral-challenge');challenge.lang='fr';
+    const outlineLabel=el('label','Private French reply to the hypothetical objection · not saved or transmitted','u47-oral-label');
+    const outline=el('textarea','','u47-oral-notes');outline.rows=4;outline.lang='fr';outline.spellcheck=true;
+    outline.setAttribute('aria-label','Private French deliberation rehearsal');
+    outline.placeholder='Je comprends cette objection. Cependant, selon… Je proposerais… à condition que…';
+    outline.value=oralRehearsals.get(d.id)??'';
+    outline.addEventListener('input',()=>oralRehearsals.set(d.id,outline.value));
+    outlineLabel.append(outline);
+    const model=el('div','','u47-model');model.hidden=true;
+    const sample=el('p',d.oralModel,'u47-french-model');sample.lang='fr';
+    model.append(el('h6','Authored French response to compare after your rehearsal'),sample,
+     el('p','Compare attribution, uncertainty, response to the objection and conditions yourself. This model is not a transcription or grade of your own speech.','u30-note'));
+    const reveal=action('Reveal authored French response',()=>{
+     model.hidden=!model.hidden;
+     reveal.textContent=model.hidden?'Reveal authored French response':'Hide authored French response';
+     reveal.setAttribute('aria-expanded',String(!model.hidden));
+    });reveal.setAttribute('aria-expanded','false');
+    oralTransfer.append(el('h6','Hypothetical follow-up objection · respond independently'),challenge,outlineLabel,criteria,reveal,model);
+   }else oralTransfer.append(criteria);
+   oralTransfer.append(el('p','This is a speaking task, not a recorded performance or validated proficiency.','u30-note'));
+  }
   const feedback=el('p','','u30-feedback');feedback.setAttribute('role','status');
   const submit=el('button','Check against authored key','primary-action compact-action');submit.type='submit';
   if(prior){
+   oralTransfer.hidden=false;
    picker.value=prior.chosen;feedback.textContent=(prior.correct?'Supported. ':'Needs correction. ')+evaluateU30Answer(d,prior.chosen).feedback+
-    ' Earlier support level: '+prior.support+'.'+(prior.ttsRequested?' TTS was requested, not verified.':' Text-only attempt.');
+    ' Earlier support level: '+prior.support+'.'+
+    (prior.heardSelfReported?' Learner reported hearing synthetic output; no recording or audibility verification.':
+     prior.ttsRequested?' TTS requested but hearing not confirmed.':' No TTS requested.')+
+    (prior.transcriptAssisted?' Written or hint support was exposed.':'');
   }
   form.addEventListener('submit',event=>{
    event.preventDefault();
    if(!picker.value){feedback.textContent='Choose an answer before checking.';return;}
    const checked=evaluateU30Answer(d,picker.value);
+   if(d.oralPrompt)oralTransfer.hidden=false;
+   compareNotes.hidden=!d.contextualTurns;
    responses.set(d.id,{chosen:picker.value,correct:checked.correct,support:supportLevel,
-    ttsRequested:requestCount>0});
+    ttsRequested:requestedByQuestion.has(d.id),heardSelfReported:heardSelfReports.has(d.id),
+    transcriptAssisted});
    feedback.textContent=(checked.correct?'Supported. ':'Needs correction. ')+checked.feedback+
-    (requestCount?' TTS was requested; audio reception is unverified.':' No TTS requested: this was text-based comprehension.');
+    (heardSelfReports.has(d.id)?
+      ' Learner reported hearing the synthetic audio; actual audibility is unverified.':
+      requestedByQuestion.has(d.id)?' TTS was requested for this question, but hearing was not confirmed.':
+      ' No audio claim: text-led comprehension.')+
+    (transcriptAssisted?' Written support/hints were exposed.':'');
    progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' decisions attempted locally; no Practice event recorded.';
   });
-  form.append(selectLabel,submit,hintButton,hint,feedback);
+  if(d.contextualTurns){
+   const notesLabel=el('label','Before choosing, explain in French what the source speakers establish, how their claims differ, and what remains uncertain.','u46-inference-label');
+   const notes=el('textarea','','u46-inference-notes');notes.rows=3;notes.lang='fr';
+   notes.setAttribute('aria-label',d.contextualTurns.length===2?'Private French two-turn inference notes':'Private French three-turn inference notes');
+   notes.placeholder='Le premier interlocuteur affirme que… Pourtant, le deuxième précise que… Nous ne savons pas encore…';
+   notes.value=inferenceNotes.get(d.id)??'';
+   notes.addEventListener('input',()=>inferenceNotes.set(d.id,notes.value));
+   notesLabel.append(notes);
+   const notePrivacy=el('p','Optional independent reasoning before the multiple-choice answer. Kept only while this lab is open; never uploaded, stored in learner history, or graded.','u30-note');
+   form.append(notesLabel,notePrivacy);
+  }
+  form.append(selectLabel,confirmHearing,transcriptOnly,evidenceState,submit,hintButton,hint,feedback,oralTransfer);
+  const compareNotes=el('div','','u46-inference-review');
+  compareNotes.hidden=!prior||!d.contextualTurns;
+  if(d.contextualTurns){
+   const comparison=el('p','','u46-inference-feedback');comparison.setAttribute('role','status');
+   const contrast=action('Compare your inference notes with authored source explanation',()=>{
+    const text=inferenceNotes.get(d.id)?.trim()??'';
+    comparison.replaceChildren(
+     el('p',text?'Your private French inference: '+text:'No independent French inference was entered for this question.'),
+     el('p','Authored interpretation (not a grade for your notes): '+d.explanation),
+     el('p',d.contextualTurns?.length===2?
+      'Self-check: Did you attribute both speakers, retain the limitation and avoid an unsupported causal or universal claim?':
+      'Self-check: Did you attribute all three source speakers, retain their limitations and avoid unsupported causal or universal claims?')
+    );
+   });
+   compareNotes.append(contrast,comparison);
+   form.append(compareNotes);
+  }
   questionHost.append(form);
-  const prev=action('Previous question',()=>{index=Math.max(0,index-1);draw(true);});
-  const next=action('Next question',()=>{index=Math.min(pool.length-1,index+1);draw(true);});
+  const prev=action('Previous question',()=>{stop();index=Math.max(0,index-1);draw(true);});
+  const next=action('Next question',()=>{stop();index=Math.min(pool.length-1,index+1);draw(true);});
   prev.disabled=index===0;next.disabled=index===pool.length-1;
   navigation.append(prev,next);
   const key=action('Show correct source and explanation',()=>{
-   excerpt.hidden=false;updateExcerpt();supportLevel=Math.max(supportLevel,2);
+   excerpt.hidden=false;updateExcerpt();markSupport(2);
    const note=el('p','Correct authored answer: '+d.answer+'. '+d.explanation,'u30-feedback');
    questionHost.append(note);
   });
   navigation.append(key);
   if(shouldFocus)heading.focus({preventScroll:true});
  }
- const cleanup=()=>{if(destroyed)return;destroyed=true;stop();opts.signal.removeEventListener('abort',cleanup);};
+ const cleanup=()=>{if(destroyed)return;destroyed=true;stop();stopCumulative();opts.signal.removeEventListener('abort',cleanup);};
  opts.signal.addEventListener('abort',cleanup,{once:true});
  showWrittenEvidence();drawTabs();draw();
  return cleanup;

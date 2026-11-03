@@ -8,6 +8,8 @@ import {
 import type {RouteId} from '../core/types.ts';
 import {appendOriginalDiscourseJourney} from './u32-discourse-panel.ts';
 import './u31-oral-panel.css';
+import {appendLibrarySynthesis} from './u46-b2-library-synthesis-panel.ts';
+import {appendB2Negotiation} from './u48-b2-negotiation-panel.ts';
 
 export type U31Mode='course'|'speak'|'listen'|'read'|'write';
 interface JourneyOptions{
@@ -178,7 +180,9 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  transfer.append(transferActions,
   el('p','All transfers preserve the original source identity. Revisiting a route is not a completed Practice session or review grade.','u31-notice'));
  const discourseHost=el('div','','u32-integration');
- body.append(head,context,stageNav,counter,stage,challenges,quote,discourseHost,transfer);
+ const negotiationHost=el('div','','u48-integration');
+ body.append(head,context,stageNav,counter,stage,challenges,quote,discourseHost,negotiationHost,transfer);
+ const stopCumulative=appendLibrarySynthesis(body,lessonId,opts.signal,'speak',syncDraftFlag);
  let phaseIndex=0,decisionIndex=0,support=0;
  const privateNotes=new Map<U31Stage,string>(),snapshots=new Map<U31Stage,string>();
  const selfReported=new Set<U31Stage>(),checksByStage=new Map<U31Stage,Set<number>>();
@@ -192,7 +196,9 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
  function syncDraftFlag():void{
   const original=[...privateNotes.values()].some(text=>text.trim().length>0);
   const advanced=!!root.querySelector<HTMLElement>('.u32-discourse[data-has-private-draft="true"]');
-  root.dataset.hasPrivateDraft=String(original||advanced);
+  const cumulative=!!root.querySelector<HTMLElement>('.u46-library-synthesis[data-has-private-draft="true"]');
+  const negotiation=!!root.querySelector<HTMLElement>('.u48-b2-negotiation[data-has-private-draft="true"]');
+  root.dataset.hasPrivateDraft=String(original||advanced||cumulative||negotiation);
  }
  function noteChange():void{
   privateNotes.set(journey.stages[phaseIndex].id,draft.value);
@@ -346,10 +352,11 @@ export function appendOriginalOralJourney(host:HTMLElement,lessonId:string,opts:
    opts.onNativeReview?.();
   }
  });
+ const stopNegotiation=appendB2Negotiation(negotiationHost,lessonId,opts.signal,syncDraftFlag);
  drawPhase();drawDecision();
  const cleanup=()=>{
   if(disposed)return;disposed=true;
-  stopU32();
+  stopU32();stopCumulative();stopNegotiation();
   window.removeEventListener('beforeunload',onBeforeUnload);
   opts.signal.removeEventListener('abort',cleanup);
  };
