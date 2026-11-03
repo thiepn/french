@@ -101,7 +101,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const before=await nativeCounts(page);
  expect(await studyMarkers(page)).toBeNull();
  await marker.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(marker).toContainText('1/255 lessons you marked studied');
+ await expect(marker).toContainText('1/257 lessons you marked studied');
  await expect(marker.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  const state=await studyMarkers(page);
  expect(state.schema).toBe('original-course-studied-v1');
@@ -116,7 +116,7 @@ test('Opt-in studied marker survives reload without native SRS writes or false C
  const again=page.getByRole('region',{name:'Your lesson study marker'});
  await expect(again.getByRole('button',{name:'Remove studied marker'})).toBeVisible();
  await again.getByRole('button',{name:'Remove studied marker'}).click();
- await expect(again).toContainText('0/255 lessons you marked studied');
+ await expect(again).toContainText('0/257 lessons you marked studied');
  expect((await studyMarkers(page)).studied).toHaveLength(0);
  expect(await nativeCounts(page)).toEqual(before);
 });
@@ -127,7 +127,7 @@ test('Two tabs cannot overwrite a newer explicit studied marker without refreshi
  const second=await openWriting(secondPage);
  await expect(second.getByRole('button',{name:'Mark this lesson studied'})).toBeVisible();
  await first.getByRole('button',{name:'Mark this lesson studied'}).click();
- await expect(first).toContainText('1/255 lessons you marked studied');
+ await expect(first).toContainText('1/257 lessons you marked studied');
  await second.getByRole('button',{name:'Mark this lesson studied'}).click();
  await expect(second).toContainText('Another tab or account update changed your markers');
  await expect(second.getByRole('button',{name:'Refresh studied-marker review'})).toBeVisible();
@@ -144,7 +144,7 @@ test('B2 extension opens actual original sources and six-stage progression inste
  await expect(page.locator('.u6-unit-header h3')).toContainText('Interdire les téléphones');
  const original=page.locator('.u6-unit-header h3');
  await page.locator('.course-directory-trigger').click();
- await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(71);
+ await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(73);
  await page.keyboard.press('Escape');
  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
  await expect(page.locator('[data-u6-stage="dialogue"] .u6-dialogue-turn')).toHaveCount(9);
