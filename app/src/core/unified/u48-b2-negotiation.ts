@@ -76,7 +76,7 @@ export const ORIGINAL_B2_NEGOTIATIONS:readonly U48Scenario[]=Object.freeze([
     finalTask:'Présentez votre réponse finale à l’enseignante en français : rectifiez l’inférence si nécessaire, prévoyez une comparaison et dites dans quelles conditions vous changeriez d’avis.',
     criteria:[
      'J’attribue le sondage uniquement aux répondants et ne généralise pas son pourcentage.',
-     'Je distingue observation, hypothèse causale et preuve comparée.',
+     'Je distingue observation, hypothèse causale et preuve comparée avant toute généralisation à l’établissement.',
      'Je propose une règle limitée et une consultation des personnes concernées.',
      'Je réponds à la relance par des critères concrets et une décision révisable.'
     ],
@@ -176,7 +176,7 @@ export const ORIGINAL_B2_NEGOTIATIONS:readonly U48Scenario[]=Object.freeze([
     finalTask:'Défendez en français la solution immédiate, indiquez les inconnues du devis et exposez les critères pour la décision définitive.',
     criteria:[
      'Je sépare la conservation sûre immédiate du délai de quinze jours.',
-     'Je présente un appareil de prêt comme une mesure provisoire.',
+     'Je présente un appareil de prêt comme une mesure provisoire, sans promettre la réussite ni le coût de la réparation.',
      'Je précise que le diagnostic et le coût final de réparation restent incertains.',
      'Je réponds à la nouvelle demande sans promettre une économie garantie.'
     ],
