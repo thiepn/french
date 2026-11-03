@@ -6,8 +6,8 @@ import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts'
 import {ORIGINAL_FRENCH_U42_COURSE} from '../app/src/core/unified/u42-course.ts';
 import {ORIGINAL_U42_CONNECTED_READINGS} from '../app/src/core/unified/u42-material.ts';
 
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,253);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,201);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,255);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,203);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.deepEqual(validateU30SourceModel(),[]);
 assert.equal(ORIGINAL_B2_DELIBERATIONS.length,6);
