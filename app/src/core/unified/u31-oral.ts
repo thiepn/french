@@ -536,8 +536,55 @@ const AUTHORED:readonly AuthoredJourney[]=[
     corrections:['The original Nour turn rejects the inference of fully restored trust; optional cooperation is not forced intimacy or complete forgiveness.','The task is explicitly accepted without requiring disclosure of reasons; a personal limit does not make all cooperation impossible.'],
     why:'The accepted scope and future optional review are the only warranted conclusions; interpersonal repair is not a scored outcome.'}
   ]
+ },
+ {
+  id:'transfer-162',speaker:'Maëlle',anchor:'C’est le total de l’équipe sur deux semaines',
+  situation:'Present a verifiable professional project in a formal interview and respond to precise questions about personal role, career gaps and realistic commitments',
+  counterview:'An invented interviewer insists that the eighty processed files prove Maëlle personally doubled the team’s efficiency and should promise zero errors.',
+  misunderstanding:'A recruiter equates collective output with the candidate’s individual work and reads a short private career interruption as proof she must disclose every detail.',
+  register:'Formal, precise French job-interview speech: competent without exaggeration, respectful without evasive claims',
+  objective:'Narrate context, own action and observable collective result, respond to a challenge about unsupported impact and clarify reciprocal role expectations.',
+  repair:'Maëlle authored the guide, colleagues checked the files and the eighty dossiers are a two-week team total, not personal output or measured improvement.',
+  structure:'Le contexte était… → j’ai personnellement rédigé… → notre équipe a traité… → cependant, cela ne mesure pas… → pourriez-vous préciser…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'When Madame Roussel challenges the eighty-file result, what is Maëlle actually able to claim?',
+    answer:'She authored the guide and checklist; the team, not Maëlle alone, processed eighty files over two weeks without a measured causal productivity gain.',
+    distractors:['Maëlle personally checked all eighty documents and proved her guide doubled productivity.','An interview question about the numbers means that no team work happened at all.'],
+    corrections:['Maëlle explicitly says eighty files is a collective two-week total and that she cannot attribute them all to her own effort or prove the entire gain.','The documented group total is real in the fictional portfolio; being unable to assign the entire result individually does not make it nonexistent.'],
+    why:'The original fourth French dialogue turn states the agent, window and explicit limits of causal inference.'},
+   {kind:'objection',
+    prompt:'The interviewer asks for a guaranteed error-free start and intimate reasons for a gap. Which professional response is supportable?',
+    answer:'« Je préfère garder ces raisons privées; je peux expliquer mes projets récents et demander qui valide les résultats avant de promettre un délai. »',
+    distractors:['« Je garantis zéro erreur dès demain et mon guide a déjà prouvé le doublement de nos résultats. »','« Pour être crédible, je dois révéler toute ma situation personnelle et ne poser aucune question sur le poste. »'],
+    corrections:['An absolute zero-error promise and a proven doubling are absent from the original portfolio and employer brief; Maëlle instead proposes a test and approval check.','Her dialogue clearly gives a bounded privacy answer while citing recent deadlines; a formal role clarification is appropriate, not evidence of incompetence.'],
+    why:'A realistic interview answer respects professional privacy, accurate team contribution and the still unconfirmed validation expectations.'}
+  ]
+ },
+ {
+  id:'transfer-163',speaker:'Maëlle',anchor:'Si j’ai bien compris, je transmets les six fiches',
+  situation:'Respond to specific constructive feedback and give an exact status-sensitive handover rather than blaming colleagues or overclaiming completion',
+  counterview:'An invented colleague says the six internally checked records mean all eight are approved and should be published publicly without another decision.',
+  misunderstanding:'A project member treats a provisional internal transfer as final publication and assumes a version-control error justifies personal blame rather than an accurate correction.',
+  register:'Tactful formal French meeting summary with precise status verbs, deadlines and approval boundaries',
+  objective:'Own the missing version check, fairly attribute an ambiguous instruction, and distinguish reviewed, pending and approved work using a polite reformulation.',
+  repair:'Only six records can go to internal review; two uncertain records remain pending, and Madame Roussel has not approved any public publication.',
+  structure:'Vous avez raison sur… → si j’ai bien compris… → six fiches sont… → deux restent… → pourriez-vous confirmer qui valide…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'What does Maëlle say she has understood about the immediate deliverable?',
+    answer:'Send six checked records for provisional internal review, hold two uncertain records and request Madame Roussel’s approval before any public publication.',
+    distractors:['Immediately publish all eight records because the spreadsheet was sent to colleagues.','Treat the two uncertain codes as resolved without verifying their reference version.'],
+    corrections:['Maëlle explicitly marks the six-file transmission provisional and asks for approval before publication; the manager has prohibited immediate public release.','The two remaining files still contain uncertain codes and cannot be counted as verified or published in the agreed handover.'],
+    why:'The original French eighth turn restates the actual scope and approval gate before the manager confirms the interpretation.'},
+   {kind:'objection',
+    prompt:'How can Maëlle disagree when another colleague says internal review is the same as published, completed work?',
+    answer:'« Six fiches ont été transmises pour contrôle interne, mais deux restent en attente et Madame Roussel doit encore autoriser toute publication. »',
+    distractors:['« Le contrôle interne prouve que huit fiches ont déjà été validées et publiées. »','« Ilyès est seul responsable de toutes les erreurs; aucun autre détail n’est nécessaire. »'],
+    corrections:['Internal review is not a public authorization; the six and two records have distinct statuses stated in the confirmed meeting recap.','Maëlle owns the old-version reuse and Ilyès owns an ambiguous instruction; blame does not resolve reference version, status or final approval.'],
+    why:'The sourced professional answer differentiates verified, pending, transmitted and authorized work without personal condemnation.'}
+  ]
  }
-
 ];
 function normalize(text:string):string{
  return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
