@@ -94,7 +94,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
     el('h2','Choose where to learn'),
-    el('p','259 original course units: the preceding 257 source-owned lessons remain intact, with two independent early-B2 narrative chapters on vivid storytelling, past-time sequencing, humane irony and comic pacing. All earlier civic, interpersonal and professional chapters remain preserved. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
+    el('p','261 original course units: all preceding 259 source-owned lessons remain intact, with two independent early-B2 instructional mediation chapters on teaching a cooperative game and guiding reversible paper-folding steps. Earlier civic, interpersonal, workplace and narrative lessons remain intact. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const hero=el('section',undefined,'u25-hero');
   hero.setAttribute('aria-label','Start or continue original French');
@@ -578,7 +578,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const translated=new Set([
     'transfer-91','transfer-92','transfer-93','transfer-106','transfer-107','transfer-108',
     'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150',
-    'transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156','transfer-157','transfer-158','transfer-159','transfer-160','transfer-161','transfer-162','transfer-163','transfer-164','transfer-165'
+    'transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156','transfer-157','transfer-158','transfer-159','transfer-160','transfer-161','transfer-162','transfer-163','transfer-164','transfer-165','transfer-166','transfer-167'
    ]);
    const teachingSummary=unit.id.startsWith('transfer-')&&!translated.has(unit.id);
    const showText=teachingSummary?'Show English study note':'Show translation';
