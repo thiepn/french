@@ -9,10 +9,10 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 assert.deepEqual(validateLibrarySynthesis(),[],'All authored source anchors and multi-lesson comparisons must be valid');
 assert.equal(ORIGINAL_LIBRARY_SYNTHESIS.length,3);
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,250);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,251);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 const newIds=['transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156'];
-assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(-6).map(x=>x.id),newIds);
+assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,250).map(x=>x.id),newIds);
 for(const item of ORIGINAL_LIBRARY_SYNTHESIS){
  const turns=resolveLibrarySynthesisSources(item);
  assert.ok(turns,'Original source anchors resolve for '+item.id);
@@ -33,4 +33,4 @@ for(const item of ORIGINAL_LIBRARY_SYNTHESIS){
  assert.ok(item.selfChecks.every(x=>x.length>=50));
  assert.ok(item.frenchModel.length>=180);
 }
-console.log('B2 library 154–156: three complete cross-lesson source comparisons, exact 3-lesson dialogue anchors, answer-specific corrections, original ungraded oral models; 250 course identities preserved.');
+console.log('B2 library 154–156: three complete cross-lesson source comparisons, exact 3-lesson dialogue anchors, answer-specific corrections, original ungraded oral models; historical 250 course identities preserved before additive 157.');
