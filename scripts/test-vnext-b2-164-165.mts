@@ -27,11 +27,11 @@ import {U42_REVISION_GUIDES} from '../app/src/core/unified/u42-revision-guides.t
 
 assert.deepEqual(validateU42Course(),[],'All original course source teaching and chronology');
 assert.deepEqual(validateU31SourceAnchors(),[],'All curated oral French anchor phrases');
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207);
-assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:259,connectedReadings:207});
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,259);
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(x=>x.qualifiedId)).size,259);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,261);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,209);
+assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:261,connectedReadings:209});
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,261);
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(x=>x.qualifiedId)).size,261);
 const historicalLessons=[
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(x=>x.unit),...U46_B2_SEQUENCE.map(x=>x.unit),
  ...U49_B2_EXTENSION.map(x=>x.unit),...U50_B2_SEQUENCE.map(x=>x.unit),
@@ -50,7 +50,7 @@ assert.equal(ORIGINAL_FRENCH_U42_COURSE[256].id,'transfer-163');
 assert.equal(ORIGINAL_U42_CONNECTED_READINGS[204].unitId,'transfer-163');
 assert.deepEqual(U53_B2_NARRATIVE.map(x=>x.unit.id),['transfer-164','transfer-165']);
 const levels=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
-assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,75);
+assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,77);
 for(const [i,story] of U53_B2_NARRATIVE.entries()){
  const id='transfer-'+(164+i),unit=story.unit;
  assert.equal(ORIGINAL_FRENCH_U42_COURSE[257+i],unit);
