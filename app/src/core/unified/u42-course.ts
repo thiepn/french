@@ -176,12 +176,12 @@ export function validateU42Course():readonly string[]{
       (task.options.length!==3||new Set(task.options).size!==3||!task.options.includes(task.answer)))
     issues.push('157 invalid sourced choice '+task.id);
    if(task.type==='order'){
-    const norm=(x:string)=>x.trim().split(/\\s+/).sort().join('|');
+    const norm=(x:string)=>x.trim().split(/\s+/).sort().join('|');
     if(norm(task.answer)!==norm(task.options.join(' '))||task.answer===task.options.join(' '))
      issues.push('157 unanswerable sentence order');
    }
   }
-  if(latest.reading.french.trim().split(/\\s+/).length<270||
+  if(latest.reading.french.trim().split(/\s+/).length<270||
      latest.reading.questions.length!==3||latest.reading.title.length<25)
     issues.push('157 long original article insufficient');
   if(latest.evidence.length!==2||latest.evidence.some(s=>s.french.length<180)||
