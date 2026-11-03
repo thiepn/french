@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
 import {
- ORIGINAL_FRENCH_U42_COURSE,U42_B2_CASES,U46_B2_SEQUENCE,validateU42Course
+ ORIGINAL_FRENCH_U42_COURSE,U42_B2_CASES,U46_B2_SEQUENCE,U49_B2_EXTENSION,validateU42Course
 } from '../app/src/core/unified/u42-course.ts';
 import {
  ORIGINAL_U42_CONNECTED_READINGS,u42OriginalEvidence,
@@ -10,7 +10,7 @@ import {
 import {ORIGINAL_REGISTRY_ENTRIES,getOriginalMaterial,getOriginalCatalogEntry} from '../app/src/core/unified/u23-registry.ts';
 import {CUR02_LEVELS,buildFrenchCourseNavigation,parseFrenchCourseLocation} from '../app/src/core/unified/cur02-level-nav.ts';
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244,'244 existing authored lesson identities remain intact');
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,250);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,251);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE,
  'Original historical teaching material must not be modified');
 assert.deepEqual(U42_B2_CASES.map(s=>s.unit.id),['transfer-151','transfer-152','transfer-153']);
@@ -18,20 +18,24 @@ assert.deepEqual(validateU42Course(),[],'New B2 lesson authoring and source guar
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,247),U42_B2_CASES.map(s=>s.unit),
  'Prior 247 original IDs and lesson objects remain unchanged');
 assert.deepEqual(U46_B2_SEQUENCE.map(s=>s.unit.id),['transfer-154','transfer-155','transfer-156']);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,198,'Six original connected B2 reading texts');
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,250);
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,250);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,199,'Historical 198 + one original 157 reading');
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,251);
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,251);
 const levels=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
 assert.deepEqual(levels.map(x=>x.level),CUR02_LEVELS);
-assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,66);
-for(let n=151;n<=156;n++){
+assert.equal(levels.find(x=>x.level==='B2')?.lessons.length,67);
+assert.deepEqual(U49_B2_EXTENSION.map(s=>s.unit.id),['transfer-157']);
+assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,250).map(s=>s.id),[...U42_B2_CASES,...U46_B2_SEQUENCE].map(s=>s.unit.id),
+ 'All six original 151–156 source objects stay in their historical positions');
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS[198].unitId,'transfer-157');
+for(let n=151;n<=157;n++){
  const id='transfer-'+n,lesson=getOriginalMaterial(id),entry=getOriginalCatalogEntry(id);
  assert.ok(lesson&&entry,'New B2 source unavailable '+id);
  assert.equal(entry.level,'Early B2');
  assert.equal(entry.id,id);
  assert.equal(lesson.unit.order,n+94);
  assert.equal(lesson.unit.source.rights,'original-owned');
- assert.equal(lesson.unit.source.localId,(n<=153?'u42-':'u46-')+id);
+ assert.equal(lesson.unit.source.localId,(n<=153?'u42-':n<=156?'u46-':'u49-')+id);
  assert.equal(lesson.unit.prerequisites.join(),'transfer-'+(n-1));
  assert.equal(lesson.unit.vocabulary.length,12);
  assert.equal(lesson.unit.dialogue.length,9);
@@ -54,4 +58,4 @@ for(let n=151;n<=156;n++){
  assert.deepEqual(parseFrenchCourseLocation('#course/B2/'+id,levels),{level:'B2',id});
  assert.equal(parseFrenchCourseLocation('#course/C1/'+id,levels),null);
 }
-console.log('B2 Course extension: three authored source-grounded studies, 244 immutable predecessor lessons, 198 connected readings, 66 early-B2 entries, no CEFR promotion.');
+console.log('B2 Course: historical 250 lesson identities and 198 readings preserved; 157 original source extension adds one full media-verification unit/reading, no CEFR promotion.');
