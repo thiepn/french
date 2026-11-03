@@ -73,6 +73,9 @@ test('U65 genuine original-source P32 remains blocked when device French TTS is 
  });
  await page.goto('/#b2-assess');
  await expect(page.getByRole('heading',{name:'B2 Evidence Lab'})).toBeVisible({timeout:45000});
+ // The heading appears before async first-boot learner migration/hydration completes.
+ // Synthetic fixture setup must await the native action rather than racing state-v1.
+ await expect(page.getByRole('button',{name:'Begin P31 two-task argument assessment'})).toBeVisible({timeout:45000});
  await page.evaluate(async()=>{
   await new Promise((resolve,reject)=>{
    const open=indexedDB.open('thiepn-french-vnext',5);
@@ -81,12 +84,15 @@ test('U65 genuine original-source P32 remains blocked when device French TTS is 
     const db=open.result,tx=db.transaction('learner','readwrite'),store=tx.objectStore('learner'),request=store.get('state-v1');
     request.onsuccess=()=>{
      const learner=request.result,now=Date.now();
+     if(!learner){tx.abort();reject(new Error('Synthetic P31 fixture requires initialized canonical learner after route hydration'));return;}
      const task=(id)=>({taskId:id,modality:'argument',wordCount:160,sentenceCount:9,markerFamilies:['contrast','condition','example','conclusion'],score:89,confidence:91,topicGroups:3,directCopyPct:0,transformation:70,playCount:0,elapsedMs:160000,status:'structural-targets-met',reason:'Synthetic test evidence, not a real learner result.',evaluator:'u65-structural-v1'});
      const attempt={id:'synthetic-test-p31-only',kind:'p31',at:now,status:'structural-targets-met',evaluator:'u65-structural-v1',tasks:[task('fixture-one'),task('fixture-two')]};
      store.put({...learner,featureState:{...learner.featureState,vU65B2StructuralEvidence:{schema:'thiepn-french-u65-b2-evidence-v1',token:'fixture-unique-token',history:[attempt]}}},'state-v1');
     };
     tx.oncomplete=()=>{db.close();resolve()};
+    request.onerror=()=>reject(request.error);
     tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error??new Error('Synthetic P31 fixture transaction aborted'));
    };
   });
  });
