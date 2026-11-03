@@ -634,6 +634,55 @@ const AUTHORED:readonly AuthoredJourney[]=[
     why:'The original invitation is underspecified and Aya’s French line explicitly offers a tactful clarification rather than humiliating Farah.'}
   ]
  }
+ ,
+ {
+  id:'transfer-166',speaker:'Noé',anchor:'Je te propose « Les Quatre Passerelles »',
+  situation:'Teach a completely fictional cooperative table game without reading rules mechanically or doing the novice’s next move for them',
+  counterview:'The novice believes that the first legal link means any later link may be repeated, or that a diagonal saves time and should count.',
+  misunderstanding:'A listener thinks A–C is an allowed first move and that a second A–B link makes the network progress because two sticks were placed.',
+  register:'Patient, clear B2 instructional French: cooperative purpose, ordered constraints, real questions and respectful repair',
+  objective:'Explain the four-card square and three-link goal, state the first-turn exception, and verify the student can choose a later valid side independently.',
+  repair:'A–C is forbidden because it crosses the square diagonally. A second A–B adds no new island; after A–B, B–C or A–D would advance the network.',
+  structure:'Le but est de… → d’abord, placez… → au premier tour… → si A–B est déjà relié… → pourriez-vous choisir…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'Which move after a legal first A–B connection demonstrates understanding of the invented game rules?',
+    answer:'Add B–C or A–D, because it extends the network to a previously unconnected side-adjacent island.',
+    distractors:['Repeat A–B and claim that placing a second stick has introduced a third island.','Place the diagonal A–C because it uses fewer sticks and therefore overrides the rules.'],
+    corrections:['Repeating A–B leaves precisely the same two islands in the network; the later-turn rule explicitly requires one newly connected island.','The authored dialogue forbids diagonals even if they appear to save time; choose a side-adjacent edge linking an unconnected island.'],
+    why:'Noé’s French fifth and seventh turns distinguish a first link from later connections, while Salomé’s sixth turn supplies a valid teach-back.'},
+   {kind:'objection',
+    prompt:'What is a productive French response if Salomé suggests A–C as her next bridge?',
+    answer:'« Je comprends ton idée. Peux-tu me montrer deux îles voisines sur un côté qui ajouteraient une île nouvelle au réseau ? »',
+    distractors:['« Tu n’as rien compris; je vais poser toutes les baguettes pour toi. »','« Toutes les diagonales sont autorisées si l’on joue assez vite. »'],
+    corrections:['Replacing the learner’s decision and criticizing them does not check understanding; Noé offers a spatial hint and asks Salomé to justify a legal choice.','A quicker route cannot cancel an explicit adjacency restriction. The original four-island rules consistently prohibit diagonals.'],
+    why:'The source-anchored teaching move uses a respectful counterexample and teach-back instead of a generic sourced debate or an invented speech grade.'}
+  ]
+ },
+ {
+  id:'transfer-167',speaker:'Mina',anchor:'Tu as raison : commençons par tourner la feuille',
+  situation:'Guide a paper-folding beginner across a table, make spatial directions intelligible from their viewpoint and adapt after a wrong fold',
+  counterview:'The learner says they should always force a misaligned fold and that the teacher’s right automatically equals their own right.',
+  misunderstanding:'A partner interprets « droite » from Mina’s rather than Éloi’s side of the table and believes any fold will permanently seal the envelope.',
+  register:'Empathetic but precise B2 practical instructions: orientation, condition, reversible repair and complete learner teach-back',
+  objective:'Establish the learner’s right/left and diamond orientation, sequence corners and flap, explain an undo-last-fold repair and state the unsealed-envelope limitation.',
+  repair:'Directions use Éloi’s viewpoint, the square must be oriented as a diamond, bad folds are gently undone and the top flap may reopen without adhesive.',
+  structure:'De votre point de vue… → tournez le carré… → avant de marquer… → si le pli est de travers… → reformulez…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'Why does Mina pause before explaining where Éloi should fold the paper?',
+    answer:'She must establish the diamond orientation and use the learner’s left and right, since they face each other.',
+    distractors:['The directions can safely depend on Mina’s right even when Éloi faces her, without any clarification.','The original text already describes a fully sealed postal envelope that needs no paper orientation.'],
+    corrections:['Éloi explicitly asks whose right is meant; the French third turn resolves the mismatch by defining his own upper, lower, left and right positions.','Mina explains a simple presentation envelope with a flap that may reopen; orientation and the absence of permanent sealing are explicit constraints.'],
+    why:'The original third spoken turn anchors every subsequent spatial imperative to the learner’s viewpoint rather than the instructor’s.'},
+   {kind:'objection',
+    prompt:'What should Mina say if Éloi’s side fold is badly misaligned and he wants to press harder?',
+    answer:'« Si les deux pointes ne se rejoignent pas, défais le dernier pli, vérifie leur position et recommence doucement. »',
+    distractors:['« Appuie toujours plus fort : la feuille finira forcément par se sceller. »','« Ne pose aucune question; je vais plier ton enveloppe à ta place pour prouver ta compétence. »'],
+    corrections:['Mina’s fifth turn expressly says not to force a misaligned fold; moreover, the resulting flap is not guaranteed permanently sealed without a fastener.','Her method requires a visible self-check and independent reformulation, not silent substitution of the learner’s action.'],
+    why:'This original procedural repair names the observable error, an undoable action and a new alignment check while preserving learner agency.'}
+  ]
+ }
 ];
 function normalize(text:string):string{
  return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
