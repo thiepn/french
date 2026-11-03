@@ -11,7 +11,7 @@ async function deliberation(page,id){
  await lab.locator('.u30-disclosure > summary').click();
  await lab.getByRole('button',{name:/Interpret what was said/}).click();
  for(let i=0;i<4;i++)await lab.getByRole('button',{name:'Next question'}).click();
- await expect(lab.locator('.u30-source')).toContainText('compare original spoken turns');
+ await expect(lab.locator('.u30-question > .u30-source')).toContainText('compare original spoken turns');
  await expect(lab.getByRole('button',{name:'Replay all three original turns (synthetic French TTS)'})).toBeVisible();
  return lab;
 }
