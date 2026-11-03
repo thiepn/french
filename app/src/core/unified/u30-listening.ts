@@ -1,6 +1,7 @@
 import {getOriginalMaterial,getOriginalCatalogEntry,type OriginalLevel} from './u23-registry.ts';
 import {originalVocabularyForUnit,originalVocabularyWitnesses} from './u28-vocabulary.ts';
 import {ORIGINAL_B2_LISTENING_PAIRS} from './u45-b2-listening-pairs.ts';
+import {ORIGINAL_B2_DELIBERATIONS} from './u47-b2-deliberation.ts';
 
 /**
  * U30: all spoken turns, speaker names, translations and documentary claims
@@ -15,8 +16,9 @@ export interface U30Decision{
  readonly explanation:string;readonly hint:string;
  readonly errors:Readonly<Record<string,string>>;
  readonly documentLabel?:string;
- readonly contextualTurns?:readonly [number,number];
+ readonly contextualTurns?:readonly number[];
  readonly oralPrompt?:string;readonly oralCriteria?:readonly [string,string,string];
+ readonly oralObjection?:string;readonly oralSelfChecks?:readonly [string,string,string,string];readonly oralModel?:string;
 }
 export interface U30Lesson{
  readonly id:string;readonly title:string;readonly level:OriginalLevel;
@@ -114,14 +116,16 @@ function create(id:string,kind:U30Kind,question:string,answer:string,
  options:readonly string[],turnIndex:number|null,evidence:string,translation:string,
  explanation:string,hint:string,errors:Readonly<Record<string,string>>={},
  documentLabel?:string,contextualTurns?:readonly [number,number],
- oralPrompt?:string,oralCriteria?:readonly [string,string,string]):U30Decision|null{
+ oralPrompt?:string,oralCriteria?:readonly [string,string,string],
+ oralObjection?:string,oralSelfChecks?:readonly [string,string,string,string],oralModel?:string):U30Decision|null{
  const choices=unique([answer,...options]);
  if(!answer||choices.length<2)return null;
  // Stable authored-key-preserving rotation avoids always showing the answer first.
  const offset=[...id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)%choices.length;
  const ordered=[...choices.slice(offset),...choices.slice(0,offset)];
  return Object.freeze({id,kind,question,answer,options:Object.freeze(ordered),
-  turnIndex,evidence,translation,explanation,hint,errors,documentLabel,contextualTurns,oralPrompt,oralCriteria});
+  turnIndex,evidence,translation,explanation,hint,errors,documentLabel,contextualTurns,
+  oralPrompt,oralCriteria,oralObjection,oralSelfChecks,oralModel});
 }
 function push(tasks:U30Decision[],task:U30Decision|null):void{
  if(task&&!tasks.some(x=>x.id===task.id))tasks.push(task);
@@ -217,6 +221,22 @@ export function originalU30Listening(id:string):U30Lesson|null{
    turns[b].fr,turns[b].en,comparison.explanation,comparison.hint,
    errors,undefined,Object.freeze([a,b] as const),comparison.oralPrompt,comparison.oralCriteria));
  }
+ // A new B2 tier: reason in French across THREE attested turns, then defend
+ // an independent recommendation against a newly authored hypothetical objection.
+ // Source text is always the existing original-owned dialogue; no voice identity
+ // or spontaneous speech score is inferred from the keyed comprehension choice.
+ for(const caseStudy of ORIGINAL_B2_DELIBERATIONS.filter(x=>x.lesson===id)){
+  const indices=caseStudy.sources.map(source=>turns.findIndex(t=>
+   t.speaker===source.speaker&&normalize(t.fr).includes(normalize(source.anchor))));
+  if(indices.some(i=>i<0)||new Set(indices).size!==3)continue;
+  const cited=indices[indices.length-1];
+  push(tasks,create('u30:'+id+':deliberation-'+caseStudy.id,'interpretation',
+   caseStudy.question,caseStudy.answer,caseStudy.distractors,cited,
+   turns[cited].fr,turns[cited].en,caseStudy.explanation,caseStudy.hint,
+   Object.fromEntries(caseStudy.distractors.map((wrong,i)=>[wrong,caseStudy.corrections[i]])),
+   undefined,Object.freeze(indices),caseStudy.oralPrompt,undefined,
+   caseStudy.objection,caseStudy.criteria,caseStudy.model));
+ }
  // Documentary comparison is visibly *written* evidence, never claimed audio.
  const documents=(material.evidence?.sources??[]).map(d=>({label:d.label,type:d.type,fr:d.french}));
  if(documents.length>=2){
@@ -255,6 +275,18 @@ export function validateU30SourceModel():readonly string[]{
   const original=getOriginalMaterial(item.lesson);
   if(!original?.unit.dialogue.some(t=>normalize(t.fr).includes(normalize(item.anchor))))
    errors.push('Source anchor missing: '+item.lesson+'/'+item.id);
+ }
+ for(const caseStudy of ORIGINAL_B2_DELIBERATIONS){
+  const turns=getOriginalMaterial(caseStudy.lesson)?.unit.dialogue??[];
+  const indices=caseStudy.sources.map(source=>turns.findIndex(t=>
+   t.speaker===source.speaker&&normalize(t.fr).includes(normalize(source.anchor))));
+  if(indices.some(i=>i<0)||new Set(indices).size!==3)
+   errors.push('Missing distinct three-turn B2 source: '+caseStudy.lesson+'/'+caseStudy.id);
+  if(caseStudy.question.length<80||caseStudy.explanation.length<140||
+   caseStudy.oralPrompt.length<110||caseStudy.objection.length<95||
+   caseStudy.model.length<250||caseStudy.criteria.length!==4||
+   caseStudy.criteria.some(s=>s.length<55)||caseStudy.corrections.some(s=>s.length<80))
+   errors.push('Insufficient authored multi-turn deliberation: '+caseStudy.lesson+'/'+caseStudy.id);
  }
  for(const pair of ORIGINAL_B2_LISTENING_PAIRS){
   const material=getOriginalMaterial(pair.lesson);
