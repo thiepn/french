@@ -8,9 +8,9 @@ import {ORIGINAL_U42_CONNECTED_READINGS} from '../app/src/core/unified/u42-mater
 import {originalU31OralJourney} from '../app/src/core/unified/u31-oral.ts';
 import {originalU30Listening} from '../app/src/core/unified/u30-listening.ts';
 
-assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,257);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,257);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,205);
+assert.equal(ORIGINAL_REGISTRY_ENTRIES.length,259);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,207);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.deepEqual(validateB2Negotiations(),[],'each fictional challenge must bind to exact source-owned French turns');
 assert.equal(ORIGINAL_B2_NEGOTIATIONS.length,3);
