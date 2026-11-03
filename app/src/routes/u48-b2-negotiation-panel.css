@@ -1,0 +1,29 @@
+.u48-b2-negotiation{border:1px solid var(--line,#cdd2d9);padding:0 1rem;min-width:0}
+.u48-disclosure>summary{padding:1rem .2rem;font-weight:700;cursor:pointer;line-height:1.5}
+.u48-body,.u48-stage{display:grid;gap:.85rem;min-width:0}
+.u48-body{padding:.75rem 0 1.2rem}
+.u48-body h4,.u48-body h5,.u48-body h6{margin:.3rem 0}
+.u48-stage{border:1px solid var(--line,#cdd2d9);padding:1rem}
+.u48-french,.u48-task,.u48-context,.u48-notice,.u48-progress,.u48-choice-feedback{line-height:1.65;overflow-wrap:anywhere}
+.u48-french,.u48-task{white-space:pre-wrap}
+.u48-label{font-weight:600}
+.u48-notice,.u48-progress{color:var(--muted,#606877)}
+.u48-private-label{display:grid;gap:.45rem;min-width:0;font-weight:600}
+.u48-private-notes{box-sizing:border-box;width:100%;max-width:100%;min-height:7rem;resize:vertical;
+ padding:.7rem;font:inherit;line-height:1.6;color:var(--text,#1a2130);
+ background:var(--surface,#fff);border:1px solid var(--line,#8d98a5)}
+.u48-route-buttons,.u48-moves,.u48-navigation{display:flex;gap:.6rem;flex-wrap:wrap}
+.u48-route-buttons button,.u48-moves button{flex:1 1 15rem;min-width:0;min-height:3.2rem;text-align:left}
+.u48-navigation button,.u48-rehearsal button{min-height:2.65rem}
+.u48-moves [aria-pressed="true"]{font-weight:700;outline:2px solid var(--accent,#2254a0);outline-offset:2px}
+.u48-choice-feedback{border-inline-start:3px solid var(--accent,#64748b);padding:.75rem;background:var(--surface-muted,#f5f6f8)}
+.u48-evidence-turns{display:grid;gap:.6rem;margin:.6rem 0}
+.u48-source-card{border-inline-start:3px solid var(--accent,#64748b);padding:.65rem .8rem;background:var(--surface-muted,#f5f6f8)}
+.u48-criteria{padding-inline-start:1.6rem;line-height:1.7}
+.u48-model,.u48-draft-comparison{padding:.85rem;border:1px solid var(--line,#cdd2d9);overflow-wrap:anywhere}
+.u48-draft-comparison{display:grid;gap:.4rem}
+.u48-model[hidden],.u48-draft-comparison[hidden],.u48-evidence-turns[hidden]{display:none!important}
+.u48-b2-negotiation :is(button,summary,textarea):focus-visible{outline:2px solid var(--accent,#2254a0);outline-offset:3px}
+@media(max-width:700px){.u48-b2-negotiation{padding:0 .6rem}.u48-stage{padding:.7rem}
+ .u48-route-buttons button,.u48-moves button,.u48-navigation button{width:100%;flex:1 1 100%;text-align:left}
+}
