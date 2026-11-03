@@ -17,10 +17,12 @@ function french(text:string,cls='u48-french'):HTMLParagraphElement{
  * Never captures audio, evaluates learner speech, mutates learner state or invents published dialogue.
  */
 export function appendB2Negotiation(host:HTMLElement,lessonId:string,signal:AbortSignal,onPrivateChange?:()=>void):()=>void{
- const scene=ORIGINAL_B2_NEGOTIATIONS.find(s=>s.lesson===lessonId);
- if(!scene||validateB2Negotiations().length)return()=>{};
- const exact=resolveB2NegotiationSources(scene);
- if(!exact)return()=>{};
+ const candidate=ORIGINAL_B2_NEGOTIATIONS.find(s=>s.lesson===lessonId);
+ if(!candidate||validateB2Negotiations().length)return()=>{};
+ const scene=candidate;
+ const found=resolveB2NegotiationSources(scene);
+ if(!found)return()=>{};
+ const exact=found;
  const root=el('section','','u48-b2-negotiation');
  root.setAttribute('aria-label','Branching B2 French stakeholder negotiation');
  root.dataset.hasPrivateDraft='false';
