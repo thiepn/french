@@ -1,6 +1,9 @@
 import {test,expect} from '@playwright/test';
 
 async function seedB2Prerequisites(page){
+ // P33 renders its heading before first-boot hydration; native practice entry
+ // proves the original learner initialization and P35 authority gate settled.
+ await expect(page.getByRole('button',{name:'Open text-only speaking rehearsal'})).toBeVisible({timeout:45000});
  await page.evaluate(async()=>{
   const manifest=await(await fetch('/content/manifest.json')).json();
   const digest=manifest.packs.find(p=>p.id==='reading-stable-p35')?.sha256;
@@ -13,6 +16,7 @@ async function seedB2Prerequisites(page){
     const get=store.get('state-v1');
     get.onsuccess=()=>{
      const learner=get.result,now=Date.now();
+     if(!learner){tx.abort();reject(new Error('Synthetic P33 prerequisites require initialized canonical learner after route hydration'));return;}
      const rec=(id,modality='argument',sourceId)=>({
       taskId:id,...(sourceId?{sourceId}:{}),modality,wordCount:170,sentenceCount:9,
       markerFamilies:['contrast','concession','condition','example','consequence','conclusion'],
@@ -42,7 +46,9 @@ async function seedB2Prerequisites(page){
      }},'state-v1');
     };
     tx.oncomplete=()=>{db.close();resolve()};
+    get.onerror=()=>reject(get.error);
     tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error??new Error('Synthetic P33 prerequisite transaction aborted'));
    };
   });
  });
