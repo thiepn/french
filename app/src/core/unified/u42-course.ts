@@ -22,6 +22,9 @@ import {U52_B2_GRAMMAR} from './u52-b2-grammar.ts';
 import {U53_164} from './u53-164.ts';
 import {U53_165} from './u53-165.ts';
 import {U53_B2_GRAMMAR} from './u53-b2-grammar.ts';
+import {U54_166} from './u54-166.ts';
+import {U54_167} from './u54-167.ts';
+import {U54_B2_GRAMMAR} from './u54-b2-grammar.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
@@ -72,10 +75,16 @@ export const U53_B2_NARRATIVE:readonly U21Scenario[]=Object.freeze(
   grammar:U53_B2_GRAMMAR[story.unit.id]??story.unit.grammar
  })}))
 );
+/** Additive B2 practical teaching and adaptive procedural mediation; first 259 references untouched. */
+export const U54_B2_MEDIATION:readonly U21Scenario[]=Object.freeze(
+ [...U54_166,...U54_167].map(story=>Object.freeze({...story,unit:Object.freeze({...story.unit,
+  grammar:U54_B2_GRAMMAR[story.unit.id]??story.unit.grammar
+ })}))
+);
 export const ORIGINAL_FRENCH_U42_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit),
  ...U46_B2_SEQUENCE.map(s=>s.unit),...U49_B2_EXTENSION.map(s=>s.unit),
- ...U50_B2_SEQUENCE.map(s=>s.unit),...U51_B2_INTERPERSONAL.map(s=>s.unit),...U52_B2_PROFESSIONAL.map(s=>s.unit),...U53_B2_NARRATIVE.map(s=>s.unit)
+ ...U50_B2_SEQUENCE.map(s=>s.unit),...U51_B2_INTERPERSONAL.map(s=>s.unit),...U52_B2_PROFESSIONAL.map(s=>s.unit),...U53_B2_NARRATIVE.map(s=>s.unit),...U54_B2_MEDIATION.map(s=>s.unit)
 ]);
 export function getU42OriginalUnit(id:string):A1Unit|null{
  return ORIGINAL_FRENCH_U42_COURSE.find(u=>u.id===id)??null;
@@ -94,9 +103,9 @@ export function validateU42Course():readonly string[]{
  const issues=[...validateU22OriginalCourse()];
  if(ORIGINAL_FRENCH_U22_COURSE.length!==244)issues.push('Historical 244 original lessons changed');
  if(U42_B2_CASES.length!==3||U46_B2_SEQUENCE.length!==3||U49_B2_EXTENSION.length!==1||
-    U50_B2_SEQUENCE.length!==2||U51_B2_INTERPERSONAL.length!==2||U52_B2_PROFESSIONAL.length!==2||U53_B2_NARRATIVE.length!==2||
-    ORIGINAL_FRENCH_U42_COURSE.length!==259)
-  issues.push('Historical 151–163 original lessons must remain unchanged before additive 164–165 narratives');
+    U50_B2_SEQUENCE.length!==2||U51_B2_INTERPERSONAL.length!==2||U52_B2_PROFESSIONAL.length!==2||U53_B2_NARRATIVE.length!==2||U54_B2_MEDIATION.length!==2||
+    ORIGINAL_FRENCH_U42_COURSE.length!==261)
+  issues.push('Historical 151–165 original lessons must remain unchanged before additive 166–167 mediation');
  const ids=ORIGINAL_FRENCH_U42_COURSE.map(x=>x.id);
  if(new Set(ids).size!==ids.length)issues.push('Duplicate source lesson identity');
  for(let i=0;i<U42_B2_CASES.length;i++){
@@ -418,6 +427,55 @@ export function validateU42Course():readonly string[]{
     !U53_B2_NARRATIVE[1]?.reading.french.includes('antiphrase')||
     !U53_B2_NARRATIVE[1].reading.french.includes('Farah'))
   issues.push('164–165 narrative technique, distinct fictional people or irony missing');
+ for(const [i,story] of U54_B2_MEDIATION.entries()){
+  const n=166+i,id='transfer-'+n,unit=story.unit;
+  if(unit.id!==id||unit.order!==n+94||unit.prerequisites.join()!=='transfer-'+(n-1))
+   issues.push(id+' non-sequential source-owned lesson identity');
+  if(unit.source.source!=='original'||unit.source.rights!=='original-owned'||
+     unit.source.sourceRevision!==SOURCES.original.revision||
+     !unit.source.qualifiedId.endsWith(':session:u54-'+id))
+   issues.push(id+' invalid original rights or provenance');
+  if(unit.grammar!==U54_B2_GRAMMAR[id]||unit.grammar.length!==2||
+     unit.grammar.some(g=>g.explanation.length<580||g.examples.length!==2||
+      !g.correction[0]||!g.correction[1]||g.correction[2].length<130))
+   issues.push(id+' insufficient instructional grammar and repair teaching');
+  if(unit.vocabulary.length!==12||unit.dialogue.length!==9||unit.tasks.length!==10||
+     new Set(unit.tasks.map(t=>t.id)).size!==10)
+   issues.push(id+' incomplete vocab, dialogue or active recall');
+  for(const type of ['fill','order','reading','choice'] as const)
+   if(!unit.tasks.some(t=>t.type===type))issues.push(id+' missing '+type+' task');
+  for(const task of unit.tasks){
+   if(!task.answer.trim()||task.explanation.length<60)issues.push(task.id+' missing authored instruction feedback');
+   if((task.type==='reading'||task.type==='choice')&&
+      (task.options.length!==3||new Set(task.options).size!==3||!task.options.includes(task.answer)))
+    issues.push(task.id+' response not supported by authored situation');
+   if(task.type==='order'){
+    const normalize=(text:string)=>text.trim().split(/\s+/).sort().join('|');
+    if(normalize(task.answer)!==normalize(task.options.join(' '))||
+       task.answer===task.options.join(' '))issues.push(task.id+' word order not reconstructible');
+   }
+  }
+  if(story.reading.french.trim().split(/\s+/).length<375||
+     story.reading.french.split('\n\n').length!==3||story.reading.questions.length!==3)
+   issues.push(id+' missing substantive original French instruction narrative');
+  if(story.evidence.length!==2||story.evidence.some(e=>e.french.length<350)||
+     story.crossQuestions.length!==2||story.listening.length!==6)
+   issues.push(id+' incomplete fictional task handouts and text-led listening');
+  for(const writing of [story.writingChoices.fromListening,story.writingChoices.fromSources,story.writingChoices.fromDebate])
+   if(writing.criteria.length!==3||writing.model.length<950||writing.prompt.length<160)
+    issues.push(id+' insufficient authored independent procedural production');
+  if(story.oral.plan.length!==3||story.oral.model.length<850||story.oral.prompt.length<170)
+   issues.push(id+' missing sustained original oral explanation or teach-back');
+  if(story.writingChoices.fromSources.criteria.some(c=>c.includes('Attribute each document separately'))||
+     story.oral.plan.some(c=>c.includes('Recommend a conditional practical next step')))
+   issues.push(id+' incorrectly recycles source comparison instead of procedural mediation');
+ }
+ if(!U54_B2_MEDIATION[0]?.reading.french.includes('Salomé')||
+    !U54_B2_MEDIATION[0].reading.french.includes('trois tours')||
+    !U54_B2_MEDIATION[1]?.reading.french.includes('Éloi')||
+    !U54_B2_MEDIATION[1].reading.french.includes('losange')||
+    U54_B2_MEDIATION[0].unit.dialogue[0].speaker===U54_B2_MEDIATION[1].unit.dialogue[0].speaker)
+  issues.push('166–167 independently authored real instructional teach-back missing');
  return issues;
 }
 export async function loadU42OriginalFrenchCourse():Promise<readonly A1Unit[]>{
