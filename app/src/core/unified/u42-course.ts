@@ -8,6 +8,8 @@ import {U46_B2_GRAMMAR} from './u46-b2-grammar.ts';
 import {U46_154} from './u46-154.ts';
 import {U46_155} from './u46-155.ts';
 import {U46_156} from './u46-156.ts';
+import {U49_157} from './u49-157.ts';
+import {U49_B2_GRAMMAR} from './u49-b2-grammar.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
@@ -28,9 +30,15 @@ export const U46_B2_SEQUENCE:readonly U21Scenario[]=Object.freeze(
   })})
  )
 );
+/** Additive complete next teaching chapter; existing 250 objects and IDs stay immutable. */
+export const U49_B2_EXTENSION:readonly U21Scenario[]=Object.freeze(
+ U49_157.map(story=>Object.freeze({...story,unit:Object.freeze({...story.unit,
+  grammar:U49_B2_GRAMMAR[story.unit.id]??story.unit.grammar
+ })}))
+);
 export const ORIGINAL_FRENCH_U42_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit),
- ...U46_B2_SEQUENCE.map(s=>s.unit)
+ ...U46_B2_SEQUENCE.map(s=>s.unit),...U49_B2_EXTENSION.map(s=>s.unit)
 ]);
 export function getU42OriginalUnit(id:string):A1Unit|null{
  return ORIGINAL_FRENCH_U42_COURSE.find(u=>u.id===id)??null;
@@ -48,8 +56,9 @@ export function u42PracticeStatus(id:string,answers:ReadonlyMap<string,boolean>)
 export function validateU42Course():readonly string[]{
  const issues=[...validateU22OriginalCourse()];
  if(ORIGINAL_FRENCH_U22_COURSE.length!==244)issues.push('Historical 244 original lessons changed');
- if(U42_B2_CASES.length!==3||U46_B2_SEQUENCE.length!==3||ORIGINAL_FRENCH_U42_COURSE.length!==250)
-  issues.push('B2 154–156 must add exactly three connected original cases');
+ if(U42_B2_CASES.length!==3||U46_B2_SEQUENCE.length!==3||U49_B2_EXTENSION.length!==1||
+    ORIGINAL_FRENCH_U42_COURSE.length!==251)
+  issues.push('Historical 151–156 sequence must remain six cases and new 157 must be additive');
  const ids=ORIGINAL_FRENCH_U42_COURSE.map(x=>x.id);
  if(new Set(ids).size!==ids.length)issues.push('Duplicate source lesson identity');
  for(let i=0;i<U42_B2_CASES.length;i++){
@@ -140,6 +149,50 @@ export function validateU42Course():readonly string[]{
   if(i>0&&!story.reading.french.includes('consultation')&&
      !story.reading.french.includes('sondage'))
    issues.push(id+' disconnected from preceding consultation');
+ }
+ const latest=U49_B2_EXTENSION[0];
+ if(!latest||latest.unit.id!=='transfer-157'||latest.unit.order!==251||
+    latest.unit.prerequisites.join()!=='transfer-156')
+  issues.push('Original 157 identity/order must extend 156 only');
+ else{
+  const unit=latest.unit;
+  if(unit.source.source!=='original'||unit.source.rights!=='original-owned'||
+     unit.source.sourceRevision!==SOURCES.original.revision||
+     !unit.source.qualifiedId.endsWith(':session:u49-transfer-157'))
+    issues.push('Original 157 provenance or rights invalid');
+  if(unit.grammar!==U49_B2_GRAMMAR['transfer-157']||unit.grammar.length!==2||
+     unit.grammar.some(g=>g.explanation.length<250||g.examples.length!==2||
+      g.correction[2].length<100))
+    issues.push('Original 157 advanced explicit media attribution grammar missing');
+  if(unit.vocabulary.length!==12||unit.dialogue.length!==9||unit.tasks.length!==10||
+     unit.dialogue.some(x=>x.fr.length<70)||new Set(unit.tasks.map(x=>x.id)).size!==10)
+    issues.push('Original 157 vocabulary/dialogue/active recall not complete');
+  for(const type of ['fill','order','reading','choice'] as const)
+   if(!unit.tasks.some(t=>t.type===type))issues.push('157 missing '+type);
+  for(const task of unit.tasks){
+   if(!task.answer.trim()||task.explanation.length<35)
+    issues.push('157 insufficient explanation '+task.id);
+   if((task.type==='reading'||task.type==='choice')&&
+      (task.options.length!==3||new Set(task.options).size!==3||!task.options.includes(task.answer)))
+    issues.push('157 invalid sourced choice '+task.id);
+   if(task.type==='order'){
+    const norm=(x:string)=>x.trim().split(/\\s+/).sort().join('|');
+    if(norm(task.answer)!==norm(task.options.join(' '))||task.answer===task.options.join(' '))
+     issues.push('157 unanswerable sentence order');
+   }
+  }
+  if(latest.reading.french.trim().split(/\\s+/).length<270||
+     latest.reading.questions.length!==3||latest.reading.title.length<25)
+    issues.push('157 long original article insufficient');
+  if(latest.evidence.length!==2||latest.evidence.some(s=>s.french.length<180)||
+     latest.crossQuestions.length!==2||latest.listening.length!==6)
+    issues.push('157 independent screenshot/notice source comparison missing');
+  for(const writing of [latest.writingChoices.fromListening,
+                         latest.writingChoices.fromSources,latest.writingChoices.fromDebate])
+   if(writing.criteria.length!==3||writing.model.length<490||writing.prompt.length<100)
+    issues.push('157 original extended public correction task incomplete');
+  if(latest.oral.plan.length!==3||latest.oral.model.length<300||latest.oral.prompt.length<110)
+   issues.push('157 independent spoken source briefing incomplete');
  }
  return issues;
 }
