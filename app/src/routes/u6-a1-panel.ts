@@ -94,7 +94,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
   const header=el('header',undefined,'u6-head');
   header.append(el('p','ORIGINAL COURSE · A1 TO EARLY B2','eyebrow'),
     el('h2','Choose where to learn'),
-    el('p','253 original course units: all 251 preceding source-owned lessons preserved, followed by two connected early-B2 chapters about changing transit evidence and accountable public correction. The original 157 media-verification case and the earlier connected three-lesson library consultation remain intact. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
+    el('p','255 original course units: all 253 preceding source-owned lessons remain intact, followed by two connected early-B2 chapters on personal misunderstanding, respectful boundaries and counterfactual regret. The existing 157–159 T7 media-verification sequence and earlier library consultation remain intact. Follow the authored pathway or find a topic. Original lesson exercises are ungraded; native Learn and Review retain their own progress.'));
   const status=el('p',undefined,'u6-course-status');status.setAttribute('role','status');
   const hero=el('section',undefined,'u25-hero');
   hero.setAttribute('aria-label','Start or continue original French');
@@ -578,7 +578,7 @@ export async function mountA1FullCourse(host:HTMLElement,navigate:(route:RouteId
    const translated=new Set([
     'transfer-91','transfer-92','transfer-93','transfer-106','transfer-107','transfer-108',
     'transfer-121','transfer-122','transfer-123','transfer-148','transfer-149','transfer-150',
-    'transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156','transfer-157','transfer-158','transfer-159'
+    'transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156','transfer-157','transfer-158','transfer-159','transfer-160','transfer-161'
    ]);
    const teachingSummary=unit.id.startsWith('transfer-')&&!translated.has(unit.id);
    const showText=teachingSummary?'Show English study note':'Show translation';
