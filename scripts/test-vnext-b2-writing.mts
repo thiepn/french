@@ -4,7 +4,7 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 import {ORIGINAL_FRENCH_U42_COURSE,validateU42Course} from '../app/src/core/unified/u42-course.ts';
 import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
 assert.deepEqual(validateU42Course(),[]);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,261);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.equal(countFrenchWritingWords('L’école n’est pas fermée ; vingt-deux élèves l’ont dit.'),8);
 assert.equal(countFrenchWritingWords(" \n ...  "),0);
