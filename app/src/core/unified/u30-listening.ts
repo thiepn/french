@@ -115,7 +115,7 @@ function unique(values:readonly string[]):string[]{
 function create(id:string,kind:U30Kind,question:string,answer:string,
  options:readonly string[],turnIndex:number|null,evidence:string,translation:string,
  explanation:string,hint:string,errors:Readonly<Record<string,string>>={},
- documentLabel?:string,contextualTurns?:readonly [number,number],
+ documentLabel?:string,contextualTurns?:readonly number[],
  oralPrompt?:string,oralCriteria?:readonly [string,string,string],
  oralObjection?:string,oralSelfChecks?:readonly [string,string,string,string],oralModel?:string):U30Decision|null{
  const choices=unique([answer,...options]);
