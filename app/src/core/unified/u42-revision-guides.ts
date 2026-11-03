@@ -75,5 +75,15 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Explain exactly how a bread-filled table reverses the literal meaning of « Il ne manquait que le pain »; give contextual cues when no tone of voice is audible.',
   'Keep the dinner-story humour self-directed: the vague invitation, the escalating baskets, Farah’s understandable moment of literal reading and Aya’s tactful repair.',
   'Finish with the rewritten invitation « Le pain est déjà prévu. » Avoid turning a guest into the joke or implying actual audio was heard.'
+ ]),
+ 'transfer-166':Object.freeze([
+  'State the game goal and four-card layout before issuing moves: first link may be any side; later links must each add a new island, and diagonals are forbidden.',
+  'Repair Salomé’s diagonal and duplicate-link proposals with rule-specific counterexamples rather than taking over her next choice.',
+  'Finish with an independent teach-back from a changed starting link, not the facilitator claiming that the novice understands.'
+ ]),
+ 'transfer-167':Object.freeze([
+  'Define left/right from Éloi’s viewpoint and orient the square as a diamond before asking for any folds.',
+  'Give two observable alignment checks, and if a fold is wrong, describe a reversible correction rather than urging force.',
+  'Explain that an unfastened flap may reopen, then invite a full independent teach-back without inventing physical-device verification.'
  ])
 });
