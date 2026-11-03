@@ -4,7 +4,7 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 import {ORIGINAL_FRENCH_U42_COURSE,validateU42Course} from '../app/src/core/unified/u42-course.ts';
 import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts';
 assert.deepEqual(validateU42Course(),[]);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,255);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,257);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.equal(countFrenchWritingWords('L’école n’est pas fermée ; vingt-deux élèves l’ont dit.'),8);
 assert.equal(countFrenchWritingWords(" \n ...  "),0);
@@ -22,7 +22,9 @@ const cases:readonly [string,B2WritingMode,number|null,number|null][]=[
  ['transfer-158','fromListening',170,230],['transfer-158','fromSources',180,240],['transfer-158','fromDebate',190,250],
  ['transfer-159','fromListening',170,230],['transfer-159','fromSources',190,250],['transfer-159','fromDebate',200,260],
  ['transfer-160','fromListening',180,230],['transfer-160','fromSources',190,250],['transfer-160','fromDebate',210,260],
- ['transfer-161','fromListening',180,230],['transfer-161','fromSources',190,250],['transfer-161','fromDebate',210,270]
+ ['transfer-161','fromListening',180,230],['transfer-161','fromSources',190,250],['transfer-161','fromDebate',210,270],
+ ['transfer-162','fromListening',190,240],['transfer-162','fromSources',200,260],['transfer-162','fromDebate',220,280],
+ ['transfer-163','fromListening',190,240],['transfer-163','fromSources',200,260],['transfer-163','fromDebate',220,280]
 ];
 for(const [id,mode,min,max] of cases){
  const material=getOriginalMaterial(id);
@@ -46,4 +48,4 @@ for(const [id,mode,min,max] of cases){
 }
 assert.equal(b2WritingTarget('a1-01','fromSources'),null);
 assert.equal(b2WritingLengthReview('a1-01','fromSources','Bonjour.').status,'unbounded');
-console.log('B2 writing: historical 250 source IDs immutable, 33 mode targets, French word counting and 2 original documents per advanced case: PASS');
+console.log('B2 writing: historical 250 source IDs immutable, 39 mode targets, French word counting and 2 original documents per advanced case: PASS');
