@@ -395,7 +395,9 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
     comparison.replaceChildren(
      el('p',text?'Your private French inference: '+text:'No independent French inference was entered for this question.'),
      el('p','Authored interpretation (not a grade for your notes): '+d.explanation),
-     el('p','Self-check: Did you attribute every source speaker, retain their limitations and avoid unsupported causal or universal claims?')
+     el('p',d.contextualTurns.length===2?
+      'Self-check: Did you attribute both speakers, retain the limitation and avoid an unsupported causal or universal claim?':
+      'Self-check: Did you attribute all three source speakers, retain their limitations and avoid unsupported causal or universal claims?')
     );
    });
    compareNotes.append(contrast,comparison);
