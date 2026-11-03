@@ -24,7 +24,9 @@ const cases:readonly [string,B2WritingMode,number|null,number|null][]=[
  ['transfer-160','fromListening',180,230],['transfer-160','fromSources',190,250],['transfer-160','fromDebate',210,260],
  ['transfer-161','fromListening',180,230],['transfer-161','fromSources',190,250],['transfer-161','fromDebate',210,270],
  ['transfer-162','fromListening',190,240],['transfer-162','fromSources',200,260],['transfer-162','fromDebate',220,280],
- ['transfer-163','fromListening',190,240],['transfer-163','fromSources',200,260],['transfer-163','fromDebate',220,280]
+ ['transfer-163','fromListening',190,240],['transfer-163','fromSources',200,260],['transfer-163','fromDebate',220,280],
+ ['transfer-164','fromListening',190,250],['transfer-164','fromSources',200,270],['transfer-164','fromDebate',220,290],
+ ['transfer-165','fromListening',190,250],['transfer-165','fromSources',200,270],['transfer-165','fromDebate',230,300]
 ];
 for(const [id,mode,min,max] of cases){
  const material=getOriginalMaterial(id);
@@ -48,4 +50,4 @@ for(const [id,mode,min,max] of cases){
 }
 assert.equal(b2WritingTarget('a1-01','fromSources'),null);
 assert.equal(b2WritingLengthReview('a1-01','fromSources','Bonjour.').status,'unbounded');
-console.log('B2 writing: historical 250 source IDs immutable, 39 mode targets, French word counting and 2 original documents per advanced case: PASS');
+console.log('B2 writing: historical 250 source IDs immutable, 45 mode targets, French word counting and 2 original documents per advanced case: PASS');
