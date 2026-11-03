@@ -65,5 +65,15 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Separate the error Maëlle acknowledged from Ilyès’s ambiguous instruction and the manager’s final clarification. Replace any personal blame with a traceable action and reference version.',
   'Distinguish six records checked and forwarded for internal review, two records awaiting clarification and the absence of authorization for public publication.',
   'End your handover with the correct approving person, a dependency before promising a deadline and a tactful question that checks shared understanding.'
+ ]),
+ 'transfer-164':Object.freeze([
+  'Rebuild the scene through one precise sensory image and an imparfait background before the sudden rain in the passé composé.',
+  'Use plus-que-parfait for Thomas’s earlier backup plan; make Lila’s accessibility check and the hesitation precede the move into the covered passage.',
+  'Control the pace: shorten sentences for the rain, slow down before the child’s impossible question and end on the image rather than a compulsory moral.'
+ ]),
+ 'transfer-165':Object.freeze([
+  'Explain exactly how a bread-filled table reverses the literal meaning of « Il ne manquait que le pain »; give contextual cues when no tone of voice is audible.',
+  'Keep the dinner-story humour self-directed: the vague invitation, the escalating baskets, Farah’s understandable moment of literal reading and Aya’s tactful repair.',
+  'Finish with the rewritten invitation « Le pain est déjà prévu. » Avoid turning a guest into the joke or implying actual audio was heard.'
  ])
 });
