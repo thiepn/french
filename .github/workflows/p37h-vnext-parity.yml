@@ -54,6 +54,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-160-161.mts
       - name: Verify original professional B2 162–163, and historical 255 lesson/203 reading immutability
         run: node --experimental-strip-types scripts/test-vnext-b2-162-163.mts
+      - name: Verify original B2 narrative 164–165 and historical 257 lesson/205 reading immutability
+        run: node --experimental-strip-types scripts/test-vnext-b2-164-165.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
