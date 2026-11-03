@@ -7,7 +7,7 @@ test('Original B2 lesson 157 is a real sequential course unit with advanced gram
  await expect(page.locator('.u6-stage-body')).toContainText('capture');
  const heading=page.locator('.u6-unit-header h3');
  await page.locator('.course-directory-trigger').click();
- await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(71);
+ await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(73);
  await page.keyboard.press('Escape');
  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
  await expect(page.locator('.u6-dialogue-turn')).toHaveCount(9);
