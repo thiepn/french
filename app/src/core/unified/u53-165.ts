@@ -5,7 +5,7 @@ const story:U21OriginalSourceStory={
  id:'transfer-165',
  title:'Il ne manquait que le pain : comprendre et raconter l’ironie',
  goal:'Interpret a non-literal French understatement from context, distinguish inclusive self-deprecation from humiliating sarcasm, tell a humorous anecdote with pacing and register shifts, and write a tactful alternative ending.',
- grammarKeys:['concession','reported'],
+ grammarKeys:['concession','report'],
  vocabulary:[
   ['l’autodérision','self-deprecation','Aya choisit l’autodérision plutôt que de se moquer de l’invité qui s’est trompé.'],
   ['un sous-entendu','implied meaning','Le sous-entendu de « il ne manquait que le pain » dépend des paniers remplis de baguettes.'],
