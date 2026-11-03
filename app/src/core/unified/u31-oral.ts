@@ -419,8 +419,31 @@ const AUTHORED:readonly AuthoredJourney[]=[
    corrections:['The initial count and nonrepresentative poll cannot prove an as-yet-unrun trial.','The resolution requires advance safety, transport and accessible-participation conditions.'],
    why:'The reformulation names the decision stage and specific review schedule without inventing results.'}
  ]
+ },
+ {
+  id:'transfer-157',speaker:'Jeanne',anchor:'une déviation pendant les deux prochains week-ends',
+  situation:'Give an accurate public correction of an incomplete viral screenshot and a conditional municipal notice',
+  counterview:'An invented resident insists the screenshot proves permanent cancellation and asks why the journalist refuses to keep the viral headline.',
+  misunderstanding:'A journalist treats a partial undated screenshot and a poll of worried respondents as proof that the municipality has permanently cancelled route T7.',
+  register:'Measured public editorial correction that credits a reliable notice while respecting accessibility concerns',
+  objective:'Distinguish the status of an unverified screenshot, a dated notice and a partial poll; correct the unsupported claim while preserving the outstanding stop-access question.',
+  repair:'The dated notice concerns only a conditional two-weekend detour, not a permanently discontinued route; the replacement stop remains unverified.',
+  structure:'Une capture affirme… → selon l’avis daté… → toutefois, l’accès… → nous vérifierons…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'What change can Jeanne actually attribute to the dated official municipal notice?',
+    answer:'A conditional detour over the next two weekends, with details and replacement-stop accessibility still to be confirmed.',
+    distractors:['Permanent cancellation of route T7 starting Monday.','Guaranteed accessibility and a final service map that are already published.'],
+    corrections:['Jeanne says only a weekend detour is envisaged under bridge-work conditions; cancellation is the unsupported screenshot claim.','Jeanne says a detailed map is planned and Élodie identifies accessibility as unverified, not guaranteed.'],
+    why:'The attested original French explicitly limits the change in duration, conditions and certainty.'},
+   {kind:'objection',
+    prompt:'How should a journalist answer a resident who demands a correction but still fears an inaccessible detour?',
+    answer:'« L’avis daté prévoit une déviation provisoire, non une suppression. Nous devons toutefois vérifier l’accès à l’arrêt de remplacement. »',
+    distractors:['« Les 62 % des répondants prouvent que tous les voyageurs ont voté pour la fermeture. »','« Puisque la suppression définitive est fausse, l’arrêt provisoire est forcément accessible. »'],
+    corrections:['Malik explicitly lacks the respondent denominator; fear expressed in a poll cannot authenticate a permanent municipal decision.','Élodie distinguishes the false cancellation rumor from the real outstanding question of wheelchair accessibility at the replacement stop.'],
+    why:'The warranted correction attributes the published temporary plan and preserves the practical uncertainty without treating a claim about all travelers as verified.'}
+  ]
  }
-
 
 ];
 function normalize(text:string):string{
