@@ -144,7 +144,7 @@ test('B2 extension opens actual original sources and six-stage progression inste
  await expect(page.locator('.u6-unit-header h3')).toContainText('Interdire les téléphones');
  const original=page.locator('.u6-unit-header h3');
  await page.locator('.course-directory-trigger').click();
- await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(66);
+ await expect(page.locator('.cur02-level-lesson-list button')).toHaveCount(67);
  await page.keyboard.press('Escape');
  await page.locator('.u6-stage-nav').getByRole('button',{name:'3. Read'}).click();
  await expect(page.locator('[data-u6-stage="dialogue"] .u6-dialogue-turn')).toHaveCount(9);
