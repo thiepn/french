@@ -48,6 +48,8 @@ jobs:
         run: node --experimental-strip-types scripts/test-vnext-b2-negotiation.mts
       - name: Verify complete original B2 157 misinformation-correction lesson and historical 250/198 source continuity
         run: node --experimental-strip-types scripts/test-vnext-b2-157.mts
+      - name: Verify original linked B2 158–159 chronology, 251/199 historical source immutability and deep French teaching
+        run: node --experimental-strip-types scripts/test-vnext-b2-158-159.mts
       - name: Upload qualified build
         uses: actions/upload-artifact@v4
         with:
