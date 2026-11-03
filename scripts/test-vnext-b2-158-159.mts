@@ -19,10 +19,10 @@ assert.deepEqual(validateU42Course(),[],'Original full course validation');
 assert.deepEqual(validateU31SourceAnchors(),[],'U31 source anchors must match exact owned French dialogue');
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244);
 assert.equal(ORIGINAL_U22_CONNECTED_READINGS.length,192);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,253);
-assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,201);
-assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:253,connectedReadings:201});
-assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,253);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,255);
+assert.equal(ORIGINAL_U42_CONNECTED_READINGS.length,203);
+assert.deepEqual(ORIGINAL_REGISTRY_COUNTS,{lessons:255,connectedReadings:203});
+assert.equal(new Set(ORIGINAL_REGISTRY_ENTRIES.map(e=>e.qualifiedId)).size,255);
 const previous=[...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit),
  ...U46_B2_SEQUENCE.map(s=>s.unit),...U49_B2_EXTENSION.map(s=>s.unit)];
 const priorReadings=[...ORIGINAL_U22_CONNECTED_READINGS,...U42_B2_CASES.map(s=>s.reading),
@@ -35,7 +35,7 @@ for(let i=0;i<199;i++)assert.equal(ORIGINAL_U42_CONNECTED_READINGS[i],priorReadi
  'Historical original reading object/reference changed at position '+i);
 assert.deepEqual(U50_B2_SEQUENCE.map(s=>s.unit.id),['transfer-158','transfer-159']);
 const levels=buildFrenchCourseNavigation(ORIGINAL_REGISTRY_ENTRIES);
-assert.equal(levels.find(l=>l.level==='B2')?.lessons.length,69);
+assert.equal(levels.find(l=>l.level==='B2')?.lessons.length,71);
 assert.equal(ORIGINAL_FRENCH_U42_COURSE[250].id,'transfer-157');
 assert.equal(ORIGINAL_U42_CONNECTED_READINGS[198].unitId,'transfer-157');
 for(const [i,study] of U50_B2_SEQUENCE.entries()){
