@@ -65,6 +65,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
  const requestedByQuestion=new Set<string>();
  const supports=new Map<string,{level:number;transcript:boolean}>();
  const inferenceNotes=new Map<string,string>();
+ const oralRehearsals=new Map<string,string>();
  let transcriptAssisted=false;
  const stop=()=>{
   playbackEpoch++;
@@ -274,16 +275,17 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
     'compare original spoken turns '+d.contextualTurns.map(i=>i+1).join(' and '):
     'original turn '+(d.turnIndex===null?'written source':d.turnIndex+1)),'u30-source'),heading);
   if(d.contextualTurns){
-   const pair=action('Replay both original turns (synthetic French TTS)',()=>
+   const count=d.contextualTurns.length;
+   const pair=action(count===2?'Replay both original turns (synthetic French TTS)':'Replay all three original turns (synthetic French TTS)',()=>
     speak(d.contextualTurns!));
    pair.disabled=!supported;
    pair.title=supported?
     'Device TTS is synthetic and not a recording. Replay alone does not prove hearing.':
-    'Device TTS unavailable; use the written two-turn source comparison.';
-   const readPair=action('Reveal both original French turns',()=>{
+    'Device TTS unavailable; use the original written source turns.';
+   const readPair=action(count===2?'Reveal both original French turns':'Reveal all three original French turns',()=>{
     markSupport(2);
     updateExcerpt();excerpt.hidden=false;
-    supportState.textContent='Two exact original dialogue turns revealed; subsequent answers are transcript-assisted.';
+    supportState.textContent=count+' exact original dialogue turns revealed; subsequent answers are transcript-assisted.';
    });
    questionHost.append(pair,readPair);
   }
@@ -315,16 +317,35 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    evidenceState.textContent='Written/transcript-led practice selected; no hearing or pronunciation claim.';
   });
   const oralTransfer=el('section','','u45-oral-transfer');oralTransfer.hidden=true;
-  if(d.oralPrompt&&d.oralCriteria){
+  if(d.oralPrompt&&(d.oralCriteria||d.oralSelfChecks)){
    const question=el('p',d.oralPrompt,'u45-oral-prompt');question.lang='fr';
    const criteria=el('ol','','u45-oral-criteria');
-   for(const criterion of d.oralCriteria){
+   for(const criterion of d.oralSelfChecks??d.oralCriteria??[]){
     const item=el('li',criterion);item.lang='fr';criteria.append(item);
    }
    oralTransfer.append(el('h5','Independent French oral response · after comprehension'),
-    el('p','Before reading the original transcript, give your own French response aloud. Then use the three authored self-checks; these do not check or record your speech.','u30-note'),
-    question,criteria,
-    el('p','This is a speaking task, not a recorded performance or validated proficiency.','u30-note'));
+    el('p','Rehearse your own French explanation before revealing the model. Check authored criteria yourself; nothing here recognizes or grades speech.','u30-note'),question);
+   if(d.oralObjection&&d.oralModel){
+    const challenge=el('p',d.oralObjection,'u47-oral-challenge');challenge.lang='fr';
+    const outlineLabel=el('label','Private French reply to the hypothetical objection · not saved or transmitted','u47-oral-label');
+    const outline=el('textarea','','u47-oral-notes');outline.rows=4;outline.lang='fr';outline.spellcheck=true;
+    outline.setAttribute('aria-label','Private French deliberation rehearsal');
+    outline.placeholder='Je comprends cette objection. Cependant, selon… Je proposerais… à condition que…';
+    outline.value=oralRehearsals.get(d.id)??'';
+    outline.addEventListener('input',()=>oralRehearsals.set(d.id,outline.value));
+    outlineLabel.append(outline);
+    const model=el('div','','u47-model');model.hidden=true;
+    const sample=el('p',d.oralModel,'u47-french-model');sample.lang='fr';
+    model.append(el('h6','Authored French response to compare after your rehearsal'),sample,
+     el('p','Compare attribution, uncertainty, response to the objection and conditions yourself. This model is not a transcription or grade of your own speech.','u30-note'));
+    const reveal=action('Reveal authored French response',()=>{
+     model.hidden=!model.hidden;
+     reveal.textContent=model.hidden?'Reveal authored French response':'Hide authored French response';
+     reveal.setAttribute('aria-expanded',String(!model.hidden));
+    });reveal.setAttribute('aria-expanded','false');
+    oralTransfer.append(el('h6','Hypothetical follow-up objection · respond independently'),challenge,outlineLabel,criteria,reveal,model);
+   }else oralTransfer.append(criteria);
+   oralTransfer.append(el('p','This is a speaking task, not a recorded performance or validated proficiency.','u30-note'));
   }
   const feedback=el('p','','u30-feedback');feedback.setAttribute('role','status');
   const submit=el('button','Check against authored key','primary-action compact-action');submit.type='submit';
@@ -354,9 +375,9 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
    progress.textContent='Decision '+(index+1)+' / '+pool.length+' · '+responses.size+' decisions attempted locally; no Practice event recorded.';
   });
   if(d.contextualTurns){
-   const notesLabel=el('label','Before choosing, explain in French what the first speaker claims, how the second speaker qualifies it, and what remains uncertain.','u46-inference-label');
+   const notesLabel=el('label','Before choosing, explain in French what the source speakers establish, how their claims differ, and what remains uncertain.','u46-inference-label');
    const notes=el('textarea','','u46-inference-notes');notes.rows=3;notes.lang='fr';
-   notes.setAttribute('aria-label','Private French two-turn inference notes');
+   notes.setAttribute('aria-label',d.contextualTurns.length===2?'Private French two-turn inference notes':'Private French three-turn inference notes');
    notes.placeholder='Le premier interlocuteur affirme que… Pourtant, le deuxième précise que… Nous ne savons pas encore…';
    notes.value=inferenceNotes.get(d.id)??'';
    notes.addEventListener('input',()=>inferenceNotes.set(d.id,notes.value));
@@ -374,7 +395,7 @@ export function appendOriginalListeningJourney(host:HTMLElement,id:string,opts:O
     comparison.replaceChildren(
      el('p',text?'Your private French inference: '+text:'No independent French inference was entered for this question.'),
      el('p','Authored interpretation (not a grade for your notes): '+d.explanation),
-     el('p','Self-check: Did you attribute both speakers, retain the limitation and avoid an unsupported causal or universal claim?')
+     el('p','Self-check: Did you attribute every source speaker, retain their limitations and avoid unsupported causal or universal claims?')
     );
    });
    compareNotes.append(contrast,comparison);
