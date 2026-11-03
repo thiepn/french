@@ -585,6 +585,55 @@ const AUTHORED:readonly AuthoredJourney[]=[
     why:'The sourced professional answer differentiates verified, pending, transmitted and authorized work without personal condemnation.'}
   ]
  }
+ ,
+ {
+  id:'transfer-164',speaker:'Inès',anchor:'Il était presque vingt heures',
+  situation:'Perform a new vivid anecdote rather than deliver a civic briefing: orient the audience, build suspense, sequence a rain interruption and finish on the child’s impossible request',
+  counterview:'An invented workshop listener argues that every sentence should use passé composé and the storyteller should announce the ending in the first line.',
+  misunderstanding:'A listener treats Thomas’s earlier preparation as something that happened after the downpour, and assumes the covered arcade had been reserved before the outdoor event.',
+  register:'Animated but precise spoken French storytelling with an atmospheric opening, tense contrasts and an earned punchline',
+  objective:'Use imparfait for background, plus-que-parfait for earlier planning and passé composé for the decisive rain and relocation, without asserting the entire group was immediately safe.',
+  repair:'Thomas had already prepared a backup; the unexpected rain interrupted the outdoor reading, and Lila checked the arcade before the group moved into it.',
+  structure:'Il était presque… → nous avions préparé… → soudain… → pendant que… → après une pause…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'Which original narrative sequence follows from Inès’s opening and the later dialogue?',
+    answer:'Outdoor preparations were underway; the sudden rain interrupted the reading, and only afterward did Lila identify an available covered arcade.',
+    distractors:['The reading had always been booked inside the arcade, and the downpour happened after the comic ending.','Everyone ran into a preapproved venue before anyone checked whether the group could enter.'],
+    corrections:['The opening describes the outdoor square and prior plans; the arcade is identified only during the unexpected rain and cannot be treated as a prearranged venue.','Inès explicitly says the group did not yet know whether everyone could enter, so Lila checked first and only the first chairs were moved.'],
+    why:'The French opening is background description in imparfait, and later source turns establish the bounded disruption and conditional relocation.'},
+   {kind:'objection',
+    prompt:'A listener says the ending should declare « tout le monde était parfaitement heureux » before the child speaks. What is a better spoken ending?',
+    answer:'« Les gouttes résonnaient sur les vitres… puis un enfant a demandé si nous pouvions commander la pluie pour la prochaine lecture. »',
+    distractors:['« Nous avions officiellement réservé le passage depuis des mois, donc rien d’imprévu ne s’est produit. »','« Tous les participants ont immédiatement été heureux, comme le prouve la météo. »'],
+    corrections:['The arcade was not a reserved fallback in the narrated scene; inventing it would destroy both chronology and the original improvisation.','One child’s humorous request does not prove universal happiness, and explaining the punchline before it arrives reduces its effect.'],
+    why:'A delayed comic line emerges from the described atmosphere; the narrator should not erase the original uncertainty or add an unsupported collective emotion.'}
+  ]
+ },
+ {
+  id:'transfer-165',speaker:'Aya',anchor:'Quelle chance, il ne manquait que le pain !',
+  situation:'Tell a humorous everyday dinner anecdote with an interpreted antiphrase, a tactful repair and a final callback to the ambiguous invitation',
+  counterview:'An invented guest says Farah deserves to be mocked for understanding « il ne manquait que le pain » literally and that a good joke must never be explained.',
+  misunderstanding:'An audience member treats the utterance as a factual shortage of bread and wrongly thinks Aya’s joke is aimed at Farah rather than her own vague message.',
+  register:'Playful, inclusive conversational French with credible nonverbal textual cues and precise non-literal interpretation',
+  objective:'Build repetition, make the bread abundance visible, give the irony a comprehensible context and demonstrate explicit polite repair if someone initially misunderstands.',
+  repair:'The meal had plenty of bread; Aya says the opposite for comic effect and states that her own unspecified invitation, not Farah, is the target.',
+  structure:'J’avais écrit… → le premier panier… → puis le quatrième… → quelle chance… → je plaisantais sur ma consigne…',
+  decisions:[
+   {kind:'fidelity',
+    prompt:'In the original dialogue, what is the intended meaning of Aya’s solemn statement about missing bread?',
+    answer:'It is an antiphrase: the table overflows with bread, so Aya jokingly says the opposite while mocking her own vague invitation.',
+    distractors:['It is literal evidence that no bread was brought to the dinner.','It is a direct insult proving Farah deliberately ignored the invitation.'],
+    corrections:['Aya has just looked at baguettes, round loaves and rolls; the literal lack-of-bread claim visibly contradicts the scene.','Farah brought walnut bread in good faith, and Aya explicitly says the joke is about her own unclear invitation, not Farah.'],
+    why:'The original fourth French turn contains the antiphrase and the preceding dialogue supplies the visually contradictory context.'},
+   {kind:'objection',
+    prompt:'How should Aya respond if Farah initially takes the ironic line literally?',
+    answer:'« Je me moquais surtout de mon invitation trop vague, pas de ton panier. Je peux le dire plus clairement. »',
+    distractors:['« Tu devrais avoir honte de ne pas comprendre mon humour; je ne dois jamais expliquer une blague. »','« Non, la table ne contient aucun pain et tu as imaginé tous ces paniers. »'],
+    corrections:['Source-supported, inclusive humour targets the sender’s imprecise invitation; blaming a listener with incomplete context is the opposite of the original repair.','The dialogue and scene establish excess bread; denying it would contradict the source rather than make the non-literal meaning accessible.'],
+    why:'The original invitation is underspecified and Aya’s French line explicitly offers a tactful clarification rather than humiliating Farah.'}
+  ]
+ }
 ];
 function normalize(text:string):string{
  return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
