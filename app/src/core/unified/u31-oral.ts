@@ -572,6 +572,177 @@ export function validateU31SourceAnchors():readonly string[]{
  return AUTHORED.filter(design=>{
   const material=getOriginalMaterial(design.id);
   return !material?.unit.dialogue.some(t=>t.speaker===design.speaker&&normalize(t.fr).includes(normalize(design.anchor)));
+ {
+  id:'transfer-158',speaker:'Élodie',anchor:'des barrières bloquaient cette rampe',
+  situation:'Explain a new map-versus-field contradiction without confusing source status or observation time',
+  counterview:'A fictional operator says the official pictogram proves the ramp is passable all weekend and therefore the eight-o’clock report should disappear.',
+  misunderstanding:'A spokesperson treats the official map as a real Saturday check or extends one observed Thursday-morning barrier to every future service.',
+  register:'Evidence-qualified French public travel advisory with dated independent field observations',
+  objective:'Preserve the old correction, attribute two dated sources independently, and set a checkable condition for safe travel advice.',
+  repair:'A map announces a ramp; Élodie actually observed barriers only at a specific morning time, and no Saturday passability check has yet been confirmed.',
+  structure:'Selon le plan daté… → or, à huit heures… → cette observation ne prouve pas… → si le contrôle confirme…',
+  decisions:[
+   {kind:'fidelity',prompt:'What exactly does Élodie establish from her own direct observation?',
+    answer:'Barriers blocked the mapped ramp at eight that morning; this does not prove Saturday or all hours would be blocked.',
+    distractors:['The route operator formally cancelled T7 permanently.','Élodie checked all hours of Saturday and proved every possible detour was blocked.'],
+    corrections:['Élodie reports a barrier at a stated time, not a transit-service cancellation; the earlier cancellation rumor remains unsupported.','Élodie restricts her account to one visit and explicitly avoids claiming every possible access point or future time was checked.'],
+    why:'Her attested French line gives a precise time and location, allowing only a bounded field-evidence conclusion.'},
+   {kind:'objection',prompt:'An official waves the new map and promises that the ramp will be safe on Saturday. Which answer is warranted?',
+    answer:'« Le plan annonce une rampe; un relevé à huit heures constate des barrières. Demandons une vérification sur place avant samedi. »',
+    distractors:['« Un pictogramme officiel remplace nécessairement toutes les visites sur le terrain. »','« La rampe était bloquée une fois; elle sera donc fermée définitivement. »'],
+    corrections:['A dated map documents the intended route but is not direct evidence of its actual passability under construction conditions.','One observed barrier cannot establish a permanent or all-week closure, and it does not restore the disproved T7 cancellation rumor.'],
+    why:'The reply attributes conflicting evidence and calls for a date-specific field check rather than inventing certainty.'}
+  ]
+ },
+ {
+  id:'transfer-159',speaker:'Malik',anchor:'je conserve l’heure de notre ancien constat',
+  situation:'Publicly explain why a previously accurate warning must be revised after newer independently checked facts',
+  counterview:'An invented reader accuses the newsroom of lying because Thursday’s blocked-ramp alert and Friday’s cleared-ramp update are different.',
+  misunderstanding:'The audience assumes that a corrected present-tense warning erases the historic Thursday observation or that Friday’s clear ramp proves all weekend booking and nighttime travel fully accessible.',
+  register:'Accountable French editorial correction with precise date, attribution and inclusion safeguards',
+  objective:'Give the Thursday–Friday chronology, defend correction without erasure and identify the still exclusive phone-only booking and untested night service.',
+  repair:'Thursday at eight the ramp was observed blocked; Friday at 17:30 the ramp was independently observed clear. The booking and nighttime access restrictions remain unverified.',
+  structure:'Nous avions constaté… → vendredi, nous avons vérifié… → néanmoins, la réservation… → nous actualiserons si…',
+  decisions:[
+   {kind:'fidelity',prompt:'What does Malik say he will do with the previous ramp observation after Friday’s new evidence?',
+    answer:'Correct the present-tense alert while retaining the time of the earlier observation and awaiting Saturday checks.',
+    distractors:['Delete the Thursday observation and tell readers the original evidence was fabricated.','Announce that all weekend departures have already been verified safe and accessible.'],
+    corrections:['Malik explicitly preserves the timestamp of the Thursday report because a later change does not falsify an earlier observed state.','Malik promises verification after Saturday; no nighttime or shuttle-use test has been completed in the dialogue.'],
+    why:'His attested final French statement explicitly separates the historical report, present update and future check.'},
+   {kind:'objection',prompt:'How should an editor address both the accusation of inconsistency and exclusion by phone-only booking?',
+    answer:'« Le jeudi, la rampe était bloquée; vendredi, elle était dégagée. Pourtant, la réservation par téléphone et l’accès de nuit restent à vérifier. »',
+    distractors:['« Le nouveau bulletin prouve que notre relevé de jeudi était mensonger. »','« Puisque la rampe est dégagée, tout voyageur pourra automatiquement réserver la navette samedi. »'],
+    corrections:['The two observations concern different times; the earlier finding can remain valid while a present-tense warning needs updating.','An observed clear ramp does not establish a usable phone-booking process for everyone or a tested night-service route.'],
+    why:'The corrected statement preserves chronology, the confirmed physical improvement and the unresolved inclusive-access constraints.'}
+  ]
+ }
+];
+function normalize(text:string):string{
+ return text.normalize('NFC').replace(/[‘’]/g,"'").toLocaleLowerCase('fr').trim().replace(/\s+/g,' ');
+}
+function same(a:string,b:string):boolean{return normalize(a)===normalize(b);}
+function stableChoices(id:string,answer:string,distractors:readonly string[]):readonly string[]{
+ const all=[...new Set([answer,...distractors])];
+ const offset=[...id].reduce((s,c)=>s+c.charCodeAt(0),0)%all.length;
+ return Object.freeze([...all.slice(offset),...all.slice(0,offset)]);
+}
+export function evaluateU31Decision(decision:U31Decision,choice:string):{
+ readonly supported:boolean;readonly feedback:string
+}{
+ if(same(decision.answer,choice))return{supported:true,feedback:decision.explanation};
+ const error=Object.entries(decision.wrong).find(([option])=>same(option,choice))?.[1];
+ return{supported:false,feedback:(error??'This response is not the authored source-backed choice.')+' '+decision.explanation};
+}
+const PHASES:readonly {id:U31Stage;title:string;criterion:string}[]=[
+ {id:'position',title:'Establish your position',criterion:'State the core original claim accurately without making up evidence.'},
+ {id:'respond',title:'Respond independently',criterion:'Address another person in an appropriate register, with a coherent answer.'},
+ {id:'challenge',title:'Answer a fair objection',criterion:'Acknowledge the other perspective before offering supported reasons.'},
+ {id:'repair',title:'Repair the misunderstanding',criterion:'Identify the exact mistaken inference and correct it without repeating the error.'},
+ {id:'justify',title:'Explain source evidence',criterion:'Attribute an original French line to the right speaker; separate published facts from proposals.'},
+ {id:'sustain',title:'Sustain an extended explanation',criterion:'Produce an organized multi-sentence response, including a limitation and a next step.'},
+ {id:'transfer',title:'Reconstruct without prompts',criterion:'Speak independently, then compare your version with source and draft a concise written summary.'}
+];
+export function originalU31OralJourney(id:string):U31Journey|null{
+ const material=getOriginalMaterial(id),entry=getOriginalCatalogEntry(id);
+ if(!material||!entry||!entry.listening||material.unit.dialogue.length<2)return null;
+ const dialogue=material.unit.dialogue;
+ const design=AUTHORED.find(x=>x.id===id&&dialogue.some(t=>t.speaker===x.speaker&&normalize(t.fr).includes(normalize(x.anchor))));
+ const sourceTurn=design?dialogue.findIndex(x=>x.speaker===design.speaker&&normalize(x.fr).includes(normalize(design.anchor))):0;
+ const speakerNames=[...new Set(dialogue.map(t=>t.speaker))];
+ const first=dialogue[0],last=dialogue[dialogue.length-1];
+ const context=design?.situation??'Continue the original conversation and explain the reasons and limits of its outcome';
+ const counterview=design?.counterview??
+  'A conversational partner challenges your proposed conclusion and asks what in the original dialogue supports it. This challenge is hypothetical.';
+ const misunderstanding=design?.misunderstanding??
+  'A partner mistakenly claims every original statement was a confirmed decision. Correct any uncertainty only where the published wording supports it.';
+ const register=design?.register??(entry.level==='A1'||entry.level==='A2'?'Clear and polite everyday French':'Respectful, evidence-aware discussion');
+ const objective=design?.objective??
+  'Summarize the original situation, reply to one participant, answer a counterargument and explain the source-supported limits.';
+ const repair=design?.repair??
+  'Use « Si je comprends bien… » or « Je voulais dire… » to clarify only what the original turns explicitly establish.';
+ const plan=design?.structure??'Présenter le contexte → citer un propos → répondre → nuancer → proposer une suite.';
+ const phases=PHASES.map(({id:phase,title,criterion})=>{
+  const source=phase==='repair'?dialogue[sourceTurn]:phase==='justify'?last:first;
+  const instructions:Record<U31Stage,string>={
+   position:'In French, restate the situation and your source-bounded position. '+context+'. Keep the claim proportionate to the evidence.',
+   respond:'Speak to '+(dialogue[sourceTurn]?.speaker??first.speaker)+'. '+objective+' Use natural interaction and do not read the published dialogue as your own answer.',
+   challenge:'Reply in French to this invented objection: '+counterview+' Acknowledge its legitimate concern; then argue from the original source.',
+   repair:'Your partner misunderstands: '+misunderstanding+' Politely correct the exact misconception without adding unsupported claims.',
+   justify:'Justify your explanation with the attributed original turn below. Distinguish exact dialogue content, your own inference and any independent written documents.',
+   sustain:'Give a sustained oral response: opening, source-backed explanation, counterpoint, precise correction, proposed next step and closing. '+plan,
+   transfer:'Close the transcript. Deliver a new explanation from memory, then write a short French source-qualified summary or open the original reading/writing activity.'
+  };
+  const hints:Record<U31Stage,string>={
+   position:'Start with « Dans le dialogue… », then state what is explicitly established.',
+   respond:'Use an acknowledgment, then a connected sentence with « parce que ».',
+   challenge:'Try « Je comprends cette objection. Cependant… »; avoid dismissing the other person.',
+   repair:'Begin « Pour préciser… »; contrast what was said with what is not known.',
+   justify:'Say « Selon '+source.speaker+'… ». Quote only what actually appears in the French source.',
+   sustain:'Sequence: situation → claim → evidence → objection → correction → next step.',
+   transfer:'Produce your answer before checking the transcript or earlier notes.'
+  };
+  const checks=[
+   criterion,
+   'Preserve the original speaker, negation, uncertainty and any condition.',
+   'Distinguish an invented role-play objection from a historical French source.',
+   ...(phase==='sustain'||phase==='transfer'?['Provide a coherent opening, transitions and closing across several connected sentences.']:[])
+  ];
+  return Object.freeze({
+   id:phase,title,task:instructions[phase],target:phase==='challenge'?counterview:phase==='repair'?misunderstanding:objective,
+   hint:hints[phase],repair,criteria:Object.freeze(checks),
+   sourceTurn:phase==='justify'?dialogue.length-1:sourceTurn
+  });
+ });
+ const decisions:U31Decision[]=[];
+ if(design){
+  design.decisions.forEach((item,i)=>{
+   const idKey='u31:'+id+':authored-'+(i+1),wrong=Object.fromEntries(item.distractors.map((x,j)=>[x,item.corrections[j]]));
+   decisions.push(Object.freeze({
+    id:idKey,kind:item.kind,prompt:item.prompt,answer:item.answer,
+    choices:stableChoices(idKey,item.answer,item.distractors),
+    explanation:item.why,wrong,citedTurn:sourceTurn,evidence:dialogue[sourceTurn].fr
+   }));
+  });
+ }
+ // A source-grounded attribution check for ALL historical original lessons;
+ // never synthetic "what would the speaker say" as a formally keyed answer.
+ const distinct=dialogue.map((t,i)=>({t,i})).filter(x=>x.t.fr!==first.fr).slice(0,3).map(x=>x.t.fr);
+ if(distinct.length>=2){
+  const idKey='u31:'+id+':original-turn';
+  decisions.push(Object.freeze({
+   id:idKey,kind:'evidence',prompt:'Which line is actually the opening utterance of this original dialogue?',
+   answer:first.fr,choices:stableChoices(idKey,first.fr,distinct),
+   explanation:'Turn 1 belongs to '+first.speaker+' in the historically published source. Use attributed evidence, not plausible invented speech.',
+   wrong:Object.fromEntries(distinct.map(x=>[x,'This line is from a different turn in the original conversation.'])),
+   citedTurn:0,evidence:first.fr
+  }));
+ }
+ // Canonical linked U30 interpretation remains accessible without duplicating
+ // the existing engine or its responses.
+ const u30=originalU30Listening(id);
+
+ const witness=originalVocabularyForUnit(id).filter(word=>
+  originalVocabularyWitnesses(word).some(w=>w.source==='original-dialogue'))
+  .slice(0,3).map(word=>({french:word.french,english:word.english,
+   originalContext:originalVocabularyWitnesses(word).find(w=>w.source==='original-dialogue')!.french}));
+ const documents=(material.evidence?.sources??[]).map(s=>({label:s.label,type:s.type,french:s.french}));
+ // Keep this a source label, not a listening or recording claim.
+ const reading=material.reading?{title:material.reading.title,text:material.reading.french}:null;
+ return Object.freeze({
+  lessonId:id,title:entry.title,level:entry.level,qualifiedId:entry.qualifiedId,
+  sourceRevision:entry.sourceRevision,speakerNames:Object.freeze(speakerNames),dialogue,
+  reading,documents:Object.freeze(documents),oral:material.oral,
+  writingChoices:material.writingChoices,
+  lexicalWitnesses:Object.freeze(witness),
+  scenarioTitle:context,u30DecisionCount:u30?.decisions.length??0,counterview,misunderstanding,desiredRegister:register,
+  stages:Object.freeze(phases),decisions:Object.freeze(decisions),curated:!!design
+ });
+}
+/** Model integrity is voluntary and independent of learner assessment. */
+export function validateU31SourceAnchors():readonly string[]{
+ return AUTHORED.filter(design=>{
+  const material=getOriginalMaterial(design.id);
+  return !material?.unit.dialogue.some(t=>t.speaker===design.speaker&&normalize(t.fr).includes(normalize(design.anchor)));
  }).map(design=>'Unresolved historical original dialogue anchor: '+design.id+' / '+design.speaker);
 }
 export const U31_CURATED_JOURNEYS=Object.freeze(AUTHORED.map(x=>x.id));
