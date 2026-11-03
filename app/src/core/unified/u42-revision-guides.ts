@@ -35,5 +35,15 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Compare the undated, truncated screenshot with the dated municipal notice; identify the exact claim that the notice contradicts and the part still unresolved.',
   'Rewrite any sentence that treats 62 % of social-media respondents as the opinion of all route users or as proof of a transit decision.',
   'Construct a dated public correction in French: refute the permanent-cancellation headline, explain the conditional weekend detour, retain the accessibility question, and state what you will verify before an update.'
+ ]),
+ 'transfer-158':Object.freeze([
+  'Preserve lesson 157’s refutation of permanent cancellation while adding the latest dated map; explicitly distinguish an official diagram from a measured accessible route.',
+  'For every claim about the ramp, specify whether it comes from the map or Élodie’s eight-o’clock visit. Remove predictions about Saturday that neither source supports.',
+  'Write a conditional traveler warning: state the conflict, the verification requested from the operator and the result that would change your recommendation.'
+ ]),
+ 'transfer-159':Object.freeze([
+  'Create a dated chronology connecting lesson 157’s incorrect closure claim, lesson 158’s Thursday eight-o’clock obstruction and Friday’s operator notice and independent 17:30 check.',
+  'Correct obsolete present-tense statements without erasing accurate historical records. Distinguish a ramp observed clear from guaranteed service for every time and traveler.',
+  'Revise the public notice for residents unable to book by phone before Friday 18:00; state a measurable test for nighttime safety and an inclusive alternative booking channel.'
  ])
 });
