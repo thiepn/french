@@ -16,6 +16,9 @@ import {U50_B2_GRAMMAR} from './u50-b2-grammar.ts';
 import {U51_160} from './u51-160.ts';
 import {U51_161} from './u51-161.ts';
 import {U51_B2_GRAMMAR} from './u51-b2-grammar.ts';
+import {U52_162} from './u52-162.ts';
+import {U52_163} from './u52-163.ts';
+import {U52_B2_GRAMMAR} from './u52-b2-grammar.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
@@ -54,10 +57,16 @@ export const U51_B2_INTERPERSONAL:readonly U21Scenario[]=Object.freeze(
   grammar:U51_B2_GRAMMAR[story.unit.id]??story.unit.grammar
  })}))
 );
+/** New original professional B2 communication; first 255 original units and references are immutable. */
+export const U52_B2_PROFESSIONAL:readonly U21Scenario[]=Object.freeze(
+ [...U52_162,...U52_163].map(story=>Object.freeze({...story,unit:Object.freeze({...story.unit,
+  grammar:U52_B2_GRAMMAR[story.unit.id]??story.unit.grammar
+ })}))
+);
 export const ORIGINAL_FRENCH_U42_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit),
  ...U46_B2_SEQUENCE.map(s=>s.unit),...U49_B2_EXTENSION.map(s=>s.unit),
- ...U50_B2_SEQUENCE.map(s=>s.unit),...U51_B2_INTERPERSONAL.map(s=>s.unit)
+ ...U50_B2_SEQUENCE.map(s=>s.unit),...U51_B2_INTERPERSONAL.map(s=>s.unit),...U52_B2_PROFESSIONAL.map(s=>s.unit)
 ]);
 export function getU42OriginalUnit(id:string):A1Unit|null{
  return ORIGINAL_FRENCH_U42_COURSE.find(u=>u.id===id)??null;
@@ -76,9 +85,9 @@ export function validateU42Course():readonly string[]{
  const issues=[...validateU22OriginalCourse()];
  if(ORIGINAL_FRENCH_U22_COURSE.length!==244)issues.push('Historical 244 original lessons changed');
  if(U42_B2_CASES.length!==3||U46_B2_SEQUENCE.length!==3||U49_B2_EXTENSION.length!==1||
-    U50_B2_SEQUENCE.length!==2||U51_B2_INTERPERSONAL.length!==2||
-    ORIGINAL_FRENCH_U42_COURSE.length!==255)
-  issues.push('Historical 151–159 must remain unchanged before new interpersonal 160–161 source-owned lessons');
+    U50_B2_SEQUENCE.length!==2||U51_B2_INTERPERSONAL.length!==2||U52_B2_PROFESSIONAL.length!==2||
+    ORIGINAL_FRENCH_U42_COURSE.length!==257)
+  issues.push('Historical 151–161 must remain unchanged before new professional 162–163 source-owned lessons');
  const ids=ORIGINAL_FRENCH_U42_COURSE.map(x=>x.id);
  if(new Set(ids).size!==ids.length)issues.push('Duplicate source lesson identity');
  for(let i=0;i<U42_B2_CASES.length;i++){
@@ -306,6 +315,52 @@ export function validateU42Course():readonly string[]{
     !first.reading.french.includes('Nour')||!second?.reading.french.includes('jeudi')||
     !second.reading.french.includes('confidentiel')||!second.reading.french.includes('Nour'))
   issues.push('160–161 interpersonal narrative continuity, voluntary consent or private boundary missing');
+ for(const [i,story] of U52_B2_PROFESSIONAL.entries()){
+  const n=162+i,id='transfer-'+n,unit=story.unit;
+  if(unit.id!==id||unit.order!==n+94||unit.prerequisites.join()!=='transfer-'+(n-1))
+   issues.push(id+' broken B2 original order or prerequisite');
+  if(unit.source.source!=='original'||unit.source.rights!=='original-owned'||
+     unit.source.sourceRevision!==SOURCES.original.revision||
+     !unit.source.qualifiedId.endsWith(':session:u52-'+id))
+   issues.push(id+' original ownership and provenance mismatch');
+  if(unit.grammar!==U52_B2_GRAMMAR[id]||unit.grammar.length!==2||
+     unit.grammar.some(g=>g.explanation.length<530||g.examples.length!==2||
+      !g.correction[0]||!g.correction[1]||g.correction[2].length<150))
+   issues.push(id+' missing substantive original professional grammar and misconception repairs');
+  if(unit.vocabulary.length!==12||unit.dialogue.length!==9||unit.tasks.length!==10||
+     unit.dialogue.some(d=>d.fr.length<100)||new Set(unit.tasks.map(t=>t.id)).size!==10)
+   issues.push(id+' insufficient original contextual dialogue, recall or vocabulary');
+  for(const kind of ['fill','order','reading','choice'] as const)
+   if(!unit.tasks.some(t=>t.type===kind))issues.push(id+' missing '+kind);
+  for(const t of unit.tasks){
+   if(!t.answer.trim()||t.explanation.length<45)issues.push(t.id+' missing specific source correction');
+   if((t.type==='reading'||t.type==='choice')&&
+      (t.options.length!==3||new Set(t.options).size!==3||!t.options.includes(t.answer)))
+    issues.push(t.id+' invalid independently supported answer choices');
+   if(t.type==='order'){
+    const norm=(s:string)=>s.trim().split(/\s+/).sort().join('|');
+    if(norm(t.answer)!==norm(t.options.join(' '))||t.answer===t.options.join(' '))
+     issues.push(t.id+' cannot reconstruct correct word order');
+   }
+  }
+  if(story.reading.french.trim().split(/\s+/).length<355||
+     story.reading.french.split('\n\n').length!==3||story.reading.questions.length!==3)
+   issues.push(id+' missing sustained three-paragraph original professional reading');
+  if(story.evidence.length!==2||story.evidence.some(d=>d.french.length<280)||
+     story.crossQuestions.length!==2||story.listening.length!==6)
+   issues.push(id+' insufficient original attributed professional materials and listening');
+  for(const w of [story.writingChoices.fromListening,story.writingChoices.fromSources,story.writingChoices.fromDebate])
+   if(w.criteria.length!==3||w.model.length<740||w.prompt.length<145)
+    issues.push(id+' insufficient original B2 independent professional writing');
+  if(story.oral.plan.length!==3||story.oral.model.length<550||story.oral.prompt.length<165)
+   issues.push(id+' insufficient independent oral presentation and responsive clarification');
+ }
+ if(!U52_B2_PROFESSIONAL[0]?.reading.french.includes('Maëlle')||
+    !U52_B2_PROFESSIONAL[0].reading.french.includes('quatre-vingts')||
+    !U52_B2_PROFESSIONAL[1]?.reading.french.includes('Maëlle')||
+    !U52_B2_PROFESSIONAL[1].reading.french.includes('six fiches')||
+    !U52_B2_PROFESSIONAL[1].reading.french.includes('contrôle interne'))
+  issues.push('162–163 professional continuity or accurate team contribution and handover missing');
  return issues;
 }
 export async function loadU42OriginalFrenchCourse():Promise<readonly A1Unit[]>{
