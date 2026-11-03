@@ -17,7 +17,7 @@ test('Original B2 lesson 157 is a real sequential course unit with advanced gram
  await page.locator('.u6-stage-nav').getByRole('button',{name:'6. Write'}).click();
  await expect(page.locator('.u43-writing-word-count')).toContainText('target 180–230');
  await expect(page.locator('.u43-original-source-document')).toHaveCount(2);
- await expect(page.locator('.u43-original-source-document')).toContainText('municipal');
+ await expect(page.locator('.u43-original-source-document').last()).toContainText('municipal');
  await expect(page.locator('.u6-model')).toBeHidden();
  await expect(page.locator('.u6-stage-body')).toContainText('independent');
 });
@@ -33,7 +33,7 @@ test('Original B2 157 has a long French article and two distinct written sources
  await expect(panel.locator('.u22-source-paragraph')).toHaveCount(3);
  await expect(panel.locator('.u22-source-paragraph').first()).toContainText('capture d’écran');
  await expect(panel.locator('.u22-source-document')).toHaveCount(2);
- await expect(panel.locator('.u22-source-document')).toContainText('Fictional');
+ await expect(panel.locator('.u22-source-document').first()).toContainText('Fictional');
  await expect(panel.locator('.u22-source-question')).toHaveCount(5);
  await expect(panel.locator('.u22-source-note').filter({hasText:'transfer-157'}).first()).toBeVisible();
 });
