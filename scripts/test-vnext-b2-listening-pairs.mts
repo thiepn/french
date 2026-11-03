@@ -5,7 +5,7 @@ import {ORIGINAL_FRENCH_U22_COURSE} from '../app/src/core/unified/u22-course.ts'
 import {ORIGINAL_FRENCH_U42_COURSE} from '../app/src/core/unified/u42-course.ts';
 import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,261);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 assert.deepEqual(validateU30SourceModel(),[],'Original paired French source anchors and authoring must be exact');
 assert.equal(ORIGINAL_B2_LISTENING_PAIRS.length,6);
