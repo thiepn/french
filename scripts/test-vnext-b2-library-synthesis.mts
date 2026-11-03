@@ -9,7 +9,7 @@ import {getOriginalMaterial} from '../app/src/core/unified/u23-registry.ts';
 assert.deepEqual(validateLibrarySynthesis(),[],'All authored source anchors and multi-lesson comparisons must be valid');
 assert.equal(ORIGINAL_LIBRARY_SYNTHESIS.length,3);
 assert.equal(ORIGINAL_FRENCH_U22_COURSE.length,244);
-assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,257);
+assert.equal(ORIGINAL_FRENCH_U42_COURSE.length,259);
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(0,244),ORIGINAL_FRENCH_U22_COURSE);
 const newIds=['transfer-151','transfer-152','transfer-153','transfer-154','transfer-155','transfer-156'];
 assert.deepEqual(ORIGINAL_FRENCH_U42_COURSE.slice(244,250).map(x=>x.id),newIds);
