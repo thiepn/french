@@ -55,5 +55,15 @@ export const U42_REVISION_GUIDES:Readonly<Record<string,readonly string[]>>=Obje
   'Use « si + plus-que-parfait » and « conditionnel passé » to express a past alternative without certifying the imagined result or assigning all responsibility to one person.',
   'Separate each person’s private reflection from the jointly accepted work recap: proofreading by Thursday, confirmed event attendance by another person, privacy and no blanket promise.',
   'Conclude with an optional follow-up and explicit possibility of refusal; do not write that limited teamwork proves full forgiveness, trust or consent to publish personal details.'
+ ]),
+ 'transfer-162':Object.freeze([
+  'Rewrite your interview narrative as an explicit situation, your own action and a bounded outcome. Do not call the eighty dossiers a personal achievement or measurable doubling without comparison.',
+  'Prepare two short follow-up answers: distinguish a voluntary explanation of recent work from forced disclosure of a private career interruption; reject an impossible zero-error guarantee.',
+  'Ask three precise formal questions about scope, quality validation and initial targets. Do not turn the fictional employer brief into a binding job offer.'
+ ]),
+ 'transfer-163':Object.freeze([
+  'Separate the error Maëlle acknowledged from Ilyès’s ambiguous instruction and the manager’s final clarification. Replace any personal blame with a traceable action and reference version.',
+  'Distinguish six records checked and forwarded for internal review, two records awaiting clarification and the absence of authorization for public publication.',
+  'End your handover with the correct approving person, a dependency before promising a deadline and a tactful question that checks shared understanding.'
  ])
 });
