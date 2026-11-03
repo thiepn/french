@@ -13,6 +13,9 @@ import {U49_B2_GRAMMAR} from './u49-b2-grammar.ts';
 import {U50_158} from './u50-158.ts';
 import {U50_159} from './u50-159.ts';
 import {U50_B2_GRAMMAR} from './u50-b2-grammar.ts';
+import {U51_160} from './u51-160.ts';
+import {U51_161} from './u51-161.ts';
+import {U51_B2_GRAMMAR} from './u51-b2-grammar.ts';
 import type {A1Unit} from './u6-a1-model.ts';
 import type {U21Scenario} from './u21-model.ts';
 
@@ -45,10 +48,16 @@ export const U50_B2_SEQUENCE:readonly U21Scenario[]=Object.freeze(
   grammar:U50_B2_GRAMMAR[story.unit.id]??story.unit.grammar
  })}))
 );
+/** New original B2 interpersonal pair. Historical 253 lesson objects must remain unchanged. */
+export const U51_B2_INTERPERSONAL:readonly U21Scenario[]=Object.freeze(
+ [...U51_160,...U51_161].map(story=>Object.freeze({...story,unit:Object.freeze({...story.unit,
+  grammar:U51_B2_GRAMMAR[story.unit.id]??story.unit.grammar
+ })}))
+);
 export const ORIGINAL_FRENCH_U42_COURSE:readonly A1Unit[]=Object.freeze([
  ...ORIGINAL_FRENCH_U22_COURSE,...U42_B2_CASES.map(s=>s.unit),
  ...U46_B2_SEQUENCE.map(s=>s.unit),...U49_B2_EXTENSION.map(s=>s.unit),
- ...U50_B2_SEQUENCE.map(s=>s.unit)
+ ...U50_B2_SEQUENCE.map(s=>s.unit),...U51_B2_INTERPERSONAL.map(s=>s.unit)
 ]);
 export function getU42OriginalUnit(id:string):A1Unit|null{
  return ORIGINAL_FRENCH_U42_COURSE.find(u=>u.id===id)??null;
@@ -67,8 +76,9 @@ export function validateU42Course():readonly string[]{
  const issues=[...validateU22OriginalCourse()];
  if(ORIGINAL_FRENCH_U22_COURSE.length!==244)issues.push('Historical 244 original lessons changed');
  if(U42_B2_CASES.length!==3||U46_B2_SEQUENCE.length!==3||U49_B2_EXTENSION.length!==1||
-    U50_B2_SEQUENCE.length!==2||ORIGINAL_FRENCH_U42_COURSE.length!==253)
-  issues.push('Original 151–157 must remain unchanged before additive 158–159 extension');
+    U50_B2_SEQUENCE.length!==2||U51_B2_INTERPERSONAL.length!==2||
+    ORIGINAL_FRENCH_U42_COURSE.length!==255)
+  issues.push('Historical 151–159 must remain unchanged before new interpersonal 160–161 source-owned lessons');
  const ids=ORIGINAL_FRENCH_U42_COURSE.map(x=>x.id);
  if(new Set(ids).size!==ids.length)issues.push('Duplicate source lesson identity');
  for(let i=0;i<U42_B2_CASES.length;i++){
@@ -249,6 +259,53 @@ export function validateU42Course():readonly string[]{
     U50_B2_SEQUENCE[1]?.reading.french.includes('jeudi')!==true||
     U50_B2_SEQUENCE[1]?.reading.french.includes('vendredi')!==true)
   issues.push('158–159 must continue the existing 157 T7 dossier with auditable chronology');
+ for(const [i,story] of U51_B2_INTERPERSONAL.entries()){
+  const n=160+i,id='transfer-'+n,unit=story.unit;
+  if(unit.id!==id||unit.order!==n+94||unit.prerequisites.join()!=='transfer-'+(n-1))
+   issues.push(id+' non-sequential B2 original prerequisite');
+  if(unit.source.source!=='original'||unit.source.rights!=='original-owned'||
+     unit.source.sourceRevision!==SOURCES.original.revision||
+     !unit.source.qualifiedId.endsWith(':session:u51-'+id))
+   issues.push(id+' original rights or provenance mismatch');
+  if(unit.grammar!==U51_B2_GRAMMAR[id]||unit.grammar.length!==2||
+     unit.grammar.some(g=>g.explanation.length<500||g.examples.length!==2||
+      !g.correction[0]||!g.correction[1]||g.correction[2].length<135))
+   issues.push(id+' missing contextual B2 pragmatic grammar or repair');
+  if(unit.vocabulary.length!==12||unit.dialogue.length!==9||unit.tasks.length!==10||
+     unit.dialogue.some(t=>t.fr.length<95)||new Set(unit.tasks.map(t=>t.id)).size!==10)
+   issues.push(id+' incomplete contextual vocabulary, listening dialogue or recall');
+  for(const kind of ['fill','order','reading','choice'] as const)
+   if(!unit.tasks.some(t=>t.type===kind))issues.push(id+' missing '+kind);
+  for(const task of unit.tasks){
+   if(!task.answer.trim()||task.explanation.length<55)
+    issues.push(id+' incomplete authored response feedback '+task.id);
+   if((task.type==='reading'||task.type==='choice')&&
+      (task.options.length!==3||new Set(task.options).size!==3||!task.options.includes(task.answer)))
+    issues.push(id+' unsupported interpretation '+task.id);
+   if(task.type==='order'){
+    const norm=(s:string)=>s.trim().split(/\s+/).sort().join('|');
+    if(norm(task.answer)!==norm(task.options.join(' '))||task.answer===task.options.join(' '))
+     issues.push(id+' invalid French word-order task');
+   }
+  }
+  if(story.reading.french.trim().split(/\s+/).length<340||
+     story.reading.french.split('\n\n').length!==3||story.reading.questions.length!==3)
+   issues.push(id+' missing substantive original three-part French narrative');
+  if(story.evidence.length!==2||story.evidence.some(e=>e.french.length<240)||
+     story.crossQuestions.length!==2||story.listening.length!==6)
+   issues.push(id+' missing distinct original perspectives and source-based comprehension');
+  for(const writing of [story.writingChoices.fromListening,story.writingChoices.fromSources,
+                        story.writingChoices.fromDebate])
+   if(writing.criteria.length!==3||writing.model.length<700||writing.prompt.length<135)
+    issues.push(id+' missing extended original interpersonal French writing');
+  if(story.oral.plan.length!==3||story.oral.model.length<460||story.oral.prompt.length<145)
+   issues.push(id+' missing original independent spoken narrative and reply');
+ }
+ const first=U51_B2_INTERPERSONAL[0],second=U51_B2_INTERPERSONAL[1];
+ if(!first?.reading.french.includes('Samir')||!first.reading.french.includes('Camille')||
+    !first.reading.french.includes('Nour')||!second?.reading.french.includes('jeudi')||
+    !second.reading.french.includes('confidentiel')||!second.reading.french.includes('Nour'))
+  issues.push('160–161 interpersonal narrative continuity, voluntary consent or private boundary missing');
  return issues;
 }
 export async function loadU42OriginalFrenchCourse():Promise<readonly A1Unit[]>{
